@@ -45,3 +45,69 @@ body {
   background: #b8bec8;
   border-radius: 3px;
 }
+
+/* Material Form Field Overrides */
+.compact-field {
+  --mdc-outlined-text-field-container-shape: 7px;
+  --mdc-outlined-text-field-outline-color: rgba(0, 0, 0, 0.08);
+  --mdc-outlined-text-field-hover-outline-color: rgba(0, 0, 0, 0.2);
+  --mdc-outlined-text-field-focus-outline-color: #639922 !important;
+  --mdc-outlined-text-field-container-color: #f9fafb;
+  --mdc-typography-subtitle1-font-size: 13px;
+}
+
+.compact-field.mat-focused .mdc-notched-outline__leading,
+.compact-field.mat-focused .mdc-notched-outline__notch,
+.compact-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: #639922 !important;
+  border-width: 1px !important;
+}
+
+.compact-field.mat-focused .mat-mdc-select-arrow,
+.compact-field.mat-focused .mat-mdc-select-value-text,
+.compact-field.mat-focused .mat-datepicker-toggle-default-icon {
+  color: #639922 !important;
+}
+
+.compact-field .mat-mdc-form-field-infix {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  min-height: 36px !important;
+}
+
+.compact-field .mat-mdc-text-field-wrapper {
+  padding: 0 10px !important;
+}
+
+.compact-field .mat-mdc-form-field-subscript-wrapper {
+  padding-left: 0;
+}
+
+.compact-field .mat-mdc-icon-button {
+  padding: 4px !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.compact-field .mat-mdc-icon-button .mat-icon,
+.compact-field .mat-datepicker-toggle-default-icon {
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 20px;
+  line-height: 20px;
+}
+
+/* Material Select Option Overrides */
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #639922 !important;
+}
+
+.mat-pseudo-checkbox-checked::after {
+  color: #639922 !important;
+}
+
+.mat-primary {
+  --mat-option-selected-state-icon-color: #639922;
+  --mat-option-selected-state-label-text-color: #639922;
+  --mat-pseudo-checkbox-checked-icon-color: #639922;
+}

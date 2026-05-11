@@ -22,6 +22,13 @@ export const routes: Routes = [
             (m) => m.RoleManagementComponent,
           ),
       },
+      {
+        path: 'students',
+        loadComponent: () =>
+          import('./features/students/students.component').then(
+            (m) => m.StudentsComponent,
+          ),
+      },
     ],
   },
   {

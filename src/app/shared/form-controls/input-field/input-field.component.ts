@@ -9,13 +9,23 @@ import { FormFieldConfig } from '../../interfaces/form-field-config';
   selector: 'app-input-field',
   imports: [MatFormFieldModule, MatInputModule, NgIf, ReactiveFormsModule],
   template: `
-    <mat-form-field appearance="outline" class="full-width" [formGroup]="group">
-      <mat-label>{{ config.label }}</mat-label>
-      <input matInput [placeholder]="config.placeholder ?? ''" [formControlName]="config.controlName" />
-      <mat-error *ngIf="group.get(config.controlName)?.invalid">{{ getError() }}</mat-error>
-    </mat-form-field>
+    <div class="custom-field" [formGroup]="group">
+      <label>
+        {{ config.label }} 
+        <span *ngIf="config.validations?.length">*</span>
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <input matInput [type]="config.inputType || 'text'" [placeholder]="config.placeholder ?? ''" [formControlName]="config.controlName" />
+        <mat-error *ngIf="group.get(config.controlName)?.invalid">{{ getError() }}</mat-error>
+      </mat-form-field>
+    </div>
   `,
-  styles: ['.full-width { width: 100%; }'],
+  styles: [`
+    .full-width { width: 100%; }
+    .custom-field { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 11px; color: var(--muted, #6b7280); font-weight: 500; }
+    label span { color: #E24B4A; margin-left: 2px; }
+  `],
 })
 export class InputFieldComponent {
   @Input({ required: true }) config!: FormFieldConfig;

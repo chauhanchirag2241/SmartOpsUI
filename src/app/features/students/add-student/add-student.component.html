@@ -1,0 +1,257 @@
+<div class="topbar">
+  <button class="back-btn" (click)="cancel.emit()">
+    <mat-icon>arrow_back</mat-icon> Back
+  </button>
+  <div class="page-title">Add new student</div>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-fill" [style.width.%]="(currentTab + 1) * 20"></div>
+</div>
+<div class="step-hint">{{ tabs[currentTab].hint }}</div>
+
+<div class="tabs" role="tablist">
+  <div
+    *ngFor="let tab of tabs; let i = index"
+    class="tab"
+    [class.active]="currentTab === i"
+    [class.done]="currentTab > i"
+    (click)="goTab(i)"
+    role="tab"
+  >
+    <div class="tab-num">{{ i + 1 }}</div>
+    {{ tab.label }}
+  </div>
+</div>
+
+<form [formGroup]="studentForm">
+  <!-- ═══════════════ TAB 1: PERSONAL INFO ═══════════════ -->
+  <div *ngIf="currentTab === 0">
+    <div class="card">
+      <div class="card-title"><mat-icon>person</mat-icon>Student photo</div>
+      <div class="photo-upload">
+        <mat-icon>add_a_photo</mat-icon>
+        <div class="photo-upload-text">Click to upload photo</div>
+        <div class="photo-upload-sub">JPG, PNG — max 2MB</div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title"><mat-icon>badge</mat-icon>Basic details</div>
+      <div class="grid3">
+        <app-input-field [config]="configs['firstName']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['middleName']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['lastName']" [group]="studentForm"></app-input-field>
+        
+        <app-datepicker-field [config]="configs['dob']" [group]="studentForm"></app-datepicker-field>
+        
+        <app-select-field [config]="configs['gender']" [group]="studentForm"></app-select-field>
+        <app-select-field [config]="configs['bloodGroup']" [group]="studentForm"></app-select-field>
+        
+        <app-input-field [config]="configs['mobile']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['email']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['aadhaar']" [group]="studentForm"></app-input-field>
+        
+        <div class="field full">
+          <app-textarea-field [config]="configs['address']" [group]="studentForm"></app-textarea-field>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title"><mat-icon>group</mat-icon>Parent / Guardian details</div>
+      <div class="grid3">
+        <app-input-field [config]="configs['fatherName']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['fatherMobile']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['fatherOcc']" [group]="studentForm"></app-input-field>
+        
+        <app-input-field [config]="configs['motherName']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['motherMobile']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['motherOcc']" [group]="studentForm"></app-input-field>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 2: ACADEMIC ═══════════════ -->
+  <div *ngIf="currentTab === 1">
+    <div class="card">
+      <div class="card-title"><mat-icon>school</mat-icon>Admission details</div>
+      <div class="grid3">
+        <div class="field"><label>Admission number</label><input matInput placeholder="Auto-generated" disabled style="opacity:.5"></div>
+        <app-datepicker-field [config]="configs['admissionDate']" [group]="studentForm"></app-datepicker-field>
+        <app-select-field [config]="configs['academicYear']" [group]="studentForm"></app-select-field>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><mat-icon>co_present</mat-icon>Class & section</div>
+      <div class="grid3">
+        <app-select-field [config]="configs['class']" [group]="studentForm"></app-select-field>
+        <app-select-field [config]="configs['section']" [group]="studentForm"></app-select-field>
+        <div class="field"><label>Roll number</label><input matInput placeholder="Auto-assigned" disabled style="opacity:.5"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><mat-icon>domain</mat-icon>Previous school</div>
+      <div class="grid2">
+        <app-input-field [config]="configs['prevSchool']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['prevClass']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['percentage']" [group]="studentForm"></app-input-field>
+        <app-input-field [config]="configs['tcNo']" [group]="studentForm"></app-input-field>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 3: FEES ═══════════════ -->
+  <div *ngIf="currentTab === 2">
+    <div class="card">
+      <div class="card-title"><mat-icon>payments</mat-icon>Fee structure — Class 10</div>
+      <div class="fee-row"><span class="fee-name">Tuition fee</span><span class="fee-amt">₹12,000</span></div>
+      <div class="fee-row"><span class="fee-name">Admission fee</span><span class="fee-amt">₹2,500</span></div>
+      <div class="fee-row"><span class="fee-name">Exam fee</span><span class="fee-amt">₹1,500</span></div>
+      <div class="fee-row"><span class="fee-name">Library fee</span><span class="fee-amt">₹500</span></div>
+      <div class="fee-row"><span class="fee-name">Sports fee</span><span class="fee-amt">₹800</span></div>
+      <div class="fee-total-row">
+        <span class="fee-total-label">Total fees</span>
+        <span class="fee-total-amt">₹17,300</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><mat-icon>local_offer</mat-icon>Discount / Concession</div>
+      <div class="grid2">
+        <app-select-field [config]="configs['discountType']" [group]="studentForm"></app-select-field>
+        <div class="field"><label>Discount value</label>
+          <div style="display:flex;gap:6px">
+            <input placeholder="0" style="flex:1" formControlName="discountValue">
+            <select style="width:80px" formControlName="discountUnit">
+              <option value="%">%</option>
+              <option value="₹">₹</option>
+            </select>
+          </div>
+        </div>
+        <div class="field full">
+          <app-input-field [config]="configs['discountRemarks']" [group]="studentForm"></app-input-field>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><mat-icon>event</mat-icon>Payment schedule</div>
+      <div class="grid2">
+        <app-select-field [config]="configs['paymentMode']" [group]="studentForm"></app-select-field>
+        <app-datepicker-field [config]="configs['firstDueDate']" [group]="studentForm"></app-datepicker-field>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 4: DOCUMENTS ═══════════════ -->
+  <div *ngIf="currentTab === 3">
+    <div class="card">
+      <div class="card-title"><mat-icon>folder</mat-icon>Required documents</div>
+      <div class="doc-grid">
+        <div class="doc-card uploaded">
+          <div class="doc-icon"><mat-icon>badge</mat-icon></div>
+          <div><div class="doc-name">Aadhaar card</div><div class="doc-sub">aadhaar_patel.pdf</div></div>
+          <div class="doc-status"><mat-icon>check_circle</mat-icon></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-icon"><mat-icon>verified</mat-icon></div>
+          <div><div class="doc-name">Birth certificate</div><div class="doc-sub">Click to upload</div></div>
+          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-icon"><mat-icon>description</mat-icon></div>
+          <div><div class="doc-name">Transfer certificate</div><div class="doc-sub">Click to upload</div></div>
+          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
+        </div>
+        <div class="doc-card uploaded">
+          <div class="doc-icon"><mat-icon>image</mat-icon></div>
+          <div><div class="doc-name">Passport photo</div><div class="doc-sub">photo_rahul.jpg</div></div>
+          <div class="doc-status"><mat-icon>check_circle</mat-icon></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-icon"><mat-icon>article</mat-icon></div>
+          <div><div class="doc-name">Previous marksheet</div><div class="doc-sub">Click to upload</div></div>
+          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-icon"><mat-icon>home</mat-icon></div>
+          <div><div class="doc-name">Address proof</div><div class="doc-sub">Click to upload</div></div>
+          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><mat-icon>notes</mat-icon>Additional notes</div>
+      <div class="field full">
+        <app-textarea-field [config]="configs['remarks']" [group]="studentForm"></app-textarea-field>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 5: REVIEW ═══════════════ -->
+  <div *ngIf="currentTab === 4" class="review-tab">
+    <div class="card review-card">
+      <div class="card-title"><mat-icon>visibility</mat-icon>Review Student Details</div>
+      
+      <div class="review-section">
+        <h3><mat-icon>person</mat-icon> Personal & Parent Details</h3>
+        <div class="review-grid">
+          <div class="review-item"><label>Name</label><span>{{ getControlValue('firstName') }} {{ getControlValue('middleName') }} {{ getControlValue('lastName') }}</span></div>
+          <div class="review-item"><label>DOB</label><span>{{ getControlValue('dob') }}</span></div>
+          <div class="review-item"><label>Gender</label><span>{{ getControlValue('gender') }}</span></div>
+          <div class="review-item"><label>Mobile</label><span>{{ getControlValue('mobile') }}</span></div>
+          <div class="review-item"><label>Email</label><span>{{ getControlValue('email') }}</span></div>
+          <div class="review-item"><label>Father's Name</label><span>{{ getControlValue('fatherName') }}</span></div>
+          <div class="review-item"><label>Mother's Name</label><span>{{ getControlValue('motherName') }}</span></div>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <h3><mat-icon>school</mat-icon> Academic Details</h3>
+        <div class="review-grid">
+          <div class="review-item"><label>Academic Year</label><span>{{ getControlValue('academicYear') }}</span></div>
+          <div class="review-item"><label>Class</label><span>{{ getControlValue('class') }}</span></div>
+          <div class="review-item"><label>Section</label><span>{{ getControlValue('section') }}</span></div>
+          <div class="review-item"><label>Admission Date</label><span>{{ getControlValue('admissionDate') }}</span></div>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <h3><mat-icon>payments</mat-icon> Fee & Payment</h3>
+        <div class="review-grid">
+          <div class="review-item"><label>Payment Mode</label><span>{{ getControlValue('paymentMode') }}</span></div>
+          <div class="review-item"><label>First Due Date</label><span>{{ getControlValue('firstDueDate') }}</span></div>
+          <div class="review-item"><label>Discount Type</label><span>{{ getControlValue('discountType') || 'None' }}</span></div>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <h3><mat-icon>description</mat-icon> Additional Info</h3>
+        <div class="review-grid">
+          <div class="review-item full"><label>Remarks</label><span>{{ getControlValue('remarks') || 'No remarks provided' }}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div class="footer-actions">
+  <button 
+    class="btn-back" 
+    [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'" 
+    (click)="prevTab()"
+  >
+    <mat-icon>arrow_back</mat-icon> Previous
+  </button>
+  
+  <div class="footer-hint">{{ footerHints[currentTab] }}</div>
+  
+  <button class="btn-next" (click)="nextTab()" [disabled]="isSaving">
+    <ng-container *ngIf="currentTab < 4">
+      Next <mat-icon>arrow_forward</mat-icon>
+    </ng-container>
+    <ng-container *ngIf="currentTab === 4">
+      <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+      {{ isSaving ? 'Confirming...' : 'Confirm & Add' }}
+    </ng-container>
+  </button>
+</div>

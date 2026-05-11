@@ -1,16 +1,14 @@
 import { Component, Input } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormFieldConfig } from '../../interfaces/form-field-config';
 
-import { NgIf } from '@angular/common';
-
 @Component({
-  selector: 'app-datepicker-field',
-  imports: [MatDatepickerModule, MatFormFieldModule, MatInputModule, MatNativeDateModule, ReactiveFormsModule, NgIf],
+  selector: 'app-textarea-field',
+  standalone: true,
+  imports: [MatFormFieldModule, MatInputModule, NgIf, ReactiveFormsModule],
   template: `
     <div class="custom-field" [formGroup]="group">
       <label>
@@ -18,10 +16,8 @@ import { NgIf } from '@angular/common';
         <span *ngIf="config.validations?.length">*</span>
       </label>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
-        <input matInput [matDatepicker]="picker" [formControlName]="config.controlName" [placeholder]="config.placeholder ?? ''" />
-        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-        <mat-error *ngIf="group.get(config.controlName)?.invalid">Invalid field</mat-error>
+        <textarea matInput [placeholder]="config.placeholder ?? ''" [formControlName]="config.controlName" rows="3"></textarea>
+        <mat-error *ngIf="group.get(config.controlName)?.invalid">{{ getError() }}</mat-error>
       </mat-form-field>
     </div>
   `,
@@ -32,7 +28,13 @@ import { NgIf } from '@angular/common';
     label span { color: #E24B4A; margin-left: 2px; }
   `],
 })
-export class DatepickerFieldComponent {
+export class TextareaFieldComponent {
   @Input({ required: true }) config!: FormFieldConfig;
   @Input({ required: true }) group!: FormGroup;
+
+  getError(): string {
+    const control = this.group.get(this.config.controlName);
+    const validation = this.config.validations?.find((item) => control?.hasError(item.name));
+    return validation?.message ?? 'Invalid field';
+  }
 }
