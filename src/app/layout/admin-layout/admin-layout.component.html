@@ -1,0 +1,14 @@
+<div class="admin-wrapper">
+  <app-header (menuToggle)="onMenuToggle()"></app-header>
+
+  <mat-sidenav-container class="sidenav-container">
+    <mat-sidenav mode="side" [opened]="sidebarOpened" class="sidenav">
+      <app-sidebar></app-sidebar>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="main-content">
+      <router-outlet></router-outlet>
+      <app-footer></app-footer>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

@@ -1,3 +1,47 @@
-/* You can add global styles to this file, and also import other style files */
-
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'tailwindcss';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: #f5f6fa;
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  height: 100%;
+  margin: 0;
+}
+
+.snack-success {
+  --mdc-snackbar-container-color: #2e7d32;
+  --mat-snack-bar-button-color: #fff;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+
+.snack-error {
+  --mdc-snackbar-container-color: #c62828;
+  --mat-snack-bar-button-color: #fff;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+
+.snack-info {
+  --mdc-snackbar-container-color: #1565c0;
+  --mat-snack-bar-button-color: #fff;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+
+.snack-warning {
+  --mdc-snackbar-container-color: #ef6c00;
+  --mat-snack-bar-button-color: #fff;
+  --mdc-snackbar-supporting-text-color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #b8bec8;
+  border-radius: 3px;
+}

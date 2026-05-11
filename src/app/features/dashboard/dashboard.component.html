@@ -1,0 +1,141 @@
+<section class="dashboard-container">
+  <div class="stats-grid">
+    <mat-card *ngFor="let stat of stats" class="stat-card dashboard-card">
+      <mat-card-content>
+        <div class="stat-top">
+          <span class="stat-icon"><mat-icon>{{ stat.icon }}</mat-icon></span>
+          <span class="trend" [class.down]="stat.trendDirection === 'down'">
+            <mat-icon>{{ stat.trendDirection === 'up' ? 'trending_up' : 'trending_down' }}</mat-icon>
+            {{ stat.trend }}
+          </span>
+        </div>
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="middle-grid">
+    <mat-card class="dashboard-card">
+      <mat-card-content>
+        <div class="card-head">
+          <h2><mat-icon>pie_chart</mat-icon>Today's attendance</h2>
+          <span>11 May 2026</span>
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut" viewBox="0 0 80 80" aria-label="89 percent present">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" stroke-width="10" />
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#639922" stroke-width="10" stroke-dasharray="168 220" stroke-dashoffset="-55" stroke-linecap="round" />
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#e24b4a" stroke-width="10" stroke-dasharray="22 220" stroke-dashoffset="-223" stroke-linecap="round" />
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#ef9f27" stroke-width="10" stroke-dasharray="30 220" stroke-dashoffset="-245" stroke-linecap="round" />
+            <text x="40" y="36" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text)">89%</text>
+            <text x="40" y="49" text-anchor="middle" font-size="8" fill="var(--muted)">present</text>
+          </svg>
+          <div class="legend">
+            <div *ngFor="let item of attendance" class="legend-row">
+              <span class="legend-dot" [style.background]="item.color"></span>
+              {{ item.label }}
+              <strong>{{ item.value }}</strong>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-card">
+      <mat-card-content>
+        <div class="card-head">
+          <h2><mat-icon>bar_chart</mat-icon>Monthly enrollments</h2>
+          <span>2026-27</span>
+        </div>
+        <div class="bar-chart">
+          <div *ngFor="let item of enrollments" class="bar-col">
+            <span class="bar-value">{{ item.value }}</span>
+            <span class="bar" [style.height.px]="enrollmentHeight(item.value)"></span>
+            <span class="bar-label">{{ item.month }}</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-card">
+      <mat-card-content>
+        <div class="card-head">
+          <h2><mat-icon>local_activity</mat-icon>Recent activity</h2>
+          <span>Today</span>
+        </div>
+        <div class="mini-list">
+          <div *ngFor="let item of activities" class="mini-item">
+            <span class="avatar">{{ item.initials }}</span>
+            <span class="mini-copy">
+              <strong>{{ item.name }}</strong>
+              <small>{{ item.detail }}</small>
+            </span>
+            <span class="badge" [class.alert]="item.tone === 'alert'" [class.warn]="item.tone === 'warn'">
+              {{ item.badge }}
+            </span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="bottom-grid">
+    <mat-card class="dashboard-card">
+      <mat-card-content>
+        <div class="card-head">
+          <h2><mat-icon>request_quote</mat-icon>Fees collection by class</h2>
+          <span>This month</span>
+        </div>
+        <div class="fee-list">
+          <div *ngFor="let item of fees" class="fee-item">
+            <div class="fee-top">
+              <span>{{ item.className }} <small>({{ item.students }} students)</small></span>
+              <strong>{{ item.collected }} / {{ item.total }}</strong>
+            </div>
+            <div class="fee-bar">
+              <span [style.width.%]="item.percent"></span>
+            </div>
+            <small>{{ item.percent }}% collected - {{ item.pending }} pending</small>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="side-stack">
+      <mat-card class="dashboard-card">
+        <mat-card-content>
+          <div class="card-head">
+            <h2><mat-icon>notifications</mat-icon>Alerts</h2>
+            <span class="danger-text">4 active</span>
+          </div>
+          <div class="alerts">
+            <div *ngFor="let item of alerts" class="alert-row">
+              <span class="alert-icon" [class.warning]="item.tone === 'warning'" [class.success]="item.tone === 'success'">
+                <mat-icon>{{ item.icon }}</mat-icon>
+              </span>
+              <span>
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.subtitle }}</small>
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="dashboard-card">
+        <mat-card-content>
+          <div class="card-head compact">
+            <h2><mat-icon>bolt</mat-icon>Quick actions</h2>
+          </div>
+          <div class="quick-grid">
+            <button *ngFor="let item of quickActions" type="button">
+              <mat-icon>{{ item.icon }}</mat-icon>
+              {{ item.label }}
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</section>

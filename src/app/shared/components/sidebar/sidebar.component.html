@@ -1,0 +1,31 @@
+<div class="brand">
+  <span class="brand-icon"><mat-icon fontSet="material-symbols-outlined">school</mat-icon></span>
+  <span>
+    <strong>SmartOps</strong>
+    <small>Admin panel</small>
+  </span>
+</div>
+
+<nav class="sidebar-nav" aria-label="Primary">
+  <ng-container *ngFor="let item of navItems">
+    <div *ngIf="item.section" class="section-label">{{ item.section }}</div>
+    <a
+      class="nav-item"
+      [routerLink]="item.route"
+      routerLinkActive="active-link"
+      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+    >
+      <mat-icon fontSet="material-symbols-outlined">{{ item.icon }}</mat-icon>
+      <span>{{ item.label }}</span>
+      <span *ngIf="item.badge" class="nav-badge" [class.danger]="item.danger">{{ item.badge }}</span>
+    </a>
+  </ng-container>
+</nav>
+
+<div class="sidebar-footer">
+  <span class="avatar">AD</span>
+  <span>
+    <strong>Admin</strong>
+    <small>Super admin</small>
+  </span>
+</div>

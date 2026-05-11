@@ -1,0 +1,28 @@
+<mat-card class="login-card">
+  <mat-card-header>
+    <mat-card-title>School ERP Login</mat-card-title>
+    <mat-card-subtitle>Sign in to continue</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" placeholder="admin@school.com" />
+        <mat-error *ngIf="loginForm.controls.email.hasError('required')">Email is required</mat-error>
+        <mat-error *ngIf="loginForm.controls.email.hasError('email')">Invalid email format</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input matInput type="password" formControlName="password" />
+        <mat-error *ngIf="loginForm.controls.password.hasError('required')">Password is required</mat-error>
+        <mat-error *ngIf="loginForm.controls.password.hasError('minlength')">Use at least 6 characters</mat-error>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" type="submit" class="full-width" [disabled]="loading">
+        {{ loading ? 'Signing in...' : 'Sign In' }}
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>

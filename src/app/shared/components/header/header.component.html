@@ -1,0 +1,32 @@
+<mat-toolbar class="app-header">
+  <button mat-icon-button type="button" (click)="onMenuToggle()" aria-label="Toggle menu">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="app-title">Dashboard</span>
+  <span class="spacer"></span>
+
+  <span class="header-chip"><mat-icon>calendar_month</mat-icon>2026-27</span>
+  <span class="header-chip"><mat-icon>business</mat-icon>ABC School</span>
+
+  <button class="notification" mat-icon-button type="button" aria-label="Notifications">
+    <mat-icon>notifications</mat-icon>
+    <span></span>
+  </button>
+
+  <button mat-icon-button type="button" [matMenuTriggerFor]="userMenu" aria-label="User menu">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+
+  <mat-menu #userMenu="matMenu">
+    <button mat-menu-item disabled>
+      <mat-icon>person</mat-icon>
+      <span>{{ auth.currentUser?.name ?? 'Signed in user' }}</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item type="button" (click)="onLogout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>

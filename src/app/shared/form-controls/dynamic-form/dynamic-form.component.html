@@ -1,0 +1,11 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  <ng-container *ngFor="let field of fields">
+    <ng-container [ngSwitch]="field.type">
+      <app-input-field *ngSwitchCase="'input'" [config]="field" [group]="form"></app-input-field>
+      <app-select-field *ngSwitchCase="'select'" [config]="field" [group]="form"></app-select-field>
+      <app-datepicker-field *ngSwitchCase="'datepicker'" [config]="field" [group]="form"></app-datepicker-field>
+    </ng-container>
+  </ng-container>
+
+  <button mat-raised-button color="primary" type="submit">{{ submitLabel }}</button>
+</form>

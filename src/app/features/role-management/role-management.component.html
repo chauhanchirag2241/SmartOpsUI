@@ -1,0 +1,166 @@
+<section class="role-page" [class.dark]="isDark">
+  <header class="topbar">
+    <button class="back-btn" type="button" aria-label="Back to roles">
+      <mat-icon>arrow_back</mat-icon>
+      Roles
+    </button>
+    <div class="page-title">
+      <h1>Add new role</h1>
+      <span>{{ activeTab === 'info' ? 'Basic role setup' : 'Menu-wise permissions' }}</span>
+    </div>
+    <button class="theme-btn" type="button" (click)="isDark = !isDark">
+      <mat-icon>{{ isDark ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      {{ isDark ? 'Light' : 'Dark' }}
+    </button>
+  </header>
+
+  <div class="progress-bar" aria-hidden="true">
+    <span [style.width.%]="activeTab === 'info' ? 50 : 100"></span>
+  </div>
+
+  <nav class="tabs" aria-label="Role setup tabs">
+    <button type="button" [class.active]="activeTab === 'info'" (click)="setTab('info')">
+      <mat-icon>badge</mat-icon>
+      Role info
+    </button>
+    <button type="button" [class.active]="activeTab === 'permissions'" (click)="setTab('permissions')">
+      <mat-icon>verified_user</mat-icon>
+      Permissions
+    </button>
+  </nav>
+
+  <ng-container *ngIf="activeTab === 'info'; else permissionsPanel">
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>badge</mat-icon>
+        Basic details
+      </div>
+      <div class="grid-two">
+        <label class="field">
+          <span>Role name <strong>*</strong></span>
+          <input type="text" placeholder="e.g. Class Teacher" />
+        </label>
+        <label class="field">
+          <span>Role code <strong>*</strong></span>
+          <input type="text" placeholder="e.g. CLASS_TEACHER" />
+        </label>
+        <label class="field full">
+          <span>Description</span>
+          <textarea placeholder="Describe what this role can do..."></textarea>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>groups</mat-icon>
+        Role type
+      </div>
+      <span class="field-label">Select role category <strong>*</strong></span>
+      <div class="badge-row">
+        <button
+          *ngFor="let category of roleCategories"
+          type="button"
+          class="role-badge"
+          [class.selected]="category.selected"
+          (click)="selectCategory(category)"
+        >
+          {{ category.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>tune</mat-icon>
+        Role settings
+      </div>
+      <div class="grid-two">
+        <label class="field">
+          <span>Status</span>
+          <select>
+            <option>Active</option>
+            <option>Inactive</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Access level</span>
+          <select>
+            <option>School level</option>
+            <option>Branch level</option>
+            <option>Class level</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #permissionsPanel>
+    <div class="permissions-layout">
+      <aside class="module-list" aria-label="Modules">
+        <div class="module-header">Modules</div>
+        <button
+          *ngFor="let module of modules; let index = index"
+          type="button"
+          class="module-item"
+          [class.active]="index === activeModuleIndex"
+          [class.has-permission]="enabledCount(module) > 0"
+          (click)="selectModule(index)"
+        >
+          <mat-icon>{{ module.icon }}</mat-icon>
+          <span>{{ module.label }}</span>
+          <small *ngIf="enabledCount(module) > 0">{{ enabledCount(module) }}</small>
+        </button>
+      </aside>
+
+      <section class="permission-panel">
+        <div class="permission-header">
+          <h2>
+            <mat-icon>{{ activeModule.icon }}</mat-icon>
+            {{ activeModule.label }} permissions
+          </h2>
+          <button type="button" (click)="selectAllActiveModule()">
+            <mat-icon>done_all</mat-icon>
+            Select all
+          </button>
+        </div>
+
+        <div class="permission-group" *ngFor="let group of activeModule.groups">
+          <button class="group-header" type="button" (click)="toggleGroup(group)">
+            <mat-icon [class.open]="group.open">chevron_right</mat-icon>
+            <span>{{ group.name }}</span>
+            <small>{{ enabledGroupCount(group) }} of {{ group.permissions.length }}</small>
+          </button>
+
+          <div class="permission-rows" *ngIf="group.open">
+            <div class="permission-row" *ngFor="let permission of group.permissions">
+              <button
+                type="button"
+                class="toggle"
+                [class.checked]="permission.enabled"
+                [attr.aria-pressed]="permission.enabled"
+                (click)="togglePermission(permission)"
+              >
+                <span></span>
+              </button>
+              <span class="permission-name">{{ permission.name }}</span>
+              <code>{{ permission.key }}</code>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ng-template>
+
+  <footer class="role-footer">
+    <button class="cancel-btn" type="button">Cancel</button>
+    <span class="summary-chip">
+      <mat-icon>verified</mat-icon>
+      {{ totalEnabledPermissions }} permissions selected
+    </span>
+    <button class="save-btn" type="button">
+      <mat-icon>save</mat-icon>
+      Save role
+    </button>
+  </footer>
+</section>
