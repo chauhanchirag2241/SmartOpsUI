@@ -1,24 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
-import { NgFor, NgSwitch, NgSwitchCase } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { DatepickerFieldComponent } from '../datepicker-field/datepicker-field.component';
-import { InputFieldComponent } from '../input-field/input-field.component';
-import { SelectFieldComponent } from '../select-field/select-field.component';
+
+import { DynamicFieldComponent } from '../dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../interfaces/form-field-config';
 
 @Component({
   selector: 'app-dynamic-form',
-  imports: [
-    DatepickerFieldComponent,
-    InputFieldComponent,
-    MatButtonModule,
-    NgFor,
-    NgSwitch,
-    NgSwitchCase,
-    ReactiveFormsModule,
-    SelectFieldComponent,
-  ],
+  standalone: true,
+  imports: [DynamicFieldComponent, MatButtonModule, ReactiveFormsModule],
   templateUrl: './dynamic-form.component.html',
 })
 export class DynamicFormComponent implements OnInit {

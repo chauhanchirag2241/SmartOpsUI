@@ -1,4 +1,3 @@
-import { NgClass, NgFor, NgIf } from '@angular/common';
 import { Component } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -27,7 +26,8 @@ interface RoleModule {
 
 @Component({
   selector: 'app-role-management',
-  imports: [MatIconModule, NgClass, NgFor, NgIf],
+  standalone: true,
+  imports: [MatIconModule],
   templateUrl: './role-management.component.html',
   styleUrl: './role-management.component.css',
 })
@@ -35,6 +35,18 @@ export class RoleManagementComponent {
   activeTab: 'info' | 'permissions' = 'info';
   activeModuleIndex = 0;
   isDark = false;
+
+  get tabSubtitle(): string {
+    return this.activeTab === 'info' ? 'Basic role setup' : 'Menu-wise permissions';
+  }
+
+  trackModule(index: number, module: RoleModule): string {
+    return `${index}-${module.label}`;
+  }
+
+  trackPermissionGroup(index: number, group: PermissionGroup): string {
+    return `${this.activeModuleIndex}-${index}-${group.name}`;
+  }
 
   readonly roleCategories: RoleCategory[] = [
     { label: 'Admin' },

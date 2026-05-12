@@ -6,7 +6,7 @@
     </button>
     <div class="page-title">
       <h1>Add new role</h1>
-      <span>{{ activeTab === 'info' ? 'Basic role setup' : 'Menu-wise permissions' }}</span>
+      <span>{{ tabSubtitle }}</span>
     </div>
     <button class="theme-btn" type="button" (click)="isDark = !isDark">
       <mat-icon>{{ isDark ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -29,7 +29,7 @@
     </button>
   </nav>
 
-  <ng-container *ngIf="activeTab === 'info'; else permissionsPanel">
+  @if (activeTab === 'info') {
     <div class="card">
       <div class="card-title">
         <mat-icon>badge</mat-icon>
@@ -58,15 +58,16 @@
       </div>
       <span class="field-label">Select role category <strong>*</strong></span>
       <div class="badge-row">
-        <button
-          *ngFor="let category of roleCategories"
-          type="button"
-          class="role-badge"
-          [class.selected]="category.selected"
-          (click)="selectCategory(category)"
-        >
-          {{ category.label }}
-        </button>
+        @for (category of roleCategories; track category.label) {
+          <button
+            type="button"
+            class="role-badge"
+            [class.selected]="category.selected"
+            (click)="selectCategory(category)"
+          >
+            {{ category.label }}
+          </button>
+        }
       </div>
     </div>
 
@@ -93,24 +94,25 @@
         </label>
       </div>
     </div>
-  </ng-container>
-
-  <ng-template #permissionsPanel>
+  } @else {
     <div class="permissions-layout">
       <aside class="module-list" aria-label="Modules">
         <div class="module-header">Modules</div>
-        <button
-          *ngFor="let module of modules; let index = index"
-          type="button"
-          class="module-item"
-          [class.active]="index === activeModuleIndex"
-          [class.has-permission]="enabledCount(module) > 0"
-          (click)="selectModule(index)"
-        >
-          <mat-icon>{{ module.icon }}</mat-icon>
-          <span>{{ module.label }}</span>
-          <small *ngIf="enabledCount(module) > 0">{{ enabledCount(module) }}</small>
-        </button>
+        @for (module of modules; track trackModule($index, module); let index = $index) {
+          <button
+            type="button"
+            class="module-item"
+            [class.active]="index === activeModuleIndex"
+            [class.has-permission]="enabledCount(module) > 0"
+            (click)="selectModule(index)"
+          >
+            <mat-icon>{{ module.icon }}</mat-icon>
+            <span>{{ module.label }}</span>
+            @if (enabledCount(module) > 0) {
+              <small>{{ enabledCount(module) }}</small>
+            }
+          </button>
+        }
       </aside>
 
       <section class="permission-panel">
@@ -125,32 +127,38 @@
           </button>
         </div>
 
-        <div class="permission-group" *ngFor="let group of activeModule.groups">
-          <button class="group-header" type="button" (click)="toggleGroup(group)">
-            <mat-icon [class.open]="group.open">chevron_right</mat-icon>
-            <span>{{ group.name }}</span>
-            <small>{{ enabledGroupCount(group) }} of {{ group.permissions.length }}</small>
-          </button>
+        @for (group of activeModule.groups; track trackPermissionGroup($index, group)) {
+          <div class="permission-group">
+            <button class="group-header" type="button" (click)="toggleGroup(group)">
+              <mat-icon [class.open]="group.open">chevron_right</mat-icon>
+              <span>{{ group.name }}</span>
+              <small>{{ enabledGroupCount(group) }} of {{ group.permissions.length }}</small>
+            </button>
 
-          <div class="permission-rows" *ngIf="group.open">
-            <div class="permission-row" *ngFor="let permission of group.permissions">
-              <button
-                type="button"
-                class="toggle"
-                [class.checked]="permission.enabled"
-                [attr.aria-pressed]="permission.enabled"
-                (click)="togglePermission(permission)"
-              >
-                <span></span>
-              </button>
-              <span class="permission-name">{{ permission.name }}</span>
-              <code>{{ permission.key }}</code>
-            </div>
+            @if (group.open) {
+              <div class="permission-rows">
+                @for (permission of group.permissions; track permission.key) {
+                  <div class="permission-row">
+                    <button
+                      type="button"
+                      class="toggle"
+                      [class.checked]="permission.enabled"
+                      [attr.aria-pressed]="permission.enabled"
+                      (click)="togglePermission(permission)"
+                    >
+                      <span></span>
+                    </button>
+                    <span class="permission-name">{{ permission.name }}</span>
+                    <code>{{ permission.key }}</code>
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </div>
+        }
       </section>
     </div>
-  </ng-template>
+  }
 
   <footer class="role-footer">
     <button class="cancel-btn" type="button">Cancel</button>

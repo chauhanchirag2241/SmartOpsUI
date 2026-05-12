@@ -1,6 +1,5 @@
 <section class="students-page">
-  <ng-container *ngIf="!showAddForm">
-    <!-- Page Header -->
+  @if (!showAddForm) {
     <header class="page-header">
       <div class="header-info">
         <h1>Students</h1>
@@ -12,16 +11,25 @@
       </button>
     </header>
 
-    <!-- Smart Data Table -->
-    <app-smart-data-table [config]="tableConfig" [data]="students" [serverSide]="true" [totalRecords]="totalStudents"
-      [rowClassFn]="studentRowClass" [initialFilterValue]="currentFilter.toString()" (pageChange)="onPageChange($event)" (filterChanged)="onFilterChanged($event)"
-      (actionClicked)="onActionClicked($event)" (exportClicked)="onExportClicked()"
-      (bulkActionClicked)="onBulkActionClicked($event)" />
-  </ng-container>
-
-  <!-- Add Student Form -->
-  <ng-container *ngIf="showAddForm">
-    <app-add-student [mode]="formMode" [studentId]="selectedStudentId" (cancel)="closeAddForm()"
-      (saved)="onStudentSaved()" />
-  </ng-container>
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="students"
+      [serverSide]="true"
+      [totalRecords]="totalStudents"
+      [rowClassFn]="studentRowClass"
+      [initialFilterValue]="currentFilter.toString()"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (exportClicked)="onExportClicked()"
+      (bulkActionClicked)="onBulkActionClicked($event)"
+    />
+  } @else {
+    <app-add-student
+      [mode]="formMode"
+      [studentId]="selectedStudentId"
+      (cancel)="closeAddForm()"
+      (saved)="onStudentSaved()"
+    />
+  }
 </section>

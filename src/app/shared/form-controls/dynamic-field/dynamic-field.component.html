@@ -1,0 +1,95 @@
+@switch (config.type) {
+  @case ('input') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <input
+          matInput
+          [id]="controlId"
+          [type]="config.inputType || 'text'"
+          [placeholder]="config.placeholder ?? ''"
+          [formControlName]="config.controlName"
+        />
+        <mat-error>{{ getError() }}</mat-error>
+      </mat-form-field>
+    </div>
+  }
+  @case ('datepicker') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <input
+          matInput
+          [id]="controlId"
+          [matDatepicker]="picker"
+          [formControlName]="config.controlName"
+          [placeholder]="config.placeholder ?? ''"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        <mat-error>{{ getError() }}</mat-error>
+      </mat-form-field>
+    </div>
+  }
+  @case ('select') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <mat-select [id]="controlId" [formControlName]="config.controlName" [placeholder]="config.placeholder ?? ''">
+          @for (option of config.options ?? []; track optionTrack($index, option)) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>{{ getError() }}</mat-error>
+      </mat-form-field>
+    </div>
+  }
+  @case ('textarea') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <textarea
+          matInput
+          [id]="controlId"
+          [placeholder]="config.placeholder ?? ''"
+          [formControlName]="config.controlName"
+          rows="3"
+        ></textarea>
+        <mat-error>{{ getError() }}</mat-error>
+      </mat-form-field>
+    </div>
+  }
+  @case ('checkbox') {
+    <div class="custom-field checkbox-field" [formGroup]="group">
+      <mat-checkbox [formControlName]="config.controlName" [id]="controlId">
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </mat-checkbox>
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <span class="inline-error">{{ getError() }}</span>
+      }
+    </div>
+  }
+}

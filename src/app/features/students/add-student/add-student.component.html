@@ -1,200 +1,132 @@
 <div class="topbar">
-  <button class="back-btn" (click)="cancel.emit()">
+  <button type="button" class="back-btn" (click)="cancel.emit()">
     <mat-icon>arrow_back</mat-icon> Back
   </button>
-  <div class="page-title">{{ mode === 'edit' ? 'Edit student' : mode === 'view' ? 'View student' : 'Add new student' }}</div>
+  <div class="page-title">{{ pageTitle }}</div>
 </div>
 
 <div class="progress-bar">
-  <div class="progress-fill" [style.width.%]="(currentTab + 1) * 20"></div>
+  <div class="progress-fill" [style.width.%]="progressWidthPercent"></div>
 </div>
 <div class="step-hint">{{ tabs[currentTab].hint }}</div>
 
 <div class="tabs" role="tablist">
-  <div
-    *ngFor="let tab of tabs; let i = index"
-    class="tab"
-    [class.active]="currentTab === i"
-    [class.done]="currentTab > i"
-    (click)="goTab(i)"
-    role="tab"
-  >
-    <div class="tab-num">{{ i + 1 }}</div>
-    {{ tab.label }}
-  </div>
+  @for (tab of tabs; track tab.label; let i = $index) {
+    <div
+      class="tab"
+      [class.active]="currentTab === i"
+      [class.done]="currentTab > i"
+      (click)="goTab(i)"
+      role="tab"
+    >
+      <div class="tab-num">{{ i + 1 }}</div>
+      {{ tab.label }}
+    </div>
+  }
 </div>
 
 <form [formGroup]="studentForm">
-  <div *ngIf="currentTab === 0">
-    <div class="card">
-      <div class="card-title"><mat-icon>person</mat-icon>Student photo</div>
-      <div class="photo-upload">
-        <mat-icon>add_a_photo</mat-icon>
-        <div class="photo-upload-text">Click to upload photo</div>
-        <div class="photo-upload-sub">JPG, PNG - max 2MB</div>
-      </div>
-    </div>
-
-    <ng-container *ngFor="let card of formCards">
-      <div class="card" *ngIf="card.tab === 0">
-        <div class="card-title"><mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}</div>
-        <div [class]="card.grid">
-          <app-dynamic-field
-            *ngFor="let field of card.fields"
-            [config]="configs[field.key]"
-            [group]="studentForm"
-            [full]="field.full ?? false"
-          ></app-dynamic-field>
+  @switch (currentTab) {
+    @case (0) {
+      <div class="card">
+        <div class="card-title"><mat-icon>person</mat-icon>Student photo</div>
+        <div class="photo-upload">
+          <mat-icon>add_a_photo</mat-icon>
+          <div class="photo-upload-text">Click to upload photo</div>
+          <div class="photo-upload-sub">JPG, PNG - max 2MB</div>
         </div>
       </div>
-    </ng-container>
-  </div>
-
-  <div *ngIf="currentTab === 1">
-    <ng-container *ngFor="let card of formCards">
-      <div class="card" *ngIf="card.tab === 1">
-        <div class="card-title"><mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}</div>
-        <div [class]="card.grid">
-          <app-dynamic-field
-            *ngFor="let field of card.fields"
-            [config]="configs[field.key]"
-            [group]="studentForm"
-            [full]="field.full ?? false"
-          ></app-dynamic-field>
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
+    }
+    @case (1) {
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
+    }
+    @case (2) {
+      <div class="card">
+        <div class="card-title"><mat-icon>payments</mat-icon>Fee structure - Class 10</div>
+        @for (row of feeStructureRows; track row.name) {
+          <div class="fee-row">
+            <span class="fee-name">{{ row.name }}</span>
+            <span class="fee-amt">{{ row.amount }}</span>
+          </div>
+        }
+        <div class="fee-total-row">
+          <span class="fee-total-label">{{ feeTotalLabel }}</span>
+          <span class="fee-total-amt">{{ feeTotalAmount }}</span>
         </div>
       </div>
-    </ng-container>
-  </div>
-
-  <div *ngIf="currentTab === 2">
-    <div class="card">
-      <div class="card-title"><mat-icon>payments</mat-icon>Fee structure - Class 10</div>
-      <div class="fee-row"><span class="fee-name">Tuition fee</span><span class="fee-amt">Rs 12,000</span></div>
-      <div class="fee-row"><span class="fee-name">Admission fee</span><span class="fee-amt">Rs 2,500</span></div>
-      <div class="fee-row"><span class="fee-name">Exam fee</span><span class="fee-amt">Rs 1,500</span></div>
-      <div class="fee-row"><span class="fee-name">Library fee</span><span class="fee-amt">Rs 500</span></div>
-      <div class="fee-row"><span class="fee-name">Sports fee</span><span class="fee-amt">Rs 800</span></div>
-      <div class="fee-total-row">
-        <span class="fee-total-label">Total fees</span>
-        <span class="fee-total-amt">Rs 17,300</span>
-      </div>
-    </div>
-
-    <ng-container *ngFor="let card of formCards">
-      <div class="card" *ngIf="card.tab === 2">
-        <div class="card-title"><mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}</div>
-        <div [class]="card.grid">
-          <app-dynamic-field
-            *ngFor="let field of card.fields"
-            [config]="configs[field.key]"
-            [group]="studentForm"
-            [full]="field.full ?? false"
-          ></app-dynamic-field>
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
+    }
+    @case (3) {
+      <div class="card">
+        <div class="card-title"><mat-icon>folder</mat-icon>Required documents</div>
+        <div class="doc-grid">
+          @for (doc of documentChecklist; track doc.name) {
+            <div class="doc-card" [class.uploaded]="doc.uploaded">
+              <div class="doc-icon"><mat-icon>{{ doc.icon }}</mat-icon></div>
+              <div>
+                <div class="doc-name">{{ doc.name }}</div>
+                <div class="doc-sub">{{ doc.sub }}</div>
+              </div>
+              <div class="doc-status">
+                @if (doc.uploaded) {
+                  <mat-icon>check_circle</mat-icon>
+                } @else {
+                  <mat-icon class="upload-icon">upload</mat-icon>
+                }
+              </div>
+            </div>
+          }
         </div>
       </div>
-    </ng-container>
-  </div>
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
+    }
+    @case (4) {
+      <div class="review-tab">
+        <div class="card review-card">
+          <div class="card-title"><mat-icon>visibility</mat-icon>Review Student Details</div>
 
-  <div *ngIf="currentTab === 3">
-    <div class="card">
-      <div class="card-title"><mat-icon>folder</mat-icon>Required documents</div>
-      <div class="doc-grid">
-        <div class="doc-card uploaded">
-          <div class="doc-icon"><mat-icon>badge</mat-icon></div>
-          <div><div class="doc-name">Aadhaar card</div><div class="doc-sub">aadhaar_patel.pdf</div></div>
-          <div class="doc-status"><mat-icon>check_circle</mat-icon></div>
-        </div>
-        <div class="doc-card">
-          <div class="doc-icon"><mat-icon>verified</mat-icon></div>
-          <div><div class="doc-name">Birth certificate</div><div class="doc-sub">Click to upload</div></div>
-          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
-        </div>
-        <div class="doc-card">
-          <div class="doc-icon"><mat-icon>description</mat-icon></div>
-          <div><div class="doc-name">Transfer certificate</div><div class="doc-sub">Click to upload</div></div>
-          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
-        </div>
-        <div class="doc-card uploaded">
-          <div class="doc-icon"><mat-icon>image</mat-icon></div>
-          <div><div class="doc-name">Passport photo</div><div class="doc-sub">photo_rahul.jpg</div></div>
-          <div class="doc-status"><mat-icon>check_circle</mat-icon></div>
-        </div>
-        <div class="doc-card">
-          <div class="doc-icon"><mat-icon>article</mat-icon></div>
-          <div><div class="doc-name">Previous marksheet</div><div class="doc-sub">Click to upload</div></div>
-          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
-        </div>
-        <div class="doc-card">
-          <div class="doc-icon"><mat-icon>home</mat-icon></div>
-          <div><div class="doc-name">Address proof</div><div class="doc-sub">Click to upload</div></div>
-          <div class="doc-status"><mat-icon class="upload-icon">upload</mat-icon></div>
+          @for (section of reviewSections; track section.title) {
+            <div class="review-section">
+              <h3><mat-icon>{{ section.icon }}</mat-icon> {{ section.title }}</h3>
+              <div class="review-grid">
+                @for (item of section.items; track item.label) {
+                  <div class="review-item" [class.full]="item.full">
+                    <label>{{ item.label }}</label>
+                    <span>{{ getReviewDisplay(item) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
         </div>
       </div>
-    </div>
-
-    <ng-container *ngFor="let card of formCards">
-      <div class="card" *ngIf="card.tab === 3">
-        <div class="card-title"><mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}</div>
-        <div [class]="card.grid">
-          <app-dynamic-field
-            *ngFor="let field of card.fields"
-            [config]="configs[field.key]"
-            [group]="studentForm"
-            [full]="field.full ?? false"
-          ></app-dynamic-field>
-        </div>
-      </div>
-    </ng-container>
-  </div>
-
-  <div *ngIf="currentTab === 4" class="review-tab">
-    <div class="card review-card">
-      <div class="card-title"><mat-icon>visibility</mat-icon>Review Student Details</div>
-
-      <div class="review-section">
-        <h3><mat-icon>person</mat-icon> Personal & Parent Details</h3>
-        <div class="review-grid">
-          <div class="review-item"><label>Name</label><span>{{ getControlValue('firstName') }} {{ getControlValue('middleName') }} {{ getControlValue('lastName') }}</span></div>
-          <div class="review-item"><label>DOB</label><span>{{ getControlValue('dob') }}</span></div>
-          <div class="review-item"><label>Gender</label><span>{{ getControlValue('gender') }}</span></div>
-          <div class="review-item"><label>Mobile</label><span>{{ getControlValue('mobile') }}</span></div>
-          <div class="review-item"><label>Email</label><span>{{ getControlValue('email') }}</span></div>
-          <div class="review-item"><label>Father's Name</label><span>{{ getControlValue('fatherName') }}</span></div>
-          <div class="review-item"><label>Mother's Name</label><span>{{ getControlValue('motherName') }}</span></div>
-        </div>
-      </div>
-
-      <div class="review-section">
-        <h3><mat-icon>school</mat-icon> Academic Details</h3>
-        <div class="review-grid">
-          <div class="review-item"><label>Academic Year</label><span>{{ getControlValue('academicYear') }}</span></div>
-          <div class="review-item"><label>Class</label><span>{{ getControlValue('class') }}</span></div>
-          <div class="review-item"><label>Section</label><span>{{ getControlValue('section') }}</span></div>
-          <div class="review-item"><label>Admission Date</label><span>{{ getControlValue('admissionDate') }}</span></div>
-        </div>
-      </div>
-
-      <div class="review-section">
-        <h3><mat-icon>payments</mat-icon> Fee & Payment</h3>
-        <div class="review-grid">
-          <div class="review-item"><label>Payment Mode</label><span>{{ getControlValue('paymentMode') }}</span></div>
-          <div class="review-item"><label>First Due Date</label><span>{{ getControlValue('firstDueDate') }}</span></div>
-          <div class="review-item"><label>Discount Type</label><span>{{ getControlValue('discountType') || 'None' }}</span></div>
-        </div>
-      </div>
-
-      <div class="review-section">
-        <h3><mat-icon>description</mat-icon> Additional Info</h3>
-        <div class="review-grid">
-          <div class="review-item full"><label>Remarks</label><span>{{ getControlValue('remarks') || 'No remarks provided' }}</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
+    }
+  }
 </form>
+
+<ng-template #dynamicFormCards>
+  @for (card of cardsForCurrentTab; track trackFormCard($index, card)) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}
+      </div>
+      <div [class]="card.grid">
+        @for (field of card.fields; track field.key) {
+          <app-dynamic-field
+            [config]="configs[field.key]"
+            [group]="studentForm"
+            [full]="field.full ?? false"
+          />
+        }
+      </div>
+    </div>
+  }
+</ng-template>
 
 <div class="footer-actions">
   <button
+    type="button"
     class="btn-back"
     [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'"
     (click)="prevTab()"
@@ -204,13 +136,14 @@
 
   <div class="footer-hint">{{ footerHints[currentTab] }}</div>
 
-  <button class="btn-next" (click)="nextTab()" [disabled]="isSaving" *ngIf="currentTab < 4 || mode !== 'view'">
-    <ng-container *ngIf="currentTab < 4">
-      Next <mat-icon>arrow_forward</mat-icon>
-    </ng-container>
-    <ng-container *ngIf="currentTab === 4 && mode !== 'view'">
-      <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-      {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add') }}
-    </ng-container>
-  </button>
+  @if (currentTab < finalTabIndex || mode !== 'view') {
+    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
+      @if (currentTab < finalTabIndex) {
+        Next <mat-icon>arrow_forward</mat-icon>
+      } @else if (mode !== 'view') {
+        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+        {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add') }}
+      }
+    </button>
+  }
 </div>

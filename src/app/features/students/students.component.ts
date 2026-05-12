@@ -2,7 +2,6 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { NgIf } from '@angular/common';
 
 import { AddStudentComponent } from './add-student/add-student.component';
 import { StudentService } from '../../core/services/student.service';
@@ -20,7 +19,7 @@ import type {
 @Component({
   selector: 'app-students',
   standalone: true,
-  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, NgIf, AddStudentComponent],
+  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, AddStudentComponent],
   templateUrl: './students.component.html',
   styleUrl: './students.component.css',
 })

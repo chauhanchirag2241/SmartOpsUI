@@ -1,105 +1,93 @@
 <div class="table-wrap">
-  <!-- ═══════════════ TOOLBAR ═══════════════ -->
   <div class="toolbar">
-    <!-- Search -->
-    <div class="search-wrap" *ngIf="config.showSearch !== false">
-      <mat-icon class="search-icon">search</mat-icon>
-      <input
-        type="text"
-        [placeholder]="config.searchPlaceholder ?? 'Search...'"
-        [(ngModel)]="searchQuery"
-        (input)="onSearchInput()"
-        id="smart-table-search"
-      />
-    </div>
-
-    <!-- Filter Chips -->
-    <ng-container *ngIf="config.filters?.length">
-      <button
-        *ngFor="let filter of config.filters"
-        type="button"
-        class="filter-chip"
-        [class.active]="activeFilter?.value === filter.value"
-        (click)="setFilter(filter)"
-      >
-        <mat-icon>{{ filter.icon }}</mat-icon>
-        {{ filter.label }}
-      </button>
-    </ng-container>
-
-    <!-- Toolbar Right -->
-    <div class="toolbar-right">
-      <!-- Column visibility -->
-      <div class="col-drop" *ngIf="config.showColumnToggle !== false">
-        <button type="button" class="icon-btn" (click)="toggleColMenu($event)">
-          <mat-icon>view_column</mat-icon>
-          Columns
-        </button>
-        <div class="col-menu" [class.show]="showColMenu">
-          <label
-            class="col-opt"
-            *ngFor="let col of getToggleableColumns()"
-          >
-            <input
-              type="checkbox"
-              [checked]="columnVisibility[col.key] !== false"
-              (change)="toggleColumnVisibility(col.key, $any($event.target).checked)"
-            />
-            {{ col.label }}
-          </label>
-        </div>
+    @if (config.showSearch !== false) {
+      <div class="search-wrap">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          [placeholder]="config.searchPlaceholder ?? 'Search...'"
+          [(ngModel)]="searchQuery"
+          (input)="onSearchInput()"
+          id="smart-table-search"
+        />
       </div>
+    }
 
-      <!-- Export -->
-      <button
-        type="button"
-        class="icon-btn"
-        *ngIf="config.showExport !== false"
-        (click)="onExportClick()"
-      >
-        <mat-icon>download</mat-icon>
-        Export
-      </button>
+    @if (config.filters?.length) {
+      @for (filter of config.filters; track filter.value) {
+        <button
+          type="button"
+          class="filter-chip"
+          [class.active]="activeFilter?.value === filter.value"
+          (click)="setFilter(filter)"
+        >
+          <mat-icon>{{ filter.icon }}</mat-icon>
+          {{ filter.label }}
+        </button>
+      }
+    }
+
+    <div class="toolbar-right">
+      @if (config.showColumnToggle !== false) {
+        <div class="col-drop">
+          <button type="button" class="icon-btn" (click)="toggleColMenu($event)">
+            <mat-icon>view_column</mat-icon>
+            Columns
+          </button>
+          <div class="col-menu" [class.show]="showColMenu">
+            @for (col of getToggleableColumns(); track col.key) {
+              <label class="col-opt">
+                <input
+                  type="checkbox"
+                  [checked]="columnVisibility[col.key] !== false"
+                  (change)="toggleColumnVisibility(col.key, $any($event.target).checked)"
+                />
+                {{ col.label }}
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      @if (config.showExport !== false) {
+        <button type="button" class="icon-btn" (click)="onExportClick()">
+          <mat-icon>download</mat-icon>
+          Export
+        </button>
+      }
     </div>
   </div>
 
-  <!-- ═══════════════ BULK BAR ═══════════════ -->
-  <div
-    class="bulk-bar"
-    *ngIf="selectedRows.size > 0 && config.bulkActions?.length"
-  >
-    <div class="bulk-count">{{ selectedRows.size }} row{{ selectedRows.size !== 1 ? 's' : '' }} selected</div>
-    <div class="bulk-actions">
-      <button
-        *ngFor="let ba of config.bulkActions"
-        type="button"
-        class="bulk-btn"
-        [class.danger]="ba.danger"
-        (click)="onBulkAction(ba)"
-      >
-        <mat-icon>{{ ba.icon }}</mat-icon>
-        {{ ba.label }}
-      </button>
+  @if (selectedRows.size > 0 && config.bulkActions?.length) {
+    <div class="bulk-bar">
+      <div class="bulk-count">{{ selectedRows.size }} row{{ selectedRows.size !== 1 ? 's' : '' }} selected</div>
+      <div class="bulk-actions">
+        @for (ba of config.bulkActions ?? []; track trackBulkAction($index, ba)) {
+          <button type="button" class="bulk-btn" [class.danger]="ba.danger" (click)="onBulkAction(ba)">
+            <mat-icon>{{ ba.icon }}</mat-icon>
+            {{ ba.label }}
+          </button>
+        }
+      </div>
     </div>
-  </div>
+  }
 
-  <!-- ═══════════════ TABLE ═══════════════ -->
   <div class="table-scroll">
     <table>
       <thead>
         <tr>
-          <!-- Checkbox header -->
-          <th class="th-check" *ngIf="config.selectable !== false">
-            <input
-              type="checkbox"
-              [checked]="selectAll"
-              [indeterminate]="indeterminate"
-              (change)="toggleSelectAll($any($event.target).checked)"
-            />
-          </th>
+          @if (config.selectable !== false) {
+            <th class="th-check">
+              <input
+                type="checkbox"
+                [checked]="selectAll"
+                [indeterminate]="indeterminate"
+                (change)="toggleSelectAll($any($event.target).checked)"
+              />
+            </th>
+          }
 
-          <!-- Data columns -->
-          <ng-container *ngFor="let col of visibleColumns">
+          @for (col of visibleColumns; track col.key) {
             <th
               [class.sortable]="col.sortable"
               [class.sort-asc]="sortColumn === col.key && sortDirection === 'asc'"
@@ -109,124 +97,114 @@
               (click)="col.sortable ? sortCol(col) : null"
             >
               {{ col.label }}
-              <span class="si" *ngIf="col.sortable">
-                <mat-icon class="sort-arrow">expand_less</mat-icon>
-                <mat-icon class="sort-arrow">expand_more</mat-icon>
-              </span>
+              @if (col.sortable) {
+                <span class="si">
+                  <mat-icon class="sort-arrow">expand_less</mat-icon>
+                  <mat-icon class="sort-arrow">expand_more</mat-icon>
+                </span>
+              }
             </th>
-          </ng-container>
+          }
 
-          <!-- Actions header -->
-          <th class="th-actions" *ngIf="config.actions?.length">
-            <span class="actions-dots">···</span>
-          </th>
+          @if (config.actions?.length) {
+            <th class="th-actions">
+              <span class="actions-dots">···</span>
+            </th>
+          }
         </tr>
       </thead>
 
       <tbody>
-        <!-- Data rows -->
-        <ng-container *ngIf="pagedData.length; else emptyState">
-          <tr
-            *ngFor="let row of pagedData; let i = index"
-            [class.selected]="isRowSelected(i)"
-            [ngClass]="rowClassFn ? rowClassFn(row) : ''"
-          >
-            <!-- Checkbox -->
-            <td class="td-check" *ngIf="config.selectable !== false" (click)="$event.stopPropagation()">
-              <input
-                type="checkbox"
-                [checked]="isRowSelected(i)"
-                (change)="toggleRowSelection(getGlobalIndex(i))"
-              />
-            </td>
+        @if (pagedData.length) {
+          @for (row of pagedData; let i = $index; track trackPagedRow(i, row)) {
+            <tr [class.selected]="isRowSelected(i)" [ngClass]="rowClassFn ? rowClassFn(row) : ''">
+              @if (config.selectable !== false) {
+                <td class="td-check" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    [checked]="isRowSelected(i)"
+                    (change)="toggleRowSelection(getGlobalIndex(i))"
+                  />
+                </td>
+              }
 
-            <!-- Data cells -->
-            <ng-container *ngFor="let col of visibleColumns">
-              <td [style.text-align]="col.align ?? 'left'">
-                <!-- TEXT -->
-                <ng-container *ngIf="!col.cellType || col.cellType === 'text'">
-                  {{ getCellValue(row, col.key) }}
-                </ng-container>
-
-                <!-- BADGE -->
-                <ng-container *ngIf="col.cellType === 'badge'">
-                  <span class="badge" [ngClass]="getBadgeClass(col, getCellValue(row, col.key))">
-                    <mat-icon *ngIf="getBadgeIcon(col, getCellValue(row, col.key))" class="badge-icon">
-                      {{ getBadgeIcon(col, getCellValue(row, col.key)) }}
-                    </mat-icon>
-                    {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
-                  </span>
-                </ng-container>
-
-                <!-- PROGRESS BAR -->
-                <ng-container *ngIf="col.cellType === 'progress'">
-                  <div class="prog-wrap">
-                    <div class="prog-bar">
-                      <div
-                        class="prog-fill"
-                        [style.width.%]="getCellValue(row, col.key)"
-                        [style.background]="getProgressColor(col, getCellValue(row, col.key))"
-                      ></div>
-                    </div>
-                    <span class="prog-val">{{ getCellValue(row, col.key) }}%</span>
-                  </div>
-                </ng-container>
-
-                <!-- AVATAR -->
-                <ng-container *ngIf="col.cellType === 'avatar' && col.avatarConfig">
-                  <div class="cell-user">
-                    <div
-                      class="av"
-                      [ngClass]="row[col.avatarConfig.avatarClassKey ?? ''] || getAvatarClass(row[col.avatarConfig.nameKey])"
-                    >
-                      {{ row[col.avatarConfig.initialsKey ?? ''] || getAvatarInitials(row[col.avatarConfig.nameKey]) }}
-                    </div>
-                    <div>
-                      <div class="cell-name">{{ row[col.avatarConfig.nameKey] }}</div>
-                      <div class="cell-sub" *ngIf="col.avatarConfig.subtitleKey">
-                        {{ row[col.avatarConfig.subtitleKey] }}
+              @for (col of visibleColumns; track col.key) {
+                <td [style.text-align]="col.align ?? 'left'">
+                  @let cellVal = getCellValue(row, col.key);
+                  @switch (col.cellType) {
+                    @case ('badge') {
+                      <span class="badge" [ngClass]="getBadgeClass(col, cellVal)">
+                        @if (getBadgeIcon(col, cellVal)) {
+                          <mat-icon class="badge-icon">{{ getBadgeIcon(col, cellVal) }}</mat-icon>
+                        }
+                        {{ getBadgeLabel(col, cellVal) }}
+                      </span>
+                    }
+                    @case ('progress') {
+                      <div class="prog-wrap">
+                        <div class="prog-bar">
+                          <div
+                            class="prog-fill"
+                            [style.width.%]="cellVal"
+                            [style.background]="getProgressColor(col, cellVal)"
+                          ></div>
+                        </div>
+                        <span class="prog-val">{{ cellVal }}%</span>
                       </div>
-                    </div>
-                  </div>
-                </ng-container>
+                    }
+                    @case ('avatar') {
+                      @if (col.avatarConfig) {
+                        <div class="cell-user">
+                          <div
+                            class="av"
+                            [ngClass]="row[col.avatarConfig.avatarClassKey ?? ''] || getAvatarClass(row[col.avatarConfig.nameKey])"
+                          >
+                            {{ row[col.avatarConfig.initialsKey ?? ''] || getAvatarInitials(row[col.avatarConfig.nameKey]) }}
+                          </div>
+                          <div>
+                            <div class="cell-name">{{ row[col.avatarConfig.nameKey] }}</div>
+                            @if (col.avatarConfig.subtitleKey) {
+                              <div class="cell-sub">{{ row[col.avatarConfig.subtitleKey] }}</div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    }
+                    @case ('custom') {
+                      @if (customCellTemplate) {
+                        <ng-container
+                          *ngTemplateOutlet="customCellTemplate; context: { $implicit: row, column: col }"
+                        ></ng-container>
+                      }
+                    }
+                    @default {
+                      {{ cellVal }}
+                    }
+                  }
+                </td>
+              }
 
-                <!-- CUSTOM (ng-template from parent) -->
-                <ng-container *ngIf="col.cellType === 'custom' && customCellTemplate">
-                  <ng-container
-                    *ngTemplateOutlet="customCellTemplate; context: { $implicit: row, column: col }"
-                  ></ng-container>
-                </ng-container>
-              </td>
-            </ng-container>
-
-            <!-- Actions (3-dot) -->
-            <td class="td-actions" *ngIf="config.actions?.length" (click)="$event.stopPropagation()">
-              <button
-                type="button"
-                class="dot-btn"
-                (click)="openContextMenu($event, i)"
-                title="More actions"
-              >
-                ⋮
-              </button>
-            </td>
-          </tr>
-        </ng-container>
-
-        <!-- Empty state -->
-        <ng-template #emptyState>
+              @if (config.actions?.length) {
+                <td class="td-actions" (click)="$event.stopPropagation()">
+                  <button type="button" class="dot-btn" (click)="openContextMenu($event, i)" title="More actions">
+                    ⋮
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        } @else {
           <tr>
             <td [attr.colspan]="totalColumnsCount" class="empty-state">
               <mat-icon class="empty-icon">search_off</mat-icon>
               <span>No records found</span>
             </td>
           </tr>
-        </ng-template>
+        }
       </tbody>
     </table>
   </div>
 
-  <!-- ═══════════════ FOOTER ═══════════════ -->
   <div class="table-footer">
     <div class="foot-info">
       Showing <b>{{ showingStart }}–{{ showingEnd }}</b> of
@@ -234,14 +212,10 @@
     </div>
     <div class="page-size">
       Rows per page
-      <select
-        [ngModel]="pageSize"
-        (ngModelChange)="onPageSizeChange($event)"
-      >
-        <option
-          *ngFor="let opt of (config.pageSizeOptions ?? [10, 25, 50, 100])"
-          [ngValue]="opt"
-        >{{ opt }}</option>
+      <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+        @for (opt of pageSizeOptions; track opt) {
+          <option [ngValue]="opt">{{ opt }}</option>
+        }
       </select>
     </div>
     <div class="pagination">
@@ -254,18 +228,20 @@
         <mat-icon>chevron_left</mat-icon>
       </button>
 
-      <ng-container *ngFor="let page of paginationPages">
-        <button
-          *ngIf="page !== '...'; else ellipsis"
-          type="button"
-          class="pg-btn"
-          [class.active]="page === currentPage"
-          (click)="goToPage(page)"
-        >{{ page }}</button>
-        <ng-template #ellipsis>
+      @for (page of paginationPages; track trackPaginationPage($index, page)) {
+        @if (page === '...') {
           <span class="pg-btn pg-ellipsis">...</span>
-        </ng-template>
-      </ng-container>
+        } @else {
+          <button
+            type="button"
+            class="pg-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        }
+      }
 
       <button
         type="button"
@@ -279,7 +255,6 @@
   </div>
 </div>
 
-<!-- ═══════════════ CONTEXT MENU (3-DOT) ═══════════════ -->
 <div
   class="ctx-menu"
   #ctxMenu
@@ -287,16 +262,13 @@
   [style.top.px]="ctxMenuTop"
   [style.left.px]="ctxMenuLeft"
 >
-  <ng-container *ngFor="let action of config.actions">
-    <div class="ctx-sep" *ngIf="action.separatorBefore"></div>
-    <button
-      type="button"
-      class="ctx-item"
-      [class.danger]="action.danger"
-      (click)="onActionClick(action)"
-    >
+  @for (action of config.actions ?? []; track trackContextAction($index, action)) {
+    @if (action.separatorBefore) {
+      <div class="ctx-sep"></div>
+    }
+    <button type="button" class="ctx-item" [class.danger]="action.danger" (click)="onActionClick(action)">
       <mat-icon [style.color]="action.iconColor ?? 'inherit'">{{ action.icon }}</mat-icon>
       {{ action.label }}
     </button>
-  </ng-container>
+  }
 </div>

@@ -1,4 +1,4 @@
-import { NgClass, NgFor, NgIf, NgStyle, NgTemplateOutlet } from '@angular/common';
+import { NgClass, NgStyle, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   ContentChild,
@@ -27,7 +27,7 @@ import {
 @Component({
   selector: 'app-smart-data-table',
   standalone: true,
-  imports: [NgFor, NgIf, NgClass, NgStyle, NgTemplateOutlet, FormsModule, MatIconModule],
+  imports: [NgClass, NgStyle, NgTemplateOutlet, FormsModule, MatIconModule],
   templateUrl: './smart-data-table.component.html',
   styleUrl: './smart-data-table.component.css',
 })
@@ -132,6 +132,27 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   get showingEnd(): number {
     const total = this.serverSide ? this.totalRecords : this.filteredData.length;
     return Math.min(this.currentPage * this.pageSize, total);
+  }
+
+  get pageSizeOptions(): number[] {
+    return this.config?.pageSizeOptions ?? [10, 25, 50, 100];
+  }
+
+  trackPagedRow(i: number, row: Record<string, unknown>): string {
+    const id = row['id'] ?? row['admNo'] ?? row['name'];
+    return `${this.currentPage}-${i}-${String(id)}`;
+  }
+
+  trackPaginationPage(index: number, page: number | '...'): string {
+    return `${index}-${page}`;
+  }
+
+  trackBulkAction(index: number, ba: DataTableBulkAction): string {
+    return `${index}-${ba.label}`;
+  }
+
+  trackContextAction(index: number, action: DataTableAction): string {
+    return `${index}-${action.label}`;
   }
 
   get paginationPages(): (number | '...')[] {

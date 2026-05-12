@@ -7,8 +7,10 @@
 </div>
 
 <nav class="sidebar-nav" aria-label="Primary">
-  <ng-container *ngFor="let item of navItems">
-    <div *ngIf="item.section" class="section-label">{{ item.section }}</div>
+  @for (item of navItems; track trackNavItem($index, item)) {
+    @if (item.section) {
+      <div class="section-label">{{ item.section }}</div>
+    }
     <a
       class="nav-item"
       [routerLink]="item.route"
@@ -17,9 +19,11 @@
     >
       <mat-icon fontSet="material-symbols-outlined">{{ item.icon }}</mat-icon>
       <span>{{ item.label }}</span>
-      <span *ngIf="item.badge" class="nav-badge" [class.danger]="item.danger">{{ item.badge }}</span>
+      @if (item.badge) {
+        <span class="nav-badge" [class.danger]="item.danger">{{ item.badge }}</span>
+      }
     </a>
-  </ng-container>
+  }
 </nav>
 
 <div class="sidebar-footer">

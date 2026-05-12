@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -14,11 +13,16 @@ interface NavItem {
 
 @Component({
   selector: 'app-sidebar',
-  imports: [MatIconModule, NgFor, NgIf, RouterLink, RouterLinkActive],
+  standalone: true,
+  imports: [MatIconModule, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
 })
 export class SidebarComponent {
+  trackNavItem(index: number, item: NavItem): string {
+    return `${item.route}-${index}`;
+  }
+
   readonly navItems: NavItem[] = [
     { section: 'Overview', label: 'Dashboard', icon: 'grid_view', route: '/dashboard' },
     { section: 'Academics', label: 'Students', icon: 'group', route: '/students', badge: '248' },

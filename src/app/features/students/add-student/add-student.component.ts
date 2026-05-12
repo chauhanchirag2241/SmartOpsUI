@@ -22,6 +22,32 @@ type FormCard = {
   fields: FieldItem[];
 };
 
+type FeeStructureRow = {
+  name: string;
+  amount: string;
+};
+
+type DocumentChecklistItem = {
+  icon: string;
+  name: string;
+  sub: string;
+  uploaded: boolean;
+};
+
+type ReviewItem = {
+  label: string;
+  key?: string;
+  keys?: string[];
+  full?: boolean;
+  emptyText?: string;
+};
+
+type ReviewSection = {
+  title: string;
+  icon: string;
+  items: ReviewItem[];
+};
+
 @Component({
   selector: 'app-add-student',
   standalone: true,
@@ -40,6 +66,10 @@ export class AddStudentComponent implements OnInit {
 
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
+
+  /** Zero-based index of the last wizard step (review). */
+  protected readonly finalTabIndex = 4;
+  protected readonly totalTabs = 5;
 
   studentForm: FormGroup;
   currentTab = 0;
@@ -183,6 +213,66 @@ export class AddStudentComponent implements OnInit {
     },
   ];
 
+  readonly feeStructureRows: ReadonlyArray<FeeStructureRow> = [
+    { name: 'Tuition fee', amount: 'Rs 12,000' },
+    { name: 'Admission fee', amount: 'Rs 2,500' },
+    { name: 'Exam fee', amount: 'Rs 1,500' },
+    { name: 'Library fee', amount: 'Rs 500' },
+    { name: 'Sports fee', amount: 'Rs 800' },
+  ];
+
+  readonly feeTotalLabel = 'Total fees';
+  readonly feeTotalAmount = 'Rs 17,300';
+
+  readonly documentChecklist: ReadonlyArray<DocumentChecklistItem> = [
+    { icon: 'badge', name: 'Aadhaar card', sub: 'aadhaar_patel.pdf', uploaded: true },
+    { icon: 'verified', name: 'Birth certificate', sub: 'Click to upload', uploaded: false },
+    { icon: 'description', name: 'Transfer certificate', sub: 'Click to upload', uploaded: false },
+    { icon: 'image', name: 'Passport photo', sub: 'photo_rahul.jpg', uploaded: true },
+    { icon: 'article', name: 'Previous marksheet', sub: 'Click to upload', uploaded: false },
+    { icon: 'home', name: 'Address proof', sub: 'Click to upload', uploaded: false },
+  ];
+
+  readonly reviewSections: ReadonlyArray<ReviewSection> = [
+    {
+      title: 'Personal & Parent Details',
+      icon: 'person',
+      items: [
+        { label: 'Name', keys: ['firstName', 'middleName', 'lastName'] },
+        { label: 'DOB', key: 'dob' },
+        { label: 'Gender', key: 'gender' },
+        { label: 'Mobile', key: 'mobile' },
+        { label: 'Email', key: 'email' },
+        { label: "Father's Name", key: 'fatherName' },
+        { label: "Mother's Name", key: 'motherName' },
+      ],
+    },
+    {
+      title: 'Academic Details',
+      icon: 'school',
+      items: [
+        { label: 'Academic Year', key: 'academicYear' },
+        { label: 'Class', key: 'class' },
+        { label: 'Section', key: 'section' },
+        { label: 'Admission Date', key: 'admissionDate' },
+      ],
+    },
+    {
+      title: 'Fee & Payment',
+      icon: 'payments',
+      items: [
+        { label: 'Payment Mode', key: 'paymentMode' },
+        { label: 'First Due Date', key: 'firstDueDate' },
+        { label: 'Discount Type', key: 'discountType', emptyText: 'None' },
+      ],
+    },
+    {
+      title: 'Additional Info',
+      icon: 'description',
+      items: [{ label: 'Remarks', key: 'remarks', full: true, emptyText: 'No remarks provided' }],
+    },
+  ];
+
   constructor(
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
@@ -234,6 +324,28 @@ export class AddStudentComponent implements OnInit {
     if (this.studentId && this.mode !== 'add') {
       this.loadStudentData(this.studentId);
     }
+  }
+
+  get pageTitle(): string {
+    if (this.mode === 'edit') {
+      return 'Edit student';
+    }
+    if (this.mode === 'view') {
+      return 'View student';
+    }
+    return 'Add new student';
+  }
+
+  get progressWidthPercent(): number {
+    return ((this.currentTab + 1) / this.totalTabs) * 100;
+  }
+
+  get cardsForCurrentTab(): FormCard[] {
+    return this.formCards.filter((c) => c.tab === this.currentTab);
+  }
+
+  trackFormCard(_index: number, card: FormCard): string {
+    return `${card.tab}-${card.title}`;
   }
 
   loadStudentData(id: string) {
@@ -309,7 +421,7 @@ export class AddStudentComponent implements OnInit {
   }
 
   nextTab() {
-    if (this.currentTab === 4) {
+    if (this.currentTab === this.finalTabIndex) {
       this.saveStudent();
       return;
     }
@@ -370,16 +482,30 @@ export class AddStudentComponent implements OnInit {
     }
   }
 
-  getControlLabel(key: string): string {
-    return this.configs[key]?.label || key;
-  }
-
-  getControlValue(key: string): any {
-    const val = this.studentForm.get(key)?.value;
-    if (val instanceof Date) {
-      return this.formatDisplayDate(val);
+  getReviewDisplay(item: ReviewItem): string {
+    if (item.keys?.length) {
+      const parts: string[] = [];
+      for (const k of item.keys) {
+        const raw = this.studentForm.get(k)?.value;
+        if (raw instanceof Date) {
+          parts.push(this.formatDisplayDate(raw));
+        } else if (raw != null && String(raw).trim() !== '') {
+          parts.push(String(raw));
+        }
+      }
+      return parts.length ? parts.join(' ') : '-';
     }
-    return val || '-';
+    if (!item.key) {
+      return '-';
+    }
+    const raw = this.studentForm.get(item.key)?.value;
+    if (raw instanceof Date) {
+      return this.formatDisplayDate(raw);
+    }
+    if (raw != null && String(raw).trim() !== '') {
+      return String(raw);
+    }
+    return item.emptyText ?? '-';
   }
 
   private toLocalDate(value: unknown): Date | null {
