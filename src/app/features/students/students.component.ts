@@ -1,12 +1,14 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NgIf } from '@angular/common';
 
 import { AddStudentComponent } from './add-student/add-student.component';
 import { StudentService } from '../../core/services/student.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
+import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import type {
   DataTableAction,
   DataTableBulkAction,
@@ -16,12 +18,17 @@ import type {
 @Component({
   selector: 'app-students',
   standalone: true,
-  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, NgIf, AddStudentComponent],
+  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, NgIf, AddStudentComponent],
   templateUrl: './students.component.html',
   styleUrl: './students.component.css',
 })
 export class StudentsComponent implements OnInit {
-  constructor(private snackBar: MatSnackBar, private studentService: StudentService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private snackBar: MatSnackBar,
+    private studentService: StudentService,
+    private cdr: ChangeDetectorRef,
+    private dialog: MatDialog
+  ) {}
 
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
@@ -204,15 +211,30 @@ export class StudentsComponent implements OnInit {
       this.selectedStudentId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete student') {
-      if (confirm(`Are you sure you want to delete ${event.row['name']}?`)) {
-        this.studentService.deleteStudent(id).subscribe({
-          next: () => {
-            this.snackBar.open('Student deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
-            this.loadStudents();
-          },
-          error: () => this.snackBar.open('Failed to delete student', 'Close', { duration: 3000, panelClass: 'snack-error' })
-        });
-      }
+      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+        data: {
+          title: 'Delete student?',
+          description: 'This will permanently remove the student and all associated records including documents, fee history, and academic data.',
+          recordName: event.row['name'] as string,
+          recordMeta: `${event.row['email']} · Class ${event.row['class']}`,
+          initials: this.getInitials(event.row['name'] as string),
+          warningMessage: 'This action cannot be undone. All linked documents stored in Azure Blob will also be deleted.'
+        },
+        panelClass: 'erp-dialog',
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(confirmed => {
+        if (confirmed) {
+          this.studentService.deleteStudent(id).subscribe({
+            next: () => {
+              this.snackBar.open('Student deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+              this.loadStudents();
+            },
+            error: () => this.snackBar.open('Failed to delete student', 'Close', { duration: 3000, panelClass: 'snack-error' })
+          });
+        }
+      });
     } else {
       this.snackBar.open(
         `${event.action.label} → ${event.row['name']}`,
@@ -233,10 +255,41 @@ export class StudentsComponent implements OnInit {
     action: DataTableBulkAction;
     selectedRows: Record<string, unknown>[];
   }): void {
-    this.snackBar.open(
-      `${event.action.label} → ${event.selectedRows.length} student(s)`,
-      'Close',
-      { duration: 3000, panelClass: 'snack-info' },
-    );
+    if (event.action.label === 'Delete') {
+      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+        data: {
+          title: 'Delete multiple students?',
+          description: `You are about to delete ${event.selectedRows.length} student records. This action is permanent.`,
+          recordName: `${event.selectedRows.length} Students Selected`,
+          recordMeta: 'Bulk Deletion',
+          initials: 'BD',
+          warningMessage: 'This will permanently remove all selected students and their associated data.'
+        },
+        panelClass: 'erp-dialog',
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(confirmed => {
+        if (confirmed) {
+          // Implement bulk delete logic here
+          this.snackBar.open(`Bulk delete for ${event.selectedRows.length} students initiated`, 'Close', { duration: 3000, panelClass: 'snack-success' });
+        }
+      });
+    } else {
+      this.snackBar.open(
+        `${event.action.label} → ${event.selectedRows.length} student(s)`,
+        'Close',
+        { duration: 3000, panelClass: 'snack-info' },
+      );
+    }
+  }
+
+  private getInitials(name: string): string {
+    if (!name) return 'NA';
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name[0].toUpperCase();
   }
 }

@@ -1,0 +1,41 @@
+<div class="delete-dialog">
+
+  <div class="dialog-header">
+    <div class="icon-circle">
+      <mat-icon>delete_outline</mat-icon>
+    </div>
+    <button mat-icon-button class="close-btn" (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    <h2 class="dialog-title">{{ data.title }}</h2>
+    <p class="dialog-desc">
+      {{ data.description }}
+    </p>
+
+    <div class="student-preview">
+      <div class="avatar">{{ data.initials }}</div>
+      <div>
+        <p class="student-name">{{ data.recordName }}</p>
+        <p class="student-meta">{{ data.recordMeta }}</p>
+      </div>
+    </div>
+
+    <div class="warn-box" *ngIf="data.warningMessage">
+      <mat-icon class="warn-icon">warning_amber</mat-icon>
+      <span>{{ data.warningMessage }}</span>
+    </div>
+  </div>
+
+  <div class="dialog-footer">
+    <button mat-stroked-button class="btn-cancel" (click)="onCancel()">
+      <mat-icon>close</mat-icon> {{ data.cancelButtonText }}
+    </button>
+    <button mat-flat-button class="btn-delete" (click)="onConfirm()">
+      <mat-icon>delete_outline</mat-icon> {{ data.confirmButtonText }}
+    </button>
+  </div>
+
+</div>

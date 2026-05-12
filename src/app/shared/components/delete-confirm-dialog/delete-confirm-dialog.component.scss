@@ -1,0 +1,157 @@
+.delete-dialog {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 20px 0;
+
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fde8e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon { 
+      color: #c0392b; 
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  .close-btn { 
+    color: #888; 
+    margin: -8px -8px 0 0;
+  }
+}
+
+.dialog-body {
+  padding: 14px 20px 0;
+
+  .dialog-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    color: #1a1a1a;
+  }
+
+  .dialog-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.55;
+    margin: 0;
+  }
+}
+
+.student-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8faf8;
+  border: 1px solid #e2e8e2;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 16px;
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #3b6d11;    // matches your green theme
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .student-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  .student-meta {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+  }
+}
+
+.warn-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbef;
+  border: 1px solid #f9e8b9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #7a5c00;
+  line-height: 1.5;
+
+  .warn-icon { 
+    font-size: 18px; 
+    width: 18px;
+    height: 18px;
+    color: #b8860b; 
+    margin-top: 1px; 
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 12px;
+  padding: 24px 20px 20px;
+
+  button {
+    flex: 1;
+    height: 40px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .btn-cancel {
+    border-color: #d1d5db;
+    color: #374151;
+    background: #fff;
+
+    &:hover {
+      background: #f9fafb;
+    }
+  }
+
+  .btn-delete {
+    background: #c0392b;
+    color: #fff;
+
+    &:hover { 
+      background: #a93226; 
+    }
+  }
+}

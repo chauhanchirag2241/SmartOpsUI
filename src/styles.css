@@ -184,3 +184,18 @@ body {
 .mat-datepicker-toggle .mat-mdc-icon-button {
   color: #639922 !important;
 }
+
+/* ERP Custom Dialog */
+.erp-dialog .mat-mdc-dialog-container {
+  border-radius: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.delete-item {
+  color: #c0392b !important;
+}
+
+.delete-item .mat-icon {
+  color: #c0392b !important;
+}
