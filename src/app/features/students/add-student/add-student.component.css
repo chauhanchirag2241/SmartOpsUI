@@ -38,7 +38,8 @@
 
 .back-btn:hover {
   background: var(--hover);
-  color: var(--text);
+  color: var(--g600);
+  border-color: var(--g400);
 }
 
 .back-btn mat-icon {
@@ -81,7 +82,7 @@
 
 .tab:hover {
   background: var(--hover);
-  color: var(--text);
+  color: var(--g600);
 }
 
 .tab.active {
@@ -179,6 +180,11 @@ input, select {
 
 input:focus, select:focus {
   border-color: var(--g400);
+}
+
+input:hover, select:hover {
+  border-color: var(--g400);
+  color: var(--g600);
 }
 
 .photo-upload {
@@ -279,6 +285,7 @@ input:focus, select:focus {
 .doc-card:hover {
   border-color: var(--g400);
   background: var(--hover);
+  color: var(--g600);
 }
 
 .doc-card.uploaded {
@@ -361,7 +368,8 @@ input:focus, select:focus {
 
 .btn-back:hover {
   background: var(--hover);
-  color: var(--text);
+  color: var(--g600);
+  border-color: var(--g400);
 }
 
 .btn-next {

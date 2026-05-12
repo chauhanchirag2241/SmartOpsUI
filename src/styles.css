@@ -50,10 +50,29 @@ body {
 .compact-field {
   --mdc-outlined-text-field-container-shape: 7px;
   --mdc-outlined-text-field-outline-color: rgba(0, 0, 0, 0.08);
-  --mdc-outlined-text-field-hover-outline-color: rgba(0, 0, 0, 0.2);
+  --mdc-outlined-text-field-hover-outline-color: #639922;
   --mdc-outlined-text-field-focus-outline-color: #639922 !important;
   --mdc-outlined-text-field-container-color: #f9fafb;
   --mdc-typography-subtitle1-font-size: 13px;
+  --mdc-outlined-text-field-hover-label-text-color: #3b6d11;
+  --mdc-outlined-text-field-focus-label-text-color: #3b6d11;
+  --mdc-outlined-text-field-hover-input-text-color: #3b6d11;
+  --mat-select-focused-arrow-color: #639922;
+  --mat-select-enabled-arrow-color: #6b7280;
+}
+
+.compact-field:hover .mdc-notched-outline__leading,
+.compact-field:hover .mdc-notched-outline__notch,
+.compact-field:hover .mdc-notched-outline__trailing {
+  border-color: #639922 !important;
+}
+
+.compact-field:hover .mat-mdc-select-arrow,
+.compact-field:hover .mat-mdc-select-value-text,
+.compact-field:hover .mat-datepicker-toggle-default-icon,
+.compact-field:hover input,
+.compact-field:hover textarea {
+  color: #3b6d11 !important;
 }
 
 .compact-field.mat-focused .mdc-notched-outline__leading,
@@ -98,6 +117,16 @@ body {
 }
 
 /* Material Select Option Overrides */
+.mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.mat-mdc-option.mdc-list-item--activated:not(.mdc-list-item--disabled) {
+  background-color: #eaf3de !important;
+}
+
+.mat-mdc-option:hover:not(.mdc-list-item--disabled) .mdc-list-item__primary-text,
+.mat-mdc-option.mdc-list-item--activated:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #3b6d11 !important;
+}
+
 .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
   color: #639922 !important;
 }
