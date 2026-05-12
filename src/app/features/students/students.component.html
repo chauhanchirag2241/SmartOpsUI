@@ -16,6 +16,9 @@
     <app-smart-data-table
       [config]="tableConfig"
       [data]="students"
+      [serverSide]="true"
+      [totalRecords]="totalStudents"
+      (pageChange)="onPageChange($event)"
       (actionClicked)="onActionClicked($event)"
       (exportClicked)="onExportClicked()"
       (bulkActionClicked)="onBulkActionClicked($event)"
@@ -25,6 +28,8 @@
   <!-- Add Student Form -->
   <ng-container *ngIf="showAddForm">
     <app-add-student 
+      [mode]="formMode"
+      [studentId]="selectedStudentId"
       (cancel)="closeAddForm()" 
       (saved)="onStudentSaved()"
     />

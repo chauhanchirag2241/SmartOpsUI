@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatNativeDateModule } from '@angular/material/core';
+import { DateAdapter, MAT_DATE_FORMATS, NativeDateAdapter, MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -8,9 +8,50 @@ import { FormFieldConfig } from '../../interfaces/form-field-config';
 
 import { NgIf } from '@angular/common';
 
+const DATE_ONLY_FORMATS = {
+  parse: {
+    dateInput: 'DD-MM-YYYY',
+  },
+  display: {
+    dateInput: 'DD-MM-YYYY',
+    monthYearLabel: 'MMM YYYY',
+    dateA11yLabel: 'DD-MM-YYYY',
+    monthYearA11yLabel: 'MMMM YYYY',
+  },
+};
+
+class DateOnlyAdapter extends NativeDateAdapter {
+  override parse(value: unknown): Date | null {
+    if (typeof value === 'string') {
+      const parts = value.trim().split(/[-/]/).map(Number);
+      if (parts.length === 3 && parts.every((part) => Number.isFinite(part))) {
+        const [day, month, year] = parts;
+        return this.createDate(year, month - 1, day);
+      }
+    }
+
+    return value ? new Date(value as string | number | Date) : null;
+  }
+
+  override format(date: Date, displayFormat: any): string {
+    if (displayFormat === DATE_ONLY_FORMATS.display.dateInput) {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+
+    return super.format(date, displayFormat);
+  }
+}
+
 @Component({
   selector: 'app-datepicker-field',
   imports: [MatDatepickerModule, MatFormFieldModule, MatInputModule, MatNativeDateModule, ReactiveFormsModule, NgIf],
+  providers: [
+    { provide: DateAdapter, useClass: DateOnlyAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: DATE_ONLY_FORMATS },
+  ],
   template: `
     <div class="custom-field" [formGroup]="group">
       <label>

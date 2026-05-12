@@ -38,6 +38,12 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   /** Data array to display */
   @Input() data: Record<string, unknown>[] = [];
 
+  /** Total records (for server-side pagination) */
+  @Input() totalRecords = 0;
+
+  /** Enable server-side pagination/filtering */
+  @Input() serverSide = false;
+
   /** Optional: custom cell template passed from parent */
   @ContentChild('customCell') customCellTemplate?: TemplateRef<unknown>;
 
@@ -59,6 +65,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
 
   /** Emits when a filter chip is clicked */
   @Output() filterChanged = new EventEmitter<DataTableFilter | null>();
+
+  /** Emits when page or search changes in server-side mode */
+  @Output() pageChange = new EventEmitter<{ pageIndex: number; pageSize: number; searchQuery: string; sortColumn: string | null; sortDirection: string | null }>();
 
   @ViewChild('ctxMenu') ctxMenuRef!: ElementRef<HTMLDivElement>;
 
@@ -104,11 +113,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   }
 
   get showingStart(): number {
-    return this.filteredData.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+    const total = this.serverSide ? this.totalRecords : this.filteredData.length;
+    return total === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
   }
 
   get showingEnd(): number {
-    return Math.min(this.currentPage * this.pageSize, this.filteredData.length);
+    const total = this.serverSide ? this.totalRecords : this.filteredData.length;
+    return Math.min(this.currentPage * this.pageSize, total);
   }
 
   get paginationPages(): (number | '...')[] {
@@ -133,9 +144,16 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['data'] || changes['config']) {
+    if (changes['data'] || changes['config'] || changes['totalRecords']) {
       this.initDefaults();
-      this.applyFilters();
+      if (this.serverSide) {
+        this.filteredData = this.data;
+        this.pagedData = this.data;
+        this.totalPages = Math.max(1, Math.ceil(this.totalRecords / this.pageSize));
+        this.updateSelectionState();
+      } else {
+        this.applyFilters();
+      }
     }
   }
 
@@ -164,15 +182,33 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
 
   onSearchInput(): void {
     this.currentPage = 1;
-    this.applyFilters();
+    if (this.serverSide) {
+      this.emitPageChange();
+    } else {
+      this.applyFilters();
+    }
   }
 
   setFilter(filter: DataTableFilter): void {
     this.activeFilter = filter;
     this.currentPage = 1;
     this.clearSelection();
-    this.applyFilters();
+    if (this.serverSide) {
+      this.emitPageChange();
+    } else {
+      this.applyFilters();
+    }
     this.filterChanged.emit(filter);
+  }
+
+  private emitPageChange(): void {
+    this.pageChange.emit({
+      pageIndex: this.currentPage,
+      pageSize: this.pageSize,
+      searchQuery: this.searchQuery,
+      sortColumn: this.sortColumn,
+      sortDirection: this.sortDirection,
+    });
   }
 
   applyFilters(): void {
@@ -228,7 +264,12 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
       this.sortColumn = column.key;
       this.sortDirection = 'asc';
     }
-    this.applyFilters();
+    if (this.serverSide) {
+      // Sorting is not fully implemented for server-side in this snippet, but trigger page change if needed
+      this.emitPageChange();
+    } else {
+      this.applyFilters();
+    }
   }
 
   // ========================
@@ -303,14 +344,23 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   goToPage(page: number | '...'): void {
     if (page === '...' || page < 1 || page > this.totalPages) return;
     this.currentPage = page;
-    this.updatePage();
+    if (this.serverSide) {
+      this.emitPageChange();
+    } else {
+      this.updatePage();
+    }
   }
 
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 1;
     this.clearSelection();
-    this.applyFilters();
+    if (this.serverSide) {
+      this.totalPages = Math.max(1, Math.ceil(this.totalRecords / this.pageSize));
+      this.emitPageChange();
+    } else {
+      this.applyFilters();
+    }
   }
 
   // ========================
@@ -402,6 +452,30 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
       if (num >= threshold.min) return threshold.color;
     }
     return sorted[sorted.length - 1]?.color ?? '#E24B4A';
+  }
+
+  getAvatarInitials(name: unknown): string {
+    const str = String(name || '');
+    if (!str) return 'NA';
+    const parts = str.split(' ').filter(Boolean);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    } else if (parts.length === 1) {
+      return parts[0][0].toUpperCase();
+    }
+    return 'NA';
+  }
+
+  getAvatarClass(name: unknown): string {
+    const str = String(name || '');
+    if (!str) return 'av-gray';
+    const colors = ['av-b', 'av-g', 'av-p', 'av-o'];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
   }
 
   // ========================

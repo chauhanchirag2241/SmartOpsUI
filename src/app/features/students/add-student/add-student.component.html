@@ -2,7 +2,7 @@
   <button class="back-btn" (click)="cancel.emit()">
     <mat-icon>arrow_back</mat-icon> Back
   </button>
-  <div class="page-title">Add new student</div>
+  <div class="page-title">{{ mode === 'edit' ? 'Edit student' : mode === 'view' ? 'View student' : 'Add new student' }}</div>
 </div>
 
 <div class="progress-bar">
@@ -245,13 +245,13 @@
   
   <div class="footer-hint">{{ footerHints[currentTab] }}</div>
   
-  <button class="btn-next" (click)="nextTab()" [disabled]="isSaving">
+  <button class="btn-next" (click)="nextTab()" [disabled]="isSaving" *ngIf="currentTab < 4 || mode !== 'view'">
     <ng-container *ngIf="currentTab < 4">
       Next <mat-icon>arrow_forward</mat-icon>
     </ng-container>
-    <ng-container *ngIf="currentTab === 4">
+    <ng-container *ngIf="currentTab === 4 && mode !== 'view'">
       <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-      {{ isSaving ? 'Confirming...' : 'Confirm & Add' }}
+      {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add') }}
     </ng-container>
   </button>
 </div>

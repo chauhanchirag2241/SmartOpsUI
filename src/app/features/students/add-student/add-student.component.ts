@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, Input, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,7 +27,10 @@ import { StudentService } from '../../../core/services/student.service';
   templateUrl: './add-student.component.html',
   styleUrl: './add-student.component.css',
 })
-export class AddStudentComponent {
+export class AddStudentComponent implements OnInit {
+  @Input() mode: 'add' | 'edit' | 'view' = 'add';
+  @Input() studentId?: string;
+
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
@@ -128,6 +131,75 @@ export class AddStudentComponent {
       firstDueDate: ['', Validators.required],
 
       remarks: [''],
+      status: ['Active']
+    });
+  }
+
+  ngOnInit() {
+    if (this.studentId && this.mode !== 'add') {
+      this.loadStudentData(this.studentId);
+    }
+  }
+
+  loadStudentData(id: string) {
+    this.studentService.getStudentById(id).subscribe({
+      next: (data: any) => {
+        this.patchForm(data);
+        if (this.mode === 'view') {
+          this.studentForm.disable();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => this.snackBar.open('Error loading student data', 'Close', { duration: 3000 })
+    });
+  }
+
+  patchForm(data: any) {
+    const father = data.parents?.find((p: any) => p.relationType === 'Father');
+    const mother = data.parents?.find((p: any) => p.relationType === 'Mother');
+    const academic = data.academics?.[0];
+    const prevSchool = data.previousSchools?.[0];
+    const feeConfig = data.feeConfigs?.[0];
+
+    this.studentForm.patchValue({
+      firstName: data.firstName,
+      middleName: data.middleName,
+      lastName: data.lastName,
+      dob: this.toLocalDate(data.dob),
+      gender: data.gender,
+      bloodGroup: data.bloodGroup,
+      mobile: data.mobile,
+      email: data.email,
+      aadhaar: data.aadhaarNo,
+      address: data.address,
+      
+      fatherName: father?.name,
+      fatherMobile: father?.mobile,
+      fatherOcc: father?.occupation,
+      
+      motherName: mother?.name,
+      motherMobile: mother?.mobile,
+      motherOcc: mother?.occupation,
+
+      admissionDate: this.toLocalDate(academic?.admissionDate),
+      academicYear: academic?.academicYear,
+      class: academic?.class,
+      section: academic?.section,
+
+      prevSchool: prevSchool?.schoolName,
+      prevClass: prevSchool?.lastClassPassed,
+      percentage: prevSchool?.percentageOrCgpa,
+      tcNo: prevSchool?.tcNumber,
+
+      discountType: feeConfig?.discountType,
+      discountValue: feeConfig?.discountValue,
+      discountUnit: feeConfig?.isPercentage ? '%' : '₹',
+      discountRemarks: feeConfig?.discountRemarks,
+      paymentMode: feeConfig?.paymentMode,
+      firstDueDate: this.toLocalDate(feeConfig?.firstDueDate),
+
+      remarks: data.remarks,
+      status: data.status
     });
   }
 
@@ -170,14 +242,18 @@ export class AddStudentComponent {
 
     this.isSaving = true;
     try {
-      this.studentService.createStudent(this.studentForm.value)
+      const saveObs = (this.mode === 'edit' && this.studentId)
+        ? this.studentService.updateStudent(this.studentId, this.studentForm.getRawValue())
+        : this.studentService.createStudent(this.studentForm.value);
+
+      saveObs
         .pipe(finalize(() => {
           this.isSaving = false;
           this.cdr.detectChanges();
         }))
         .subscribe({
-          next: (res) => {
-            this.snackBar.open('Student saved successfully', 'Close', {
+          next: () => {
+            this.snackBar.open(`Student ${this.mode === 'edit' ? 'updated' : 'saved'} successfully`, 'Close', {
               duration: 3000,
               panelClass: 'snack-success',
             });
@@ -204,8 +280,31 @@ export class AddStudentComponent {
   getControlValue(key: string): any {
     const val = this.studentForm.get(key)?.value;
     if (val instanceof Date) {
-      return val.toLocaleDateString();
+      return this.formatDisplayDate(val);
     }
     return val || '-';
+  }
+
+  private toLocalDate(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+
+    const [year, month, day] = String(value).substring(0, 10).split('-').map(Number);
+    if (!year || !month || !day) {
+      return null;
+    }
+
+    return new Date(year, month - 1, day);
+  }
+
+  private formatDisplayDate(date: Date): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}-${month}-${date.getFullYear()}`;
   }
 }

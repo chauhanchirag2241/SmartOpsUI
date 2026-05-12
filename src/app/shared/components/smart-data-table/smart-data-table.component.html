@@ -176,9 +176,9 @@
                   <div class="cell-user">
                     <div
                       class="av"
-                      [ngClass]="row[col.avatarConfig.avatarClassKey ?? ''] ?? 'av-g'"
+                      [ngClass]="row[col.avatarConfig.avatarClassKey ?? ''] || getAvatarClass(row[col.avatarConfig.nameKey])"
                     >
-                      {{ row[col.avatarConfig.initialsKey ?? ''] ?? '' }}
+                      {{ row[col.avatarConfig.initialsKey ?? ''] || getAvatarInitials(row[col.avatarConfig.nameKey]) }}
                     </div>
                     <div>
                       <div class="cell-name">{{ row[col.avatarConfig.nameKey] }}</div>

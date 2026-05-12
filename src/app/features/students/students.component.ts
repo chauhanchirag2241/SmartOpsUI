@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgIf } from '@angular/common';
 
 import { AddStudentComponent } from './add-student/add-student.component';
+import { StudentService } from '../../core/services/student.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import type {
@@ -19,12 +20,36 @@ import type {
   templateUrl: './students.component.html',
   styleUrl: './students.component.css',
 })
-export class StudentsComponent {
-  constructor(private snackBar: MatSnackBar) {}
+export class StudentsComponent implements OnInit {
+  constructor(private snackBar: MatSnackBar, private studentService: StudentService, private cdr: ChangeDetectorRef) {}
 
   showAddForm = false;
+  formMode: 'add' | 'edit' | 'view' = 'add';
+  selectedStudentId?: string;
+  totalStudents = 0;
+
+  ngOnInit(): void {
+    this.loadStudents();
+  }
+
+  loadStudents(pageIndex = 1, pageSize = 10, searchQuery = '', sortColumn: string | null = null, sortDirection: string | null = null): void {
+    this.studentService.getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection).subscribe({
+      next: (res: any) => {
+        // The backend now returns PagedResult format { items, totalCount, ... }
+        this.students = res?.items || [];
+        this.totalStudents = res?.totalCount || 0;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading students:', err);
+        this.snackBar.open('Failed to load students', 'Close', { duration: 3000, panelClass: 'snack-error' });
+      }
+    });
+  }
 
   openAddForm(): void {
+    this.formMode = 'add';
+    this.selectedStudentId = undefined;
     this.showAddForm = true;
   }
 
@@ -34,7 +59,11 @@ export class StudentsComponent {
 
   onStudentSaved(): void {
     this.showAddForm = false;
-    // In a real app, refresh data here
+    this.loadStudents();
+  }
+
+  onPageChange(event: { pageIndex: number; pageSize: number; searchQuery: string; sortColumn: string | null; sortDirection: string | null }): void {
+    this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection);
   }
 
   // ════════════════════════════════════════
@@ -51,8 +80,6 @@ export class StudentsComponent {
         avatarConfig: {
           nameKey: 'name',
           subtitleKey: 'email',
-          initialsKey: 'initials',
-          avatarClassKey: 'avClass',
         },
       },
       {
@@ -144,140 +171,7 @@ export class StudentsComponent {
   // ════════════════════════════════════════
   // DEMO DATA
   // ════════════════════════════════════════
-  students: Record<string, unknown>[] = [
-    {
-      name: 'Rahul Patel',
-      email: 'rahul.p@school.com',
-      initials: 'RP',
-      avClass: 'av-g',
-      admNo: 'ADM-2024-001',
-      class: '10 — A',
-      attendance: 94,
-      fees: 'Paid',
-      status: 'Active',
-    },
-    {
-      name: 'Priya Modi',
-      email: 'priya.m@school.com',
-      initials: 'PM',
-      avClass: 'av-b',
-      admNo: 'ADM-2024-002',
-      class: '10 — A',
-      attendance: 88,
-      fees: 'Paid',
-      status: 'Active',
-    },
-    {
-      name: 'Arjun Shah',
-      email: 'arjun.s@school.com',
-      initials: 'AS',
-      avClass: 'av-p',
-      admNo: 'ADM-2024-003',
-      class: '9 — B',
-      attendance: 72,
-      fees: 'Overdue',
-      status: 'Active',
-    },
-    {
-      name: 'Kriti Dave',
-      email: 'kriti.d@school.com',
-      initials: 'KD',
-      avClass: 'av-o',
-      admNo: 'ADM-2024-004',
-      class: '9 — A',
-      attendance: 91,
-      fees: 'Paid',
-      status: 'Active',
-    },
-    {
-      name: 'Vivek Joshi',
-      email: 'vivek.j@school.com',
-      initials: 'VJ',
-      avClass: 'av-g',
-      admNo: 'ADM-2024-005',
-      class: '8 — C',
-      attendance: 65,
-      fees: 'Overdue',
-      status: 'Inactive',
-    },
-    {
-      name: 'Nisha Rao',
-      email: 'nisha.r@school.com',
-      initials: 'NR',
-      avClass: 'av-b',
-      admNo: 'ADM-2024-006',
-      class: '8 — B',
-      attendance: 97,
-      fees: 'Paid',
-      status: 'Active',
-    },
-    {
-      name: 'Dev Mehta',
-      email: 'dev.m@school.com',
-      initials: 'DM',
-      avClass: 'av-p',
-      admNo: 'ADM-2024-007',
-      class: '7 — A',
-      attendance: 80,
-      fees: 'Pending',
-      status: 'Inactive',
-    },
-    {
-      name: 'Avni Singh',
-      email: 'avni.s@school.com',
-      initials: 'AS',
-      avClass: 'av-o',
-      admNo: 'ADM-2024-008',
-      class: '7 — C',
-      attendance: 85,
-      fees: 'Paid',
-      status: 'Active',
-    },
-    {
-      name: 'Karan Desai',
-      email: 'karan.d@school.com',
-      initials: 'KD',
-      avClass: 'av-g',
-      admNo: 'ADM-2024-009',
-      class: '10 — B',
-      attendance: 92,
-      fees: 'Paid',
-      status: 'Active',
-    },
-    {
-      name: 'Meera Kapoor',
-      email: 'meera.k@school.com',
-      initials: 'MK',
-      avClass: 'av-b',
-      admNo: 'ADM-2024-010',
-      class: '9 — A',
-      attendance: 78,
-      fees: 'Pending',
-      status: 'Active',
-    },
-    {
-      name: 'Rohan Trivedi',
-      email: 'rohan.t@school.com',
-      initials: 'RT',
-      avClass: 'av-p',
-      admNo: 'ADM-2024-011',
-      class: '8 — A',
-      attendance: 60,
-      fees: 'Overdue',
-      status: 'Inactive',
-    },
-    {
-      name: 'Sneha Bhatt',
-      email: 'sneha.b@school.com',
-      initials: 'SB',
-      avClass: 'av-o',
-      admNo: 'ADM-2024-012',
-      class: '10 — A',
-      attendance: 95,
-      fees: 'Paid',
-      status: 'Active',
-    },
-  ];
+  students: Record<string, unknown>[] = [];
 
   // ════════════════════════════════════════
   // EVENT HANDLERS
@@ -287,11 +181,33 @@ export class StudentsComponent {
     row: Record<string, unknown>;
     rowIndex: number;
   }): void {
-    this.snackBar.open(
-      `${event.action.label} → ${event.row['name']}`,
-      'Close',
-      { duration: 3000, panelClass: 'snack-info' },
-    );
+    const id = event.row['id'] as string;
+
+    if (event.action.label === 'View profile') {
+      this.formMode = 'view';
+      this.selectedStudentId = id;
+      this.showAddForm = true;
+    } else if (event.action.label === 'Edit details') {
+      this.formMode = 'edit';
+      this.selectedStudentId = id;
+      this.showAddForm = true;
+    } else if (event.action.label === 'Delete student') {
+      if (confirm(`Are you sure you want to delete ${event.row['name']}?`)) {
+        this.studentService.deleteStudent(id).subscribe({
+          next: () => {
+            this.snackBar.open('Student deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+            this.loadStudents();
+          },
+          error: () => this.snackBar.open('Failed to delete student', 'Close', { duration: 3000, panelClass: 'snack-error' })
+        });
+      }
+    } else {
+      this.snackBar.open(
+        `${event.action.label} → ${event.row['name']}`,
+        'Close',
+        { duration: 3000, panelClass: 'snack-info' },
+      );
+    }
   }
 
   onExportClicked(): void {
