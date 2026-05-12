@@ -111,3 +111,47 @@ body {
   --mat-option-selected-state-label-text-color: #639922;
   --mat-pseudo-checkbox-checked-icon-color: #639922;
 }
+
+/* Material Datepicker Theme Overrides */
+.mat-datepicker-content {
+  --mat-datepicker-calendar-date-selected-state-background-color: #639922;
+  --mat-datepicker-calendar-date-selected-state-text-color: #fff;
+  --mat-datepicker-calendar-date-hover-state-background-color: #eaf3de;
+  --mat-datepicker-calendar-date-focus-state-background-color: #eaf3de;
+  --mat-datepicker-calendar-date-today-outline-color: #639922;
+  --mat-datepicker-calendar-date-today-selected-state-outline-color: #639922;
+}
+
+.mat-datepicker-content .mat-calendar-body-selected {
+  background-color: #639922 !important;
+  color: #fff !important;
+}
+
+.mat-datepicker-content .mat-calendar-body-today:not(.mat-calendar-body-selected) {
+  border-color: #639922 !important;
+}
+
+.mat-datepicker-content .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover
+  .mat-calendar-body-cell-content:not(.mat-calendar-body-selected),
+.mat-datepicker-content .mat-calendar-body-active
+  .mat-calendar-body-cell-content:not(.mat-calendar-body-selected) {
+  background-color: #eaf3de !important;
+}
+
+.mat-datepicker-content .mat-calendar-body-cell-content,
+.mat-datepicker-content .mat-calendar-period-button,
+.mat-datepicker-content .mat-calendar-previous-button,
+.mat-datepicker-content .mat-calendar-next-button {
+  color: #1a1a1a;
+}
+
+.mat-datepicker-content .mat-calendar-period-button:hover,
+.mat-datepicker-content .mat-calendar-previous-button:hover,
+.mat-datepicker-content .mat-calendar-next-button:hover {
+  color: #3b6d11;
+}
+
+.mat-datepicker-toggle-active,
+.mat-datepicker-toggle .mat-mdc-icon-button {
+  color: #639922 !important;
+}
