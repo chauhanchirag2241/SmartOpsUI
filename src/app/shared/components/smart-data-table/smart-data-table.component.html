@@ -129,6 +129,7 @@
           <tr
             *ngFor="let row of pagedData; let i = index"
             [class.selected]="isRowSelected(i)"
+            [ngClass]="rowClassFn ? rowClassFn(row) : ''"
           >
             <!-- Checkbox -->
             <td class="td-check" *ngIf="config.selectable !== false" (click)="$event.stopPropagation()">
@@ -153,7 +154,7 @@
                     <mat-icon *ngIf="getBadgeIcon(col, getCellValue(row, col.key))" class="badge-icon">
                       {{ getBadgeIcon(col, getCellValue(row, col.key)) }}
                     </mat-icon>
-                    {{ getCellValue(row, col.key) }}
+                    {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
                   </span>
                 </ng-container>
 

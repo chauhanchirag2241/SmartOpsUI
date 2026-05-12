@@ -44,6 +44,12 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   /** Enable server-side pagination/filtering */
   @Input() serverSide = false;
 
+  /** Optional: callback to determine custom CSS class for a row */
+  @Input() rowClassFn?: (row: Record<string, unknown>) => string;
+
+  /** Optional: initial filter value to select */
+  @Input() initialFilterValue?: string;
+
   /** Optional: custom cell template passed from parent */
   @ContentChild('customCell') customCellTemplate?: TemplateRef<unknown>;
 
@@ -176,9 +182,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     // Init page size
     this.pageSize = this.config.defaultPageSize ?? this.config.pageSizeOptions?.[0] ?? 10;
 
-    // Init default active filter (first one)
+    // Init default active filter
     if (this.config.filters?.length && !this.activeFilter) {
-      this.activeFilter = this.config.filters[0];
+      if (this.initialFilterValue) {
+        this.activeFilter = this.config.filters.find(f => f.value === this.initialFilterValue) || this.config.filters[0];
+      } else {
+        this.activeFilter = this.config.filters[0];
+      }
     }
   }
 
@@ -196,6 +206,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   }
 
   setFilter(filter: DataTableFilter): void {
+    if (this.activeFilter?.value === filter.value) return;
+
     this.activeFilter = filter;
     this.currentPage = 1;
     this.clearSelection();
@@ -447,6 +459,11 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   getBadgeIcon(column: DataTableColumn, value: unknown): string {
     const badge = column.badgeMap?.[String(value)];
     return badge?.icon ?? '';
+  }
+
+  getBadgeLabel(column: DataTableColumn, value: unknown): string {
+    const badge = column.badgeMap?.[String(value)];
+    return badge?.label ?? String(value);
   }
 
   getProgressColor(column: DataTableColumn, value: unknown): string {

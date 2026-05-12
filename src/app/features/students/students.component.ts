@@ -9,10 +9,12 @@ import { StudentService } from '../../core/services/student.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import type {
   DataTableAction,
   DataTableBulkAction,
   DataTableConfig,
+  DataTableFilter,
 } from '../../shared/components/smart-data-table';
 
 @Component({
@@ -28,12 +30,13 @@ export class StudentsComponent implements OnInit {
     private studentService: StudentService,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog
-  ) {}
+  ) { }
 
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
   selectedStudentId?: string;
   totalStudents = 0;
+  currentFilter: StudentFilter = StudentFilter.Active;
 
   ngOnInit(): void {
     this.loadStudents();
@@ -45,8 +48,9 @@ export class StudentsComponent implements OnInit {
     searchQuery = '',
     sortColumn: string | null = null,
     sortDirection: string | null = null,
+    filter: StudentFilter = this.currentFilter
   ): void {
-    this.studentService.getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection).subscribe({
+    this.studentService.getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
       next: (res: any) => {
         // The backend now returns PagedResult format { items, totalCount, ... }
         this.students = res?.items || [];
@@ -82,7 +86,16 @@ export class StudentsComponent implements OnInit {
     sortColumn: string | null;
     sortDirection: string | null;
   }): void {
-    this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection);
+    this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection, this.currentFilter);
+  }
+
+  onFilterChanged(filter: DataTableFilter | null): void {
+    if (filter) {
+      this.currentFilter = filter.value as unknown as StudentFilter;
+    } else {
+      this.currentFilter = StudentFilter.All;
+    }
+    this.loadStudents(1, 10, '', null, null, this.currentFilter);
   }
 
   // ════════════════════════════════════════
@@ -132,35 +145,32 @@ export class StudentsComponent implements OnInit {
         },
       },
       {
-        key: 'status',
+        key: 'isActive',
         label: 'Status',
         cellType: 'badge',
         badgeMap: {
-          Active: { cssClass: 'b-green' },
-          Inactive: { cssClass: 'b-gray' },
+          'true': { cssClass: 'b-green', label: 'Active' },
+          'false': { cssClass: 'b-red', label: 'Inactive' },
         },
       },
     ],
 
     filters: [
-      { label: 'All', icon: 'list', value: 'all' },
+      { label: 'All', icon: 'list', value: StudentFilter.All.toString() },
       {
         label: 'Active',
         icon: 'check_circle',
-        value: 'active',
-        filterFn: (row) => row['status'] === 'Active',
+        value: StudentFilter.Active.toString(),
       },
       {
         label: 'Inactive',
         icon: 'cancel',
-        value: 'inactive',
-        filterFn: (row) => row['status'] === 'Inactive',
+        value: StudentFilter.Inactive.toString(),
       },
       {
         label: 'Fee overdue',
         icon: 'warning',
-        value: 'overdue',
-        filterFn: (row) => row['fees'] === 'Overdue',
+        value: StudentFilter.FeeOverdue.toString(),
       },
     ],
 
@@ -185,6 +195,10 @@ export class StudentsComponent implements OnInit {
     itemLabel: 'students',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],
+  };
+
+  studentRowClass = (row: Record<string, unknown>): string => {
+    return row['isActive'] === false ? 'row-inactive' : '';
   };
 
   // ════════════════════════════════════════

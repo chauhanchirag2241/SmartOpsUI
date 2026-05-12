@@ -31,6 +31,8 @@ export interface DataTableBadge {
   cssClass: 'b-green' | 'b-red' | 'b-amber' | 'b-gray' | string;
   /** Material icon name to show inside the badge */
   icon?: string;
+  /** Optional display label (overrides raw value) */
+  label?: string;
 }
 
 export interface DataTableProgressColor {

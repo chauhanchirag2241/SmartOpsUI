@@ -3,14 +3,24 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 
+import { StudentFilter } from '../../shared/enums/table-filters.enum';
+
 @Injectable({ providedIn: 'root' })
 export class StudentService {
   private readonly api = inject(ApiService);
 
-  getStudents(pageIndex = 1, pageSize = 10, searchTerm = '', sortColumn: string | null = null, sortDirection: string | null = null): Observable<any> {
+  getStudents(
+    pageIndex = 1, 
+    pageSize = 10, 
+    searchTerm = '', 
+    sortColumn: string | null = null, 
+    sortDirection: string | null = null,
+    filter: StudentFilter = StudentFilter.All
+  ): Observable<any> {
     let params = new HttpParams()
       .set('pageIndex', pageIndex.toString())
-      .set('pageSize', pageSize.toString());
+      .set('pageSize', pageSize.toString())
+      .set('filter', filter.toString());
     
     if (searchTerm) {
       params = params.set('searchTerm', searchTerm);

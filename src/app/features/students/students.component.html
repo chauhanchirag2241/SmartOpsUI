@@ -13,25 +13,15 @@
     </header>
 
     <!-- Smart Data Table -->
-    <app-smart-data-table
-      [config]="tableConfig"
-      [data]="students"
-      [serverSide]="true"
-      [totalRecords]="totalStudents"
-      (pageChange)="onPageChange($event)"
-      (actionClicked)="onActionClicked($event)"
-      (exportClicked)="onExportClicked()"
-      (bulkActionClicked)="onBulkActionClicked($event)"
-    />
+    <app-smart-data-table [config]="tableConfig" [data]="students" [serverSide]="true" [totalRecords]="totalStudents"
+      [rowClassFn]="studentRowClass" [initialFilterValue]="currentFilter.toString()" (pageChange)="onPageChange($event)" (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)" (exportClicked)="onExportClicked()"
+      (bulkActionClicked)="onBulkActionClicked($event)" />
   </ng-container>
 
   <!-- Add Student Form -->
   <ng-container *ngIf="showAddForm">
-    <app-add-student 
-      [mode]="formMode"
-      [studentId]="selectedStudentId"
-      (cancel)="closeAddForm()" 
-      (saved)="onStudentSaved()"
-    />
+    <app-add-student [mode]="formMode" [studentId]="selectedStudentId" (cancel)="closeAddForm()"
+      (saved)="onStudentSaved()" />
   </ng-container>
 </section>

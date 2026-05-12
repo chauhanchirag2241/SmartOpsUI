@@ -361,6 +361,15 @@ tr.selected td {
   background: var(--badge-bg);
 }
 
+tr.row-inactive td {
+  background: #fff5f5; /* Soft red tint */
+  color: #c53030; /* Darker red for contrast */
+}
+
+tr.row-inactive:hover td {
+  background: #fff0f0;
+}
+
 /* Checkbox */
 input[type='checkbox'] {
   width: 14px;
