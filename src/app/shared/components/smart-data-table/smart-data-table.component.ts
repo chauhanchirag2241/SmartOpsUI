@@ -67,7 +67,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   @Output() filterChanged = new EventEmitter<DataTableFilter | null>();
 
   /** Emits when page or search changes in server-side mode */
-  @Output() pageChange = new EventEmitter<{ pageIndex: number; pageSize: number; searchQuery: string; sortColumn: string | null; sortDirection: string | null }>();
+  @Output() pageChange = new EventEmitter<{
+    pageIndex: number;
+    pageSize: number;
+    searchQuery: string;
+    sortColumn: string | null;
+    sortDirection: string | null;
+  }>();
 
   @ViewChild('ctxMenu') ctxMenuRef!: ElementRef<HTMLDivElement>;
 

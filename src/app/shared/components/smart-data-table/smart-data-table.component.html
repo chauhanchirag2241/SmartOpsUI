@@ -229,7 +229,7 @@
   <div class="table-footer">
     <div class="foot-info">
       Showing <b>{{ showingStart }}–{{ showingEnd }}</b> of
-      <b>{{ filteredData.length }}</b> {{ config.itemLabel ?? 'records' }}
+      <b>{{ serverSide ? totalRecords : filteredData.length }}</b> {{ config.itemLabel ?? 'records' }}
     </div>
     <div class="page-size">
       Rows per page

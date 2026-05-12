@@ -5,12 +5,22 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 
-import { InputFieldComponent } from '../../../shared/form-controls/input-field/input-field.component';
-import { SelectFieldComponent } from '../../../shared/form-controls/select-field/select-field.component';
-import { DatepickerFieldComponent } from '../../../shared/form-controls/datepicker-field/datepicker-field.component';
-import { TextareaFieldComponent } from '../../../shared/form-controls/textarea-field/textarea-field.component';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { StudentService } from '../../../core/services/student.service';
+
+type FieldItem = {
+  key: string;
+  full?: boolean;
+};
+
+type FormCard = {
+  tab: number;
+  icon: string;
+  title: string;
+  grid: 'grid2' | 'grid3';
+  fields: FieldItem[];
+};
 
 @Component({
   selector: 'app-add-student',
@@ -19,10 +29,7 @@ import { StudentService } from '../../../core/services/student.service';
     CommonModule,
     ReactiveFormsModule,
     MatIconModule,
-    InputFieldComponent,
-    SelectFieldComponent,
-    DatepickerFieldComponent,
-    TextareaFieldComponent,
+    DynamicFieldComponent,
   ],
   templateUrl: './add-student.component.html',
   styleUrl: './add-student.component.css',
@@ -55,6 +62,7 @@ export class AddStudentComponent implements OnInit {
   ];
 
   readonly configs: Record<string, FormFieldConfig> = {
+    admissionNo: { type: 'input', controlName: 'admissionNo', label: 'Admission number', placeholder: 'Auto-generated', disabled: true },
     firstName: { type: 'input', controlName: 'firstName', label: 'First name', placeholder: 'e.g. Rahul', validations: [{ name: 'required', message: 'First name is required', validator: Validators.required }] },
     middleName: { type: 'input', controlName: 'middleName', label: 'Middle name', placeholder: 'e.g. Kumar' },
     lastName: { type: 'input', controlName: 'lastName', label: 'Last name', placeholder: 'e.g. Patel', validations: [{ name: 'required', message: 'Last name is required', validator: Validators.required }] },
@@ -77,18 +85,103 @@ export class AddStudentComponent implements OnInit {
     academicYear: { type: 'select', controlName: 'academicYear', label: 'Academic year', options: [{ label: '2024-25', value: '2024-25' }, { label: '2025-26', value: '2025-26' }], validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }] },
     class: { type: 'select', controlName: 'class', label: 'Class', placeholder: 'Select class', options: [{ label: 'Class 1', value: '1' }, { label: 'Class 2', value: '2' }, { label: 'Class 8', value: '8' }, { label: 'Class 9', value: '9' }, { label: 'Class 10', value: '10' }], validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }] },
     section: { type: 'select', controlName: 'section', label: 'Section', placeholder: 'Select section', options: [{ label: 'A', value: 'A' }, { label: 'B', value: 'B' }, { label: 'C', value: 'C' }, { label: 'D', value: 'D' }], validations: [{ name: 'required', message: 'Section is required', validator: Validators.required }] },
+    rollNumber: { type: 'input', controlName: 'rollNumber', label: 'Roll number', placeholder: 'Auto-assigned', disabled: true },
     prevSchool: { type: 'input', controlName: 'prevSchool', label: 'Previous school name', placeholder: 'School name' },
     prevClass: { type: 'input', controlName: 'prevClass', label: 'Previous class passed', placeholder: 'e.g. Class 9' },
     percentage: { type: 'input', controlName: 'percentage', label: 'Percentage / CGPA', placeholder: 'e.g. 85% / 8.5 CGPA' },
     tcNo: { type: 'input', controlName: 'tcNo', label: 'TC number', placeholder: 'Transfer certificate no.' },
 
     discountType: { type: 'select', controlName: 'discountType', label: 'Discount type', placeholder: 'None', options: [{ label: 'Merit scholarship', value: 'merit' }, { label: 'Staff ward', value: 'staff' }, { label: 'Sibling discount', value: 'sibling' }, { label: 'RTE', value: 'rte' }, { label: 'Custom', value: 'custom' }] },
+    discountValue: { type: 'input', inputType: 'number', controlName: 'discountValue', label: 'Discount value', placeholder: '0' },
+    discountUnit: { type: 'select', controlName: 'discountUnit', label: 'Discount unit', options: [{ label: '%', value: '%' }, { label: 'Rs', value: 'amount' }] },
     discountRemarks: { type: 'input', controlName: 'discountRemarks', label: 'Discount remarks', placeholder: 'Reason for discount' },
     paymentMode: { type: 'select', controlName: 'paymentMode', label: 'Payment mode', options: [{ label: 'One-time', value: 'one-time' }, { label: 'Quarterly', value: 'quarterly' }, { label: 'Monthly', value: 'monthly' }], validations: [{ name: 'required', message: 'Payment mode is required', validator: Validators.required }] },
     firstDueDate: { type: 'datepicker', controlName: 'firstDueDate', label: 'First due date', validations: [{ name: 'required', message: 'First due date is required', validator: Validators.required }] },
 
     remarks: { type: 'textarea', controlName: 'remarks', label: 'Remarks (optional)', placeholder: 'Any special notes about the student...' },
   };
+
+  readonly formCards: FormCard[] = [
+    {
+      tab: 0,
+      icon: 'badge',
+      title: 'Basic details',
+      grid: 'grid3',
+      fields: [
+        { key: 'firstName' },
+        { key: 'middleName' },
+        { key: 'lastName' },
+        { key: 'dob' },
+        { key: 'gender' },
+        { key: 'bloodGroup' },
+        { key: 'mobile' },
+        { key: 'email' },
+        { key: 'aadhaar' },
+        { key: 'address', full: true },
+      ],
+    },
+    {
+      tab: 0,
+      icon: 'group',
+      title: 'Parent / Guardian details',
+      grid: 'grid3',
+      fields: [
+        { key: 'fatherName' },
+        { key: 'fatherMobile' },
+        { key: 'fatherOcc' },
+        { key: 'motherName' },
+        { key: 'motherMobile' },
+        { key: 'motherOcc' },
+      ],
+    },
+    {
+      tab: 1,
+      icon: 'school',
+      title: 'Admission details',
+      grid: 'grid3',
+      fields: [{ key: 'admissionNo' }, { key: 'admissionDate' }, { key: 'academicYear' }],
+    },
+    {
+      tab: 1,
+      icon: 'co_present',
+      title: 'Class & section',
+      grid: 'grid3',
+      fields: [{ key: 'class' }, { key: 'section' }, { key: 'rollNumber' }],
+    },
+    {
+      tab: 1,
+      icon: 'domain',
+      title: 'Previous school',
+      grid: 'grid2',
+      fields: [{ key: 'prevSchool' }, { key: 'prevClass' }, { key: 'percentage' }, { key: 'tcNo' }],
+    },
+    {
+      tab: 2,
+      icon: 'local_offer',
+      title: 'Discount / Concession',
+      grid: 'grid2',
+      fields: [
+        { key: 'discountType' },
+        { key: 'discountValue' },
+        { key: 'discountUnit' },
+        { key: 'discountRemarks', full: true },
+      ],
+    },
+    {
+      tab: 2,
+      icon: 'event',
+      title: 'Payment schedule',
+      grid: 'grid2',
+      fields: [{ key: 'paymentMode' }, { key: 'firstDueDate' }],
+    },
+    {
+      tab: 3,
+      icon: 'notes',
+      title: 'Additional notes',
+      grid: 'grid2',
+      fields: [{ key: 'remarks', full: true }],
+    },
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -97,6 +190,7 @@ export class AddStudentComponent implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {
     this.studentForm = this.fb.group({
+      admissionNo: [{ value: '', disabled: true }],
       firstName: ['', Validators.required],
       middleName: [''],
       lastName: ['', Validators.required],
@@ -118,6 +212,7 @@ export class AddStudentComponent implements OnInit {
       academicYear: ['', Validators.required],
       class: ['', Validators.required],
       section: ['', Validators.required],
+      rollNumber: [{ value: '', disabled: true }],
       prevSchool: [''],
       prevClass: [''],
       percentage: [''],
@@ -162,6 +257,7 @@ export class AddStudentComponent implements OnInit {
     const feeConfig = data.feeConfigs?.[0];
 
     this.studentForm.patchValue({
+      admissionNo: data.admissionNo,
       firstName: data.firstName,
       middleName: data.middleName,
       lastName: data.lastName,
@@ -185,6 +281,7 @@ export class AddStudentComponent implements OnInit {
       academicYear: academic?.academicYear,
       class: academic?.class,
       section: academic?.section,
+      rollNumber: academic?.rollNumber,
 
       prevSchool: prevSchool?.schoolName,
       prevClass: prevSchool?.lastClassPassed,
@@ -193,7 +290,7 @@ export class AddStudentComponent implements OnInit {
 
       discountType: feeConfig?.discountType,
       discountValue: feeConfig?.discountValue,
-      discountUnit: feeConfig?.isPercentage ? '%' : '₹',
+      discountUnit: feeConfig?.isPercentage ? '%' : 'amount',
       discountRemarks: feeConfig?.discountRemarks,
       paymentMode: feeConfig?.paymentMode,
       firstDueDate: this.toLocalDate(feeConfig?.firstDueDate),

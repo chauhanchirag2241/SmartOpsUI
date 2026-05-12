@@ -60,7 +60,8 @@ export class StudentService {
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
           academicYear: studentData.academicYear,
           class: studentData.class,
-          section: studentData.section
+          section: studentData.section,
+          rollNumber: studentData.rollNumber
         }
       ],
       previousSchools: studentData.prevSchool ? [
@@ -126,7 +127,8 @@ export class StudentService {
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
           academicYear: studentData.academicYear,
           class: studentData.class,
-          section: studentData.section
+          section: studentData.section,
+          rollNumber: studentData.rollNumber
         }
       ],
       previousSchools: studentData.prevSchool ? [

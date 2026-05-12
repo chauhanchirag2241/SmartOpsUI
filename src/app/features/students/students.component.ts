@@ -32,7 +32,13 @@ export class StudentsComponent implements OnInit {
     this.loadStudents();
   }
 
-  loadStudents(pageIndex = 1, pageSize = 10, searchQuery = '', sortColumn: string | null = null, sortDirection: string | null = null): void {
+  loadStudents(
+    pageIndex = 1,
+    pageSize = 10,
+    searchQuery = '',
+    sortColumn: string | null = null,
+    sortDirection: string | null = null,
+  ): void {
     this.studentService.getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection).subscribe({
       next: (res: any) => {
         // The backend now returns PagedResult format { items, totalCount, ... }
@@ -62,7 +68,13 @@ export class StudentsComponent implements OnInit {
     this.loadStudents();
   }
 
-  onPageChange(event: { pageIndex: number; pageSize: number; searchQuery: string; sortColumn: string | null; sortDirection: string | null }): void {
+  onPageChange(event: {
+    pageIndex: number;
+    pageSize: number;
+    searchQuery: string;
+    sortColumn: string | null;
+    sortDirection: string | null;
+  }): void {
     this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection);
   }
 
