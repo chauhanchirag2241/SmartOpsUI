@@ -84,8 +84,10 @@ export class StudentsComponent implements OnInit {
     searchQuery: string;
     sortColumn: string | null;
     sortDirection: string | null;
+    currentFilter: string | null;
   }): void {
-    this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection, this.currentFilter);
+    const filterValue = event.currentFilter ? (event.currentFilter as unknown as StudentFilter) : this.currentFilter;
+    this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection, filterValue);
   }
 
   onFilterChanged(filter: DataTableFilter | null): void {
@@ -94,7 +96,7 @@ export class StudentsComponent implements OnInit {
     } else {
       this.currentFilter = StudentFilter.All;
     }
-    this.loadStudents(1, 10, '', null, null, this.currentFilter);
+    // The pageChange event will handle the API call with the updated filter value
   }
 
   // ════════════════════════════════════════

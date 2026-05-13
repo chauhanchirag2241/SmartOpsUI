@@ -79,6 +79,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     searchQuery: string;
     sortColumn: string | null;
     sortDirection: string | null;
+    currentFilter: string | null;
   }>();
 
   /** Emits when add button is clicked */
@@ -250,6 +251,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
       searchQuery: this.searchQuery,
       sortColumn: this.sortColumn,
       sortDirection: this.sortDirection,
+      currentFilter: this.activeFilter?.value || null,
     });
   }
 
