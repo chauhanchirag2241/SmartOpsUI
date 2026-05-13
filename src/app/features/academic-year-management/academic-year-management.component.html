@@ -1,0 +1,25 @@
+<section class="academic-year-management-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="ayConfig"
+      [data]="academicYears"
+      [serverSide]="true"
+      [totalRecords]="totalYears"
+      [rowClassFn]="ayRowClass"
+      [initialFilterValue]="currentFilter"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (exportClicked)="onExportClicked()"
+      (bulkActionClicked)="onBulkActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-academic-year
+      [mode]="formMode"
+      [yearId]="selectedYearId"
+      (cancel)="closeAddForm()"
+      (saved)="onYearSaved()"
+    />
+  }
+</section>

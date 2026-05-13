@@ -9,6 +9,7 @@ import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-fie
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import { ClassService } from '../../../core/services/class.service';
+import { AcademicYearService } from '../../../core/services/academic-year.service';
 
 type FieldItem = {
   key: string;
@@ -94,11 +95,7 @@ export class AddClassComponent implements OnInit {
       controlName: 'academicYear',
       label: 'Academic year',
       placeholder: 'Select year',
-      options: [
-        { label: '2024-2025', value: '2024-2025' },
-        { label: '2025-2026', value: '2025-2026' },
-        { label: '2026-2027', value: '2026-2027' },
-      ],
+      options: [],
       validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }],
     },
     studentCapacity: {
@@ -189,6 +186,7 @@ export class AddClassComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private classService: ClassService,
+    private ayService: AcademicYearService,
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
   ) {
@@ -226,6 +224,7 @@ export class AddClassComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadAcademicYears();
     if ((this.mode === 'edit' || this.mode === 'view') && this.classId) {
       this.loadClass(this.classId);
     }
@@ -264,6 +263,18 @@ export class AddClassComponent implements OnInit {
       error: (err: any) => {
         console.error('Error loading class:', err);
         this.snackBar.open('Failed to load class details', 'Close', { duration: 3000, panelClass: 'snack-error' });
+      }
+    });
+  }
+
+  private loadAcademicYears(): void {
+    this.ayService.getAcademicYears(1, 100).subscribe({
+      next: (res: any) => {
+        this.configs['academicYear'].options = (res?.items || []).map((ay: any) => ({
+          label: ay.title,
+          value: ay.id
+        }));
+        this.cdr.detectChanges();
       }
     });
   }

@@ -50,6 +50,13 @@ export const routes: Routes = [
             (m) => m.AttendanceComponent,
           ),
       },
+      {
+        path: 'academic-years',
+        loadComponent: () =>
+          import('./features/academic-year-management/academic-year-management.component').then(
+            (m) => m.AcademicYearManagementComponent,
+          ),
+      },
     ],
   },
   {

@@ -199,6 +199,9 @@
                         ></ng-container>
                       }
                     }
+                    @case ('date') {
+                      {{ $any(cellVal) | date:'dd-MM-yyyy' }}
+                    }
                     @default {
                       {{ cellVal }}
                     }

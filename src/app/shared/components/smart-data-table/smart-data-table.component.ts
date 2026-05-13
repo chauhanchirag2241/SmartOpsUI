@@ -1,4 +1,4 @@
-import { NgClass, NgStyle, NgTemplateOutlet } from '@angular/common';
+import { NgClass, NgStyle, NgTemplateOutlet, DatePipe } from '@angular/common';
 import {
   Component,
   ContentChild,
@@ -27,7 +27,7 @@ import {
 @Component({
   selector: 'app-smart-data-table',
   standalone: true,
-  imports: [NgClass, NgStyle, NgTemplateOutlet, FormsModule, MatIconModule],
+  imports: [NgClass, NgStyle, NgTemplateOutlet, FormsModule, MatIconModule, DatePipe],
   templateUrl: './smart-data-table.component.html',
   styleUrl: './smart-data-table.component.css',
 })

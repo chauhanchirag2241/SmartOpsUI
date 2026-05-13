@@ -24,3 +24,9 @@ export enum ClassFilter {
   Active = 1,
   Inactive = 2
 }
+
+export enum AcademicYearFilter {
+  All = 0,
+  Active = 1,
+  Inactive = 2
+}

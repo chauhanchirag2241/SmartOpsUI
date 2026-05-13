@@ -15,7 +15,7 @@ export interface DataTableColumn {
   /** Optional width CSS value (e.g. '120px', '15%') */
   width?: string;
   /** Cell render type – determines how data is displayed */
-  cellType?: 'text' | 'badge' | 'progress' | 'avatar' | 'custom';
+  cellType?: 'text' | 'badge' | 'progress' | 'avatar' | 'custom' | 'date';
   /** For badge type: maps data values to badge styles */
   badgeMap?: Record<string, DataTableBadge>;
   /** For progress type: color thresholds */

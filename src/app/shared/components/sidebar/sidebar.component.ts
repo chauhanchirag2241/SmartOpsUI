@@ -28,6 +28,7 @@ export class SidebarComponent {
     { section: 'Academics', label: 'Students', icon: 'group', route: '/students', badge: '248' },
     { label: 'Classes', icon: 'domain', route: '/classes' },
     { label: 'Subjects', icon: 'school', route: '/subjects' },
+    { label: 'Academic Years', icon: 'calendar_month', route: '/academic-years' },
     { label: 'Teachers', icon: 'co_present', route: '/teachers', badge: '18' },
     { label: 'Attendance', icon: 'person_check', route: '/attendance' },
     { label: 'Exams', icon: 'workspace_premium', route: '/exams' },
