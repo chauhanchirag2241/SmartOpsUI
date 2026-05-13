@@ -29,6 +29,13 @@ export const routes: Routes = [
             (m) => m.StudentsComponent,
           ),
       },
+      {
+        path: 'classes',
+        loadComponent: () =>
+          import('./features/class-management/class-management.component').then(
+            (m) => m.ClassManagementComponent,
+          ),
+      },
     ],
   },
   {

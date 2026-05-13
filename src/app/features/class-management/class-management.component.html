@@ -1,0 +1,25 @@
+<section class="class-management-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="classConfig"
+      [data]="classes"
+      [serverSide]="true"
+      [totalRecords]="totalClasses"
+      [rowClassFn]="classRowClass"
+      [initialFilterValue]="currentFilter"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (exportClicked)="onExportClicked()"
+      (bulkActionClicked)="onBulkActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-class
+      [mode]="formMode"
+      [classId]="selectedClassId"
+      (cancel)="closeAddForm()"
+      (saved)="onClassSaved()"
+    />
+  }
+</section>
