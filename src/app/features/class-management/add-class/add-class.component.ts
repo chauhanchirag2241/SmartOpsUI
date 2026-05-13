@@ -6,6 +6,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
+import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import { ClassService } from '../../../core/services/class.service';
 
 @Component({
@@ -33,6 +34,8 @@ export class AddClassComponent implements OnInit {
     'studentCapacity',
     'classTeacher',
     'roomNumber',
+    'shift',
+    'medium',
     'description',
   ];
 
@@ -63,12 +66,7 @@ export class AddClassComponent implements OnInit {
       controlName: 'section',
       label: 'Section',
       placeholder: 'Select section',
-      options: [
-        { label: 'A', value: 'A' },
-        { label: 'B', value: 'B' },
-        { label: 'C', value: 'C' },
-        { label: 'D', value: 'D' },
-      ],
+      options: enumToOptions(Section),
       validations: [{ name: 'required', message: 'Section is required', validator: Validators.required }],
     },
     streamGroup: {
@@ -76,12 +74,7 @@ export class AddClassComponent implements OnInit {
       controlName: 'streamGroup',
       label: 'Stream / group',
       placeholder: 'Select stream or group',
-      options: [
-        { label: 'None (primary)', value: 'None' },
-        { label: 'Science', value: 'Science' },
-        { label: 'Commerce', value: 'Commerce' },
-        { label: 'Arts', value: 'Arts' },
-      ],
+      options: enumToOptions(StreamGroup, (value) => value === StreamGroup.None ? 'None (primary)' : value),
     },
     academicYear: {
       type: 'select',
@@ -121,6 +114,20 @@ export class AddClassComponent implements OnInit {
       label: 'Room number',
       placeholder: 'e.g. 101',
     },
+    shift: {
+      type: 'select',
+      controlName: 'shift',
+      label: 'Shift',
+      placeholder: 'Select shift',
+      options: enumToOptions(Shift),
+    },
+    medium: {
+      type: 'select',
+      controlName: 'medium',
+      label: 'Medium',
+      placeholder: 'Select medium',
+      options: enumToOptions(Medium),
+    },
     description: {
       type: 'textarea',
       controlName: 'description',
@@ -144,11 +151,13 @@ export class AddClassComponent implements OnInit {
     this.classForm = this.fb.group({
       className: ['', Validators.required],
       section: ['', Validators.required],
-      streamGroup: ['None'],
+      streamGroup: [StreamGroup.None],
       academicYear: ['', Validators.required],
       studentCapacity: ['', Validators.required],
       classTeacher: [''],
       roomNumber: [''],
+      shift: [''],
+      medium: [''],
       description: [''],
       status: ['Active'],
     });
@@ -167,19 +176,27 @@ export class AddClassComponent implements OnInit {
     }
   }
 
+  /** Maps backend int (1-based) → frontend enum string value */
+  private static intToEnum<T extends Record<string, string>>(enumObj: T, intValue: number): string {
+    const values = Object.values(enumObj);
+    return values[intValue - 1] ?? values[0];
+  }
+
   private loadClass(id: string): void {
     this.classService.getClassById(id).subscribe({
       next: (res: any) => {
         this.classForm.patchValue({
           className: res.className,
-          section: res.section,
-          streamGroup: res.streamGroup || 'None',
+          section: AddClassComponent.intToEnum(Section, res.section),
+          streamGroup: AddClassComponent.intToEnum(StreamGroup, res.streamGroup),
           academicYear: res.academicYear,
           studentCapacity: res.capacity,
           classTeacher: res.classTeacher,
           roomNumber: res.roomNumber,
+          shift: AddClassComponent.intToEnum(Shift, res.shift),
+          medium: AddClassComponent.intToEnum(Medium, res.medium),
           description: res.description,
-          status: res.status || 'Active',
+          status: res.isActive ? 'Active' : 'Inactive',
         });
         if (this.mode === 'view') {
           this.classForm.disable();

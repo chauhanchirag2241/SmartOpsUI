@@ -2,6 +2,27 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
+import { ClassFilter } from '../../shared/enums/table-filters.enum';
+import { Section, StreamGroup, Shift, Medium } from '../../shared/enums/field-options.enum';
+
+/**
+ * Maps a frontend string enum value to the backend 1-based integer.
+ * E.g. Section.A → 1, Shift.Morning → 1
+ */
+function enumToInt<T extends Record<string, string>>(enumObj: T, value: string | null | undefined): number {
+  if (!value) return 1;
+  const idx = Object.values(enumObj).indexOf(value);
+  return idx >= 0 ? idx + 1 : 1;
+}
+
+/** Maps frontend filter label → ClassFilter int */
+function resolveFilter(label: string): ClassFilter {
+  switch (label) {
+    case 'Active': return ClassFilter.Active;
+    case 'Inactive': return ClassFilter.Inactive;
+    default: return ClassFilter.All;
+  }
+}
 
 @Injectable({ providedIn: 'root' })
 export class ClassService {
@@ -13,12 +34,12 @@ export class ClassService {
     searchTerm = '',
     sortColumn: string | null = null,
     sortDirection: string | null = null,
-    status: string = 'All'
+    filter: string = 'All'
   ): Observable<any> {
     let params = new HttpParams()
       .set('pageIndex', pageIndex.toString())
       .set('pageSize', pageSize.toString())
-      .set('status', status);
+      .set('filter', resolveFilter(filter).toString());
 
     if (searchTerm) {
       params = params.set('searchTerm', searchTerm);
@@ -36,14 +57,15 @@ export class ClassService {
   createClass(classData: any): Observable<any> {
     const payload = {
       className: classData.className,
-      section: classData.section,
-      streamGroup: classData.streamGroup,
+      section: enumToInt(Section, classData.section),
+      streamGroup: enumToInt(StreamGroup, classData.streamGroup),
       academicYear: classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       classTeacher: classData.classTeacher,
       roomNumber: classData.roomNumber,
+      shift: enumToInt(Shift, classData.shift),
+      medium: enumToInt(Medium, classData.medium),
       description: classData.description,
-      status: classData.status || 'Active',
     };
 
     return this.api.post('classes', payload);
@@ -57,14 +79,15 @@ export class ClassService {
     const payload = {
       id,
       className: classData.className,
-      section: classData.section,
-      streamGroup: classData.streamGroup,
+      section: enumToInt(Section, classData.section),
+      streamGroup: enumToInt(StreamGroup, classData.streamGroup),
       academicYear: classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       classTeacher: classData.classTeacher,
       roomNumber: classData.roomNumber,
+      shift: enumToInt(Shift, classData.shift),
+      medium: enumToInt(Medium, classData.medium),
       description: classData.description,
-      status: classData.status || 'Active',
     };
     return this.api.put(`classes/${id}`, payload);
   }

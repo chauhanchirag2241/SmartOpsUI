@@ -139,7 +139,7 @@ export class ClassManagementComponent implements OnInit {
   };
 
   classRowClass = (row: Record<string, unknown>): string => {
-    return row['status'] === 'Inactive' ? 'row-inactive' : '';
+    return row['isActive'] === false ? 'row-inactive' : '';
   };
 
   onActionClicked(event: {

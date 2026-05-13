@@ -7,6 +7,7 @@ import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
+import { enumToOptions, Gender, BloodGroup, PaymentMode } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
 
 type FieldItem = {
@@ -97,8 +98,8 @@ export class AddStudentComponent implements OnInit {
     middleName: { type: 'input', controlName: 'middleName', label: 'Middle name', placeholder: 'e.g. Kumar' },
     lastName: { type: 'input', controlName: 'lastName', label: 'Last name', placeholder: 'e.g. Patel', validations: [{ name: 'required', message: 'Last name is required', validator: Validators.required }] },
     dob: { type: 'datepicker', controlName: 'dob', label: 'Date of birth', validations: [{ name: 'required', message: 'DOB is required', validator: Validators.required }] },
-    gender: { type: 'select', controlName: 'gender', label: 'Gender', options: [{ label: 'Male', value: 'Male' }, { label: 'Female', value: 'Female' }, { label: 'Other', value: 'Other' }], validations: [{ name: 'required', message: 'Gender is required', validator: Validators.required }] },
-    bloodGroup: { type: 'select', controlName: 'bloodGroup', label: 'Blood group', options: [{ label: 'A+', value: 'A+' }, { label: 'A-', value: 'A-' }, { label: 'B+', value: 'B+' }, { label: 'B-', value: 'B-' }, { label: 'O+', value: 'O+' }, { label: 'O-', value: 'O-' }, { label: 'AB+', value: 'AB+' }, { label: 'AB-', value: 'AB-' }] },
+    gender: { type: 'select', controlName: 'gender', label: 'Gender', options: enumToOptions(Gender), validations: [{ name: 'required', message: 'Gender is required', validator: Validators.required }] },
+    bloodGroup: { type: 'select', controlName: 'bloodGroup', label: 'Blood group', options: enumToOptions(BloodGroup) },
     mobile: { type: 'input', inputType: 'tel', controlName: 'mobile', label: 'Mobile number', placeholder: '10-digit number', validations: [{ name: 'required', message: 'Mobile is required', validator: Validators.required }, { name: 'pattern', message: 'Invalid mobile', validator: Validators.pattern('^[0-9]{10}$') }] },
     email: { type: 'input', inputType: 'email', controlName: 'email', label: 'Email', placeholder: 'student@email.com', validations: [{ name: 'email', message: 'Invalid email', validator: Validators.email }] },
     aadhaar: { type: 'input', controlName: 'aadhaar', label: 'Aadhaar number', placeholder: 'xxxx xxxx xxxx' },
@@ -125,7 +126,7 @@ export class AddStudentComponent implements OnInit {
     discountValue: { type: 'input', inputType: 'number', controlName: 'discountValue', label: 'Discount value', placeholder: '0' },
     discountUnit: { type: 'select', controlName: 'discountUnit', label: 'Discount unit', options: [{ label: '%', value: '%' }, { label: 'Rs', value: 'amount' }] },
     discountRemarks: { type: 'input', controlName: 'discountRemarks', label: 'Discount remarks', placeholder: 'Reason for discount' },
-    paymentMode: { type: 'select', controlName: 'paymentMode', label: 'Payment mode', options: [{ label: 'One-time', value: 'one-time' }, { label: 'Quarterly', value: 'quarterly' }, { label: 'Monthly', value: 'monthly' }], validations: [{ name: 'required', message: 'Payment mode is required', validator: Validators.required }] },
+    paymentMode: { type: 'select', controlName: 'paymentMode', label: 'Payment mode', options: enumToOptions(PaymentMode, (value) => value === PaymentMode.OneTime ? 'One-time' : value.charAt(0).toUpperCase() + value.slice(1)), validations: [{ name: 'required', message: 'Payment mode is required', validator: Validators.required }] },
     firstDueDate: { type: 'datepicker', controlName: 'firstDueDate', label: 'First due date', validations: [{ name: 'required', message: 'First due date is required', validator: Validators.required }] },
 
     remarks: { type: 'textarea', controlName: 'remarks', label: 'Remarks (optional)', placeholder: 'Any special notes about the student...' },
