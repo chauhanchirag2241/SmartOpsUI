@@ -56,7 +56,7 @@ export class StudentsComponent implements OnInit {
         this.totalStudents = res?.totalCount || 0;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading students:', err);
         this.snackBar.open('Failed to load students', 'Close', { duration: 3000, panelClass: 'snack-error' });
       }
@@ -101,6 +101,14 @@ export class StudentsComponent implements OnInit {
   // TABLE CONFIGURATION
   // ════════════════════════════════════════
   tableConfig: DataTableConfig = {
+    header: {
+      title: 'Students',
+      subtitle: 'Manage all enrolled students',
+      showAddButton: true,
+      addButtonText: 'Add student',
+      addButtonIcon: 'add',
+      addButtonClass: 'btn-primary'
+    },
     columns: [
       {
         key: 'student',
@@ -237,7 +245,7 @@ export class StudentsComponent implements OnInit {
         disableClose: true
       });
 
-      dialogRef.afterClosed().subscribe(confirmed => {
+      dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
           this.studentService.deleteStudent(id).subscribe({
             next: () => {
@@ -264,6 +272,10 @@ export class StudentsComponent implements OnInit {
     });
   }
 
+  onAddButtonClicked(): void {
+    this.openAddForm();
+  }
+
   onBulkActionClicked(event: {
     action: DataTableBulkAction;
     selectedRows: Record<string, unknown>[];
@@ -282,7 +294,7 @@ export class StudentsComponent implements OnInit {
         disableClose: true
       });
 
-      dialogRef.afterClosed().subscribe(confirmed => {
+      dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
           // Implement bulk delete logic here
           this.snackBar.open(`Bulk delete for ${event.selectedRows.length} students initiated`, 'Close', { duration: 3000, panelClass: 'snack-success' });

@@ -1,16 +1,5 @@
 <section class="students-page">
   @if (!showAddForm) {
-    <header class="page-header">
-      <div class="header-info">
-        <h1>Students</h1>
-        <span>Manage all enrolled students</span>
-      </div>
-      <button type="button" class="btn-primary" id="add-student-btn" (click)="openAddForm()">
-        <mat-icon>add</mat-icon>
-        Add student
-      </button>
-    </header>
-
     <app-smart-data-table
       [config]="tableConfig"
       [data]="students"
@@ -23,6 +12,7 @@
       (actionClicked)="onActionClicked($event)"
       (exportClicked)="onExportClicked()"
       (bulkActionClicked)="onBulkActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
     />
   } @else {
     <app-add-student

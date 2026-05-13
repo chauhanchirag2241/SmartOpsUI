@@ -1,3 +1,25 @@
+@if (config.header) {
+  <header class="page-header">
+    <div class="header-info">
+      <h1>{{ config.header.title }}</h1>
+      @if (config.header.subtitle) {
+        <span>{{ config.header.subtitle }}</span>
+      }
+    </div>
+    @if (config.header.showAddButton) {
+      <button
+        type="button"
+        [class]="config.header.addButtonClass ?? 'btn-primary'"
+        id="add-button"
+        (click)="onAddButtonClick()"
+      >
+        <mat-icon>{{ config.header.addButtonIcon ?? 'add' }}</mat-icon>
+        {{ config.header.addButtonText ?? 'Add' }}
+      </button>
+    }
+  </header>
+}
+
 <div class="table-wrap">
   <div class="toolbar">
     @if (config.showSearch !== false) {

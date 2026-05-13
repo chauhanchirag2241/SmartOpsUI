@@ -25,6 +25,56 @@
   color: var(--text);
 }
 
+/* ── PAGE HEADER ── */
+.page-header {
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  margin: 0 0 8px 0;
+}
+
+.header-info h1 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.header-info span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.page-header .btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--g400);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-header .btn-primary:hover {
+  background: var(--g600);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 153, 34, 0.3);
+}
+
+.page-header .btn-primary mat-icon {
+  font-size: 18px;
+}
+
 /* ── TABLE WRAPPER ── */
 .table-wrap {
   background: var(--card);
@@ -36,13 +86,12 @@
 
 /* ═══════════════════ TOOLBAR ═══════════════════ */
 .toolbar {
-  padding: 10px 14px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
   border-bottom: 0.5px solid var(--border);
   flex-wrap: wrap;
-  border-radius: 12px 12px 0 0;
 }
 
 /* Search */

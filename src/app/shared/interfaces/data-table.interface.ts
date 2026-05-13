@@ -96,6 +96,24 @@ export interface DataTableBulkAction {
 }
 
 /**
+ * Header configuration for the data table.
+ */
+export interface DataTableHeader {
+  /** Main title to display in the header */
+  title: string;
+  /** Subtitle/description to display below the title */
+  subtitle?: string;
+  /** Whether to show the add button */
+  showAddButton?: boolean;
+  /** Text for the add button (default: 'Add') */
+  addButtonText?: string;
+  /** Material icon for the add button (default: 'add') */
+  addButtonIcon?: string;
+  /** CSS class for the add button (default: 'btn-primary') */
+  addButtonClass?: string;
+}
+
+/**
  * Main configuration object passed to the smart-data-table component.
  */
 export interface DataTableConfig {
@@ -125,4 +143,6 @@ export interface DataTableConfig {
   showColumnToggle?: boolean;
   /** Label for footer info text, e.g. 'students', 'records' */
   itemLabel?: string;
+  /** Header configuration */
+  header?: DataTableHeader;
 }

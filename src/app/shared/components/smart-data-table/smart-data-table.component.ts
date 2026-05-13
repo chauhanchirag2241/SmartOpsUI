@@ -81,6 +81,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     sortDirection: string | null;
   }>();
 
+  /** Emits when add button is clicked */
+  @Output() addButtonClicked = new EventEmitter<void>();
+
   @ViewChild('ctxMenu') ctxMenuRef!: ElementRef<HTMLDivElement>;
 
   // --- Internal State ---
@@ -462,6 +465,10 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
 
   onExportClick(): void {
     this.exportClicked.emit();
+  }
+
+  onAddButtonClick(): void {
+    this.addButtonClicked.emit();
   }
 
   // ========================
