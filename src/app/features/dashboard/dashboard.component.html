@@ -129,7 +129,7 @@
             <h2><mat-icon>bolt</mat-icon>Quick actions</h2>
           </div>
           <div class="quick-grid">
-            <button *ngFor="let item of quickActions" type="button">
+            <button *ngFor="let item of quickActions" type="button" [routerLink]="item.route">
               <mat-icon>{{ item.icon }}</mat-icon>
               {{ item.label }}
             </button>

@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { NgFor } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
@@ -50,11 +51,13 @@ interface AlertItem {
 interface QuickAction {
   icon: string;
   label: string;
+  route?: string;
 }
 
 @Component({
   selector: 'app-dashboard',
-  imports: [MatCardModule, MatIconModule, NgFor],
+  standalone: true,
+  imports: [MatCardModule, MatIconModule, NgFor, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -111,8 +114,8 @@ export class DashboardComponent {
   ];
 
   readonly quickActions: QuickAction[] = [
-    { icon: 'person_add', label: 'Add student' },
-    { icon: 'how_to_reg', label: 'Mark attendance' },
+    { icon: 'person_add', label: 'Add student', route: '/students' },
+    { icon: 'how_to_reg', label: 'Mark attendance', route: '/attendance' },
     { icon: 'payments', label: 'Collect fees' },
     { icon: 'event_note', label: 'Exam schedule' },
   ];

@@ -9,6 +9,7 @@ import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-fie
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { enumToOptions, Gender, BloodGroup, PaymentMode } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
+import { ClassService } from '../../../core/services/class.service';
 
 type FieldItem = {
   key: string;
@@ -114,8 +115,7 @@ export class AddStudentComponent implements OnInit {
 
     admissionDate: { type: 'datepicker', controlName: 'admissionDate', label: 'Admission date', validations: [{ name: 'required', message: 'Admission date is required', validator: Validators.required }] },
     academicYear: { type: 'select', controlName: 'academicYear', label: 'Academic year', options: [{ label: '2024-25', value: '2024-25' }, { label: '2025-26', value: '2025-26' }], validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }] },
-    class: { type: 'select', controlName: 'class', label: 'Class', placeholder: 'Select class', options: [{ label: 'Class 1', value: '1' }, { label: 'Class 2', value: '2' }, { label: 'Class 8', value: '8' }, { label: 'Class 9', value: '9' }, { label: 'Class 10', value: '10' }], validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }] },
-    section: { type: 'select', controlName: 'section', label: 'Section', placeholder: 'Select section', options: [{ label: 'A', value: 'A' }, { label: 'B', value: 'B' }, { label: 'C', value: 'C' }, { label: 'D', value: 'D' }], validations: [{ name: 'required', message: 'Section is required', validator: Validators.required }] },
+    class: { type: 'select', controlName: 'class', label: 'Class', placeholder: 'Select class', options: [], validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }] },
     rollNumber: { type: 'input', controlName: 'rollNumber', label: 'Roll number', placeholder: 'Auto-assigned', disabled: true },
     prevSchool: { type: 'input', controlName: 'prevSchool', label: 'Previous school name', placeholder: 'School name' },
     prevClass: { type: 'input', controlName: 'prevClass', label: 'Previous class passed', placeholder: 'e.g. Class 9' },
@@ -177,7 +177,7 @@ export class AddStudentComponent implements OnInit {
       icon: 'co_present',
       title: 'Class & section',
       grid: 'grid3',
-      fields: [{ key: 'class' }, { key: 'section' }, { key: 'rollNumber' }],
+      fields: [{ key: 'class' }, { key: 'rollNumber' }],
     },
     {
       tab: 1,
@@ -254,7 +254,6 @@ export class AddStudentComponent implements OnInit {
       items: [
         { label: 'Academic Year', key: 'academicYear' },
         { label: 'Class', key: 'class' },
-        { label: 'Section', key: 'section' },
         { label: 'Admission Date', key: 'admissionDate' },
       ],
     },
@@ -278,6 +277,7 @@ export class AddStudentComponent implements OnInit {
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
     private studentService: StudentService,
+    private classService: ClassService,
     private cdr: ChangeDetectorRef,
   ) {
     this.studentForm = this.fb.group({
@@ -302,7 +302,6 @@ export class AddStudentComponent implements OnInit {
       admissionDate: ['', Validators.required],
       academicYear: ['', Validators.required],
       class: ['', Validators.required],
-      section: ['', Validators.required],
       rollNumber: [{ value: '', disabled: true }],
       prevSchool: [''],
       prevClass: [''],
@@ -322,9 +321,26 @@ export class AddStudentComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.loadActiveClasses();
     if (this.studentId && this.mode !== 'add') {
       this.loadStudentData(this.studentId);
     }
+  }
+
+  private loadActiveClasses() {
+    this.classService.getClasses(1, 100, '', null, null, 'Active').subscribe({
+      next: (res) => {
+        if (res && res.items) {
+          const options = res.items.map((c: any) => ({
+            label: `${c.className}-${c.section}`,
+            value: c.id
+          }));
+          this.configs['class'].options = options;
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 })
+    });
   }
 
   get pageTitle(): string {
@@ -392,8 +408,7 @@ export class AddStudentComponent implements OnInit {
 
       admissionDate: this.toLocalDate(academic?.admissionDate),
       academicYear: academic?.academicYear,
-      class: academic?.class,
-      section: academic?.section,
+      class: academic?.classId,
       rollNumber: academic?.rollNumber,
 
       prevSchool: prevSchool?.schoolName,
@@ -451,10 +466,24 @@ export class AddStudentComponent implements OnInit {
     }
 
     this.isSaving = true;
+    
+    // Prepare payload by mapping class selection to classId
+    const rawValue = this.studentForm.getRawValue();
+    
+    const payload = {
+      ...rawValue,
+      academics: [{
+        admissionDate: rawValue.admissionDate,
+        academicYear: rawValue.academicYear,
+        classId: rawValue.class,
+        rollNumber: rawValue.rollNumber
+      }]
+    };
+
     try {
       const saveObs = (this.mode === 'edit' && this.studentId)
-        ? this.studentService.updateStudent(this.studentId, this.studentForm.getRawValue())
-        : this.studentService.createStudent(this.studentForm.value);
+        ? this.studentService.updateStudent(this.studentId, payload)
+        : this.studentService.createStudent(payload);
 
       saveObs
         .pipe(finalize(() => {

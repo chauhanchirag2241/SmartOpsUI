@@ -1,0 +1,196 @@
+<div class="attendance-container" [class.dark]="darkMode">
+  <!-- Topbar -->
+  <div class="topbar">
+    <button class="back-btn" aria-label="Back" routerLink="/dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="page-info" style="flex:1">
+      <div class="page-title">Attendance</div>
+      <div class="page-sub">
+        {{ selectedClassId }} &middot; {{ selectedSubject }} &middot; {{ selectedDate | date:'mediumDate' }}
+      </div>
+    </div>
+    <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
+      <mat-icon>keyboard</mat-icon>
+      <span>Shortcuts</span>
+    </button>
+    <button class="icon-btn" (click)="toggleDark()" aria-label="Toggle dark mode">
+      <mat-icon>{{ darkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+    <button class="save-btn" (click)="submitAttendance()" [disabled]="isSubmitting">
+      <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+      <mat-icon class="spinning" *ngIf="isSubmitting">sync</mat-icon>
+      {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+    </button>
+  </div>
+
+  <!-- Keyboard Shortcuts Panel -->
+  <div class="kbd-panel" *ngIf="kbdVisible">
+    <strong style="font-size:12px">Keyboard shortcuts</strong>
+    <div class="kbd-grid">
+      <div class="kbd-row"><kbd class="kbd-key">P</kbd> Mark present</div>
+      <div class="kbd-row"><kbd class="kbd-key">A</kbd> Mark absent</div>
+      <div class="kbd-row"><kbd class="kbd-key">L</kbd> Mark leave</div>
+      <div class="kbd-row"><kbd class="kbd-key">T</kbd> Mark late</div>
+      <div class="kbd-row"><kbd class="kbd-key">↑ ↓</kbd> Navigate</div>
+      <div class="kbd-row"><kbd class="kbd-key">Ctrl+Z</kbd> Undo last</div>
+      <div class="kbd-row"><kbd class="kbd-key">/</kbd> Focus search</div>
+      <div class="kbd-row"><kbd class="kbd-key">Space</kbd> Cycle status</div>
+    </div>
+  </div>
+
+  <!-- Submitted Banner -->
+  <div class="submitted-banner" *ngIf="submittedInfo">
+    <mat-icon>check_circle</mat-icon>
+    Attendance submitted on <strong>{{ submittedInfo.date }}</strong> &middot; <span>{{ submittedInfo.by }}</span>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="sel-wrap">
+      <select [(ngModel)]="selectedClassId" (change)="loadStudents()">
+        <option *ngFor="let c of classes" [value]="c.id">{{ c.className }}-{{ c.section | uppercase }}</option>
+      </select>
+      <i class="ti ti-chevron-down arr"></i>
+    </div>
+    <div class="sel-wrap">
+      <select [(ngModel)]="selectedSubject">
+        <option *ngFor="let s of subjects" [value]="s">{{ s }}</option>
+      </select>
+      <i class="ti ti-chevron-down arr"></i>
+    </div>
+    <input type="date" class="date-input" [(ngModel)]="selectedDate">
+    <div class="sel-wrap">
+      <select [(ngModel)]="selectedPeriod">
+        <option *ngFor="let p of periods" [value]="p">{{ p }}</option>
+      </select>
+      <i class="ti ti-chevron-down arr"></i>
+    </div>
+    <div class="search-wrap">
+      <mat-icon>search</mat-icon>
+      <input type="text" id="search-inp" placeholder="Search name or roll…" [(ngModel)]="searchQuery">
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary">
+    <div class="sum-card" [class.active-filter]="curFilter === 'all'" (click)="filterBy('all')">
+      <div class="sum-icon si-g"><mat-icon>groups</mat-icon></div>
+      <div><div class="sum-val">{{ stats.total }}</div><div class="sum-label">Total</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'present'" (click)="filterBy('present')">
+      <div class="sum-icon si-g"><mat-icon>check_circle</mat-icon></div>
+      <div><div class="sum-val">{{ stats.present }}</div><div class="sum-label">Present</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'absent'" (click)="filterBy('absent')">
+      <div class="sum-icon si-r"><mat-icon>cancel</mat-icon></div>
+      <div><div class="sum-val">{{ stats.absent }}</div><div class="sum-label">Absent</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'leave'" (click)="filterBy('leave')">
+      <div class="sum-icon si-a"><mat-icon>event_busy</mat-icon></div>
+      <div><div class="sum-val">{{ stats.leave }}</div><div class="sum-label">Leave</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'late'" (click)="filterBy('late')">
+      <div class="sum-icon si-l"><mat-icon>schedule</mat-icon></div>
+      <div><div class="sum-val">{{ stats.late }}</div><div class="sum-label">Late</div></div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-wrap">
+    <div class="prog-top">
+      <span>{{ stats.marked }} / {{ stats.total }} marked</span>
+      <span style="color:var(--g600);font-weight:500">{{ stats.pct }}%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="pb-present" [style.width.%]="stats.pPct"></div>
+      <div class="pb-absent" [style.width.%]="stats.aPct"></div>
+      <div class="pb-leave" [style.width.%]="stats.lPct"></div>
+      <div class="pb-late" [style.width.%]="stats.ltPct"></div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="bulk-label">Mark all:</span>
+    <button class="bulk-btn bb-p" (click)="markAll('present')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon>Present</button>
+    <button class="bulk-btn bb-a" (click)="markAll('absent')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">cancel</mat-icon>Absent</button>
+    <button class="bulk-btn bb-l" (click)="markAll('leave')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">event_busy</mat-icon>Leave</button>
+    <button class="bulk-btn bb-lt" (click)="markAll('late')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">schedule</mat-icon>Late</button>
+    <button class="bulk-btn bb-r" (click)="markAll('')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">refresh</mat-icon>Reset</button>
+    <div class="sep"></div>
+    <button class="undo-btn" (click)="undo()" [disabled]="history.length === 0">
+      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">undo</mat-icon>Undo
+    </button>
+    <div class="view-toggle">
+      <button class="vt-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')"><mat-icon>grid_view</mat-icon></button>
+      <button class="vt-btn" [class.active]="viewMode === 'list'" (click)="setView('list')"><mat-icon>list</mat-icon></button>
+    </div>
+  </div>
+
+  <!-- Students Container -->
+  <div [ngClass]="viewMode === 'grid' ? 'student-grid' : 'student-list'">
+    <ng-container *ngIf="viewMode === 'grid'">
+      <div *ngFor="let s of visibleStudents; let i = index" 
+           [ngClass]="['stu-card', status[s.id], notes[s.id] ? 'has-note' : '', focusIdx === i ? 'focused' : '']"
+           (click)="cardClick(s.id)"
+           (focus)="onCardFocus(i)"
+           tabindex="0">
+        <div class="status-dot"></div>
+        <div class="roll-no">ROLL {{ s.roll }}</div>
+        <div class="stu-av" [ngClass]="s.avClass">{{ s.initials }}</div>
+        <div class="stu-name">{{ s.name }}</div>
+        <div class="stu-actions">
+          <div class="sa-btn sa-p" (click)="setStatus(s.id, 'present', $event)" title="Present (P)">P</div>
+          <div class="sa-btn sa-a" (click)="setStatus(s.id, 'absent', $event)" title="Absent (A)">A</div>
+          <div class="sa-btn sa-l" (click)="setStatus(s.id, 'leave', $event)" title="Leave (L)">L</div>
+          <div class="sa-btn sa-lt" (click)="setStatus(s.id, 'late', $event)" title="Late (T)">Late</div>
+        </div>
+        <div class="note-badge" (click)="openNote(s.id, $event)" [title]="notes[s.id] || 'Add note'">
+          <mat-icon style="font-size: 12px; width: 12px; height: 12px;">notes</mat-icon>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- List View Row -->
+    <ng-container *ngIf="viewMode === 'list'">
+      <div *ngFor="let s of visibleStudents; let i = index" 
+           [ngClass]="['list-row', status[s.id], focusIdx === i ? 'focused' : '']"
+           (click)="cardClick(s.id)"
+           (focus)="onCardFocus(i)"
+           tabindex="0">
+        <div class="list-av" [ngClass]="s.avClass">{{ s.initials }}</div>
+        <div class="list-roll">Roll {{ s.roll }}</div>
+        <div class="list-name">{{ s.name }}</div>
+        <div class="list-btns">
+          <button class="lb-btn lb-p" (click)="setStatus(s.id, 'present', $event)">P</button>
+          <button class="lb-btn lb-a" (click)="setStatus(s.id, 'absent', $event)">A</button>
+          <button class="lb-btn lb-l" (click)="setStatus(s.id, 'leave', $event)">L</button>
+          <button class="lb-btn lb-lt" (click)="setStatus(s.id, 'late', $event)">Late</button>
+        </div>
+        <div class="note-badge" style="position:static;display:flex" *ngIf="['absent','leave','late'].includes(status[s.id])" (click)="openNote(s.id, $event)">
+          <mat-icon style="font-size: 12px; width: 12px; height: 12px;">notes</mat-icon>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="visibleStudents.length === 0">
+      <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: var(--muted); margin-bottom: 15px;">person_search</mat-icon>
+      <p>No students found for this criteria.</p>
+    </div>
+  </div>
+
+  <!-- Note Modal -->
+  <div class="note-modal" *ngIf="noteTargetId" (click)="closeNote()">
+    <div class="note-box" (click)="$event.stopPropagation()">
+      <h3>Add note for {{ students[focusIdx]?.name }}</h3>
+      <textarea [(ngModel)]="tempNote" rows="4" placeholder="Reason for absence / leave..." maxlength="200"></textarea>
+      <div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px">{{ tempNote.length }}/200</div>
+      <div class="note-footer">
+        <button class="nb-cancel" (click)="closeNote()">Cancel</button>
+        <button class="nb-save" (click)="saveNote()">Save note</button>
+      </div>
+    </div>
+  </div>
+</div>

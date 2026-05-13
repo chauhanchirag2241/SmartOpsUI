@@ -43,6 +43,13 @@ export const routes: Routes = [
             (m) => m.SubjectsComponent,
           ),
       },
+      {
+        path: 'attendance',
+        loadComponent: () =>
+          import('./features/attendance/attendance.component').then(
+            (m) => m.AttendanceComponent,
+          ),
+      },
     ],
   },
   {

@@ -17,6 +17,7 @@ import {
   Curriculum
 } from '../../../shared/enums/field-options.enum';
 import { SubjectService } from '../../../core/services/subject.service';
+import { ClassService } from '../../../core/services/class.service';
 
 type FieldItem = {
   key: string;
@@ -105,17 +106,8 @@ export class AddSubjectComponent implements OnInit {
     assignedClasses: {
       type: 'multi-checkbox',
       controlName: 'assignedClasses',
-      label: 'Assigned classes',
-      options: [
-        { label: 'Class 9-A', value: '9A' },
-        { label: 'Class 9-B', value: '9B' },
-        { label: 'Class 10-A', value: '10A' },
-        { label: 'Class 10-B', value: '10B' },
-        { label: 'Class 11-A', value: '11A' },
-        { label: 'Class 11-B', value: '11B' },
-        { label: 'Class 12-A', value: '12A' },
-        { label: 'Class 12-B', value: '12B' },
-      ],
+      label: 'Assign to classes',
+      options: [],
     },
     periodsPerWeek: {
       type: 'number',
@@ -251,7 +243,8 @@ export class AddSubjectComponent implements OnInit {
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
     private subjectService: SubjectService,
-    private cdr: ChangeDetectorRef,
+    private classService: ClassService,
+    private cdr: ChangeDetectorRef
   ) {
     this.subjectForm = this.fb.group({
       subjectName: ['', Validators.required],
@@ -275,9 +268,26 @@ export class AddSubjectComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.loadActiveClasses();
     if (this.subjectId && this.mode !== 'add') {
       this.loadSubjectData(this.subjectId);
     }
+  }
+
+  private loadActiveClasses() {
+    this.classService.getClasses(1, 100, '', null, null, 'Active').subscribe({
+      next: (res) => {
+        if (res && res.items) {
+          const options = res.items.map((c: any) => ({
+            label: `${c.className}-${c.section}`,
+            value: `${c.className}-${c.section}` // Keeping string value for now to match backend expectations if it's stored as JSON strings
+          }));
+          this.configs['assignedClasses'].options = options;
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 })
+    });
   }
 
   get pageTitle(): string {
