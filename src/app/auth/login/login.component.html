@@ -1,28 +1,123 @@
-<mat-card class="login-card">
-  <mat-card-header>
-    <mat-card-title>School ERP Login</mat-card-title>
-    <mat-card-subtitle>Sign in to continue</mat-card-subtitle>
-  </mat-card-header>
+<div class="scene">
+  <!-- Dynamic Orbs -->
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  
+  <!-- Grid Background -->
+  <div class="grid-overlay"></div>
+  
+  <!-- Particles Container -->
+  <div class="particles">
+    <div *ngFor="let p of particles" 
+         class="particle" 
+         [style.left.%]="p.left"
+         [style.bottom.%]="p.bottom"
+         [style.--dur]="p.dur"
+         [style.--delay]="p.delay"
+         [style.--drift]="p.drift"
+         [style.width.px]="p.size"
+         [style.height.px]="p.size">
+    </div>
+  </div>
 
-  <mat-card-content>
+  <div class="card">
+    <div class="top-glow"></div>
+
+    <!-- Logo Section -->
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">SmartOps</div>
+        <div class="brand-tag">ERP SYSTEM</div>
+      </div>
+    </div>
+
+    <!-- Welcome Text -->
+    <div class="heading">
+      <h2>Welcome <em>back</em></h2>
+      <p>Sign in to your school dashboard</p>
+    </div>
+
+    <!-- Login Form -->
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Email</mat-label>
-        <input matInput type="email" formControlName="email" placeholder="admin@school.com" />
-        <mat-error *ngIf="loginForm.controls.email.hasError('required')">Email is required</mat-error>
-        <mat-error *ngIf="loginForm.controls.email.hasError('email')">Invalid email format</mat-error>
-      </mat-form-field>
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </span>
+          <input type="email" formControlName="email" placeholder="admin@smartops.com" />
+        </div>
+        <div class="error-msg" *ngIf="loginForm.controls.email.touched && loginForm.controls.email.invalid">
+          <span *ngIf="loginForm.controls.email.hasError('required')">Email is required</span>
+          <span *ngIf="loginForm.controls.email.hasError('email')">Please enter a valid email</span>
+        </div>
+      </div>
 
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Password</mat-label>
-        <input matInput type="password" formControlName="password" />
-        <mat-error *ngIf="loginForm.controls.password.hasError('required')">Password is required</mat-error>
-        <mat-error *ngIf="loginForm.controls.password.hasError('minlength')">Use at least 6 characters</mat-error>
-      </mat-form-field>
+      <div class="field">
+        <label>Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" />
+          <button type="button" class="eye-btn" (click)="togglePassword()" aria-label="Toggle password visibility">
+            <svg *ngIf="!showPassword" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword" viewBox="0 0 24 24">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="error-msg" *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">
+          <span *ngIf="loginForm.controls.password.hasError('required')">Password is required</span>
+          <span *ngIf="loginForm.controls.password.hasError('minlength')">Minimum 6 characters required</span>
+        </div>
+      </div>
 
-      <button mat-raised-button color="primary" type="submit" class="full-width" [disabled]="loading">
-        {{ loading ? 'Signing in...' : 'Sign In' }}
+      <div class="row-opts">
+        <label class="remember">
+          <input type="checkbox" formControlName="rememberMe" />
+          <span>Keep me signed in</span>
+        </label>
+        <button type="button" class="forgot">Forgot password?</button>
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="loading">
+        <span *ngIf="!loading">Sign In →</span>
+        <span *ngIf="loading">✓ Authenticating...</span>
       </button>
     </form>
-  </mat-card-content>
-</mat-card>
+
+    <div class="divider">
+      <hr/><span>or continue with</span><hr/>
+    </div>
+
+    <button type="button" class="google-btn">
+      <svg width="16" height="16" viewBox="0 0 48 48">
+        <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+        <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.32-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+        <path fill="#FBBC05" d="M11.68 28.18A13.85 13.85 0 0 1 10.8 24c0-1.45.25-2.86.68-4.18V14.12H4.34A23.93 23.93 0 0 0 0 24c0 3.86.92 7.51 2.54 10.73l7.14-5.55z"/>
+        <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.19 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.34 5.7C13.42 14.62 18.27 10.75 24 10.75z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="footer-note">Need help? <a>Contact support</a></div>
+  </div>
+</div>
