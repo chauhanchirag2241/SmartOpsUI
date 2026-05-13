@@ -36,6 +36,13 @@ export const routes: Routes = [
             (m) => m.ClassManagementComponent,
           ),
       },
+      {
+        path: 'subjects',
+        loadComponent: () =>
+          import('./features/subjects/subjects.component').then(
+            (m) => m.SubjectsComponent,
+          ),
+      },
     ],
   },
   {

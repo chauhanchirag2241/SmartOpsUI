@@ -1,4 +1,5 @@
 import { Component, HostBinding, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
   DateAdapter,
@@ -55,6 +56,7 @@ class DateOnlyAdapter extends NativeDateAdapter {
   selector: 'app-dynamic-field',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -94,5 +96,22 @@ export class DynamicFieldComponent {
 
   optionTrack(index: number, option: SelectOption): string {
     return `${index}-${String(option.value)}`;
+  }
+
+  onMultiCheckboxChange(controlName: string, value: unknown, checked: boolean): void {
+    const control = this.group.get(controlName);
+    if (!control) return;
+
+    const currentArray = (control.value ?? []) as unknown[];
+    let newArray: unknown[];
+
+    if (checked) {
+      newArray = [...currentArray, value];
+    } else {
+      newArray = currentArray.filter((item) => item !== value);
+    }
+
+    control.setValue(newArray);
+    control.markAsTouched();
   }
 }

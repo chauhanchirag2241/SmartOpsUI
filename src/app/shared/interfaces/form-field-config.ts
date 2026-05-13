@@ -12,7 +12,7 @@ export interface ValidationConfig {
 }
 
 export interface FormFieldConfig {
-  type: 'input' | 'select' | 'datepicker' | 'textarea' | 'checkbox';
+  type: 'input' | 'select' | 'datepicker' | 'textarea' | 'checkbox' | 'multi-checkbox' | 'number';
   label: string;
   controlName: string;
   inputType?: 'text' | 'email' | 'tel' | 'number' | 'password';

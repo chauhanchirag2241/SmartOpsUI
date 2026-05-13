@@ -5,32 +5,73 @@
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
-<form [formGroup]="classForm" class="class-form">
-  <div class="card">
-    <div class="card-title">
-      <mat-icon>{{ formCard.icon }}</mat-icon>
-      {{ formCard.title }}
-    </div>
-    <div [class]="formCard.grid">
-      @for (field of formCard.fields; track field) {
-        <app-dynamic-field
-          [config]="configs[field]"
-          [group]="classForm"
-          [full]="field === 'description'"
-        />
-      }
-    </div>
-  </div>
+<div class="progress-bar">
+  <div class="progress-fill" [style.width.%]="progressWidthPercent"></div>
+</div>
+<div class="step-hint">{{ tabs[currentTab].hint }}</div>
 
-  <div class="footer-actions">
-    <div></div>
-    @if (mode !== 'view') {
-      <button type="button" class="btn-next" (click)="saveClass()" [disabled]="isSaving">
-        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-        {{ isSaving ? 'Saving...' : (mode === 'edit' ? 'Update class' : 'Add class') }}
-      </button>
+<div class="tabs" role="tablist">
+  @for (tab of tabs; track tab.label; let i = $index) {
+    <div
+      class="tab"
+      [class.active]="currentTab === i"
+      [class.done]="currentTab > i"
+      (click)="goTab(i)"
+      role="tab"
+    >
+      <div class="tab-num">{{ i + 1 }}</div>
+      {{ tab.label }}
+    </div>
+  }
+</div>
+
+<form [formGroup]="classForm">
+  @switch (currentTab) {
+    @case (0) {
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
     }
-  </div>
-
-
+  }
 </form>
+
+<ng-template #dynamicFormCards>
+  @for (card of cardsForCurrentTab; track trackFormCard($index, card)) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}
+      </div>
+      <div [class]="card.grid">
+        @for (field of card.fields; track field.key) {
+          <app-dynamic-field
+            [config]="configs[field.key]"
+            [group]="classForm"
+            [full]="field.full ?? false"
+          />
+        }
+      </div>
+    </div>
+  }
+</ng-template>
+
+<div class="footer-actions">
+  <button
+    type="button"
+    class="btn-back"
+    [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'"
+    (click)="prevTab()"
+  >
+    <mat-icon>arrow_back</mat-icon> Previous
+  </button>
+
+  <div class="footer-hint">{{ footerHints[currentTab] }}</div>
+
+  @if (currentTab < finalTabIndex || mode !== 'view') {
+    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
+      @if (currentTab < finalTabIndex) {
+        Next <mat-icon>arrow_forward</mat-icon>
+      } @else if (mode !== 'view') {
+        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+        {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Class' : 'Confirm & Add') }}
+      }
+    </button>
+  }
+</div>

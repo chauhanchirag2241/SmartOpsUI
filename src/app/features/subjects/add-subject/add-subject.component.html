@@ -1,0 +1,140 @@
+<div class="topbar">
+  <button type="button" class="back-btn" (click)="cancel.emit()">
+    <mat-icon>arrow_back</mat-icon> Back
+  </button>
+  <div class="page-title">{{ pageTitle }}</div>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-fill" [style.width.%]="progressWidthPercent"></div>
+</div>
+<div class="step-hint">{{ tabs[currentTab].hint }}</div>
+
+<div class="tabs" role="tablist">
+  @for (tab of tabs; track tab.label; let i = $index) {
+    <div
+      class="tab"
+      [class.active]="currentTab === i"
+      [class.done]="currentTab > i"
+      (click)="goTab(i)"
+      role="tab"
+    >
+      <div class="tab-num">{{ i + 1 }}</div>
+      {{ tab.label }}
+    </div>
+  }
+</div>
+
+<form [formGroup]="subjectForm">
+  @switch (currentTab) {
+    @case (0) {
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
+    }
+    @case (1) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>calendar_month</mat-icon>Teaching schedule
+        </div>
+        <div class="grid2">
+           <app-dynamic-field [config]="configs['periodsPerWeek']" [group]="subjectForm" />
+           <app-dynamic-field [config]="configs['periodDuration']" [group]="subjectForm" />
+        </div>
+
+        <div class="schedule-custom-container">
+            <div class="schedule-column">
+                <label class="field-label">Teaching days</label>
+                <div class="checkbox-list-grid">
+                    @for (day of configs['teachingDays'].options; track day.value) {
+                        <div class="checkbox-item" [class.selected]="isDaySelected(day.value)" (click)="toggleDay(day.value)">
+                            <mat-icon>{{ isDaySelected(day.value) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                            <span>{{ day.label }}</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="schedule-column">
+                <label class="field-label">Assigned classes <span class="required">*</span></label>
+                <div class="classes-badge-grid">
+                    @for (cls of configs['assignedClasses'].options; track cls.value) {
+                        <div class="class-badge" [class.selected]="isClassSelected(cls.value)" (click)="toggleClass(cls.value)">
+                            <mat-icon>{{ isClassSelected(cls.value) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                            <span>{{ cls.label }}</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+      </div>
+    }
+    @case (2) {
+       <div class="card">
+        <div class="card-title">
+          <mat-icon>analytics</mat-icon>Marks Analysis
+        </div>
+        <div class="marks-summary-grid">
+            <div class="marks-metric">
+                <label>Total marks</label>
+                <span>{{ getTotalMarks() }}</span>
+            </div>
+            <div class="marks-metric">
+                <label>Theory share</label>
+                <span>{{ getTheoryPercent() }}</span>
+            </div>
+            <div class="marks-metric">
+                <label>Practical share</label>
+                <span>{{ getPracticalPercent() }}</span>
+            </div>
+             <div class="marks-metric">
+                <label>Passing threshold</label>
+                <span>{{ getPassingPercent() }}</span>
+            </div>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
+    }
+  }
+</form>
+
+<ng-template #dynamicFormCards>
+  @for (card of cardsForCurrentTab; track trackFormCard($index, card)) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}
+      </div>
+      <div [class]="card.grid">
+        @for (field of card.fields; track field.key) {
+          <app-dynamic-field
+            [config]="configs[field.key]"
+            [group]="subjectForm"
+            [full]="field.full ?? false"
+          />
+        }
+      </div>
+    </div>
+  }
+</ng-template>
+
+<div class="footer-actions">
+  <button
+    type="button"
+    class="btn-back"
+    [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'"
+    (click)="prevTab()"
+  >
+    <mat-icon>arrow_back</mat-icon> Previous
+  </button>
+
+  <div class="footer-hint">{{ footerHints[currentTab] }}</div>
+
+  @if (currentTab < finalTabIndex || mode !== 'view') {
+    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
+      @if (currentTab < finalTabIndex) {
+        Next <mat-icon>arrow_forward</mat-icon>
+      } @else if (mode !== 'view') {
+        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+        {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Subject' : 'Confirm & Add') }}
+      }
+    </button>
+  }
+</div>

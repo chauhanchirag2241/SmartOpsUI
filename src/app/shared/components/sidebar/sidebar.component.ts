@@ -26,6 +26,8 @@ export class SidebarComponent {
   readonly navItems: NavItem[] = [
     { section: 'Overview', label: 'Dashboard', icon: 'grid_view', route: '/dashboard' },
     { section: 'Academics', label: 'Students', icon: 'group', route: '/students', badge: '248' },
+    { label: 'Classes', icon: 'domain', route: '/classes' },
+    { label: 'Subjects', icon: 'school', route: '/subjects' },
     { label: 'Teachers', icon: 'co_present', route: '/teachers', badge: '18' },
     { label: 'Attendance', icon: 'person_check', route: '/attendance' },
     { label: 'Exams', icon: 'workspace_premium', route: '/exams' },

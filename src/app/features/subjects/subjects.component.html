@@ -1,0 +1,23 @@
+<section class="subjects-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="subjects"
+      [serverSide]="true"
+      [totalRecords]="totalSubjects"
+      [rowClassFn]="subjectRowClass"
+      [initialFilterValue]="currentFilter"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-subject
+      [mode]="formMode"
+      [subjectId]="selectedSubjectId"
+      (cancel)="closeAddForm()"
+      (saved)="onSubjectSaved()"
+    />
+  }
+</section>

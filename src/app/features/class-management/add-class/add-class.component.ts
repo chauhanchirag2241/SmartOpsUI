@@ -1,13 +1,27 @@
-import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import { ClassService } from '../../../core/services/class.service';
+
+type FieldItem = {
+  key: string;
+  full?: boolean;
+};
+
+type FormCard = {
+  tab: number;
+  icon: string;
+  title: string;
+  grid: 'grid2' | 'grid3';
+  fields: FieldItem[];
+};
 
 @Component({
   selector: 'app-add-class',
@@ -23,20 +37,19 @@ export class AddClassComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
+  protected readonly finalTabIndex = 0;
+  protected readonly totalTabs = 1;
+
   classForm: FormGroup;
+  currentTab = 0;
   isSaving = false;
 
-  readonly formFields = [
-    'className',
-    'section',
-    'streamGroup',
-    'academicYear',
-    'studentCapacity',
-    'classTeacher',
-    'roomNumber',
-    'shift',
-    'medium',
-    'description',
+  readonly tabs = [
+    { label: 'Details', hint: 'Step 1 of 1 — Class details & assignment' },
+  ];
+
+  readonly footerHints = [
+    'Fill class name, section and teacher details',
   ];
 
   readonly configs: Record<string, FormFieldConfig> = {
@@ -136,17 +149,48 @@ export class AddClassComponent implements OnInit {
     },
   };
 
-  readonly formCard = {
-    title: 'Class details',
-    icon: 'school',
-    grid: 'grid3',
-    fields: this.formFields,
-  };
+  readonly formCards: FormCard[] = [
+    {
+      tab: 0,
+      icon: 'school',
+      title: 'Class identity',
+      grid: 'grid3',
+      fields: [
+        { key: 'className' },
+        { key: 'section' },
+        { key: 'streamGroup' },
+      ],
+    },
+    {
+      tab: 0,
+      icon: 'event',
+      title: 'Academic details',
+      grid: 'grid2',
+      fields: [
+        { key: 'academicYear' },
+        { key: 'studentCapacity' },
+      ],
+    },
+    {
+      tab: 0,
+      icon: 'person',
+      title: 'Assignment & Room',
+      grid: 'grid2',
+      fields: [
+        { key: 'classTeacher' },
+        { key: 'roomNumber' },
+        { key: 'shift' },
+        { key: 'medium' },
+        { key: 'description', full: true },
+      ],
+    },
+  ];
 
   constructor(
     private fb: FormBuilder,
     private classService: ClassService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef,
   ) {
     this.classForm = this.fb.group({
       className: ['', Validators.required],
@@ -164,7 +208,21 @@ export class AddClassComponent implements OnInit {
   }
 
   get pageTitle(): string {
-    return this.mode === 'add' ? 'Add new class' : this.mode === 'edit' ? 'Edit class' : 'Class details';
+    if (this.mode === 'edit') return 'Edit class';
+    if (this.mode === 'view') return 'View class';
+    return 'Add new class';
+  }
+
+  get progressWidthPercent(): number {
+    return ((this.currentTab + 1) / this.totalTabs) * 100;
+  }
+
+  get cardsForCurrentTab(): FormCard[] {
+    return this.formCards.filter((c) => c.tab === this.currentTab);
+  }
+
+  trackFormCard(_index: number, card: FormCard): string {
+    return `${card.tab}-${card.title}`;
   }
 
   ngOnInit(): void {
@@ -201,6 +259,7 @@ export class AddClassComponent implements OnInit {
         if (this.mode === 'view') {
           this.classForm.disable();
         }
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         console.error('Error loading class:', err);
@@ -209,9 +268,28 @@ export class AddClassComponent implements OnInit {
     });
   }
 
+  goTab(index: number) {
+    this.currentTab = index;
+  }
+
+  nextTab() {
+    if (this.currentTab === this.finalTabIndex) {
+      this.saveClass();
+      return;
+    }
+    this.currentTab++;
+  }
+
+  prevTab() {
+    if (this.currentTab > 0) {
+      this.currentTab--;
+    }
+  }
+
   saveClass(): void {
     if (this.classForm.invalid || this.mode === 'view') {
       this.classForm.markAllAsTouched();
+      this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
       return;
     }
 
@@ -222,17 +300,20 @@ export class AddClassComponent implements OnInit {
       ? this.classService.updateClass(this.classId, payload)
       : this.classService.createClass(payload);
 
-    request$.subscribe({
-      next: () => {
-        this.snackBar.open(this.mode === 'edit' ? 'Class updated successfully' : 'Class added successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+    request$
+      .pipe(finalize(() => {
         this.isSaving = false;
-        this.saved.emit();
-      },
-      error: (err: any) => {
-        console.error('Class save failed:', err);
-        this.snackBar.open('Failed to save class', 'Close', { duration: 3000, panelClass: 'snack-error' });
-        this.isSaving = false;
-      }
-    });
+        this.cdr.detectChanges();
+      }))
+      .subscribe({
+        next: () => {
+          this.snackBar.open(this.mode === 'edit' ? 'Class updated successfully' : 'Class added successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+          this.saved.emit();
+        },
+        error: (err: any) => {
+          console.error('Class save failed:', err);
+          this.snackBar.open('Failed to save class', 'Close', { duration: 3000, panelClass: 'snack-error' });
+        }
+      });
   }
 }

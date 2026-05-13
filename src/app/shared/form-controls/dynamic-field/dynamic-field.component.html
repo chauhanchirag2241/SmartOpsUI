@@ -14,6 +14,7 @@
           [type]="config.inputType || 'text'"
           [placeholder]="config.placeholder ?? ''"
           [formControlName]="config.controlName"
+          [disabled]="config.disabled ?? false"
         />
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>
@@ -34,6 +35,7 @@
           [matDatepicker]="picker"
           [formControlName]="config.controlName"
           [placeholder]="config.placeholder ?? ''"
+          [disabled]="config.disabled ?? false"
         />
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
@@ -50,7 +52,12 @@
         }
       </label>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
-        <mat-select [id]="controlId" [formControlName]="config.controlName" [placeholder]="config.placeholder ?? ''">
+        <mat-select
+          [id]="controlId"
+          [formControlName]="config.controlName"
+          [placeholder]="config.placeholder ?? ''"
+          [disabled]="config.disabled ?? false"
+        >
           @for (option of config.options ?? []; track optionTrack($index, option)) {
             <mat-option [value]="option.value">{{ option.label }}</mat-option>
           }
@@ -73,7 +80,8 @@
           [id]="controlId"
           [placeholder]="config.placeholder ?? ''"
           [formControlName]="config.controlName"
-          rows="3"
+          [rows]="3"
+          [disabled]="config.disabled ?? false"
         ></textarea>
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>
@@ -81,7 +89,7 @@
   }
   @case ('checkbox') {
     <div class="custom-field checkbox-field" [formGroup]="group">
-      <mat-checkbox [formControlName]="config.controlName" [id]="controlId">
+      <mat-checkbox [formControlName]="config.controlName" [id]="controlId" [disabled]="config.disabled ?? false">
         {{ config.label }}
         @if (config.validations?.length) {
           <span class="req">*</span>
@@ -90,6 +98,53 @@
       @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
         <span class="inline-error">{{ getError() }}</span>
       }
+    </div>
+  }
+  @case ('multi-checkbox') {
+    <div class="custom-field multi-checkbox-field" [formGroup]="group">
+      <label>
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </label>
+      <div class="checkbox-group">
+        @for (option of config.options ?? []; track optionTrack($index, option)) {
+          <div class="checkbox-item">
+            <mat-checkbox
+              [checked]="(group.get(config.controlName)?.value ?? []).includes(option.value)"
+              (change)="onMultiCheckboxChange(config.controlName, option.value, $event.checked)"
+              [disabled]="config.disabled ?? false"
+            >
+              {{ option.label }}
+            </mat-checkbox>
+          </div>
+        }
+      </div>
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <span class="inline-error">{{ getError() }}</span>
+      }
+    </div>
+  }
+  @case ('number') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (config.validations?.length) {
+          <span class="req">*</span>
+        }
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <input
+          matInput
+          [id]="controlId"
+          type="number"
+          [placeholder]="config.placeholder ?? ''"
+          [formControlName]="config.controlName"
+          [disabled]="config.disabled ?? false"
+        />
+        <mat-error>{{ getError() }}</mat-error>
+      </mat-form-field>
     </div>
   }
 }
