@@ -6,10 +6,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClassService } from '../../core/services/class.service';
 import { StudentService } from '../../core/services/student.service';
-import { finalize } from 'rxjs';
+import { StudentFilter } from '../../shared/enums/table-filters.enum';
 
 interface Student {
   id: string;
+  classId?: string;
   roll: string;
   name: string;
   avClass: string;
@@ -62,7 +63,6 @@ export class AttendanceComponent implements OnInit {
 
   ngOnInit() {
     this.loadClasses();
-    this.loadStudents();
   }
 
   loadClasses() {
@@ -71,6 +71,9 @@ export class AttendanceComponent implements OnInit {
         this.classes = classes || [];
         if (this.classes.length > 0) {
           this.selectedClassId = this.classes[0].id;
+          this.loadStudents();
+        } else {
+          this.students = [];
         }
       },
       error: () => {
@@ -79,26 +82,85 @@ export class AttendanceComponent implements OnInit {
     });
   }
 
+  get selectedClassName(): string {
+    return this.classes.find(c => c.id === this.selectedClassId)?.name || 'Select class';
+  }
+
+  onClassChanged(classId: string): void {
+    this.selectedClassId = classId;
+    this.loadStudents();
+  }
+
   loadStudents() {
-    // In a real app, we'd pass this.selectedClassId
-    this.studentService.getStudents(1, 100, '', null, null).subscribe((res: any) => {
-      if (res && res.items) {
-        this.students = res.items.map((s: any, idx: number) => ({
+    if (!this.selectedClassId) {
+      this.clearClassStudents();
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.clearClassStudents();
+    this.cdr.detectChanges();
+
+    this.studentService.getStudents(1, 100, '', null, null, StudentFilter.Active, this.selectedClassId).subscribe({
+      next: (res: any) => {
+        const classStudents = this.filterStudentsBySelectedClass(res?.items || []);
+
+        this.students = classStudents.map((s: any, idx: number) => ({
           id: s.id,
+          classId: s.classId,
           roll: s.rollNumber || (idx + 1).toString().padStart(2, '0'),
           name: s.name,
           avClass: this.getAvatarClass(idx),
           initials: this.getInitials(s.name)
         }));
-        
-        // Initialize status and notes
+
         this.students.forEach(s => {
-          if (!this.status[s.id]) this.status[s.id] = '';
-          if (!this.notes[s.id]) this.notes[s.id] = '';
+          this.status[s.id] ??= '';
+          this.notes[s.id] ??= '';
         });
+        this.focusIdx = this.students.length ? 0 : -1;
+        this.history = [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.clearClassStudents();
+        this.snackBar.open('Error loading students for selected class', 'Close', { duration: 3000 });
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private filterStudentsBySelectedClass(items: any[]): any[] {
+    const selectedClassId = String(this.selectedClassId).toLowerCase();
+    const selectedClassName = this.normalizeClassName(this.selectedClassName);
+
+    return items.filter((student: any) => {
+      if (student.classId) {
+        return String(student.classId).toLowerCase() === selectedClassId;
+      }
+
+      if (student.class) {
+        return this.normalizeClassName(student.class) === selectedClassName;
+      }
+
+      return false;
+    });
+  }
+
+  private clearClassStudents(): void {
+    this.students = [];
+    this.history = [];
+    this.focusIdx = -1;
+    this.curFilter = 'all';
+  }
+
+  private normalizeClassName(value: unknown): string {
+    return String(value || '')
+      .replace(/[–—]/g, '-')
+      .replace(/\s*-\s*/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
   }
 
   getAvatarClass(idx: number): string {
@@ -190,7 +252,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   get stats() {
-    const vals = Object.values(this.status);
+    const vals = this.students.map(s => this.status[s.id] || '');
     const p = vals.filter(s => s === 'present').length;
     const a = vals.filter(s => s === 'absent').length;
     const l = vals.filter(s => s === 'leave').length;

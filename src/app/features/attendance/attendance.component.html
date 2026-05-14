@@ -7,7 +7,7 @@
     <div class="page-info" style="flex:1">
       <div class="page-title">Attendance</div>
       <div class="page-sub">
-        {{ selectedClassId }} &middot; {{ selectedDate | date:'mediumDate' }}
+        {{ selectedClassName }} &middot; {{ selectedDate | date:'mediumDate' }}
       </div>
     </div>
     <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
@@ -48,7 +48,7 @@
   <!-- Filters -->
   <div class="filters">
     <div class="sel-wrap">
-      <select [(ngModel)]="selectedClassId" (change)="loadStudents()">
+      <select [ngModel]="selectedClassId" (ngModelChange)="onClassChanged($event)">
         <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
       </select>
       <i class="ti ti-chevron-down arr"></i>

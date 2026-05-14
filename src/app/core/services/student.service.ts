@@ -15,7 +15,8 @@ export class StudentService {
     searchTerm = '', 
     sortColumn: string | null = null, 
     sortDirection: string | null = null,
-    filter: StudentFilter = StudentFilter.All
+    filter: StudentFilter = StudentFilter.All,
+    classId: string | null = null
   ): Observable<any> {
     let params = new HttpParams()
       .set('pageIndex', pageIndex.toString())
@@ -30,6 +31,9 @@ export class StudentService {
     }
     if (sortDirection) {
       params = params.set('sortDirection', sortDirection);
+    }
+    if (classId) {
+      params = params.set('classId', classId);
     }
 
     return this.api.get('students', params);
