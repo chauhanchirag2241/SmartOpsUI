@@ -54,6 +54,10 @@ export class ClassService {
     return this.api.get('classes', params);
   }
 
+  getClassDropdown(): Observable<any[]> {
+    return this.api.get<any[]>('class/dropdown');
+  }
+
   createClass(classData: any): Observable<any> {
     const payload = {
       className: classData.className,

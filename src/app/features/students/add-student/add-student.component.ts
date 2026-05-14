@@ -10,6 +10,7 @@ import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { enumToOptions, Gender, BloodGroup, PaymentMode } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
+import { AcademicYearService } from '../../../core/services/academic-year.service';
 
 type FieldItem = {
   key: string;
@@ -76,6 +77,8 @@ export class AddStudentComponent implements OnInit {
   studentForm: FormGroup;
   currentTab = 0;
   isSaving = false;
+  academicYears: any[] = [];
+  classes: any[] = [];
 
   readonly tabs = [
     { label: 'Personal info', hint: 'Step 1 of 4 — Personal information' },
@@ -114,8 +117,8 @@ export class AddStudentComponent implements OnInit {
     motherOcc: { type: 'input', controlName: 'motherOcc', label: "Mother's occupation", placeholder: 'e.g. Teacher' },
 
     admissionDate: { type: 'datepicker', controlName: 'admissionDate', label: 'Admission date', validations: [{ name: 'required', message: 'Admission date is required', validator: Validators.required }] },
-    academicYear: { type: 'select', controlName: 'academicYear', label: 'Academic year', options: [{ label: '2024-25', value: '2024-25' }, { label: '2025-26', value: '2025-26' }], validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }] },
-    class: { type: 'select', controlName: 'class', label: 'Class', placeholder: 'Select class', options: [], validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }] },
+    academicYear: { type: 'select', controlName: 'academicYearId', label: 'Academic year', options: [], validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }] },
+    class: { type: 'select', controlName: 'classId', label: 'Class', placeholder: 'Select class', options: [], validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }] },
     rollNumber: { type: 'input', controlName: 'rollNumber', label: 'Roll number', placeholder: 'Auto-assigned', disabled: true },
     prevSchool: { type: 'input', controlName: 'prevSchool', label: 'Previous school name', placeholder: 'School name' },
     prevClass: { type: 'input', controlName: 'prevClass', label: 'Previous class passed', placeholder: 'e.g. Class 9' },
@@ -252,8 +255,8 @@ export class AddStudentComponent implements OnInit {
       title: 'Academic Details',
       icon: 'school',
       items: [
-        { label: 'Academic Year', key: 'academicYear' },
-        { label: 'Class', key: 'class' },
+        { label: 'Academic Year', key: 'academicYearId' },
+        { label: 'Class', key: 'classId' },
         { label: 'Admission Date', key: 'admissionDate' },
       ],
     },
@@ -278,6 +281,7 @@ export class AddStudentComponent implements OnInit {
     private snackBar: MatSnackBar,
     private studentService: StudentService,
     private classService: ClassService,
+    private academicYearService: AcademicYearService,
     private cdr: ChangeDetectorRef,
   ) {
     this.studentForm = this.fb.group({
@@ -300,8 +304,8 @@ export class AddStudentComponent implements OnInit {
       motherOcc: [''],
 
       admissionDate: ['', Validators.required],
-      academicYear: ['', Validators.required],
-      class: ['', Validators.required],
+      academicYearId: ['', Validators.required],
+      classId: ['', Validators.required],
       rollNumber: [{ value: '', disabled: true }],
       prevSchool: [''],
       prevClass: [''],
@@ -321,23 +325,36 @@ export class AddStudentComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadActiveClasses();
+    this.loadAcademicYears();
+    this.loadClasses();
     if (this.studentId && this.mode !== 'add') {
       this.loadStudentData(this.studentId);
     }
   }
 
-  private loadActiveClasses() {
-    this.classService.getClasses(1, 100, '', null, null, 'Active').subscribe({
-      next: (res) => {
-        if (res && res.items) {
-          const options = res.items.map((c: any) => ({
-            label: `${c.className}-${c.section}`,
-            value: c.id
-          }));
-          this.configs['class'].options = options;
-          this.cdr.detectChanges();
-        }
+  loadAcademicYears() {
+    this.academicYearService.getAcademicYearDropdown().subscribe({
+      next: (years) => {
+        this.academicYears = years || [];
+        this.configs['academicYear'].options = this.academicYears.map((year: any) => ({
+          label: year.name,
+          value: year.id
+        }));
+        this.cdr.detectChanges();
+      },
+      error: () => this.snackBar.open('Error loading academic years', 'Close', { duration: 3000 })
+    });
+  }
+
+  loadClasses() {
+    this.classService.getClassDropdown().subscribe({
+      next: (classes) => {
+        this.classes = classes || [];
+        this.configs['class'].options = this.classes.map((c: any) => ({
+          label: c.name,
+          value: c.id
+        }));
+        this.cdr.detectChanges();
       },
       error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 })
     });
@@ -407,8 +424,8 @@ export class AddStudentComponent implements OnInit {
       motherOcc: mother?.occupation,
 
       admissionDate: this.toLocalDate(academic?.admissionDate),
-      academicYear: academic?.academicYear,
-      class: academic?.classId,
+      academicYearId: academic?.academicYearId,
+      classId: academic?.classId,
       rollNumber: academic?.rollNumber,
 
       prevSchool: prevSchool?.schoolName,
@@ -474,8 +491,8 @@ export class AddStudentComponent implements OnInit {
       ...rawValue,
       academics: [{
         admissionDate: rawValue.admissionDate,
-        academicYear: rawValue.academicYear,
-        classId: rawValue.class,
+        academicYearId: rawValue.academicYearId,
+        classId: rawValue.classId,
         rollNumber: rawValue.rollNumber
       }]
     };

@@ -42,6 +42,10 @@ export class AcademicYearService {
     return this.api.get('academicYears', params);
   }
 
+  getAcademicYearDropdown(): Observable<any[]> {
+    return this.api.get<any[]>('academic-year/dropdown');
+  }
+
   createAcademicYear(data: any): Observable<any> {
     return this.api.post('academicYears', data);
   }

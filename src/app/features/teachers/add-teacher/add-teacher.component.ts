@@ -4,6 +4,8 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { MatIconModule } from '@angular/material/icon';
 import { TeacherService } from '../../../core/services/teacher.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ClassService } from '../../../core/services/class.service';
+import { SubjectService } from '../../../core/services/subject.service';
 
 @Component({
   selector: 'app-add-teacher',
@@ -20,6 +22,8 @@ export class AddTeacherComponent implements OnInit {
 
   teacherForm: FormGroup;
   currentStep = 0;
+  subjects: any[] = [];
+  classes: any[] = [];
   steps = [
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
@@ -47,6 +51,8 @@ export class AddTeacherComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private teacherService: TeacherService,
+    private classService: ClassService,
+    private subjectService: SubjectService,
     private snackBar: MatSnackBar
   ) {
     this.teacherForm = this.fb.group({
@@ -86,6 +92,7 @@ export class AddTeacherComponent implements OnInit {
         })
       }),
       schedule: this.fb.group({
+        classId: [''],
         subjectAssignments: this.fb.array([]),
         workingDays: [[]],
         shift: ['Morning (7:30 AM – 1:30 PM)'],
@@ -100,6 +107,8 @@ export class AddTeacherComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadSubjects();
+    this.loadClasses();
     this.addSubjectAssignment(); // Add one initial row
     if (this.mode !== 'add' && this.teacherId) {
       this.loadTeacherData();
@@ -117,7 +126,46 @@ export class AddTeacherComponent implements OnInit {
   loadTeacherData(): void {
     this.teacherService.getTeacherById(this.teacherId!).subscribe({
       next: (data) => {
-        this.teacherForm.patchValue(data);
+        this.teacherForm.patchValue({
+          personal: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            dob: data.dob,
+            bloodGroup: data.bloodGroup,
+            gender: data.gender,
+            aadhaarNumber: data.aadhaarNo,
+            panNumber: data.panNo,
+            mobile: data.mobile,
+            alternateMobile: data.alternateMobile,
+            email: data.email,
+            address: data.address
+          },
+          professional: {
+            employeeId: data.employeeId,
+            joiningDate: data.joiningDate,
+            department: data.department,
+            designation: data.designation,
+            experience: data.experience,
+            salaryGrade: data.salaryGrade,
+            employmentType: data.employmentType,
+            qualifications: data.qualifications ? String(data.qualifications).split(';').map((x: string) => x.trim()) : [''],
+            bankDetails: {
+              accountNumber: data.bankAccountNumber,
+              ifscCode: data.bankIfscCode,
+              bankName: data.bankName
+            }
+          },
+          schedule: {
+            classId: data.classId,
+            shift: data.shift,
+            weeklyPeriods: data.weeklyPeriods,
+            maxPeriodsPerDay: data.maxPeriodsPerDay,
+            role: data.role,
+            portalAccess: data.portalAccess ? 'Enabled' : 'Disabled',
+            username: data.username
+          }
+        });
+        this.subjectAssignments.at(0)?.patchValue({ classId: data.classId });
         if (this.mode === 'view') {
           this.teacherForm.disable();
         }
@@ -125,6 +173,24 @@ export class AddTeacherComponent implements OnInit {
       error: (err) => {
         this.snackBar.open('Failed to load teacher data', 'Close', { duration: 3000 });
       }
+    });
+  }
+
+  loadSubjects(): void {
+    this.subjectService.getSubjectDropdown().subscribe({
+      next: (subjects) => {
+        this.subjects = subjects || [];
+      },
+      error: () => this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 })
+    });
+  }
+
+  loadClasses(): void {
+    this.classService.getClassDropdown().subscribe({
+      next: (classes) => {
+        this.classes = classes || [];
+      },
+      error: () => this.snackBar.open('Failed to load classes', 'Close', { duration: 3000 })
     });
   }
 
@@ -140,9 +206,8 @@ export class AddTeacherComponent implements OnInit {
 
   addSubjectAssignment(): void {
     const group = this.fb.group({
-      subject: ['Mathematics'],
-      class: ['Class 10'],
-      section: ['A'],
+      subjectId: [''],
+      classId: ['', Validators.required],
       isClassTeacher: [false]
     });
     this.subjectAssignments.push(group);
@@ -202,6 +267,7 @@ export class AddTeacherComponent implements OnInit {
     }
 
     const data = this.teacherForm.getRawValue();
+    data.schedule.classId = data.schedule.subjectAssignments?.[0]?.classId || data.schedule.classId || null;
     const action = this.mode === 'edit' 
       ? this.teacherService.updateTeacher(this.teacherId!, data)
       : this.teacherService.createTeacher(data);

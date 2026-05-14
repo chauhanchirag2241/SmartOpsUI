@@ -42,13 +42,9 @@ export class AttendanceComponent implements OnInit {
   notes: AttendanceNote = {};
   
   classes: any[] = [];
-  subjects = ['Mathematics', 'Science', 'English', 'Hindi', 'History', 'Geography'];
-  periods = ['Period 1 (8:00)', 'Period 2 (9:00)', 'Period 3 (10:00)', 'Period 4 (11:00)'];
   
   selectedClassId = '';
-  selectedSubject = 'Mathematics';
   selectedDate = new Date().toISOString().split('T')[0];
-  selectedPeriod = 'Period 1 (8:00)';
   searchQuery = '';
   
   curFilter = 'all';
@@ -70,12 +66,15 @@ export class AttendanceComponent implements OnInit {
   }
 
   loadClasses() {
-    this.classService.getClasses(1, 50, '', null, null, 'Active').subscribe((res: any) => {
-      if (res && res.items) {
-        this.classes = res.items;
+    this.classService.getClassDropdown().subscribe({
+      next: (classes: any[]) => {
+        this.classes = classes || [];
         if (this.classes.length > 0) {
           this.selectedClassId = this.classes[0].id;
         }
+      },
+      error: () => {
+        this.snackBar.open('Error loading classes', 'Close', { duration: 3000 });
       }
     });
   }

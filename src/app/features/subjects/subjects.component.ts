@@ -124,30 +124,10 @@ export class SubjectsComponent implements OnInit {
     sortDirection: string | null = null,
     filter: string = this.currentFilter
   ): void {
-    // For now, mapping the service call to handle paging if possible, or just slice
-    this.subjectService.getSubjects().subscribe({
+    this.subjectService.getSubjects(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
       next: (res: any) => {
-        // If the service doesn't support paging yet, we simulate it
-        let filtered = res || [];
-        if (searchQuery) {
-          filtered = filtered.filter((s: any) => 
-            s.subjectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.subjectCode.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
-        if (filter !== 'All') {
-          if (filter === 'Active') {
-            filtered = filtered.filter((s: any) => s.isActive === true);
-          } else if (filter === 'Inactive') {
-            filtered = filtered.filter((s: any) => s.isActive === false);
-          } else {
-            filtered = filtered.filter((s: any) => s.subjectCategory === filter);
-          }
-        }
-
-        this.totalSubjects = filtered.length;
-        const start = (pageIndex - 1) * pageSize;
-        this.subjects = filtered.slice(start, start + pageSize);
+        this.subjects = res?.items || [];
+        this.totalSubjects = res?.totalCount || 0;
         this.cdr.detectChanges();
       },
       error: (err: any) => {

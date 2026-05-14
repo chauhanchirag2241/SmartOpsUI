@@ -10,6 +10,7 @@ import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { TeacherService } from '../../../core/services/teacher.service';
 
 type FieldItem = {
   key: string;
@@ -111,12 +112,7 @@ export class AddClassComponent implements OnInit {
       controlName: 'classTeacher',
       label: 'Class teacher',
       placeholder: 'Select teacher',
-      options: [
-        { label: 'Assign later', value: '' },
-        { label: 'Mr. Patel', value: 'Mr. Patel' },
-        { label: 'Ms. Sharma', value: 'Ms. Sharma' },
-        { label: 'Mrs. Kapoor', value: 'Mrs. Kapoor' },
-      ],
+      options: [{ label: 'Assign later', value: '' }],
     },
     roomNumber: {
       type: 'input',
@@ -187,6 +183,7 @@ export class AddClassComponent implements OnInit {
     private fb: FormBuilder,
     private classService: ClassService,
     private ayService: AcademicYearService,
+    private teacherService: TeacherService,
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
   ) {
@@ -225,6 +222,7 @@ export class AddClassComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAcademicYears();
+    this.loadClassTeachers();
     if ((this.mode === 'edit' || this.mode === 'view') && this.classId) {
       this.loadClass(this.classId);
     }
@@ -246,7 +244,7 @@ export class AddClassComponent implements OnInit {
           className: res.className,
           section: AddClassComponent.intToEnum(Section, res.section),
           streamGroup: AddClassComponent.intToEnum(StreamGroup, res.streamGroup),
-          academicYear: res.academicYear,
+          academicYear: res.academicYearId,
           studentCapacity: res.capacity,
           classTeacher: res.classTeacher,
           roomNumber: res.roomNumber,
@@ -268,14 +266,31 @@ export class AddClassComponent implements OnInit {
   }
 
   private loadAcademicYears(): void {
-    this.ayService.getAcademicYears(1, 100).subscribe({
-      next: (res: any) => {
-        this.configs['academicYear'].options = (res?.items || []).map((ay: any) => ({
-          label: ay.title,
+    this.ayService.getAcademicYearDropdown().subscribe({
+      next: (years: any[]) => {
+        this.configs['academicYear'].options = (years || []).map((ay: any) => ({
+          label: ay.name,
           value: ay.id
         }));
         this.cdr.detectChanges();
-      }
+      },
+      error: () => this.snackBar.open('Failed to load academic years', 'Close', { duration: 3000, panelClass: 'snack-error' })
+    });
+  }
+
+  private loadClassTeachers(): void {
+    this.teacherService.getClassTeacherDropdown().subscribe({
+      next: (teachers: any[]) => {
+        this.configs['classTeacher'].options = [
+          { label: 'Assign later', value: '' },
+          ...(teachers || []).map((teacher: any) => ({
+            label: teacher.name,
+            value: teacher.id
+          }))
+        ];
+        this.cdr.detectChanges();
+      },
+      error: () => this.snackBar.open('Failed to load class teachers', 'Close', { duration: 3000, panelClass: 'snack-error' })
     });
   }
 

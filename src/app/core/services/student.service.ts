@@ -68,9 +68,8 @@ export class StudentService {
       academics: [
         {
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
-          academicYear: studentData.academicYear,
-          class: studentData.class,
-          section: studentData.section,
+          academicYearId: studentData.academicYearId,
+          classId: studentData.classId,
           rollNumber: studentData.rollNumber
         }
       ],
@@ -135,9 +134,8 @@ export class StudentService {
       academics: [
         {
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
-          academicYear: studentData.academicYear,
-          class: studentData.class,
-          section: studentData.section,
+          academicYearId: studentData.academicYearId,
+          classId: studentData.classId,
           rollNumber: studentData.rollNumber
         }
       ],

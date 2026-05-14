@@ -268,23 +268,20 @@ export class AddSubjectComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadActiveClasses();
+    this.loadClasses();
     if (this.subjectId && this.mode !== 'add') {
       this.loadSubjectData(this.subjectId);
     }
   }
 
-  private loadActiveClasses() {
-    this.classService.getClasses(1, 100, '', null, null, 'Active').subscribe({
-      next: (res) => {
-        if (res && res.items) {
-          const options = res.items.map((c: any) => ({
-            label: `${c.className}-${c.section}`,
-            value: `${c.className}-${c.section}` // Keeping string value for now to match backend expectations if it's stored as JSON strings
-          }));
-          this.configs['assignedClasses'].options = options;
-          this.cdr.detectChanges();
-        }
+  loadClasses() {
+    this.classService.getClassDropdown().subscribe({
+      next: (classes) => {
+        this.configs['assignedClasses'].options = (classes || []).map((c: any) => ({
+          label: c.name,
+          value: c.id
+        }));
+        this.cdr.detectChanges();
       },
       error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 })
     });
@@ -311,7 +308,7 @@ export class AddSubjectComponent implements OnInit {
   loadSubjectData(id: string) {
     this.subjectService.getSubject(id).subscribe({
       next: (data: any) => {
-        this.subjectForm.patchValue(data);
+        this.subjectForm.patchValue(this.toSubjectFormValue(data));
         if (this.mode === 'view') {
           this.subjectForm.disable();
         }
@@ -319,6 +316,55 @@ export class AddSubjectComponent implements OnInit {
       },
       error: () => this.snackBar.open('Error loading subject data', 'Close', { duration: 3000 })
     });
+  }
+
+  private toSubjectFormValue(data: any): any {
+    return {
+      ...data,
+      subjectType: this.normalizeEnumValue(SubjectType, data?.subjectType),
+      subjectCategory: this.normalizeEnumValue(SubjectCategory, data?.subjectCategory),
+      medium: this.normalizeEnumValue(Medium, data?.medium),
+      assignedClasses: this.normalizeArray(data?.assignedClasses),
+      teachingDays: this.normalizeArray(data?.teachingDays),
+      gradeSystem: this.normalizeEnumValue(GradeSystem, data?.gradeSystem),
+      curriculum: this.normalizeEnumValue(Curriculum, data?.curriculum),
+    };
+  }
+
+  private normalizeEnumValue<T extends Record<string, string>>(enumObj: T, value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+
+    if (typeof value === 'number') {
+      return Object.values(enumObj)[value - 1] ?? '';
+    }
+
+    const text = String(value);
+    const exactValue = Object.values(enumObj).find((option) => option === text);
+    if (exactValue) {
+      return exactValue;
+    }
+
+    const normalizedText = text.replace(/[-_\s]/g, '').toLowerCase();
+    return Object.values(enumObj).find((option) => option.replace(/[-_\s]/g, '').toLowerCase() === normalizedText) ?? '';
+  }
+
+  private normalizeArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    return [];
   }
 
   goTab(index: number) {

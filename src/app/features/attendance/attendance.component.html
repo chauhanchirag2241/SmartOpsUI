@@ -7,7 +7,7 @@
     <div class="page-info" style="flex:1">
       <div class="page-title">Attendance</div>
       <div class="page-sub">
-        {{ selectedClassId }} &middot; {{ selectedSubject }} &middot; {{ selectedDate | date:'mediumDate' }}
+        {{ selectedClassId }} &middot; {{ selectedDate | date:'mediumDate' }}
       </div>
     </div>
     <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
@@ -49,23 +49,11 @@
   <div class="filters">
     <div class="sel-wrap">
       <select [(ngModel)]="selectedClassId" (change)="loadStudents()">
-        <option *ngFor="let c of classes" [value]="c.id">{{ c.className }}-{{ c.section | uppercase }}</option>
-      </select>
-      <i class="ti ti-chevron-down arr"></i>
-    </div>
-    <div class="sel-wrap">
-      <select [(ngModel)]="selectedSubject">
-        <option *ngFor="let s of subjects" [value]="s">{{ s }}</option>
+        <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
       </select>
       <i class="ti ti-chevron-down arr"></i>
     </div>
     <input type="date" class="date-input" [(ngModel)]="selectedDate">
-    <div class="sel-wrap">
-      <select [(ngModel)]="selectedPeriod">
-        <option *ngFor="let p of periods" [value]="p">{{ p }}</option>
-      </select>
-      <i class="ti ti-chevron-down arr"></i>
-    </div>
     <div class="search-wrap">
       <mat-icon>search</mat-icon>
       <input type="text" id="search-inp" placeholder="Search name or roll…" [(ngModel)]="searchQuery">

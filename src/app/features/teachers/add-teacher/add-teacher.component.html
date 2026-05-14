@@ -205,7 +205,6 @@
               <tr>
                 <th>Subject</th>
                 <th>Class</th>
-                <th>Section</th>
                 <th>Class teacher?</th>
                 <th></th>
               </tr>
@@ -214,18 +213,15 @@
               @for (item of subjectAssignments.controls; track $index) {
                 <tr [formGroupName]="$index">
                   <td>
-                    <select style="min-width:100px" formControlName="subject">
-                      <option>Mathematics</option><option>Science</option><option>English</option><option>Hindi</option>
+                    <select style="min-width:100px" formControlName="subjectId">
+                      <option value="">Select subject</option>
+                      <option *ngFor="let subject of subjects" [value]="subject.id">{{ subject.name }}</option>
                     </select>
                   </td>
                   <td>
-                    <select style="min-width:80px" formControlName="class">
-                      <option>Class 10</option><option>Class 9</option><option>Class 8</option>
-                    </select>
-                  </td>
-                  <td>
-                    <select formControlName="section">
-                      <option>A</option><option>B</option><option>C</option>
+                    <select style="min-width:80px" formControlName="classId">
+                      <option value="">Select class</option>
+                      <option *ngFor="let classItem of classes" [value]="classItem.id">{{ classItem.name }}</option>
                     </select>
                   </td>
                   <td style="text-align:center">
@@ -357,7 +353,7 @@
           <div style="display:flex;flex-wrap:wrap;gap:6px">
             @for (item of subjectAssignments.getRawValue(); track $index) {
               <span class="pill" [class.pill-green]="$index % 2 === 0" [class.pill-blue]="$index % 2 !== 0">
-                {{ item.subject }} — {{ item.class }}-{{ item.section }} {{ item.isClassTeacher ? '(Class Teacher)' : '' }}
+                {{ item.subjectId || 'Subject' }} - {{ item.classId || 'Class' }} {{ item.isClassTeacher ? '(Class Teacher)' : '' }}
               </span>
             } @empty {
               <div class="page-sub">No subjects assigned</div>
