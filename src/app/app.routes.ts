@@ -30,6 +30,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'teachers',
+        loadComponent: () =>
+          import('./features/teachers/teachers.component').then(
+            (m) => m.TeachersComponent,
+          ),
+      },
+      {
         path: 'classes',
         loadComponent: () =>
           import('./features/class-management/class-management.component').then(

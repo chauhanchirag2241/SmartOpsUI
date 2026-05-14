@@ -1,0 +1,24 @@
+<section class="teachers-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="teachers"
+      [serverSide]="true"
+      [totalRecords]="totalTeachers"
+      [rowClassFn]="teacherRowClass"
+      [initialFilterValue]="currentFilter.toString()"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+      (bulkActionClicked)="onBulkActionClicked($event)"
+    />
+  } @else {
+    <app-add-teacher
+      [mode]="formMode"
+      [teacherId]="selectedTeacherId"
+      (cancel)="closeAddForm()"
+      (saved)="onTeacherSaved()"
+    />
+  }
+</section>

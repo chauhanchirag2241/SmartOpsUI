@@ -1,0 +1,413 @@
+<div class="add-teacher-container">
+  <div class="topbar">
+    <button class="back-btn" (click)="onCancel()">
+      <mat-icon>arrow_back</mat-icon>
+      Teachers
+    </button>
+    <div>
+      <div class="page-title">{{ mode === 'edit' ? 'Edit teacher' : (mode === 'view' ? 'Teacher details' : 'Add new teacher') }}</div>
+      <div class="page-sub">Fill all required fields</div>
+    </div>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" [style.width]="((currentStep + 1) / 4) * 100 + '%'"></div>
+  </div>
+  <div class="step-hint">{{ hints[currentStep] }}</div>
+
+  <div class="tabs">
+    @for (step of steps; track $index) {
+      <div 
+        class="tab" 
+        [class.active]="currentStep === $index"
+        [class.done]="currentStep > $index"
+        (click)="goTab($index)"
+      >
+        <div class="tab-num">{{ $index + 1 }}</div>
+        {{ step.title }}
+      </div>
+    }
+  </div>
+
+  <form [formGroup]="teacherForm">
+    <!-- TAB 0 — PERSONAL -->
+    @if (currentStep === 0) {
+      <div formGroupName="personal">
+        <div class="card">
+          <div class="card-title"><mat-icon>account_circle</mat-icon> Photo & basic details</div>
+          <div class="photo-section">
+            <div class="photo-upload">
+              <mat-icon>add_a_photo</mat-icon>
+              <span>Upload photo</span>
+            </div>
+            <div class="photo-fields">
+              <div class="field">
+                <label>First name <span class="req">*</span></label>
+                <input placeholder="e.g. Ramesh" formControlName="firstName">
+              </div>
+              <div class="field">
+                <label>Last name <span class="req">*</span></label>
+                <input placeholder="e.g. Sharma" formControlName="lastName">
+              </div>
+              <div class="field">
+                <label>Date of birth <span class="req">*</span></label>
+                <input type="date" formControlName="dob">
+              </div>
+              <div class="field">
+                <label>Blood group</label>
+                <select formControlName="bloodGroup">
+                  <option value="">Select</option>
+                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                  <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;margin-bottom:6px">Gender <span class="req">*</span></label>
+            <div class="badge-options">
+              <div class="badge-opt" [class.sel-male]="teacherForm.get('personal.gender')?.value === 'Male'" (click)="setGender('Male')">Male</div>
+              <div class="badge-opt" [class.sel-female]="teacherForm.get('personal.gender')?.value === 'Female'" (click)="setGender('Female')">Female</div>
+              <div class="badge-opt" [class.sel-other]="teacherForm.get('personal.gender')?.value === 'Other'" (click)="setGender('Other')">Other</div>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Aadhaar number</label><input placeholder="xxxx xxxx xxxx" formControlName="aadhaarNumber"></div>
+            <div class="field"><label>PAN number</label><input placeholder="ABCDE1234F" formControlName="panNumber"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>phone</mat-icon> Contact details</div>
+          <div class="grid3">
+            <div class="field">
+              <label>Mobile <span class="req">*</span></label>
+              <input placeholder="10-digit" type="tel" formControlName="mobile">
+            </div>
+            <div class="field">
+              <label>Alternate mobile</label>
+              <input placeholder="10-digit" type="tel" formControlName="alternateMobile">
+            </div>
+            <div class="field">
+              <label>Email <span class="req">*</span></label>
+              <input placeholder="teacher@school.com" type="email" formControlName="email">
+            </div>
+            <div class="field full">
+              <label>Residential address</label>
+              <textarea placeholder="Full address..." formControlName="address"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" formGroupName="emergencyContact">
+          <div class="card-title"><mat-icon>groups</mat-icon> Emergency contact</div>
+          <div class="grid3">
+            <div class="field"><label>Contact name</label><input placeholder="e.g. Priya Sharma" formControlName="name"></div>
+            <div class="field">
+              <label>Relation</label>
+              <select formControlName="relation">
+                <option value="">Select</option>
+                <option>Spouse</option><option>Parent</option><option>Sibling</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label>Mobile</label><input placeholder="10-digit" type="tel" formControlName="mobile"></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 1 — PROFESSIONAL -->
+    @if (currentStep === 1) {
+      <div formGroupName="professional">
+        <div class="card">
+          <div class="card-title"><mat-icon>badge</mat-icon> Employment details</div>
+          <div class="grid3">
+            <div class="field"><label>Employee ID</label><input formControlName="employeeId"></div>
+            <div class="field">
+              <label>Joining date <span class="req">*</span></label>
+              <input type="date" formControlName="joiningDate">
+            </div>
+            <div class="field">
+              <label>Department <span class="req">*</span></label>
+              <select formControlName="department">
+                <option value="">Select</option>
+                <option>Science</option><option>Mathematics</option><option>Languages</option>
+                <option>Social Studies</option><option>Arts</option><option>Physical Education</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Designation <span class="req">*</span></label>
+              <select formControlName="designation">
+                <option value="">Select</option>
+                <option>TGT</option><option>PGT</option><option>PRT</option>
+                <option>HOD</option><option>Principal</option><option>Vice Principal</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Experience (years)</label>
+              <input type="number" placeholder="e.g. 5" min="0" formControlName="experience">
+            </div>
+            <div class="field">
+              <label>Salary grade</label>
+              <select formControlName="salaryGrade">
+                <option value="">Select</option>
+                <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>work</mat-icon> Employment type</div>
+          <div class="badge-options">
+            <div class="badge-opt" [class.sel-ft]="teacherForm.get('professional.employmentType')?.value === 'Full-time'" (click)="setEmploymentType('Full-time')">Full-time</div>
+            <div class="badge-opt" [class.sel-pt]="teacherForm.get('professional.employmentType')?.value === 'Part-time'" (click)="setEmploymentType('Part-time')">Part-time</div>
+            <div class="badge-opt" [class.sel-contract]="teacherForm.get('professional.employmentType')?.value === 'Contract'" (click)="setEmploymentType('Contract')">Contract</div>
+            <div class="badge-opt" [class.sel-visiting]="teacherForm.get('professional.employmentType')?.value === 'Visiting'" (click)="setEmploymentType('Visiting')">Visiting</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>card_membership</mat-icon> Qualifications</div>
+          <div formArrayName="qualifications">
+            @for (qual of qualifications.controls; track $index) {
+              <div class="qual-row">
+                <input placeholder="e.g. B.Ed — Delhi University — 2015" [formControlName]="$index">
+                <button type="button" class="qual-remove" (click)="removeQualification($index)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+          <div class="add-row-btn" (click)="addQualification()">
+            <mat-icon>add</mat-icon> Add qualification
+          </div>
+        </div>
+
+        <div class="card" formGroupName="bankDetails">
+          <div class="card-title"><mat-icon>account_balance</mat-icon> Bank details</div>
+          <div class="grid3">
+            <div class="field"><label>Account number</label><input placeholder="Account number" formControlName="accountNumber"></div>
+            <div class="field"><label>IFSC code</label><input placeholder="e.g. SBIN0001234" formControlName="ifscCode"></div>
+            <div class="field"><label>Bank name</label><input placeholder="e.g. State Bank of India" formControlName="bankName"></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 2 — SUBJECTS & SCHEDULE -->
+    @if (currentStep === 2) {
+      <div formGroupName="schedule">
+        <div class="card">
+          <div class="card-title"><mat-icon>menu_book</mat-icon> Subject assignments</div>
+          <table class="subject-table">
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Class</th>
+                <th>Section</th>
+                <th>Class teacher?</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody formArrayName="subjectAssignments">
+              @for (item of subjectAssignments.controls; track $index) {
+                <tr [formGroupName]="$index">
+                  <td>
+                    <select style="min-width:100px" formControlName="subject">
+                      <option>Mathematics</option><option>Science</option><option>English</option><option>Hindi</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select style="min-width:80px" formControlName="class">
+                      <option>Class 10</option><option>Class 9</option><option>Class 8</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select formControlName="section">
+                      <option>A</option><option>B</option><option>C</option>
+                    </select>
+                  </td>
+                  <td style="text-align:center">
+                    <input type="checkbox" style="accent-color:var(--g400);width:15px;height:15px" formControlName="isClassTeacher">
+                  </td>
+                  <td>
+                    <button type="button" class="remove-btn" (click)="removeSubjectAssignment($index)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <div class="add-row-btn" (click)="addSubjectAssignment()">
+            <mat-icon>add</mat-icon> Add subject assignment
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>calendar_today</mat-icon> Working days</div>
+          <div class="day-chips">
+            @for (day of workingDays; track $index) {
+              <div 
+                class="day-chip" 
+                [class.sel]="day.selected" 
+                (click)="toggleDay($index)"
+              >
+                {{ day.label }}
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>schedule</mat-icon> Timing</div>
+          <div class="grid3">
+            <div class="field">
+              <label>Shift</label>
+              <select formControlName="shift">
+                <option>Morning (7:30 AM – 1:30 PM)</option>
+                <option>Afternoon (12:00 PM – 6:00 PM)</option>
+                <option>Full day</option>
+              </select>
+            </div>
+            <div class="field"><label>Weekly periods</label><input type="number" formControlName="weeklyPeriods"></div>
+            <div class="field"><label>Max periods/day</label><input type="number" formControlName="maxPeriodsPerDay"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>security</mat-icon> System access</div>
+          <div class="grid2">
+            <div class="field">
+              <label>Role <span class="req">*</span></label>
+              <select formControlName="role">
+                <option>Teacher</option><option>HOD</option><option>Class Teacher</option><option>Admin</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Portal access</label>
+              <select formControlName="portalAccess">
+                <option>Enabled</option><option>Disabled</option>
+              </select>
+            </div>
+            <div class="field"><label>Username (auto)</label><input placeholder="e.g. ramesh.sharma" formControlName="username"></div>
+            <div class="field">
+              <label>Send welcome email</label>
+              <select formControlName="sendWelcomeEmail">
+                <option>Yes — send credentials</option><option>No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 3 — REVIEW -->
+    @if (currentStep === 3) {
+      <div class="review-section">
+        <div class="card">
+          <div class="card-title"><mat-icon>verified_user</mat-icon> Personal summary</div>
+          <div class="summary-grid">
+            <div class="sum-item">
+              <div class="sum-key">Full name</div>
+              <div class="sum-val">{{ teacherForm.get('personal.firstName')?.value }} {{ teacherForm.get('personal.lastName')?.value }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Gender</div>
+              <div class="sum-val">{{ teacherForm.get('personal.gender')?.value }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Mobile</div>
+              <div class="sum-val">{{ teacherForm.get('personal.mobile')?.value || '—' }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Email</div>
+              <div class="sum-val">{{ teacherForm.get('personal.email')?.value || '—' }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title"><mat-icon>work_outline</mat-icon> Professional summary</div>
+          <div class="summary-grid">
+            <div class="sum-item">
+              <div class="sum-key">Designation</div>
+              <div class="sum-val">{{ teacherForm.get('professional.designation')?.value || '—' }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Department</div>
+              <div class="sum-val">{{ teacherForm.get('professional.department')?.value || '—' }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Type</div>
+              <div class="sum-val">
+                <span class="pill pill-green">{{ teacherForm.get('professional.employmentType')?.value }}</span>
+              </div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Joining date</div>
+              <div class="sum-val">{{ teacherForm.get('professional.joiningDate')?.value || '—' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>book</mat-icon> Subject assignments</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            @for (item of subjectAssignments.getRawValue(); track $index) {
+              <span class="pill" [class.pill-green]="$index % 2 === 0" [class.pill-blue]="$index % 2 !== 0">
+                {{ item.subject }} — {{ item.class }}-{{ item.section }} {{ item.isClassTeacher ? '(Class Teacher)' : '' }}
+              </span>
+            } @empty {
+              <div class="page-sub">No subjects assigned</div>
+            }
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><mat-icon>event_available</mat-icon> Schedule</div>
+          <div class="summary-grid">
+            <div class="sum-item">
+              <div class="sum-key">Working days</div>
+              <div class="sum-val">{{ teacherForm.get('schedule.workingDays')?.value?.join(', ') || 'None' }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Shift</div>
+              <div class="sum-val">{{ teacherForm.get('schedule.shift')?.value }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Periods/week</div>
+              <div class="sum-val">{{ teacherForm.get('schedule.weeklyPeriods')?.value }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Portal access</div>
+              <div class="sum-val">
+                <span class="pill pill-green">{{ teacherForm.get('schedule.portalAccess')?.value }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
+      <div class="footer-right">
+        @if (currentStep > 0) {
+          <button type="button" class="btn-prev" (click)="prevStep()">
+            <mat-icon>arrow_back</mat-icon> Previous
+          </button>
+        }
+        <button type="button" class="btn-next" (click)="nextStep()" [disabled]="mode === 'view' && currentStep === 3">
+          @if (currentStep === 3) {
+            <mat-icon>save</mat-icon> Save teacher
+          } @else {
+            Next <mat-icon>arrow_forward</mat-icon>
+          }
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
