@@ -53,7 +53,7 @@
       </select>
       <i class="ti ti-chevron-down arr"></i>
     </div>
-    <input type="date" class="date-input" [(ngModel)]="selectedDate">
+    <input type="date" class="date-input" [ngModel]="selectedDate" (ngModelChange)="onDateChanged($event)">
     <div class="search-wrap">
       <mat-icon>search</mat-icon>
       <input type="text" id="search-inp" placeholder="Search name or roll…" [(ngModel)]="searchQuery">

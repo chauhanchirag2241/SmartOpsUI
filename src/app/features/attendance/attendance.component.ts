@@ -6,7 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClassService } from '../../core/services/class.service';
 import { StudentService } from '../../core/services/student.service';
+import { AttendanceService } from '../../core/services/attendance.service';
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
+import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
 
 interface Student {
   id: string;
@@ -17,7 +19,7 @@ interface Student {
   initials: string;
 }
 
-interface AttendanceStatus {
+interface AttendanceStatusMap {
   [key: string]: string; // '' | 'present' | 'absent' | 'leave' | 'late'
 }
 
@@ -35,11 +37,12 @@ interface AttendanceNote {
 export class AttendanceComponent implements OnInit {
   private classService = inject(ClassService);
   private studentService = inject(StudentService);
+  private attendanceService = inject(AttendanceService);
   private snackBar = inject(MatSnackBar);
   private cdr = inject(ChangeDetectorRef);
 
   students: Student[] = [];
-  status: AttendanceStatus = {};
+  status: AttendanceStatusMap = {};
   notes: AttendanceNote = {};
   
   classes: any[] = [];
@@ -91,6 +94,11 @@ export class AttendanceComponent implements OnInit {
     this.loadStudents();
   }
 
+  onDateChanged(date: string): void {
+    this.selectedDate = date;
+    this.loadSavedAttendance();
+  }
+
   loadStudents() {
     if (!this.selectedClassId) {
       this.clearClassStudents();
@@ -115,11 +123,12 @@ export class AttendanceComponent implements OnInit {
         }));
 
         this.students.forEach(s => {
-          this.status[s.id] ??= '';
-          this.notes[s.id] ??= '';
+          this.status[s.id] = '';
+          this.notes[s.id] = '';
         });
         this.focusIdx = this.students.length ? 0 : -1;
         this.history = [];
+        this.loadSavedAttendance();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -152,6 +161,7 @@ export class AttendanceComponent implements OnInit {
     this.history = [];
     this.focusIdx = -1;
     this.curFilter = 'all';
+    this.submittedInfo = null;
   }
 
   private normalizeClassName(value: unknown): string {
@@ -251,6 +261,47 @@ export class AttendanceComponent implements OnInit {
     this.closeNote();
   }
 
+  private loadSavedAttendance(): void {
+    if (!this.selectedClassId || !this.selectedDate || this.students.length === 0) {
+      this.submittedInfo = null;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.attendanceService.getClassAttendance(this.selectedClassId, this.selectedDate).subscribe({
+      next: (res: any) => {
+        this.students.forEach(student => {
+          this.status[student.id] = '';
+          this.notes[student.id] = '';
+        });
+
+        for (const item of res?.students || []) {
+          const studentId = item.studentId;
+          if (!this.students.some(student => student.id === studentId)) {
+            continue;
+          }
+
+          this.status[studentId] = this.statusNumberToKey(item.status);
+          this.notes[studentId] = item.remarks || '';
+        }
+
+        this.submittedInfo = res?.isSubmitted
+          ? {
+              date: new Date(this.selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+              by: 'Saved'
+            }
+          : null;
+        this.history = [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.submittedInfo = null;
+        this.snackBar.open('Error loading saved attendance', 'Close', { duration: 3000 });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   get stats() {
     const vals = this.students.map(s => this.status[s.id] || '');
     const p = vals.filter(s => s === 'present').length;
@@ -287,16 +338,67 @@ export class AttendanceComponent implements OnInit {
   submitAttendance() {
     const unmarked = this.stats.total - this.stats.marked;
     if (unmarked > 0 && !confirm(`${unmarked} students unmarked. Submit anyway?`)) return;
-    
+
+    const markedStudents = this.students
+      .filter(student => !!this.status[student.id])
+      .map(student => ({
+        studentId: student.id,
+        status: this.statusKeyToNumber(this.status[student.id]),
+        remarks: this.notes[student.id] || null
+      }));
+
+    if (!this.selectedClassId || !this.selectedDate) {
+      this.snackBar.open('Select class and date first', 'Close', { duration: 3000 });
+      return;
+    }
+
+    if (markedStudents.length === 0) {
+      this.snackBar.open('Mark at least one student before submitting', 'Close', { duration: 3000 });
+      return;
+    }
+
     this.isSubmitting = true;
-    setTimeout(() => {
-      this.isSubmitting = false;
-      this.submittedInfo = {
-        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
-        by: 'Admin'
-      };
-      this.snackBar.open('Attendance submitted successfully', 'Close', { duration: 3000 });
-    }, 1000);
+    this.attendanceService.submitAttendance({
+      classId: this.selectedClassId,
+      attendanceDate: this.selectedDate,
+      students: markedStudents
+    }).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.snackBar.open('Attendance submitted successfully', 'Close', { duration: 3000 });
+        this.loadSavedAttendance();
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        const message = err?.status === 403
+          ? 'You do not have permission to mark attendance for this class'
+          : err?.error?.message || err?.message || 'Failed to submit attendance';
+        this.snackBar.open(message, 'Close', { duration: 4000 });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private statusKeyToNumber(status: string): AttendanceStatus {
+    const map: Record<string, AttendanceStatus> = {
+      present: AttendanceStatus.Present,
+      absent: AttendanceStatus.Absent,
+      leave: AttendanceStatus.Leave,
+      late: AttendanceStatus.Late
+    };
+
+    return map[status];
+  }
+
+  private statusNumberToKey(status: number): string {
+    const map: Record<number, string> = {
+      [AttendanceStatus.Present]: 'present',
+      [AttendanceStatus.Absent]: 'absent',
+      [AttendanceStatus.Leave]: 'leave',
+      [AttendanceStatus.Late]: 'late'
+    };
+
+    return map[status] || '';
   }
 
   toggleKbd() {
