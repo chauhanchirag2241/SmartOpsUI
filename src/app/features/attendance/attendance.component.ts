@@ -62,7 +62,11 @@ export class AttendanceComponent implements OnInit {
   noteTargetId: string | null = null;
   tempNote = '';
   
+  private initialStatus: AttendanceStatusMap = {};
+  private initialNotes: AttendanceNote = {};
+  
   focusIdx = -1;
+
 
   ngOnInit() {
     this.loadClasses();
@@ -291,9 +295,15 @@ export class AttendanceComponent implements OnInit {
               by: 'Saved'
             }
           : null;
+
+        // Capture snapshot for change tracking
+        this.initialStatus = { ...this.status };
+        this.initialNotes = { ...this.notes };
+
         this.history = [];
         this.cdr.detectChanges();
       },
+
       error: () => {
         this.submittedInfo = null;
         this.snackBar.open('Error loading saved attendance', 'Close', { duration: 3000 });
@@ -340,12 +350,22 @@ export class AttendanceComponent implements OnInit {
     if (unmarked > 0 && !confirm(`${unmarked} students unmarked. Submit anyway?`)) return;
 
     const markedStudents = this.students
-      .filter(student => !!this.status[student.id])
+      .filter(student => {
+        const hasStatus = !!this.status[student.id];
+        if (!hasStatus) return false;
+
+        // Check if anything actually changed since load
+        const statusChanged = this.status[student.id] !== (this.initialStatus[student.id] || '');
+        const noteChanged = (this.notes[student.id] || '') !== (this.initialNotes[student.id] || '');
+        
+        return statusChanged || noteChanged;
+      })
       .map(student => ({
         studentId: student.id,
         status: this.statusKeyToNumber(this.status[student.id]),
         remarks: this.notes[student.id] || null
       }));
+
 
     if (!this.selectedClassId || !this.selectedDate) {
       this.snackBar.open('Select class and date first', 'Close', { duration: 3000 });

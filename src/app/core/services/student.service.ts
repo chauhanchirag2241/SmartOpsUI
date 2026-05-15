@@ -177,6 +177,14 @@ export class StudentService {
     return this.api.get('students/next-admission-no', params);
   }
 
+  getNextRollNumber(academicYearId: string, classId: string): Observable<any> {
+    const params = new HttpParams()
+      .set('academicYearId', academicYearId)
+      .set('classId', classId);
+    return this.api.get('students/next-roll-number', params);
+  }
+
+
 
   private toDateOnlyString(value: unknown): string | null {
     if (!value) {

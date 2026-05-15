@@ -332,19 +332,33 @@ export class AddStudentComponent implements OnInit {
     }
 
     if (this.mode === 'add') {
-      this.setupAdmissionNoAutoGeneration();
+      this.setupAutoGeneration();
     }
   }
 
-  private setupAdmissionNoAutoGeneration() {
+  private setupAutoGeneration() {
+    // Admission No generation
     this.studentForm.get('academicYearId')?.valueChanges.subscribe(yearId => {
       if (yearId) {
         this.generateAdmissionNo(yearId);
+        // Also trigger roll number generation if class is already selected
+        const classId = this.studentForm.get('classId')?.value;
+        if (classId) {
+          this.generateRollNumber(yearId, classId);
+        }
+      }
+    });
+
+    // Roll Number generation
+    this.studentForm.get('classId')?.valueChanges.subscribe(classId => {
+      const yearId = this.studentForm.get('academicYearId')?.value;
+      if (classId && yearId) {
+        this.generateRollNumber(yearId, classId);
       }
     });
   }
 
-  private generateAdmissionNo(academicYearId?: string) {
+  private generateAdmissionNo(academicYearId: string) {
     this.studentService.getNextAdmissionNo(academicYearId).subscribe({
       next: (res) => {
         this.studentForm.patchValue({ admissionNo: res.admissionNo });
@@ -353,6 +367,17 @@ export class AddStudentComponent implements OnInit {
       error: () => this.snackBar.open('Error generating admission number', 'Close', { duration: 3000 })
     });
   }
+
+  private generateRollNumber(academicYearId: string, classId: string) {
+    this.studentService.getNextRollNumber(academicYearId, classId).subscribe({
+      next: (res) => {
+        this.studentForm.patchValue({ rollNumber: res.rollNumber });
+        this.cdr.detectChanges();
+      },
+      error: () => this.snackBar.open('Error generating roll number', 'Close', { duration: 3000 })
+    });
+  }
+
 
 
   loadAcademicYears() {
