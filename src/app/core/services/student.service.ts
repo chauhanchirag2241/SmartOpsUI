@@ -169,6 +169,15 @@ export class StudentService {
     return this.api.delete(`students/${id}`);
   }
 
+  getNextAdmissionNo(academicYearId?: string): Observable<any> {
+    let params = new HttpParams();
+    if (academicYearId) {
+      params = params.set('academicYearId', academicYearId);
+    }
+    return this.api.get('students/next-admission-no', params);
+  }
+
+
   private toDateOnlyString(value: unknown): string | null {
     if (!value) {
       return null;

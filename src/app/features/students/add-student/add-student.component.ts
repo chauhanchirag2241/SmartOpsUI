@@ -330,7 +330,30 @@ export class AddStudentComponent implements OnInit {
     if (this.studentId && this.mode !== 'add') {
       this.loadStudentData(this.studentId);
     }
+
+    if (this.mode === 'add') {
+      this.setupAdmissionNoAutoGeneration();
+    }
   }
+
+  private setupAdmissionNoAutoGeneration() {
+    this.studentForm.get('academicYearId')?.valueChanges.subscribe(yearId => {
+      if (yearId) {
+        this.generateAdmissionNo(yearId);
+      }
+    });
+  }
+
+  private generateAdmissionNo(academicYearId?: string) {
+    this.studentService.getNextAdmissionNo(academicYearId).subscribe({
+      next: (res) => {
+        this.studentForm.patchValue({ admissionNo: res.admissionNo });
+        this.cdr.detectChanges();
+      },
+      error: () => this.snackBar.open('Error generating admission number', 'Close', { duration: 3000 })
+    });
+  }
+
 
   loadAcademicYears() {
     this.academicYearService.getAcademicYearDropdown().subscribe({
@@ -414,11 +437,11 @@ export class AddStudentComponent implements OnInit {
       email: data.email,
       aadhaar: data.aadhaarNo,
       address: data.address,
-      
+
       fatherName: father?.name,
       fatherMobile: father?.mobile,
       fatherOcc: father?.occupation,
-      
+
       motherName: mother?.name,
       motherMobile: mother?.mobile,
       motherOcc: mother?.occupation,
@@ -483,10 +506,10 @@ export class AddStudentComponent implements OnInit {
     }
 
     this.isSaving = true;
-    
+
     // Prepare payload by mapping class selection to classId
     const rawValue = this.studentForm.getRawValue();
-    
+
     const payload = {
       ...rawValue,
       academics: [{
