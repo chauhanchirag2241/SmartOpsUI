@@ -1,16 +1,35 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { TeacherService } from '../../../core/services/teacher.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
+import { FileUploadComponent, SelectedUploadFile } from '../../../shared/components/file-upload/file-upload.component';
+import { DigitsOnlyDirective } from '../../../shared/directives/digits-only.directive';
+import { BloodGroup, enumToOptions, Gender } from '../../../shared/enums/field-options.enum';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 
 @Component({
   selector: 'app-add-teacher',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FileUploadComponent,
+    DigitsOnlyDirective,
+    DynamicFieldComponent,
+  ],
   templateUrl: './add-teacher.component.html',
   styleUrl: './add-teacher.component.css'
 })
@@ -24,6 +43,9 @@ export class AddTeacherComponent implements OnInit {
   currentStep = 0;
   subjects: any[] = [];
   classes: any[] = [];
+  selectedPhoto: SelectedUploadFile | null = null;
+  readonly bloodGroupOptions = enumToOptions(BloodGroup);
+  duplicateIndices: Set<number> = new Set();
   steps = [
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
@@ -37,6 +59,16 @@ export class AddTeacherComponent implements OnInit {
     'Step 3 of 4 — Subjects & schedule',
     'Step 4 of 4 — Review & save'
   ];
+
+  readonly configs: Record<string, FormFieldConfig> = {
+    firstName: { type: 'input', controlName: 'firstName', label: 'First name', placeholder: 'e.g. Ramesh', validations: [{ name: 'required', message: 'First name is required', validator: Validators.required }] },
+    lastName: { type: 'input', controlName: 'lastName', label: 'Last name', placeholder: 'e.g. Sharma', validations: [{ name: 'required', message: 'Last name is required', validator: Validators.required }] },
+    dob: { type: 'datepicker', controlName: 'dob', label: 'Date of birth', validations: [{ name: 'required', message: 'DOB is required', validator: Validators.required }] },
+    bloodGroup: { type: 'select', controlName: 'bloodGroup', label: 'Blood group', options: enumToOptions(BloodGroup) },
+    aadhaarNumber: { type: 'input', controlName: 'aadhaarNumber', label: 'Aadhaar number', placeholder: 'xxxx xxxx xxxx' },
+    panNumber: { type: 'input', controlName: 'panNumber', label: 'PAN number', placeholder: 'ABCDE1234F' },
+    joiningDate: { type: 'datepicker', controlName: 'joiningDate', label: 'Joining date', validations: [{ name: 'required', message: 'Joining date is required', validator: Validators.required }] },
+  };
 
   workingDays = [
     { label: 'Mon', selected: true },
@@ -53,7 +85,8 @@ export class AddTeacherComponent implements OnInit {
     private teacherService: TeacherService,
     private classService: ClassService,
     private subjectService: SubjectService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {
     this.teacherForm = this.fb.group({
       personal: this.fb.group({
@@ -110,8 +143,39 @@ export class AddTeacherComponent implements OnInit {
     this.loadSubjects();
     this.loadClasses();
     this.addSubjectAssignment(); // Add one initial row
+    this.updateWorkingDays();
+
+    // Subscribe to subject assignments changes to refresh duplicates
+    this.subjectAssignments.valueChanges.subscribe(() => this.checkDuplicates());
+    if (this.mode === 'add') {
+      this.generateEmployeeId();
+      this.setupUsernameGeneration();
+    }
     if (this.mode !== 'add' && this.teacherId) {
       this.loadTeacherData();
+    }
+  }
+
+  private setupUsernameGeneration(): void {
+    const firstControl = this.teacherForm.get('personal.firstName');
+    const lastControl = this.teacherForm.get('personal.lastName');
+
+    firstControl?.valueChanges.subscribe(() => this.updateGeneratedUsername());
+    lastControl?.valueChanges.subscribe(() => this.updateGeneratedUsername());
+  }
+
+  private updateGeneratedUsername(): void {
+    if (this.mode !== 'add') return;
+
+    const first = (this.teacherForm.get('personal.firstName')?.value || '').trim().toLowerCase();
+    const last = (this.teacherForm.get('personal.lastName')?.value || '').trim().toLowerCase();
+    const employeeId = this.teacherForm.get('professional.employeeId')?.value || '';
+    const idSuffix = employeeId.split('-').pop() || '';
+
+    if (first || last) {
+      const base = last ? `${first}.${last}` : first;
+      const username = `${base}${idSuffix ? '.' + idSuffix : ''}`.replace(/[^a-z0-9.]/g, '');
+      this.teacherForm.get('schedule.username')?.setValue(username);
     }
   }
 
@@ -123,6 +187,14 @@ export class AddTeacherComponent implements OnInit {
     return (this.teacherForm.get('schedule.subjectAssignments') as FormArray);
   }
 
+  get personalGroup(): FormGroup {
+    return this.teacherForm.get('personal') as FormGroup;
+  }
+
+  get professionalGroup(): FormGroup {
+    return this.teacherForm.get('professional') as FormGroup;
+  }
+
   loadTeacherData(): void {
     this.teacherService.getTeacherById(this.teacherId!).subscribe({
       next: (data) => {
@@ -130,7 +202,7 @@ export class AddTeacherComponent implements OnInit {
           personal: {
             firstName: data.firstName,
             lastName: data.lastName,
-            dob: data.dob,
+            dob: this.toLocalDate(data.dob),
             bloodGroup: data.bloodGroup,
             gender: data.gender,
             aadhaarNumber: data.aadhaarNo,
@@ -142,7 +214,7 @@ export class AddTeacherComponent implements OnInit {
           },
           professional: {
             employeeId: data.employeeId,
-            joiningDate: data.joiningDate,
+            joiningDate: this.toLocalDate(data.joiningDate),
             department: data.department,
             designation: data.designation,
             experience: data.experience,
@@ -208,7 +280,6 @@ export class AddTeacherComponent implements OnInit {
     const group = this.fb.group({
       subjectId: [''],
       classId: ['', Validators.required],
-      isClassTeacher: [false]
     });
     this.subjectAssignments.push(group);
   }
@@ -216,7 +287,12 @@ export class AddTeacherComponent implements OnInit {
   removeSubjectAssignment(index: number): void {
     if (this.subjectAssignments.length > 1) {
       this.subjectAssignments.removeAt(index);
+      setTimeout(() => this.checkDuplicates(), 0); // Re-calculate after removal
     }
+  }
+
+  onPhotoSelected(file: SelectedUploadFile): void {
+    this.selectedPhoto = file;
   }
 
   toggleDay(index: number): void {
@@ -247,6 +323,10 @@ export class AddTeacherComponent implements OnInit {
   }
 
   nextStep(): void {
+    if (this.currentStep === 2 && this.hasDuplicateAssignments()) {
+      this.snackBar.open('Duplicate entry: This subject is already assigned to this class', 'Close', { duration: 3000 });
+      return;
+    }
     if (this.currentStep < 3) {
       this.currentStep++;
     } else {
@@ -266,14 +346,22 @@ export class AddTeacherComponent implements OnInit {
       return;
     }
 
+    if (this.hasDuplicateAssignments()) {
+      this.snackBar.open('Duplicate entry: This subject is already assigned to this class', 'Close', { duration: 3000 });
+      return;
+    }
+
     const data = this.teacherForm.getRawValue();
     data.schedule.classId = data.schedule.subjectAssignments?.[0]?.classId || data.schedule.classId || null;
-    const action = this.mode === 'edit' 
+    const action = this.mode === 'edit'
       ? this.teacherService.updateTeacher(this.teacherId!, data)
       : this.teacherService.createTeacher(data);
 
     action.subscribe({
       next: () => {
+        if (this.mode === 'add') {
+          this.persistEmployeeSequence();
+        }
         this.snackBar.open(`Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
         this.saved.emit();
       },
@@ -287,5 +375,81 @@ export class AddTeacherComponent implements OnInit {
 
   onCancel(): void {
     this.cancel.emit();
+  }
+
+  getSubjectName(subjectId: unknown): string {
+    return this.subjects.find(subject => String(subject.id) === String(subjectId))?.name || 'Subject';
+  }
+
+  getClassName(classId: unknown): string {
+    return this.classes.find(classItem => String(classItem.id) === String(classId))?.name || 'Class';
+  }
+
+  formatDate(value: unknown): string {
+    if (!value) return '—';
+    const date = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(date.getTime())) return String(value);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}-${month}-${date.getFullYear()}`;
+  }
+
+  private toLocalDate(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+
+    const [year, month, day] = String(value).substring(0, 10).split('-').map(Number);
+    if (!year || !month || !day) {
+      return null;
+    }
+
+    return new Date(year, month - 1, day);
+  }
+
+  private generateEmployeeId(): void {
+    const year = new Date().getFullYear();
+    const storageKey = `smartops-emp-sequence-${year}`;
+    const next = Number(localStorage.getItem(storageKey) || '0') + 1;
+    const employeeId = `EMP-${year}-${String(next).padStart(4, '0')}`;
+    this.teacherForm.get('professional.employeeId')?.setValue(employeeId);
+  }
+
+  private persistEmployeeSequence(): void {
+    const employeeId = String(this.teacherForm.get('professional.employeeId')?.value || '');
+    const match = employeeId.match(/^EMP-(\d{4})-(\d{4})$/);
+    if (!match) return;
+    localStorage.setItem(`smartops-emp-sequence-${match[1]}`, String(Number(match[2])));
+  }
+
+  hasDuplicateAssignments(): boolean {
+    return this.duplicateIndices.size > 0;
+  }
+
+  checkDuplicates(): void {
+    this.duplicateIndices.clear();
+    const assignments = this.subjectAssignments.getRawValue();
+
+    for (let i = 0; i < assignments.length; i++) {
+      const a = assignments[i];
+      if (!a.subjectId || !a.classId) continue;
+
+      for (let j = i + 1; j < assignments.length; j++) {
+        const b = assignments[j];
+        if (a.subjectId === b.subjectId && a.classId === b.classId) {
+          this.duplicateIndices.add(i);
+          this.duplicateIndices.add(j);
+        }
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
+  isRowDuplicate(index: number): boolean {
+    return this.duplicateIndices.has(index);
   }
 }

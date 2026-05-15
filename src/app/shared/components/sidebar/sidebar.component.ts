@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -19,6 +19,12 @@ interface NavItem {
   styleUrl: './sidebar.component.css',
 })
 export class SidebarComponent {
+  @Output() toggle = new EventEmitter<void>();
+
+  onToggle(): void {
+    this.toggle.emit();
+  }
+
   trackNavItem(index: number, item: NavItem): string {
     return `${item.route}-${index}`;
   }

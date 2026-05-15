@@ -58,15 +58,10 @@ export class TeachersComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading teachers:', err);
-        // For demo purposes if API fails, show some dummy data
-        this.teachers = [
-          { id: '1', name: 'Ramesh Sharma', email: 'ramesh.sharma@school.com', dept: 'Mathematics', designation: 'PGT', isActive: true },
-          { id: '2', name: 'Priya Verma', email: 'priya.verma@school.com', dept: 'Science', designation: 'TGT', isActive: true },
-          { id: '3', name: 'Anil Gupta', email: 'anil.gupta@school.com', dept: 'Languages', designation: 'PRT', isActive: false },
-        ];
-        this.totalTeachers = this.teachers.length;
+        this.teachers = [];
+        this.totalTeachers = 0;
         this.cdr.detectChanges();
-        // this.snackBar.open('Failed to load teachers', 'Close', { duration: 3000, panelClass: 'snack-error' });
+        this.snackBar.open('Failed to load teachers', 'Close', { duration: 3000, panelClass: 'snack-error' });
       }
     });
   }
@@ -93,10 +88,11 @@ export class TeachersComponent implements OnInit {
 
   onFilterChanged(filter: DataTableFilter | null): void {
     if (filter) {
-      this.currentFilter = filter.value as unknown as StaffFilter;
+      this.currentFilter = Number(filter.value) as StaffFilter;
     } else {
       this.currentFilter = StaffFilter.All;
     }
+    this.loadTeachers();
   }
 
   tableConfig: DataTableConfig = {

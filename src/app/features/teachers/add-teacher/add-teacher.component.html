@@ -2,7 +2,7 @@
   <div class="topbar">
     <button class="back-btn" (click)="onCancel()">
       <mat-icon>arrow_back</mat-icon>
-      Teachers
+      Back
     </button>
     <div>
       <div class="page-title">{{ mode === 'edit' ? 'Edit teacher' : (mode === 'view' ? 'Teacher details' : 'Add new teacher') }}</div>
@@ -36,44 +36,31 @@
         <div class="card">
           <div class="card-title"><mat-icon>account_circle</mat-icon> Photo & basic details</div>
           <div class="photo-section">
-            <div class="photo-upload">
-              <mat-icon>add_a_photo</mat-icon>
-              <span>Upload photo</span>
-            </div>
+            <app-file-upload
+              label="Upload photo"
+              subLabel="JPG, PNG - max 2MB"
+              accept="image/png,image/jpeg"
+              [disabled]="mode === 'view'"
+              (fileSelected)="onPhotoSelected($event)"
+            />
             <div class="photo-fields">
-              <div class="field">
-                <label>First name <span class="req">*</span></label>
-                <input placeholder="e.g. Ramesh" formControlName="firstName">
+              <app-dynamic-field class="col-3" [config]="configs['firstName']" [group]="personalGroup" />
+              <app-dynamic-field class="col-3" [config]="configs['lastName']" [group]="personalGroup" />
+
+              <app-dynamic-field class="col-3" [config]="configs['dob']" [group]="personalGroup" />
+              <div class="field col-3">
+                <label>Gender <span class="req">*</span></label>
+                <div class="badge-options">
+                  <div class="badge-opt" [class.sel-male]="teacherForm.get('personal.gender')?.value === 'Male'" (click)="setGender('Male')">Male</div>
+                  <div class="badge-opt" [class.sel-female]="teacherForm.get('personal.gender')?.value === 'Female'" (click)="setGender('Female')">Female</div>
+                  <div class="badge-opt" [class.sel-other]="teacherForm.get('personal.gender')?.value === 'Other'" (click)="setGender('Other')">Other</div>
+                </div>
               </div>
-              <div class="field">
-                <label>Last name <span class="req">*</span></label>
-                <input placeholder="e.g. Sharma" formControlName="lastName">
-              </div>
-              <div class="field">
-                <label>Date of birth <span class="req">*</span></label>
-                <input type="date" formControlName="dob">
-              </div>
-              <div class="field">
-                <label>Blood group</label>
-                <select formControlName="bloodGroup">
-                  <option value="">Select</option>
-                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-                  <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
-                </select>
-              </div>
+
+              <app-dynamic-field class="col-2" [config]="configs['bloodGroup']" [group]="personalGroup" />
+              <app-dynamic-field class="col-2" [config]="configs['aadhaarNumber']" [group]="personalGroup" />
+              <app-dynamic-field class="col-2" [config]="configs['panNumber']" [group]="personalGroup" />
             </div>
-          </div>
-          <div style="margin-bottom:12px">
-            <label style="display:block;margin-bottom:6px">Gender <span class="req">*</span></label>
-            <div class="badge-options">
-              <div class="badge-opt" [class.sel-male]="teacherForm.get('personal.gender')?.value === 'Male'" (click)="setGender('Male')">Male</div>
-              <div class="badge-opt" [class.sel-female]="teacherForm.get('personal.gender')?.value === 'Female'" (click)="setGender('Female')">Female</div>
-              <div class="badge-opt" [class.sel-other]="teacherForm.get('personal.gender')?.value === 'Other'" (click)="setGender('Other')">Other</div>
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="field"><label>Aadhaar number</label><input placeholder="xxxx xxxx xxxx" formControlName="aadhaarNumber"></div>
-            <div class="field"><label>PAN number</label><input placeholder="ABCDE1234F" formControlName="panNumber"></div>
           </div>
         </div>
 
@@ -82,19 +69,19 @@
           <div class="grid3">
             <div class="field">
               <label>Mobile <span class="req">*</span></label>
-              <input placeholder="10-digit" type="tel" formControlName="mobile">
+              <input [placeholder]="mode === 'view' ? '' : '10-digit'" type="tel" formControlName="mobile" [appDigitsOnly]="true" [maxDigits]="10" maxlength="10">
             </div>
             <div class="field">
               <label>Alternate mobile</label>
-              <input placeholder="10-digit" type="tel" formControlName="alternateMobile">
+              <input [placeholder]="mode === 'view' ? '' : '10-digit'" type="tel" formControlName="alternateMobile" [appDigitsOnly]="true" [maxDigits]="10" maxlength="10">
             </div>
             <div class="field">
               <label>Email <span class="req">*</span></label>
-              <input placeholder="teacher@school.com" type="email" formControlName="email">
+              <input [placeholder]="mode === 'view' ? '' : 'teacher@school.com'" type="email" formControlName="email">
             </div>
             <div class="field full">
               <label>Residential address</label>
-              <textarea placeholder="Full address..." formControlName="address"></textarea>
+              <textarea [placeholder]="mode === 'view' ? '' : 'Full address...'" formControlName="address"></textarea>
             </div>
           </div>
         </div>
@@ -110,7 +97,7 @@
                 <option>Spouse</option><option>Parent</option><option>Sibling</option><option>Other</option>
               </select>
             </div>
-            <div class="field"><label>Mobile</label><input placeholder="10-digit" type="tel" formControlName="mobile"></div>
+            <div class="field"><label>Mobile</label><input placeholder="10-digit" type="tel" formControlName="mobile" [appDigitsOnly]="true" [maxDigits]="10" maxlength="10"></div>
           </div>
         </div>
       </div>
@@ -122,10 +109,9 @@
         <div class="card">
           <div class="card-title"><mat-icon>badge</mat-icon> Employment details</div>
           <div class="grid3">
-            <div class="field"><label>Employee ID</label><input formControlName="employeeId"></div>
+            <div class="field"><label>Employee ID</label><input formControlName="employeeId" readonly></div>
             <div class="field">
-              <label>Joining date <span class="req">*</span></label>
-              <input type="date" formControlName="joiningDate">
+              <app-dynamic-field [config]="configs['joiningDate']" [group]="professionalGroup" />
             </div>
             <div class="field">
               <label>Department <span class="req">*</span></label>
@@ -170,10 +156,10 @@
         <div class="card">
           <div class="card-title"><mat-icon>card_membership</mat-icon> Qualifications</div>
           <div formArrayName="qualifications">
-            @for (qual of qualifications.controls; track $index) {
+            @for (qual of qualifications.controls; track qual; let i = $index) {
               <div class="qual-row">
-                <input placeholder="e.g. B.Ed — Delhi University — 2015" [formControlName]="$index">
-                <button type="button" class="qual-remove" (click)="removeQualification($index)">
+                <input placeholder="e.g. B.Ed — Delhi University — 2015" [formControlName]="i">
+                <button type="button" class="qual-remove" (click)="removeQualification(i)">
                   <mat-icon>close</mat-icon>
                 </button>
               </div>
@@ -205,18 +191,20 @@
               <tr>
                 <th>Subject</th>
                 <th>Class</th>
-                <th>Class teacher?</th>
                 <th></th>
               </tr>
             </thead>
             <tbody formArrayName="subjectAssignments">
-              @for (item of subjectAssignments.controls; track $index) {
-                <tr [formGroupName]="$index">
+              @for (item of subjectAssignments.controls; track item; let i = $index) {
+                <tr [formGroupName]="i" [class.duplicate-row]="isRowDuplicate(i)">
                   <td>
                     <select style="min-width:100px" formControlName="subjectId">
                       <option value="">Select subject</option>
                       <option *ngFor="let subject of subjects" [value]="subject.id">{{ subject.name }}</option>
                     </select>
+                    @if (isRowDuplicate(i)) {
+                      <div class="error-text">Duplicate entry: This subject is already assigned to this class</div>
+                    }
                   </td>
                   <td>
                     <select style="min-width:80px" formControlName="classId">
@@ -224,11 +212,8 @@
                       <option *ngFor="let classItem of classes" [value]="classItem.id">{{ classItem.name }}</option>
                     </select>
                   </td>
-                  <td style="text-align:center">
-                    <input type="checkbox" style="accent-color:var(--g400);width:15px;height:15px" formControlName="isClassTeacher">
-                  </td>
                   <td>
-                    <button type="button" class="remove-btn" (click)="removeSubjectAssignment($index)">
+                    <button type="button" class="remove-btn" (click)="removeSubjectAssignment(i)" [disabled]="subjectAssignments.length === 1">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </td>
@@ -343,7 +328,7 @@
             </div>
             <div class="sum-item">
               <div class="sum-key">Joining date</div>
-              <div class="sum-val">{{ teacherForm.get('professional.joiningDate')?.value || '—' }}</div>
+              <div class="sum-val">{{ formatDate(teacherForm.get('professional.joiningDate')?.value) }}</div>
             </div>
           </div>
         </div>
@@ -353,7 +338,7 @@
           <div style="display:flex;flex-wrap:wrap;gap:6px">
             @for (item of subjectAssignments.getRawValue(); track $index) {
               <span class="pill" [class.pill-green]="$index % 2 === 0" [class.pill-blue]="$index % 2 !== 0">
-                {{ item.subjectId || 'Subject' }} - {{ item.classId || 'Class' }} {{ item.isClassTeacher ? '(Class Teacher)' : '' }}
+                {{ getSubjectName(item.subjectId) }} - {{ getClassName(item.classId) }}
               </span>
             } @empty {
               <div class="page-sub">No subjects assigned</div>
@@ -387,23 +372,25 @@
       </div>
     }
 
-    <!-- FOOTER -->
-    <div class="footer">
-      <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
-      <div class="footer-right">
-        @if (currentStep > 0) {
-          <button type="button" class="btn-prev" (click)="prevStep()">
-            <mat-icon>arrow_back</mat-icon> Previous
-          </button>
+    <div class="footer-actions">
+      <button
+        type="button"
+        class="btn-back"
+        [style.visibility]="currentStep === 0 ? 'hidden' : 'visible'"
+        (click)="prevStep()"
+      >
+        <mat-icon>arrow_back</mat-icon> Previous
+      </button>
+
+      <div class="footer-hint">{{ hints[currentStep] }}</div>
+
+      <button type="button" class="btn-next" (click)="nextStep()" [disabled]="mode === 'view' && currentStep === 3">
+        @if (currentStep === 3) {
+          <mat-icon>save</mat-icon> Save teacher
+        } @else {
+          Next <mat-icon>arrow_forward</mat-icon>
         }
-        <button type="button" class="btn-next" (click)="nextStep()" [disabled]="mode === 'view' && currentStep === 3">
-          @if (currentStep === 3) {
-            <mat-icon>save</mat-icon> Save teacher
-          } @else {
-            Next <mat-icon>arrow_forward</mat-icon>
-          }
-        </button>
-      </div>
+      </button>
     </div>
   </form>
 </div>

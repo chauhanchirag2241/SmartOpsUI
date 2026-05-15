@@ -1,11 +1,9 @@
 .admin-wrapper {
-  display: flex;
-  flex-direction: column;
   min-height: 100dvh;
 }
 
 .sidenav-container {
-  flex: 1;
+  min-height: 100dvh;
 }
 
 .sidenav {
@@ -16,9 +14,30 @@
 
 .main-content {
   background: #f0f4ec;
-  min-height: calc(100dvh - 52px);
-  padding: 14px 16px;
-  padding-bottom: 80px;
+  min-height: 100dvh;
+}
+
+.content-body {
+  padding: 14px 16px 80px;
+}
+
+.floating-toggle {
+  position: fixed;
+  top: 6px;
+  left: 10px;
+  z-index: 1000;
+  color: #64748b;
+  width: 40px;
+  height: 40px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.floating-toggle:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #0f172a;
 }
 
 @media (max-width: 760px) {
@@ -26,7 +45,7 @@
     width: 230px;
   }
 
-  .main-content {
+  .content-body {
     padding: 16px;
   }
 }

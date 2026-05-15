@@ -6,6 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FileUploadComponent, SelectedUploadFile } from '../../../shared/components/file-upload/file-upload.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { enumToOptions, Gender, BloodGroup, PaymentMode } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
@@ -59,6 +60,7 @@ type ReviewSection = {
     ReactiveFormsModule,
     MatIconModule,
     DynamicFieldComponent,
+    FileUploadComponent,
   ],
   templateUrl: './add-student.component.html',
   styleUrl: './add-student.component.css',
@@ -79,6 +81,8 @@ export class AddStudentComponent implements OnInit {
   isSaving = false;
   academicYears: any[] = [];
   classes: any[] = [];
+  selectedPhoto: SelectedUploadFile | null = null;
+  selectedDocuments: Record<string, SelectedUploadFile> = {};
 
   readonly tabs = [
     { label: 'Personal info', hint: 'Step 1 of 4 — Personal information' },
@@ -136,24 +140,6 @@ export class AddStudentComponent implements OnInit {
   };
 
   readonly formCards: FormCard[] = [
-    {
-      tab: 0,
-      icon: 'badge',
-      title: 'Basic details',
-      grid: 'grid3',
-      fields: [
-        { key: 'firstName' },
-        { key: 'middleName' },
-        { key: 'lastName' },
-        { key: 'dob' },
-        { key: 'gender' },
-        { key: 'bloodGroup' },
-        { key: 'mobile' },
-        { key: 'email' },
-        { key: 'aadhaar' },
-        { key: 'address', full: true },
-      ],
-    },
     {
       tab: 0,
       icon: 'group',
@@ -236,6 +222,8 @@ export class AddStudentComponent implements OnInit {
     { icon: 'article', name: 'Previous marksheet', sub: 'Click to upload', uploaded: false },
     { icon: 'home', name: 'Address proof', sub: 'Click to upload', uploaded: false },
   ];
+
+  readonly genderOptions = enumToOptions(Gender);
 
   readonly reviewSections: ReadonlyArray<ReviewSection> = [
     {
@@ -594,6 +582,10 @@ export class AddStudentComponent implements OnInit {
       return '-';
     }
     const raw = this.studentForm.get(item.key)?.value;
+    const displayValue = this.lookupDisplayValue(item.key, raw);
+    if (displayValue) {
+      return displayValue;
+    }
     if (raw instanceof Date) {
       return this.formatDisplayDate(raw);
     }
@@ -601,6 +593,39 @@ export class AddStudentComponent implements OnInit {
       return String(raw);
     }
     return item.emptyText ?? '-';
+  }
+
+  onPhotoSelected(file: SelectedUploadFile): void {
+    this.selectedPhoto = file;
+  }
+
+  onDocumentSelected(docName: string, file: SelectedUploadFile): void {
+    this.selectedDocuments = {
+      ...this.selectedDocuments,
+      [docName]: file,
+    };
+  }
+
+  setGender(gender: string): void {
+    if (this.mode === 'view') return;
+    this.studentForm.get('gender')?.setValue(gender);
+    this.studentForm.get('gender')?.markAsTouched();
+  }
+
+  private lookupDisplayValue(key: string, raw: unknown): string {
+    if (raw == null || String(raw).trim() === '') {
+      return '';
+    }
+
+    if (key === 'classId') {
+      return this.classes.find((item) => String(item.id) === String(raw))?.name ?? '';
+    }
+
+    if (key === 'academicYearId') {
+      return this.academicYears.find((item) => String(item.id) === String(raw))?.name ?? '';
+    }
+
+    return '';
   }
 
   private toLocalDate(value: unknown): Date | null {

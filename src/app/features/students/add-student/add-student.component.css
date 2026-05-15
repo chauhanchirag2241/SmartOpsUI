@@ -24,6 +24,8 @@
 }
 
 .back-btn {
+  order: 2;
+  margin-left: auto;
   background: var(--card);
   border: 0.5px solid var(--border);
   border-radius: 8px;
@@ -49,6 +51,7 @@
 }
 
 .page-title {
+  order: 1;
   font-size: 16px;
   font-weight: 500;
   flex: 1;
@@ -187,39 +190,96 @@ input:hover, select:hover {
   color: var(--g600);
 }
 
-.photo-upload {
-  border: 1.5px dashed var(--border);
-  border-radius: 10px;
-  padding: 20px;
+.photo-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.photo-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.gender-field {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  background: var(--input-bg);
-  transition: border 0.15s;
+  gap: 5px;
 }
 
-.photo-upload:hover {
-  border-color: var(--g400);
-  background: var(--hover);
+.gender-field label {
+  display: block;
+  margin-bottom: 6px;
 }
 
-.photo-upload mat-icon {
-  font-size: 28px;
-  width: 28px;
-  height: 28px;
-  color: var(--g400);
+.photo-fields app-dynamic-field.full {
+  grid-column: 1 / -1;
 }
 
-.photo-upload-text {
+.badge-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge-opt {
+  padding: 6px 16px;
+  border-radius: 20px;
   font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
   color: var(--muted);
+  transition: all .2s;
 }
 
-.photo-upload-sub {
-  font-size: 11px;
-  color: var(--muted);
+.badge-opt:hover {
+  border-color: var(--g400);
+  color: var(--text);
+}
+
+.badge-opt.sel-male {
+  background: #DBEAFE;
+  color: #1E40AF;
+  border-color: #93C5FD;
+}
+
+.badge-opt.sel-female {
+  background: #FCE7F3;
+  color: #9D174D;
+  border-color: #F9A8D4;
+}
+
+.badge-opt.sel-other {
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  border-color: var(--g400);
+}
+
+:host ::ng-deep .mat-mdc-input-element:disabled,
+:host ::ng-deep textarea.mat-mdc-input-element:disabled {
+  color: var(--text);
+  font-weight: 600;
+  -webkit-text-fill-color: var(--text);
+  opacity: 1;
+}
+
+:host ::ng-deep .mat-mdc-select-disabled .mat-mdc-select-value,
+:host ::ng-deep .mat-mdc-select-disabled .mat-mdc-select-value-text {
+  color: var(--text);
+  font-weight: 600;
+  opacity: 1;
+}
+
+:host ::ng-deep .mat-mdc-input-element:disabled::placeholder,
+:host ::ng-deep textarea.mat-mdc-input-element:disabled::placeholder {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .fee-row {
@@ -280,6 +340,10 @@ input:hover, select:hover {
   background: var(--input-bg);
   cursor: pointer;
   transition: all 0.15s;
+}
+
+.doc-card > div:nth-child(2) {
+  flex: 1;
 }
 
 .doc-card:hover {
@@ -435,8 +499,12 @@ input:hover, select:hover {
 }
 
 @media (max-width: 640px) {
-  .grid3, .grid2, .doc-grid {
+  .grid3, .grid2, .doc-grid, .photo-fields {
     grid-template-columns: 1fr;
+  }
+
+  .photo-section {
+    flex-direction: column;
   }
   
   .tabs {
@@ -464,59 +532,39 @@ input:hover, select:hover {
 }
 
 .review-section {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 0.5px solid var(--border);
+  animation: fadeIn 0.3s ease;
 }
 
-.review-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.review-section h3 {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--g600);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.review-section h3 mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.review-grid {
+.summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
-.review-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.sum-item {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
 }
 
-.review-item.full {
+.sum-item.full {
   grid-column: 1 / -1;
 }
 
-.review-item label {
-  font-size: 11px;
+.sum-key {
+  font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
+  margin-bottom: 6px;
+  font-weight: 700;
 }
 
-.review-item span {
-  font-size: 13px;
+.sum-val {
+  font-size: 14px;
   color: var(--text);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 @keyframes fadeIn {

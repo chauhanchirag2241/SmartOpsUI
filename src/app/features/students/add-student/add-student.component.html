@@ -29,11 +29,42 @@
   @switch (currentTab) {
     @case (0) {
       <div class="card">
-        <div class="card-title"><mat-icon>person</mat-icon>Student photo</div>
-        <div class="photo-upload">
-          <mat-icon>add_a_photo</mat-icon>
-          <div class="photo-upload-text">Click to upload photo</div>
-          <div class="photo-upload-sub">JPG, PNG - max 2MB</div>
+        <div class="card-title"><mat-icon>account_circle</mat-icon> Photo & basic details</div>
+        <div class="photo-section">
+          <app-file-upload
+            label="Upload photo"
+            subLabel="JPG, PNG - max 2MB"
+            accept="image/png,image/jpeg"
+            [disabled]="mode === 'view'"
+            (fileSelected)="onPhotoSelected($event)"
+          />
+          <div class="photo-fields">
+            <app-dynamic-field [config]="configs['firstName']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['middleName']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['lastName']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['dob']" [group]="studentForm" />
+            <div class="gender-field">
+              <label>Gender <span class="req">*</span></label>
+              <div class="badge-options">
+                @for (option of genderOptions; track option.value) {
+                  <div
+                    class="badge-opt"
+                    [class.sel-male]="studentForm.get('gender')?.value === option.value && option.value === 'Male'"
+                    [class.sel-female]="studentForm.get('gender')?.value === option.value && option.value === 'Female'"
+                    [class.sel-other]="studentForm.get('gender')?.value === option.value && option.value === 'Other'"
+                    (click)="setGender(option.value)"
+                  >
+                    {{ option.label }}
+                  </div>
+                }
+              </div>
+            </div>
+            <app-dynamic-field [config]="configs['bloodGroup']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['aadhaar']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['mobile']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['email']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['address']" [group]="studentForm" [full]="true" />
+          </div>
         </div>
       </div>
       <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
@@ -66,7 +97,14 @@
               <div class="doc-icon"><mat-icon>{{ doc.icon }}</mat-icon></div>
               <div>
                 <div class="doc-name">{{ doc.name }}</div>
-                <div class="doc-sub">{{ doc.sub }}</div>
+                <app-file-upload
+                  mode="document"
+                  label="{{ selectedDocuments[doc.name]?.file?.name || doc.sub }}"
+                  subLabel="PDF, JPG, PNG"
+                  accept=".pdf,image/png,image/jpeg"
+                  [disabled]="mode === 'view'"
+                  (fileSelected)="onDocumentSelected(doc.name, $event)"
+                />
               </div>
               <div class="doc-status">
                 @if (doc.uploaded) {
@@ -82,24 +120,20 @@
       <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
     }
     @case (4) {
-      <div class="review-tab">
-        <div class="card review-card">
-          <div class="card-title"><mat-icon>visibility</mat-icon>Review Student Details</div>
-
-          @for (section of reviewSections; track section.title) {
-            <div class="review-section">
-              <h3><mat-icon>{{ section.icon }}</mat-icon> {{ section.title }}</h3>
-              <div class="review-grid">
-                @for (item of section.items; track item.label) {
-                  <div class="review-item" [class.full]="item.full">
-                    <label>{{ item.label }}</label>
-                    <span>{{ getReviewDisplay(item) }}</span>
-                  </div>
-                }
-              </div>
+      <div class="review-section">
+        @for (section of reviewSections; track section.title) {
+          <div class="card">
+            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="summary-grid">
+              @for (item of section.items; track item.label) {
+                <div class="sum-item" [class.full]="item.full">
+                  <div class="sum-key">{{ item.label }}</div>
+                  <div class="sum-val">{{ getReviewDisplay(item) }}</div>
+                </div>
+              }
             </div>
-          }
-        </div>
+          </div>
+        }
       </div>
     }
   }

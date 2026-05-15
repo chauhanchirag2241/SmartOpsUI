@@ -12,9 +12,12 @@
           matInput
           [id]="controlId"
           [type]="config.inputType || 'text'"
-          [placeholder]="config.placeholder ?? ''"
+          [placeholder]="getPlaceholder()"
           [formControlName]="config.controlName"
           [disabled]="config.disabled ?? false"
+          [appDigitsOnly]="config.inputType === 'tel'"
+          [maxDigits]="10"
+          [attr.maxlength]="config.inputType === 'tel' ? 10 : null"
         />
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>
@@ -34,7 +37,7 @@
           [id]="controlId"
           [matDatepicker]="picker"
           [formControlName]="config.controlName"
-          [placeholder]="config.placeholder ?? ''"
+          [placeholder]="getPlaceholder()"
           [disabled]="config.disabled ?? false"
         />
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
@@ -55,7 +58,7 @@
         <mat-select
           [id]="controlId"
           [formControlName]="config.controlName"
-          [placeholder]="config.placeholder ?? ''"
+          [placeholder]="getPlaceholder()"
           [disabled]="config.disabled ?? false"
         >
           @for (option of config.options ?? []; track optionTrack($index, option)) {
@@ -78,7 +81,7 @@
         <textarea
           matInput
           [id]="controlId"
-          [placeholder]="config.placeholder ?? ''"
+          [placeholder]="getPlaceholder()"
           [formControlName]="config.controlName"
           [rows]="3"
           [disabled]="config.disabled ?? false"
@@ -139,7 +142,7 @@
           matInput
           [id]="controlId"
           type="number"
-          [placeholder]="config.placeholder ?? ''"
+          [placeholder]="getPlaceholder()"
           [formControlName]="config.controlName"
           [disabled]="config.disabled ?? false"
         />

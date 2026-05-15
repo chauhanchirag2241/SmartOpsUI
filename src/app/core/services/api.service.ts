@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -22,6 +22,14 @@ export class ApiService {
 
   delete<T>(endpoint: string): Observable<T> {
     return this.http.delete<T>(this.toUrl(endpoint));
+  }
+
+  upload<T>(endpoint: string, body: FormData, params?: HttpParams): Observable<HttpEvent<T>> {
+    return this.http.post<T>(this.toUrl(endpoint), body, {
+      params,
+      observe: 'events',
+      reportProgress: true,
+    });
   }
 
   private toUrl(endpoint: string): string {

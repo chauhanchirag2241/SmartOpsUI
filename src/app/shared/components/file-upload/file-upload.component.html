@@ -1,0 +1,14 @@
+<label class="upload-box" [class.document]="mode === 'document'" [class.disabled]="disabled">
+  <input type="file" [accept]="accept" [disabled]="disabled" (change)="onFileChange($event)" />
+
+  @if (previewUrl && mode === 'avatar') {
+    <img [src]="previewUrl" alt="Selected file preview" />
+  } @else {
+    <mat-icon>{{ mode === 'document' ? 'upload_file' : 'add_a_photo' }}</mat-icon>
+  }
+
+  <span>{{ fileName || label }}</span>
+  @if (mode === 'document' && fileName) {
+    <small>{{ subLabel }}</small>
+  }
+</label>

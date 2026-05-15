@@ -1,4 +1,4 @@
-<div class="attendance-container" [class.dark]="darkMode">
+<div class="attendance-container">
   <!-- Topbar -->
   <div class="topbar">
     <button class="back-btn" aria-label="Back" routerLink="/dashboard">
@@ -7,15 +7,12 @@
     <div class="page-info" style="flex:1">
       <div class="page-title">Attendance</div>
       <div class="page-sub">
-        {{ selectedClassName }} &middot; {{ selectedDate | date:'mediumDate' }}
+        {{ selectedClassName }} &middot; {{ displaySelectedDate }}
       </div>
     </div>
     <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
       <mat-icon>keyboard</mat-icon>
       <span>Shortcuts</span>
-    </button>
-    <button class="icon-btn" (click)="toggleDark()" aria-label="Toggle dark mode">
-      <mat-icon>{{ darkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
     <button class="save-btn" (click)="submitAttendance()" [disabled]="isSubmitting">
       <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
@@ -151,10 +148,10 @@
         <div class="list-roll">Roll {{ s.roll }}</div>
         <div class="list-name">{{ s.name }}</div>
         <div class="list-btns">
-          <button class="lb-btn lb-p" (click)="setStatus(s.id, 'present', $event)">P</button>
-          <button class="lb-btn lb-a" (click)="setStatus(s.id, 'absent', $event)">A</button>
-          <button class="lb-btn lb-l" (click)="setStatus(s.id, 'leave', $event)">L</button>
-          <button class="lb-btn lb-lt" (click)="setStatus(s.id, 'late', $event)">Late</button>
+          <button class="lb-btn lb-p" [class.active]="status[s.id] === 'present'" (click)="setStatus(s.id, 'present', $event)">P</button>
+          <button class="lb-btn lb-a" [class.active]="status[s.id] === 'absent'" (click)="setStatus(s.id, 'absent', $event)">A</button>
+          <button class="lb-btn lb-l" [class.active]="status[s.id] === 'leave'" (click)="setStatus(s.id, 'leave', $event)">L</button>
+          <button class="lb-btn lb-lt" [class.active]="status[s.id] === 'late'" (click)="setStatus(s.id, 'late', $event)">Late</button>
         </div>
         <div class="note-badge" style="position:static;display:flex" *ngIf="['absent','leave','late'].includes(status[s.id])" (click)="openNote(s.id, $event)">
           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">notes</mat-icon>

@@ -9,6 +9,7 @@ import { StudentService } from '../../core/services/student.service';
 import { AttendanceService } from '../../core/services/attendance.service';
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
+import { AvatarColorService } from '../../shared/services/avatar-color.service';
 
 interface Student {
   id: string;
@@ -40,6 +41,7 @@ export class AttendanceComponent implements OnInit {
   private attendanceService = inject(AttendanceService);
   private snackBar = inject(MatSnackBar);
   private cdr = inject(ChangeDetectorRef);
+  private avatarColor = inject(AvatarColorService);
 
   students: Student[] = [];
   status: AttendanceStatusMap = {};
@@ -54,7 +56,6 @@ export class AttendanceComponent implements OnInit {
   curFilter = 'all';
   viewMode: 'grid' | 'list' = 'grid';
   kbdVisible = false;
-  darkMode = false;
   isSubmitting = false;
   submittedInfo: { date: string, by: string } | null = null;
   
@@ -122,8 +123,8 @@ export class AttendanceComponent implements OnInit {
           classId: s.classId,
           roll: s.rollNumber || (idx + 1).toString().padStart(2, '0'),
           name: s.name,
-          avClass: this.getAvatarClass(idx),
-          initials: this.getInitials(s.name)
+          avClass: this.avatarColor.getAvatarClass(s.id || s.name),
+          initials: this.avatarColor.getInitials(s.name)
         }));
 
         this.students.forEach(s => {
@@ -175,15 +176,6 @@ export class AttendanceComponent implements OnInit {
       .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
-  }
-
-  getAvatarClass(idx: number): string {
-    const classes = ['av-g', 'av-b', 'av-p', 'av-o'];
-    return classes[idx % classes.length];
-  }
-
-  getInitials(name: string): string {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   }
 
   get visibleStudents(): Student[] {
@@ -425,9 +417,13 @@ export class AttendanceComponent implements OnInit {
     this.kbdVisible = !this.kbdVisible;
   }
 
-  toggleDark() {
-    this.darkMode = !this.darkMode;
-    document.body.classList.toggle('dark', this.darkMode);
+  get displaySelectedDate(): string {
+    return this.formatDisplayDate(this.selectedDate);
+  }
+
+  private formatDisplayDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}-${month}-${year}` : value;
   }
 
   @HostListener('document:keydown', ['$event'])

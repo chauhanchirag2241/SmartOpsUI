@@ -1,9 +1,12 @@
 <div class="brand">
   <span class="brand-icon"><mat-icon fontSet="material-symbols-outlined">school</mat-icon></span>
-  <span>
+  <span class="brand-info">
     <strong>SmartOps</strong>
     <small>Admin panel</small>
   </span>
+  <button mat-icon-button class="menu-btn" (click)="onToggle()" aria-label="Toggle menu">
+    <mat-icon>menu_open</mat-icon>
+  </button>
 </div>
 
 <nav class="sidebar-nav" aria-label="Primary">

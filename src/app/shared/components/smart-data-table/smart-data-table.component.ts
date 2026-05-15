@@ -12,6 +12,7 @@ import {
   SimpleChanges,
   TemplateRef,
   ViewChild,
+  inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +24,7 @@ import {
   DataTableConfig,
   DataTableFilter,
 } from '../../interfaces/data-table.interface';
+import { AvatarColorService } from '../../services/avatar-color.service';
 
 @Component({
   selector: 'app-smart-data-table',
@@ -32,6 +34,7 @@ import {
   styleUrl: './smart-data-table.component.css',
 })
 export class SmartDataTableComponent implements OnInit, OnChanges {
+  private readonly avatarColor = inject(AvatarColorService);
   /** Table configuration object */
   @Input() config!: DataTableConfig;
 
@@ -508,27 +511,11 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   }
 
   getAvatarInitials(name: unknown): string {
-    const str = String(name || '');
-    if (!str) return 'NA';
-    const parts = str.split(' ').filter(Boolean);
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    } else if (parts.length === 1) {
-      return parts[0][0].toUpperCase();
-    }
-    return 'NA';
+    return this.avatarColor.getInitials(name);
   }
 
   getAvatarClass(name: unknown): string {
-    const str = String(name || '');
-    if (!str) return 'av-gray';
-    const colors = ['av-b', 'av-g', 'av-p', 'av-o'];
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
+    return this.avatarColor.getAvatarClass(name);
   }
 
   // ========================
