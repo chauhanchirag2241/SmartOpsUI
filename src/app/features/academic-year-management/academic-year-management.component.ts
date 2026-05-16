@@ -13,8 +13,8 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
-import { AuthService } from '../../core/services/auth.service';
-import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { MenuCodes } from '../../core/constants/menu-codes';
+import { PermissionService } from '../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
@@ -26,8 +26,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 })
 export class AcademicYearManagementComponent implements OnInit {
   private readonly ayService = inject(AcademicYearService);
-  private readonly auth = inject(AuthService);
-  private readonly perms = MODULE_PERMISSIONS.academicYears;
+  private readonly permissionService = inject(PermissionService);
 
   constructor(
     private snackBar: MatSnackBar,
@@ -44,7 +43,11 @@ export class AcademicYearManagementComponent implements OnInit {
   academicYears: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
-    this.ayConfig = applyModuleTablePermissions(this.baseAyConfig, this.auth, 'academicYears');
+    this.ayConfig = applyModuleTablePermissions(
+      this.baseAyConfig,
+      this.permissionService,
+      MenuCodes.AcademicYears,
+    );
     this.loadAcademicYears();
   }
 
@@ -70,7 +73,7 @@ export class AcademicYearManagementComponent implements OnInit {
   }
 
   openAddForm(): void {
-    if (!this.auth.hasPermission(this.perms.create!)) return;
+    if (!this.permissionService.canAdd(MenuCodes.AcademicYears)) return;
     this.formMode = 'add';
     this.selectedYearId = undefined;
     this.showAddForm = true;
@@ -161,17 +164,17 @@ export class AcademicYearManagementComponent implements OnInit {
     const id = event.row['id'] as string;
 
     if (event.action.label === 'View details') {
-      if (!this.auth.hasPermission(this.perms.read)) return;
+      if (!this.permissionService.canView(MenuCodes.AcademicYears)) return;
       this.formMode = 'view';
       this.selectedYearId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit year') {
-      if (!this.auth.hasPermission(this.perms.update!)) return;
+      if (!this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
       this.formMode = 'edit';
       this.selectedYearId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete year') {
-      if (!this.auth.hasPermission(this.perms.delete!)) return;
+      if (!this.permissionService.canDelete(MenuCodes.AcademicYears)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete academic year?',

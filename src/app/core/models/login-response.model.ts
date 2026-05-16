@@ -11,5 +11,6 @@ export interface UserProfile {
   isActive: boolean;
   createdOn: string;
   roles: string[];
-  permissions: string[];
+  roleId?: string;
+  roleCode?: string;
 }

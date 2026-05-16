@@ -1,48 +1,30 @@
-import type { AuthService } from '../services/auth.service';
-import type { ModulePermissionKey, ModulePermissionSet } from '../config/permission-ui.config';
-import { MODULE_PERMISSIONS } from '../config/permission-ui.config';
+import { PermissionService } from '../services/permission.service';
 import type {
   DataTableAction,
   DataTableBulkAction,
   DataTableConfig,
 } from '../../shared/interfaces/data-table.interface';
 
-export function canShowNavItem(
-  auth: AuthService,
-  permissions?: string[],
-  singlePermission?: string,
-): boolean {
-  if (permissions?.length) {
-    return auth.hasAnyPermission(...permissions);
-  }
-  return auth.hasPermission(singlePermission);
-}
-
 export function applyModuleTablePermissions(
   config: DataTableConfig,
-  auth: AuthService,
-  moduleKey: ModulePermissionKey,
+  permissionService: PermissionService,
+  menuCode: string,
 ): DataTableConfig {
-  const perms: ModulePermissionSet = MODULE_PERMISSIONS[moduleKey];
-
   const header = {
     title: config.header?.title ?? '',
     subtitle: config.header?.subtitle,
     addButtonText: config.header?.addButtonText,
     addButtonIcon: config.header?.addButtonIcon,
     addButtonClass: config.header?.addButtonClass,
-    showAddButton: false,
+    showAddButton: permissionService.canAdd(menuCode),
   };
-  if (perms.create) {
-    header.showAddButton = auth.hasPermission(perms.create);
-  }
 
   const actions = (config.actions ?? []).filter((action) =>
-    isActionAllowed(action, auth, perms),
+    isActionAllowed(action, permissionService, menuCode),
   );
 
   const bulkActions = (config.bulkActions ?? []).filter((action) =>
-    isBulkActionAllowed(action, auth, perms),
+    isBulkActionAllowed(action, permissionService, menuCode),
   );
 
   return {
@@ -50,43 +32,37 @@ export function applyModuleTablePermissions(
     header,
     actions,
     bulkActions,
-    showExport: config.showExport !== false && auth.hasPermission(perms.read),
+    showExport: config.showExport !== false && permissionService.canExport(menuCode),
   };
 }
 
 function isActionAllowed(
   action: DataTableAction,
-  auth: AuthService,
-  perms: ModulePermissionSet,
+  permissionService: PermissionService,
+  menuCode: string,
 ): boolean {
-  if (action.permission) {
-    return auth.hasPermission(action.permission);
-  }
   if (action.danger || action.label.toLowerCase().includes('delete')) {
-    return perms.delete ? auth.hasPermission(perms.delete) : false;
+    return permissionService.canDelete(menuCode);
   }
   if (action.label.toLowerCase().includes('edit')) {
-    return perms.update ? auth.hasPermission(perms.update) : false;
+    return permissionService.canEdit(menuCode);
   }
   if (action.label.toLowerCase().includes('view')) {
-    return auth.hasPermission(perms.read);
+    return permissionService.canView(menuCode);
   }
-  return auth.hasPermission(perms.read);
+  return permissionService.canView(menuCode);
 }
 
 function isBulkActionAllowed(
   action: DataTableBulkAction,
-  auth: AuthService,
-  perms: ModulePermissionSet,
+  permissionService: PermissionService,
+  menuCode: string,
 ): boolean {
-  if (action.permission) {
-    return auth.hasPermission(action.permission);
-  }
   if (action.danger || action.label.toLowerCase().includes('delete')) {
-    return perms.delete ? auth.hasPermission(perms.delete) : false;
+    return permissionService.canDelete(menuCode);
   }
   if (action.label.toLowerCase().includes('edit')) {
-    return perms.update ? auth.hasPermission(perms.update) : false;
+    return permissionService.canEdit(menuCode);
   }
-  return auth.hasPermission(perms.read);
+  return permissionService.canView(menuCode);
 }

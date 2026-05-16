@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, map, switchMap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, switchMap, tap, throwError } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
 import { LoginResponse, UserProfile } from '../models/login-response.model';
 import { ApiService } from './api.service';
+import { PermissionService } from './permission.service';
 import { StorageService } from './storage.service';
 
 @Injectable({ providedIn: 'root' })
@@ -11,13 +12,14 @@ export class AuthService {
   private readonly storage = inject(StorageService);
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
+  private readonly permissionService = inject(PermissionService);
   private readonly tokenKey = 'erp_token';
   private readonly userKey = 'erp_user';
   private readonly currentUserSubject = new BehaviorSubject<User | null>(
     this.storage.get<User>(this.userKey),
   );
 
-  readonly currentUser$ = this.currentUserSubject.asObservable();
+  readonly currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
 
   get currentUser(): User | null {
     return this.currentUserSubject.value;
@@ -37,10 +39,12 @@ export class AuthService {
         this.storage.set(this.tokenKey, tokens.accessToken);
         return this.api.get<UserProfile>('auth/me').pipe(map((profile) => ({ tokens, profile })));
       }),
-      map(({ tokens, profile }) => {
+      tap(({ tokens, profile }) => {
         const user = this.mapProfileToUser(profile);
         this.login(user, tokens.accessToken);
       }),
+      switchMap(() => this.permissionService.loadSession()),
+      map(() => undefined),
       catchError((err) => throwError(() => err)),
     );
   }
@@ -52,6 +56,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.permissionService.clear();
     this.storage.clear();
     this.currentUserSubject.next(null);
     void this.router.navigate(['/auth/login']);
@@ -61,25 +66,6 @@ export class AuthService {
     return this.storage.get<string>(this.tokenKey);
   }
 
-  hasPermission(permission?: string): boolean {
-    if (!permission) {
-      return true;
-    }
-    const roles = this.currentUser?.roles ?? [];
-    if (roles.includes('SchoolAdmin') || roles.includes('PlatformAdmin')) {
-      return true;
-    }
-    const permissions = this.currentUser?.permissions ?? [];
-    if (permissions.includes('admin.full')) {
-      return true;
-    }
-    return permissions.includes(permission);
-  }
-
-  hasAnyPermission(...permissions: string[]): boolean {
-    return permissions.some((p) => this.hasPermission(p));
-  }
-
   hasRole(role: string): boolean {
     const roles = this.currentUser?.roles ?? [];
     return roles.includes(role) || this.currentUser?.role === role;
@@ -87,27 +73,24 @@ export class AuthService {
 
   private mapProfileToUser(profile: UserProfile): User {
     const roles = profile.roles ?? [];
-    const permissions = profile.permissions ?? [];
-    const primaryRole = roles[0] ?? 'SchoolAdmin';
+    const primaryRole = roles[0] ?? 'Admin';
     return {
       id: profile.id,
       name: profile.username || profile.email,
       email: profile.email,
       role: this.mapRole(primaryRole),
       roles,
-      permissions,
+      roleId: profile.roleId,
+      roleCode: profile.roleCode,
     };
   }
 
   private mapRole(role?: string): UserRole {
     const normalized = role ?? '';
-    const known: UserRole[] = ['teacher', 'student', 'parent', 'admin', 'SchoolAdmin', 'PlatformAdmin', 'Accountant'];
+    const known: UserRole[] = ['teacher', 'student', 'parent', 'admin', 'Admin', 'Accountant'];
     if (known.includes(normalized as UserRole)) {
       return normalized as UserRole;
     }
-    if (normalized === 'SchoolAdmin' || normalized === 'PlatformAdmin') {
-      return normalized as UserRole;
-    }
-    return 'SchoolAdmin';
+    return 'admin';
   }
 }

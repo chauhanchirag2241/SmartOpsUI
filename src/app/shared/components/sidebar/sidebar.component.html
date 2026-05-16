@@ -2,7 +2,7 @@
   <span class="brand-icon"><mat-icon fontSet="material-symbols-outlined">school</mat-icon></span>
   <span class="brand-info">
     <strong>SmartOps</strong>
-    <small>Admin panel</small>
+    <small>School ERP</small>
   </span>
   <button mat-icon-button class="menu-btn" (click)="onToggle()" aria-label="Toggle menu">
     <mat-icon>menu_open</mat-icon>
@@ -10,27 +10,38 @@
 </div>
 
 <nav class="sidebar-nav" aria-label="Primary">
-  @for (item of visibleNavItems(); track trackNavItem($index, item)) {
-    @if (item.section) {
-      <div class="section-label">{{ item.section }}</div>
-    }
-    <a
-      class="nav-item"
-      [routerLink]="item.route"
-      routerLinkActive="active-link"
-      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
-    >
-      <mat-icon fontSet="material-symbols-outlined">{{ item.icon }}</mat-icon>
-      <span>{{ item.label }}</span>
-      @if (item.badge) {
-        <span class="nav-badge" [class.danger]="item.danger">{{ item.badge }}</span>
+  @for (item of visibleNavItems(); track trackMenu($index, item)) {
+    @if (hasChildren(item)) {
+      <div class="section-label">{{ item.name }}</div>
+      @for (child of item.children; track trackMenu($index, child)) {
+        @if (child.route) {
+          <a
+            class="nav-item child-item"
+            [routerLink]="child.route"
+            routerLinkActive="active-link"
+            [routerLinkActiveOptions]="{ exact: child.route === '/dashboard' }"
+          >
+            <mat-icon fontSet="material-symbols-outlined">{{ child.icon ?? 'circle' }}</mat-icon>
+            <span>{{ child.name }}</span>
+          </a>
+        }
       }
-    </a>
+    } @else if (item.route) {
+      <a
+        class="nav-item"
+        [routerLink]="item.route"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      >
+        <mat-icon fontSet="material-symbols-outlined">{{ item.icon ?? 'circle' }}</mat-icon>
+        <span>{{ item.name }}</span>
+      </a>
+    }
   }
 </nav>
 
 <div class="sidebar-footer">
-  <span class="avatar">{{ displayName().charAt(0).toUpperCase() }}</span>
+  <span class="avatar">{{ initials() }}</span>
   <span>
     <strong>{{ displayName() }}</strong>
     <small>{{ displayRole() }}</small>

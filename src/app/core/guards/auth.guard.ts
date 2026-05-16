@@ -15,10 +15,5 @@ export const authGuard: CanActivateFn = (route) => {
     return router.createUrlTree(['/dashboard']);
   }
 
-  const permission = route.data['permission'] as string | undefined;
-  if (permission && !auth.hasPermission(permission)) {
-    return router.createUrlTree(['/dashboard']);
-  }
-
   return true;
 };

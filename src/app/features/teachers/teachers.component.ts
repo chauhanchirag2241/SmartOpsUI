@@ -15,8 +15,8 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
-import { AuthService } from '../../core/services/auth.service';
-import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { MenuCodes } from '../../core/constants/menu-codes';
+import { PermissionService } from '../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
@@ -27,8 +27,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
   styleUrl: './teachers.component.css',
 })
 export class TeachersComponent implements OnInit {
-  private readonly auth = inject(AuthService);
-  private readonly perms = MODULE_PERMISSIONS.teachers;
+  private readonly permissionService = inject(PermissionService);
 
   constructor(
     private snackBar: MatSnackBar,
@@ -45,7 +44,7 @@ export class TeachersComponent implements OnInit {
   teachers: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
-    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.auth, 'teachers');
+    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.permissionService, MenuCodes.Teachers);
     this.loadTeachers();
   }
 
@@ -74,7 +73,7 @@ export class TeachersComponent implements OnInit {
   }
 
   openAddForm(): void {
-    if (!this.auth.hasPermission(this.perms.create!)) return;
+    if (!this.permissionService.canAdd(MenuCodes.Teachers)) return;
     this.formMode = 'add';
     this.selectedTeacherId = undefined;
     this.showAddForm = true;
@@ -182,17 +181,17 @@ export class TeachersComponent implements OnInit {
   onActionClicked(event: any): void {
     const id = event.row['id'] as string;
     if (event.action.label === 'View profile') {
-      if (!this.auth.hasPermission(this.perms.read)) return;
+      if (!this.permissionService.canView(MenuCodes.Teachers)) return;
       this.formMode = 'view';
       this.selectedTeacherId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit details') {
-      if (!this.auth.hasPermission(this.perms.update!)) return;
+      if (!this.permissionService.canEdit(MenuCodes.Teachers)) return;
       this.formMode = 'edit';
       this.selectedTeacherId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete teacher') {
-      if (!this.auth.hasPermission(this.perms.delete!)) return;
+      if (!this.permissionService.canDelete(MenuCodes.Teachers)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete teacher?',

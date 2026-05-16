@@ -3,8 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/services/auth.service';
-import { NAV_ITEMS, NavItemConfig } from '../../../core/config/nav.config';
-import { canShowNavItem } from '../../../core/utils/permission-ui.util';
+import { PermissionService } from '../../../core/services/permission.service';
+import { IMenu } from '../../../core/models/menu.model';
 
 @Component({
   selector: 'app-sidebar',
@@ -17,16 +17,14 @@ export class SidebarComponent {
   @Output() toggle = new EventEmitter<void>();
 
   private readonly auth = inject(AuthService);
+  private readonly permissionService = inject(PermissionService);
 
-  /** Re-computes when login completes and permissions are stored. */
   private readonly user = toSignal(this.auth.currentUser$, { initialValue: this.auth.currentUser });
-
-  readonly visibleNavItems = computed(() => {
-    const _ = this.user();
-    return NAV_ITEMS.filter((item) =>
-      canShowNavItem(this.auth, item.permissions, item.permission),
-    );
+  private readonly menus = toSignal(this.permissionService.menus$, {
+    initialValue: this.permissionService.menus,
   });
+
+  readonly visibleNavItems = computed(() => this.menus() ?? []);
 
   readonly displayRole = computed(() => {
     const roles = this.user()?.roles ?? [];
@@ -35,11 +33,24 @@ export class SidebarComponent {
 
   readonly displayName = computed(() => this.user()?.name ?? 'User');
 
+  readonly initials = computed(() => {
+    const name = this.displayName();
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  });
+
   onToggle(): void {
     this.toggle.emit();
   }
 
-  trackNavItem(index: number, item: NavItemConfig): string {
-    return `${item.route}-${index}`;
+  trackMenu(index: number, item: IMenu): string {
+    return `${item.code}-${index}`;
+  }
+
+  hasChildren(item: IMenu): boolean {
+    return (item.children?.length ?? 0) > 0;
   }
 }
