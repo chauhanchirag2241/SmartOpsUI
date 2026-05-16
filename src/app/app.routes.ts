@@ -18,15 +18,6 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
-        path: 'roles',
-        canActivate: [permissionGuard],
-        data: { permission: 'roles.manage' },
-        loadComponent: () =>
-          import('./features/role-management/role-management.component').then(
-            (m) => m.RoleManagementComponent,
-          ),
-      },
-      {
         path: 'students',
         canActivate: [permissionGuard],
         data: { permission: 'student.read' },

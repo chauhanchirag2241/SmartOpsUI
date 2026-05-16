@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -14,6 +14,9 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
+import { AuthService } from '../../core/services/auth.service';
+import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-subjects',
@@ -30,6 +33,9 @@ import type {
   styleUrl: './subjects.component.css',
 })
 export class SubjectsComponent implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly perms = MODULE_PERMISSIONS.subjects;
+
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
   selectedSubjectId?: string;
@@ -37,7 +43,9 @@ export class SubjectsComponent implements OnInit {
   currentFilter = 'All';
   subjects: Record<string, unknown>[] = [];
 
-  tableConfig: DataTableConfig = {
+  tableConfig!: DataTableConfig;
+
+  private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Subjects',
       subtitle: 'Manage curriculum and subject assignments',
@@ -95,9 +103,9 @@ export class SubjectsComponent implements OnInit {
       { label: 'Elective', icon: 'category', value: 'Elective' },
     ],
     actions: [
-      { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
+      { label: 'View details', icon: 'visibility', iconColor: '#639922', permission: 'subject.read' },
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF', permission: 'admin.full' },
+      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true, permission: 'admin.full' },
     ],
     searchPlaceholder: 'Search by name or code...',
     searchKeys: ['subjectName', 'subjectCode'],
@@ -113,6 +121,7 @@ export class SubjectsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.auth, 'subjects');
     this.loadSubjects();
   }
 
@@ -138,6 +147,7 @@ export class SubjectsComponent implements OnInit {
   }
 
   onAddButtonClicked(): void {
+    if (!this.auth.hasPermission(this.perms.create!)) return;
     this.formMode = 'add';
     this.selectedSubjectId = undefined;
     this.showAddForm = true;
@@ -175,14 +185,17 @@ export class SubjectsComponent implements OnInit {
     const id = event.row['id'] as string;
 
     if (event.action.label === 'View details') {
+      if (!this.auth.hasPermission(this.perms.read)) return;
       this.formMode = 'view';
       this.selectedSubjectId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit') {
+      if (!this.auth.hasPermission(this.perms.update!)) return;
       this.formMode = 'edit';
       this.selectedSubjectId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete') {
+      if (!this.auth.hasPermission(this.perms.delete!)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete subject?',

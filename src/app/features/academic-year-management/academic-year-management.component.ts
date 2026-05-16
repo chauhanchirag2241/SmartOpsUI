@@ -13,6 +13,9 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
+import { AuthService } from '../../core/services/auth.service';
+import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-academic-year-management',
@@ -23,6 +26,8 @@ import type {
 })
 export class AcademicYearManagementComponent implements OnInit {
   private readonly ayService = inject(AcademicYearService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = MODULE_PERMISSIONS.academicYears;
 
   constructor(
     private snackBar: MatSnackBar,
@@ -39,6 +44,7 @@ export class AcademicYearManagementComponent implements OnInit {
   academicYears: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
+    this.ayConfig = applyModuleTablePermissions(this.baseAyConfig, this.auth, 'academicYears');
     this.loadAcademicYears();
   }
 
@@ -64,6 +70,7 @@ export class AcademicYearManagementComponent implements OnInit {
   }
 
   openAddForm(): void {
+    if (!this.auth.hasPermission(this.perms.create!)) return;
     this.formMode = 'add';
     this.selectedYearId = undefined;
     this.showAddForm = true;
@@ -98,7 +105,9 @@ export class AcademicYearManagementComponent implements OnInit {
     }
   }
 
-  ayConfig: DataTableConfig = {
+  ayConfig!: DataTableConfig;
+
+  private readonly baseAyConfig: DataTableConfig = {
     header: {
       title: 'Academic Years',
       subtitle: 'Manage school academic cycles and durations',
@@ -119,13 +128,19 @@ export class AcademicYearManagementComponent implements OnInit {
       { label: 'Inactive', icon: 'cancel', value: 'Inactive' },
     ],
     actions: [
-      { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit year', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Delete year', icon: 'delete', danger: true, separatorBefore: true },
+      { label: 'View details', icon: 'visibility', iconColor: '#639922', permission: 'academicyear.read' },
+      { label: 'Edit year', icon: 'edit', iconColor: '#1E40AF', permission: 'admin.full' },
+      {
+        label: 'Delete year',
+        icon: 'delete',
+        danger: true,
+        separatorBefore: true,
+        permission: 'admin.full',
+      },
     ],
     bulkActions: [
-      { label: 'Export', icon: 'download' },
-      { label: 'Delete', icon: 'delete', danger: true },
+      { label: 'Export', icon: 'download', permission: 'academicyear.read' },
+      { label: 'Delete', icon: 'delete', danger: true, permission: 'admin.full' },
     ],
     searchPlaceholder: 'Search by title...',
     searchKeys: ['title'],
@@ -146,14 +161,17 @@ export class AcademicYearManagementComponent implements OnInit {
     const id = event.row['id'] as string;
 
     if (event.action.label === 'View details') {
+      if (!this.auth.hasPermission(this.perms.read)) return;
       this.formMode = 'view';
       this.selectedYearId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit year') {
+      if (!this.auth.hasPermission(this.perms.update!)) return;
       this.formMode = 'edit';
       this.selectedYearId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete year') {
+      if (!this.auth.hasPermission(this.perms.delete!)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete academic year?',

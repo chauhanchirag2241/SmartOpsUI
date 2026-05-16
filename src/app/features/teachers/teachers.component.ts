@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -15,6 +15,9 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
+import { AuthService } from '../../core/services/auth.service';
+import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-teachers',
@@ -24,6 +27,9 @@ import type {
   styleUrl: './teachers.component.css',
 })
 export class TeachersComponent implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly perms = MODULE_PERMISSIONS.teachers;
+
   constructor(
     private snackBar: MatSnackBar,
     private teacherService: TeacherService,
@@ -39,6 +45,7 @@ export class TeachersComponent implements OnInit {
   teachers: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.auth, 'teachers');
     this.loadTeachers();
   }
 
@@ -67,6 +74,7 @@ export class TeachersComponent implements OnInit {
   }
 
   openAddForm(): void {
+    if (!this.auth.hasPermission(this.perms.create!)) return;
     this.formMode = 'add';
     this.selectedTeacherId = undefined;
     this.showAddForm = true;
@@ -95,7 +103,9 @@ export class TeachersComponent implements OnInit {
     this.loadTeachers();
   }
 
-  tableConfig: DataTableConfig = {
+  tableConfig!: DataTableConfig;
+
+  private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Teachers',
       subtitle: 'Manage faculty and staff members',
@@ -143,14 +153,20 @@ export class TeachersComponent implements OnInit {
       { label: 'On Leave', icon: 'event_busy', value: StaffFilter.OnLeave.toString() },
     ],
     actions: [
-      { label: 'View profile', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Delete teacher', icon: 'delete', danger: true, separatorBefore: true },
+      { label: 'View profile', icon: 'visibility', iconColor: '#639922', permission: 'teacher.read' },
+      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF', permission: 'hr.manage' },
+      {
+        label: 'Delete teacher',
+        icon: 'delete',
+        danger: true,
+        separatorBefore: true,
+        permission: 'hr.manage',
+      },
     ],
     bulkActions: [
-      { label: 'Send notice', icon: 'mail' },
-      { label: 'Export', icon: 'download' },
-      { label: 'Delete', icon: 'delete', danger: true },
+      { label: 'Send notice', icon: 'mail', permission: 'teacher.read' },
+      { label: 'Export', icon: 'download', permission: 'teacher.read' },
+      { label: 'Delete', icon: 'delete', danger: true, permission: 'hr.manage' },
     ],
     searchPlaceholder: 'Search by name, department...',
     searchKeys: ['name', 'dept', 'email'],
@@ -166,14 +182,17 @@ export class TeachersComponent implements OnInit {
   onActionClicked(event: any): void {
     const id = event.row['id'] as string;
     if (event.action.label === 'View profile') {
+      if (!this.auth.hasPermission(this.perms.read)) return;
       this.formMode = 'view';
       this.selectedTeacherId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit details') {
+      if (!this.auth.hasPermission(this.perms.update!)) return;
       this.formMode = 'edit';
       this.selectedTeacherId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete teacher') {
+      if (!this.auth.hasPermission(this.perms.delete!)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete teacher?',

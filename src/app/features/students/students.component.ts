@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -15,6 +15,9 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
+import { AuthService } from '../../core/services/auth.service';
+import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-students',
@@ -24,6 +27,9 @@ import type {
   styleUrl: './students.component.css',
 })
 export class StudentsComponent implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly perms = MODULE_PERMISSIONS.students;
+
   constructor(
     private snackBar: MatSnackBar,
     private studentService: StudentService,
@@ -38,6 +44,7 @@ export class StudentsComponent implements OnInit {
   currentFilter: StudentFilter = StudentFilter.Active;
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.auth, 'students');
     this.loadStudents();
   }
 
@@ -64,6 +71,9 @@ export class StudentsComponent implements OnInit {
   }
 
   openAddForm(): void {
+    if (!this.auth.hasPermission(this.perms.create!)) {
+      return;
+    }
     this.formMode = 'add';
     this.selectedStudentId = undefined;
     this.showAddForm = true;
@@ -102,7 +112,9 @@ export class StudentsComponent implements OnInit {
   // ════════════════════════════════════════
   // TABLE CONFIGURATION
   // ════════════════════════════════════════
-  tableConfig: DataTableConfig = {
+  tableConfig!: DataTableConfig;
+
+  private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Students',
       subtitle: 'Manage all enrolled students',
@@ -184,19 +196,25 @@ export class StudentsComponent implements OnInit {
     ],
 
     actions: [
-      { label: 'View profile', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Collect fees', icon: 'payments', iconColor: '#854F0B' },
-      { label: 'View attendance', icon: 'how_to_reg', iconColor: '#639922' },
-      { label: 'Download TC', icon: 'download', iconColor: '#6b7280' },
-      { label: 'Delete student', icon: 'delete', danger: true, separatorBefore: true },
+      { label: 'View profile', icon: 'visibility', iconColor: '#639922', permission: 'student.read' },
+      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF', permission: 'student.update' },
+      { label: 'Collect fees', icon: 'payments', iconColor: '#854F0B', permission: 'student.read' },
+      { label: 'View attendance', icon: 'how_to_reg', iconColor: '#639922', permission: 'student.read' },
+      { label: 'Download TC', icon: 'download', iconColor: '#6b7280', permission: 'student.read' },
+      {
+        label: 'Delete student',
+        icon: 'delete',
+        danger: true,
+        separatorBefore: true,
+        permission: 'student.delete',
+      },
     ],
 
     bulkActions: [
-      { label: 'Send notice', icon: 'mail' },
-      { label: 'Export', icon: 'download' },
-      { label: 'Bulk edit', icon: 'edit' },
-      { label: 'Delete', icon: 'delete', danger: true },
+      { label: 'Send notice', icon: 'mail', permission: 'student.read' },
+      { label: 'Export', icon: 'download', permission: 'student.read' },
+      { label: 'Bulk edit', icon: 'edit', permission: 'student.update' },
+      { label: 'Delete', icon: 'delete', danger: true, permission: 'student.delete' },
     ],
 
     searchPlaceholder: 'Search by name, admission no...',
@@ -226,14 +244,17 @@ export class StudentsComponent implements OnInit {
     const id = event.row['id'] as string;
 
     if (event.action.label === 'View profile') {
+      if (!this.auth.hasPermission(this.perms.read)) return;
       this.formMode = 'view';
       this.selectedStudentId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit details') {
+      if (!this.auth.hasPermission(this.perms.update!)) return;
       this.formMode = 'edit';
       this.selectedStudentId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete student') {
+      if (!this.auth.hasPermission(this.perms.delete!)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete student?',

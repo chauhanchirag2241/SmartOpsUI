@@ -13,6 +13,9 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
+import { AuthService } from '../../core/services/auth.service';
+import { MODULE_PERMISSIONS } from '../../core/config/permission-ui.config';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-class-management',
@@ -23,6 +26,8 @@ import type {
 })
 export class ClassManagementComponent implements OnInit {
   private readonly classService = inject(ClassService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = MODULE_PERMISSIONS.classes;
 
   constructor(
     private snackBar: MatSnackBar,
@@ -39,6 +44,7 @@ export class ClassManagementComponent implements OnInit {
   classes: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
+    this.classConfig = applyModuleTablePermissions(this.baseClassConfig, this.auth, 'classes');
     this.loadClasses();
   }
 
@@ -64,6 +70,7 @@ export class ClassManagementComponent implements OnInit {
   }
 
   openAddForm(): void {
+    if (!this.auth.hasPermission(this.perms.create!)) return;
     this.formMode = 'add';
     this.selectedClassId = undefined;
     this.showAddForm = true;
@@ -98,7 +105,9 @@ export class ClassManagementComponent implements OnInit {
     }
   }
 
-  classConfig: DataTableConfig = {
+  classConfig!: DataTableConfig;
+
+  private readonly baseClassConfig: DataTableConfig = {
     header: {
       title: 'Classes',
       subtitle: 'Add and manage academic classes and sections',
@@ -123,13 +132,19 @@ export class ClassManagementComponent implements OnInit {
       { label: 'Inactive', icon: 'cancel', value: 'Inactive' },
     ],
     actions: [
-      { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit class', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Delete class', icon: 'delete', danger: true, separatorBefore: true },
+      { label: 'View details', icon: 'visibility', iconColor: '#639922', permission: 'class.read' },
+      { label: 'Edit class', icon: 'edit', iconColor: '#1E40AF', permission: 'admin.full' },
+      {
+        label: 'Delete class',
+        icon: 'delete',
+        danger: true,
+        separatorBefore: true,
+        permission: 'admin.full',
+      },
     ],
     bulkActions: [
-      { label: 'Export', icon: 'download' },
-      { label: 'Delete', icon: 'delete', danger: true },
+      { label: 'Export', icon: 'download', permission: 'class.read' },
+      { label: 'Delete', icon: 'delete', danger: true, permission: 'admin.full' },
     ],
     searchPlaceholder: 'Search by class, section, teacher...',
     searchKeys: ['className', 'section', 'streamGroup', 'classTeacher', 'roomNumber'],
@@ -150,14 +165,17 @@ export class ClassManagementComponent implements OnInit {
     const id = event.row['id'] as string;
 
     if (event.action.label === 'View details') {
+      if (!this.auth.hasPermission(this.perms.read)) return;
       this.formMode = 'view';
       this.selectedClassId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit class') {
+      if (!this.auth.hasPermission(this.perms.update!)) return;
       this.formMode = 'edit';
       this.selectedClassId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete class') {
+      if (!this.auth.hasPermission(this.perms.delete!)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete class?',
