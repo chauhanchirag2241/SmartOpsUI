@@ -1,9 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
+import { PermissionService } from '../../core/services/permission.service';
+import { MenuCodes } from '../../core/constants/menu-codes';
 
 interface DashboardStat {
   label: string;
@@ -63,6 +65,7 @@ interface QuickAction {
 })
 export class DashboardComponent {
   readonly auth = inject(AuthService);
+  private readonly permissionService = inject(PermissionService);
   readonly stats: DashboardStat[] = [
     { label: 'Total students', value: '248', icon: 'groups', trend: '+12', trendDirection: 'up' },
     { label: 'Present today', value: '221', icon: 'how_to_reg', trend: '89%', trendDirection: 'up' },
@@ -113,12 +116,24 @@ export class DashboardComponent {
     { icon: 'workspace_premium', title: 'Exam in 5 days', subtitle: 'Class 10 - final term', tone: 'success' },
   ];
 
-  readonly quickActions: QuickAction[] = [
+  private readonly allQuickActions: QuickAction[] = [
     { icon: 'person_add', label: 'Add student', route: '/students' },
     { icon: 'how_to_reg', label: 'Mark attendance', route: '/attendance' },
     { icon: 'payments', label: 'Collect fees' },
     { icon: 'event_note', label: 'Exam schedule' },
   ];
+
+  readonly quickActions = computed(() =>
+    this.allQuickActions.filter((action) => {
+      if (action.route === '/students') {
+        return this.permissionService.canView(MenuCodes.Students);
+      }
+      if (action.route === '/attendance') {
+        return this.permissionService.canView(MenuCodes.Attendance);
+      }
+      return true;
+    }),
+  );
 
   enrollmentHeight(value: number): number {
     const max = Math.max(...this.enrollments.map((item) => item.value));

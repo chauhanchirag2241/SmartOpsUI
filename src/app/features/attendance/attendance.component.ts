@@ -84,8 +84,12 @@ export class AttendanceComponent implements OnInit {
           this.students = [];
         }
       },
-      error: () => {
-        this.snackBar.open('Error loading classes', 'Close', { duration: 3000 });
+      error: (err: { status?: number }) => {
+        const message =
+          err?.status === 403
+            ? 'You do not have permission to load classes for attendance.'
+            : 'Error loading classes';
+        this.snackBar.open(message, 'Close', { duration: 3000 });
       }
     });
   }
@@ -136,9 +140,13 @@ export class AttendanceComponent implements OnInit {
         this.loadSavedAttendance();
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err: { status?: number }) => {
         this.clearClassStudents();
-        this.snackBar.open('Error loading students for selected class', 'Close', { duration: 3000 });
+        const message =
+          err?.status === 403
+            ? 'You do not have permission to load the class roster.'
+            : 'Error loading students for selected class';
+        this.snackBar.open(message, 'Close', { duration: 3000 });
         this.cdr.detectChanges();
       }
     });

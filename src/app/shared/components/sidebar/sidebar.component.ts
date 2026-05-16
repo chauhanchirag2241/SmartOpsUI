@@ -24,7 +24,20 @@ export class SidebarComponent {
     initialValue: this.permissionService.menus,
   });
 
-  readonly visibleNavItems = computed(() => this.menus() ?? []);
+  readonly visibleNavItems = computed(() => {
+    const items = this.menus() ?? [];
+    return items
+      .map((item) => ({
+        ...item,
+        children: (item.children ?? []).filter((child) => this.permissionService.canView(child.code)),
+      }))
+      .filter((item) => {
+        if (item.route) {
+          return this.permissionService.canView(item.code);
+        }
+        return (item.children?.length ?? 0) > 0;
+      });
+  });
 
   readonly displayRole = computed(() => {
     const roles = this.user()?.roles ?? [];
