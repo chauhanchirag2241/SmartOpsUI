@@ -33,10 +33,13 @@
         </svg>
       </div>
       <div>
-        <div class="brand-name">SmartOps</div>
-        <div class="brand-tag">ERP SYSTEM</div>
+        <div class="brand-name">{{ tenant.displayName }}</div>
+        <div class="brand-tag">{{ tenant.school?.tagline || 'ERP SYSTEM' }}</div>
       </div>
     </div>
+
+    <div class="error-msg" *ngIf="tenant.loadError">{{ tenant.loadError }}</div>
+    <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
 
     <!-- Welcome Text -->
     <div class="heading">

@@ -1,4 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://your-production-api.com/api',
+  apiBaseUrl: 'https://api.smartops.com/api',
+  tenantSubdomain: '',
+  schoolPortalBaseUrl: 'https://{subdomain}.smartops.com',
 };
