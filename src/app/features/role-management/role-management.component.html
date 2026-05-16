@@ -5,7 +5,7 @@
       Roles
     </button>
     <div class="page-title">
-      <h1>Add new role</h1>
+      <h1>{{ selectedRole?.name ?? 'Role management' }}</h1>
       <span>{{ tabSubtitle }}</span>
     </div>
     <button class="theme-btn" type="button" (click)="isDark = !isDark">
@@ -166,9 +166,9 @@
       <mat-icon>verified</mat-icon>
       {{ totalEnabledPermissions }} permissions selected
     </span>
-    <button class="save-btn" type="button">
+    <button class="save-btn" type="button" [disabled]="saving || loading" (click)="savePermissions()">
       <mat-icon>save</mat-icon>
-      Save role
+      {{ saving ? 'Saving...' : 'Save permissions' }}
     </button>
   </footer>
 </section>

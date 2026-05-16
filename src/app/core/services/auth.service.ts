@@ -38,13 +38,7 @@ export class AuthService {
         return this.api.get<UserProfile>('auth/me').pipe(map((profile) => ({ tokens, profile })));
       }),
       map(({ tokens, profile }) => {
-        const role = this.mapRole(profile.roles[0]);
-        const user: User = {
-          id: profile.id,
-          name: profile.username || profile.email,
-          email: profile.email,
-          role,
-        };
+        const user = this.mapProfileToUser(profile);
         this.login(user, tokens.accessToken);
       }),
       catchError((err) => throwError(() => err)),
@@ -67,11 +61,53 @@ export class AuthService {
     return this.storage.get<string>(this.tokenKey);
   }
 
-  private mapRole(role?: string): UserRole {
-    const normalized = role?.toLowerCase();
-    if (normalized === 'teacher' || normalized === 'student' || normalized === 'parent') {
-      return normalized;
+  hasPermission(permission?: string): boolean {
+    if (!permission) {
+      return true;
     }
-    return 'admin';
+    const roles = this.currentUser?.roles ?? [];
+    if (roles.includes('SchoolAdmin') || roles.includes('PlatformAdmin')) {
+      return true;
+    }
+    const permissions = this.currentUser?.permissions ?? [];
+    if (permissions.includes('admin.full')) {
+      return true;
+    }
+    return permissions.includes(permission);
+  }
+
+  hasAnyPermission(...permissions: string[]): boolean {
+    return permissions.some((p) => this.hasPermission(p));
+  }
+
+  hasRole(role: string): boolean {
+    const roles = this.currentUser?.roles ?? [];
+    return roles.includes(role) || this.currentUser?.role === role;
+  }
+
+  private mapProfileToUser(profile: UserProfile): User {
+    const roles = profile.roles ?? [];
+    const permissions = profile.permissions ?? [];
+    const primaryRole = roles[0] ?? 'SchoolAdmin';
+    return {
+      id: profile.id,
+      name: profile.username || profile.email,
+      email: profile.email,
+      role: this.mapRole(primaryRole),
+      roles,
+      permissions,
+    };
+  }
+
+  private mapRole(role?: string): UserRole {
+    const normalized = role ?? '';
+    const known: UserRole[] = ['teacher', 'student', 'parent', 'admin', 'SchoolAdmin', 'PlatformAdmin', 'Accountant'];
+    if (known.includes(normalized as UserRole)) {
+      return normalized as UserRole;
+    }
+    if (normalized === 'SchoolAdmin' || normalized === 'PlatformAdmin') {
+      return normalized as UserRole;
+    }
+    return 'SchoolAdmin';
   }
 }

@@ -1,8 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { forkJoin } from 'rxjs';
+import { PermissionDto, RoleDto, RoleService } from '../../core/services/role.service';
 
 interface RoleCategory {
   label: string;
+  roleId?: string;
   selected?: boolean;
 }
 
@@ -31,193 +34,58 @@ interface RoleModule {
   templateUrl: './role-management.component.html',
   styleUrl: './role-management.component.css',
 })
-export class RoleManagementComponent {
-  activeTab: 'info' | 'permissions' = 'info';
+export class RoleManagementComponent implements OnInit {
+  private readonly roleService = inject(RoleService);
+
+  activeTab: 'info' | 'permissions' = 'permissions';
   activeModuleIndex = 0;
   isDark = false;
+  loading = true;
+  saving = false;
+  errorMessage = '';
+
+  roleCategories: RoleCategory[] = [];
+  allPermissions: PermissionDto[] = [];
+  selectedRole: RoleDto | null = null;
+
+  readonly modules: RoleModule[] = [
+    { label: 'Students', icon: 'groups', groups: [] },
+    { label: 'Attendance', icon: 'how_to_reg', groups: [] },
+    { label: 'Fees', icon: 'payments', groups: [] },
+    { label: 'Exams', icon: 'workspace_premium', groups: [] },
+    { label: 'Teachers', icon: 'co_present', groups: [] },
+    { label: 'HR & Admin', icon: 'settings', groups: [] },
+  ];
+
+  ngOnInit(): void {
+    forkJoin({
+      roles: this.roleService.getRoles(),
+      permissions: this.roleService.getPermissions(),
+    }).subscribe({
+      next: ({ roles, permissions }) => {
+        this.allPermissions = permissions;
+        this.roleCategories = roles.map((r, index) => ({
+          label: r.name,
+          roleId: r.id,
+          selected: index === 0,
+        }));
+        this.buildPermissionModules(permissions);
+        const first = roles[0];
+        if (first) {
+          this.selectRoleById(first.id, first);
+        }
+        this.loading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Failed to load roles and permissions.';
+        this.loading = false;
+      },
+    });
+  }
 
   get tabSubtitle(): string {
     return this.activeTab === 'info' ? 'Basic role setup' : 'Menu-wise permissions';
   }
-
-  trackModule(index: number, module: RoleModule): string {
-    return `${index}-${module.label}`;
-  }
-
-  trackPermissionGroup(index: number, group: PermissionGroup): string {
-    return `${this.activeModuleIndex}-${index}-${group.name}`;
-  }
-
-  readonly roleCategories: RoleCategory[] = [
-    { label: 'Admin' },
-    { label: 'Academic staff', selected: true },
-    { label: 'Non-academic staff' },
-    { label: 'Finance' },
-    { label: 'Parent' },
-    { label: 'Student' },
-    { label: 'Custom' },
-  ];
-
-  readonly modules: RoleModule[] = [
-    {
-      label: 'Students',
-      icon: 'groups',
-      groups: [
-        {
-          name: 'View',
-          open: true,
-          permissions: [
-            { name: 'View student list', key: 'student.read', enabled: true },
-            { name: 'View student profile', key: 'student.read.profile', enabled: true },
-          ],
-        },
-        {
-          name: 'Manage',
-          open: true,
-          permissions: [
-            { name: 'Add new student', key: 'student.create', enabled: true },
-            { name: 'Edit student details', key: 'student.update', enabled: true },
-            { name: 'Delete student', key: 'student.delete', enabled: false },
-          ],
-        },
-        {
-          name: 'Export',
-          open: false,
-          permissions: [
-            { name: 'Export student list', key: 'student.export', enabled: false },
-            { name: 'Download TC / documents', key: 'student.docs.download', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Attendance',
-      icon: 'how_to_reg',
-      groups: [
-        {
-          name: 'View',
-          open: true,
-          permissions: [{ name: 'View attendance records', key: 'attendance.read', enabled: true }],
-        },
-        {
-          name: 'Manage',
-          open: true,
-          permissions: [
-            { name: 'Mark daily attendance', key: 'attendance.mark', enabled: true },
-            { name: 'Edit previous attendance', key: 'attendance.update', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Fees',
-      icon: 'payments',
-      groups: [
-        {
-          name: 'Collections',
-          open: true,
-          permissions: [
-            { name: 'View fee ledger', key: 'fees.read', enabled: true },
-            { name: 'Collect payment', key: 'fees.collect', enabled: true },
-            { name: 'Apply concession', key: 'fees.concession', enabled: false },
-          ],
-        },
-        {
-          name: 'Reports',
-          open: false,
-          permissions: [
-            { name: 'Export dues report', key: 'fees.report.export', enabled: false },
-            { name: 'Send payment reminders', key: 'fees.reminder.send', enabled: true },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Exams',
-      icon: 'workspace_premium',
-      groups: [
-        {
-          name: 'Exam setup',
-          open: true,
-          permissions: [
-            { name: 'View exam schedule', key: 'exam.read', enabled: false },
-            { name: 'Create exam timetable', key: 'exam.create', enabled: false },
-            { name: 'Publish result', key: 'exam.result.publish', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Teachers',
-      icon: 'co_present',
-      groups: [
-        {
-          name: 'Staff',
-          open: true,
-          permissions: [
-            { name: 'View teacher list', key: 'teacher.read', enabled: false },
-            { name: 'Assign class teacher', key: 'teacher.assign.class', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Library',
-      icon: 'menu_book',
-      groups: [
-        {
-          name: 'Books',
-          open: true,
-          permissions: [
-            { name: 'View catalogue', key: 'library.read', enabled: false },
-            { name: 'Issue book', key: 'library.issue', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Transport',
-      icon: 'directions_bus',
-      groups: [
-        {
-          name: 'Routes',
-          open: true,
-          permissions: [
-            { name: 'View routes', key: 'transport.route.read', enabled: false },
-            { name: 'Assign vehicle', key: 'transport.vehicle.assign', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Reports',
-      icon: 'bar_chart',
-      groups: [
-        {
-          name: 'Analytics',
-          open: true,
-          permissions: [
-            { name: 'View dashboard reports', key: 'report.read', enabled: false },
-            { name: 'Download reports', key: 'report.download', enabled: false },
-          ],
-        },
-      ],
-    },
-    {
-      label: 'Settings',
-      icon: 'settings',
-      groups: [
-        {
-          name: 'System',
-          open: true,
-          permissions: [
-            { name: 'Manage school profile', key: 'settings.school.update', enabled: false },
-            { name: 'Manage academic year', key: 'settings.year.update', enabled: false },
-          ],
-        },
-      ],
-    },
-  ];
 
   get activeModule(): RoleModule {
     return this.modules[this.activeModuleIndex];
@@ -233,6 +101,12 @@ export class RoleManagementComponent {
 
   selectCategory(category: RoleCategory): void {
     this.roleCategories.forEach((item) => (item.selected = item === category));
+    if (category.roleId) {
+      this.roleService.getRole(category.roleId).subscribe({
+        next: (role) => this.applyRolePermissions(role),
+        error: () => (this.errorMessage = 'Failed to load role.'),
+      });
+    }
   }
 
   selectModule(index: number): void {
@@ -254,6 +128,30 @@ export class RoleManagementComponent {
     );
   }
 
+  savePermissions(): void {
+    if (!this.selectedRole) {
+      return;
+    }
+
+    const permissionNames = this.modules
+      .flatMap((m) => m.groups)
+      .flatMap((g) => g.permissions)
+      .filter((p) => p.enabled)
+      .map((p) => p.key);
+
+    this.saving = true;
+    this.roleService.updateRolePermissions(this.selectedRole.id, permissionNames).subscribe({
+      next: () => {
+        this.saving = false;
+        this.selectedRole = { ...this.selectedRole!, permissions: permissionNames };
+      },
+      error: () => {
+        this.saving = false;
+        this.errorMessage = 'Failed to save permissions.';
+      },
+    });
+  }
+
   enabledCount(module: RoleModule): number {
     return module.groups.reduce(
       (sum, group) => sum + group.permissions.filter((permission) => permission.enabled).length,
@@ -267,5 +165,72 @@ export class RoleManagementComponent {
 
   enabledGroupCount(group: PermissionGroup): number {
     return group.permissions.filter((permission) => permission.enabled).length;
+  }
+
+  trackModule(index: number, module: RoleModule): string {
+    return `${index}-${module.label}`;
+  }
+
+  trackPermissionGroup(index: number, group: PermissionGroup): string {
+    return `${this.activeModuleIndex}-${index}-${group.name}`;
+  }
+
+  private selectRoleById(id: string, role?: RoleDto): void {
+    if (role) {
+      this.applyRolePermissions(role);
+      return;
+    }
+    this.roleService.getRole(id).subscribe({
+      next: (r) => this.applyRolePermissions(r),
+    });
+  }
+
+  private applyRolePermissions(role: RoleDto): void {
+    this.selectedRole = role;
+    const enabledSet = new Set(role.permissions ?? []);
+    this.modules.forEach((module) => {
+      module.groups.forEach((group) => {
+        group.permissions.forEach((p) => {
+          p.enabled = enabledSet.has(p.key);
+        });
+      });
+    });
+  }
+
+  private buildPermissionModules(permissions: PermissionDto[]): void {
+    const prefixMap: Record<string, number> = {
+      student: 0,
+      attendance: 1,
+      fees: 2,
+      exam: 2,
+      exams: 2,
+      teacher: 4,
+      hr: 5,
+      admin: 5,
+      class: 5,
+      subject: 5,
+      academicyear: 5,
+      roles: 5,
+      settings: 5,
+      reports: 5,
+    };
+
+    this.modules.forEach((m) => (m.groups = []));
+
+    for (const perm of permissions) {
+      const prefix = perm.name.split('.')[0] ?? 'other';
+      const moduleIndex = prefixMap[prefix] ?? 5;
+      const module = this.modules[moduleIndex];
+      let group = module.groups.find((g) => g.name === 'Permissions');
+      if (!group) {
+        group = { name: 'Permissions', open: true, permissions: [] };
+        module.groups.push(group);
+      }
+      group.permissions.push({
+        name: perm.description ?? perm.name,
+        key: perm.name,
+        enabled: false,
+      });
+    }
   }
 }

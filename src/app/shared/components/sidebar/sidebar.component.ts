@@ -1,15 +1,9 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject, computed } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-
-interface NavItem {
-  label: string;
-  icon: string;
-  route: string;
-  section?: string;
-  badge?: string;
-  danger?: boolean;
-}
+import { AuthService } from '../../../core/services/auth.service';
+import { NAV_ITEMS, NavItemConfig } from '../../../core/config/nav.config';
 
 @Component({
   selector: 'app-sidebar',
@@ -21,29 +15,28 @@ interface NavItem {
 export class SidebarComponent {
   @Output() toggle = new EventEmitter<void>();
 
+  private readonly auth = inject(AuthService);
+
+  /** Re-computes when login completes and permissions are stored. */
+  private readonly user = toSignal(this.auth.currentUser$, { initialValue: this.auth.currentUser });
+
+  readonly visibleNavItems = computed(() => {
+    const _ = this.user();
+    return NAV_ITEMS.filter((item) => this.auth.hasPermission(item.permission));
+  });
+
+  readonly displayRole = computed(() => {
+    const roles = this.user()?.roles ?? [];
+    return roles[0] ?? this.user()?.role ?? 'User';
+  });
+
+  readonly displayName = computed(() => this.user()?.name ?? 'User');
+
   onToggle(): void {
     this.toggle.emit();
   }
 
-  trackNavItem(index: number, item: NavItem): string {
+  trackNavItem(index: number, item: NavItemConfig): string {
     return `${item.route}-${index}`;
   }
-
-  readonly navItems: NavItem[] = [
-    { section: 'Overview', label: 'Dashboard', icon: 'grid_view', route: '/dashboard' },
-    { section: 'Academics', label: 'Students', icon: 'group', route: '/students', badge: '248' },
-    { label: 'Classes', icon: 'domain', route: '/classes' },
-    { label: 'Subjects', icon: 'school', route: '/subjects' },
-    { label: 'Academic Years', icon: 'calendar_month', route: '/academic-years' },
-    { label: 'Teachers', icon: 'co_present', route: '/teachers', badge: '18' },
-    { label: 'Attendance', icon: 'person_check', route: '/attendance' },
-    { label: 'Exams', icon: 'workspace_premium', route: '/exams' },
-    { section: 'Finance', label: 'Fees', icon: 'payments', route: '/fees', badge: '32', danger: true },
-    { label: 'Payroll', icon: 'price_check', route: '/payroll' },
-    { section: 'Other', label: 'Library', icon: 'menu_book', route: '/library' },
-    { label: 'Transport', icon: 'directions_bus', route: '/transport' },
-    { label: 'Branches', icon: 'apartment', route: '/branches' },
-    { label: 'Roles', icon: 'admin_panel_settings', route: '/roles' },
-    { label: 'Settings', icon: 'settings', route: '/settings' },
-  ];
 }

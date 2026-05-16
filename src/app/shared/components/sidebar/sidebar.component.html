@@ -10,7 +10,7 @@
 </div>
 
 <nav class="sidebar-nav" aria-label="Primary">
-  @for (item of navItems; track trackNavItem($index, item)) {
+  @for (item of visibleNavItems(); track trackNavItem($index, item)) {
     @if (item.section) {
       <div class="section-label">{{ item.section }}</div>
     }
@@ -30,9 +30,9 @@
 </nav>
 
 <div class="sidebar-footer">
-  <span class="avatar">AD</span>
+  <span class="avatar">{{ displayName().charAt(0).toUpperCase() }}</span>
   <span>
-    <strong>Admin</strong>
-    <small>Super admin</small>
+    <strong>{{ displayName() }}</strong>
+    <small>{{ displayRole() }}</small>
   </span>
 </div>
