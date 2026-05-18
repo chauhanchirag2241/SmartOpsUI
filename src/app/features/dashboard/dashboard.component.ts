@@ -1,11 +1,13 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { ScopeService } from '../../core/services/scope.service';
 import { MenuCodes } from '../../core/constants/menu-codes';
+import { IDashboardSummary } from '../../core/models/scope.model';
 
 interface DashboardStat {
   label: string;
@@ -63,15 +65,38 @@ interface QuickAction {
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   readonly auth = inject(AuthService);
   private readonly permissionService = inject(PermissionService);
-  readonly stats: DashboardStat[] = [
-    { label: 'Total students', value: '248', icon: 'groups', trend: '+12', trendDirection: 'up' },
-    { label: 'Present today', value: '221', icon: 'how_to_reg', trend: '89%', trendDirection: 'up' },
-    { label: 'Fees collected', value: 'Rs 1.8L', icon: 'payments', trend: '68%', trendDirection: 'up' },
-    { label: 'Fees overdue', value: '32', icon: 'warning', trend: '-3', trendDirection: 'down' },
-  ];
+  private readonly scopeService = inject(ScopeService);
+
+  readonly summary = signal<IDashboardSummary | null>(null);
+  readonly scopeLabel = computed(() => this.summary()?.scopeLabel ?? this.scopeService.scope?.scopeType ?? '');
+
+  readonly stats = computed<DashboardStat[]>(() => {
+    const s = this.summary();
+    if (!s) {
+      return [
+        { label: 'Total students', value: '—', icon: 'groups', trend: '', trendDirection: 'up' },
+        { label: 'Teachers', value: '—', icon: 'co_present', trend: '', trendDirection: 'up' },
+        { label: 'Classes', value: '—', icon: 'class', trend: '', trendDirection: 'up' },
+        { label: 'Attendance today', value: '—', icon: 'how_to_reg', trend: '', trendDirection: 'up' },
+      ];
+    }
+    return [
+      { label: 'Total students', value: String(s.totalStudents), icon: 'groups', trend: s.scopeLabel, trendDirection: 'up' },
+      { label: 'Teachers', value: String(s.totalTeachers), icon: 'co_present', trend: '', trendDirection: 'up' },
+      { label: 'Classes', value: String(s.totalClasses), icon: 'class', trend: '', trendDirection: 'up' },
+      { label: 'Attendance today', value: String(s.attendanceMarkedToday), icon: 'how_to_reg', trend: '', trendDirection: 'up' },
+    ];
+  });
+
+  ngOnInit(): void {
+    this.scopeService.loadDashboardSummary().subscribe({
+      next: (data) => this.summary.set(data),
+      error: () => this.summary.set(null),
+    });
+  }
 
   readonly attendance: AttendanceItem[] = [
     { label: 'Present', value: '221', color: '#639922' },

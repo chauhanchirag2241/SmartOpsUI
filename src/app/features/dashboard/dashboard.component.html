@@ -1,6 +1,6 @@
 <section class="dashboard-container">
   <div class="stats-grid">
-    <mat-card *ngFor="let stat of stats" class="stat-card dashboard-card">
+    <mat-card *ngFor="let stat of stats()" class="stat-card dashboard-card">
       <mat-card-content>
         <div class="stat-top">
           <span class="stat-icon"><mat-icon>{{ stat.icon }}</mat-icon></span>

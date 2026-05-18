@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -45,18 +45,17 @@ export class AddTeacherComponent implements OnInit {
   classes: any[] = [];
   selectedPhoto: SelectedUploadFile | null = null;
   readonly bloodGroupOptions = enumToOptions(BloodGroup);
-  duplicateIndices: Set<number> = new Set();
   steps = [
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
-    { title: 'Subjects & Schedule', icon: 'menu_book' },
+    { title: 'Class & Permissions', icon: 'grid_view' },
     { title: 'Review', icon: 'fact_check' }
   ];
 
   hints = [
     'Step 1 of 4 — Personal information',
     'Step 2 of 4 — Professional details',
-    'Step 3 of 4 — Subjects & schedule',
+    'Step 3 of 4 — Class, subject & permission matrix',
     'Step 4 of 4 — Review & save'
   ];
 
@@ -85,8 +84,7 @@ export class AddTeacherComponent implements OnInit {
     private teacherService: TeacherService,
     private classService: ClassService,
     private subjectService: SubjectService,
-    private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef
+    private snackBar: MatSnackBar
   ) {
     this.teacherForm = this.fb.group({
       personal: this.fb.group({
@@ -126,7 +124,7 @@ export class AddTeacherComponent implements OnInit {
       }),
       schedule: this.fb.group({
         classId: [''],
-        subjectAssignments: this.fb.array([]),
+        classAssignments: this.fb.array([]),
         workingDays: [[]],
         shift: ['Morning (7:30 AM – 1:30 PM)'],
         weeklyPeriods: [30],
@@ -142,11 +140,8 @@ export class AddTeacherComponent implements OnInit {
   ngOnInit(): void {
     this.loadSubjects();
     this.loadClasses();
-    this.addSubjectAssignment(); // Add one initial row
+    this.addClassAssignmentRow();
     this.updateWorkingDays();
-
-    // Subscribe to subject assignments changes to refresh duplicates
-    this.subjectAssignments.valueChanges.subscribe(() => this.checkDuplicates());
     if (this.mode === 'add') {
       this.generateEmployeeId();
       this.setupUsernameGeneration();
@@ -183,8 +178,8 @@ export class AddTeacherComponent implements OnInit {
     return (this.teacherForm.get('professional.qualifications') as FormArray);
   }
 
-  get subjectAssignments() {
-    return (this.teacherForm.get('schedule.subjectAssignments') as FormArray);
+  get classAssignments() {
+    return this.teacherForm.get('schedule.classAssignments') as FormArray;
   }
 
   get personalGroup(): FormGroup {
@@ -237,10 +232,10 @@ export class AddTeacherComponent implements OnInit {
             username: data.username
           }
         });
-        this.subjectAssignments.at(0)?.patchValue({ classId: data.classId });
         if (this.mode === 'view') {
           this.teacherForm.disable();
         }
+        this.loadClassAssignments();
       },
       error: (err) => {
         this.snackBar.open('Failed to load teacher data', 'Close', { duration: 3000 });
@@ -276,18 +271,79 @@ export class AddTeacherComponent implements OnInit {
     }
   }
 
-  addSubjectAssignment(): void {
-    const group = this.fb.group({
-      subjectId: [''],
-      classId: ['', Validators.required],
+  loadClassAssignments(): void {
+    if (!this.teacherId) return;
+    this.teacherService.getTeacherAssignments(this.teacherId).subscribe({
+      next: (data) => {
+        this.classAssignments.clear();
+        const rows = data?.classAssignments ?? [];
+        if (rows.length === 0) {
+          this.addClassAssignmentRow();
+          return;
+        }
+        rows.forEach((row: any) => this.classAssignments.push(this.createClassAssignmentGroup(row)));
+      },
+      error: () => this.snackBar.open('Failed to load class assignments', 'Close', { duration: 3000 })
     });
-    this.subjectAssignments.push(group);
   }
 
-  removeSubjectAssignment(index: number): void {
-    if (this.subjectAssignments.length > 1) {
-      this.subjectAssignments.removeAt(index);
-      setTimeout(() => this.checkDuplicates(), 0); // Re-calculate after removal
+  createClassAssignmentGroup(row?: any): FormGroup {
+    return this.fb.group({
+      classId: [row?.classId ?? '', Validators.required],
+      subjectIds: [row?.subjectIds ?? []],
+      isClassTeacher: [row?.isClassTeacher ?? false],
+      canViewStudents: [row?.canViewStudents ?? true],
+      canMarkAttendance: [row?.canMarkAttendance ?? false],
+      canAddMarks: [row?.canAddMarks ?? false],
+      canSendNotice: [row?.canSendNotice ?? false],
+      pendingSubjectId: ['']
+    });
+  }
+
+  addClassAssignmentRow(): void {
+    this.classAssignments.push(this.createClassAssignmentGroup());
+  }
+
+  removeClassAssignmentRow(index: number): void {
+    if (this.classAssignments.length > 1) {
+      this.classAssignments.removeAt(index);
+    }
+  }
+
+  getSubjectIdsForRow(index: number): string[] {
+    return (this.classAssignments.at(index)?.get('subjectIds')?.value as string[]) ?? [];
+  }
+
+  availableSubjectsForRow(index: number): any[] {
+    const selected = new Set(this.getSubjectIdsForRow(index).map(String));
+    return this.subjects.filter(s => !selected.has(String(s.id)));
+  }
+
+  addSubjectToRow(index: number): void {
+    const group = this.classAssignments.at(index) as FormGroup;
+    const pending = group.get('pendingSubjectId')?.value;
+    if (!pending) return;
+    const ids = [...this.getSubjectIdsForRow(index)];
+    if (!ids.includes(pending)) {
+      ids.push(pending);
+    }
+    group.patchValue({ subjectIds: ids, pendingSubjectId: '' });
+  }
+
+  removeSubjectFromRow(rowIndex: number, subjectId: string): void {
+    const group = this.classAssignments.at(rowIndex) as FormGroup;
+    const ids = this.getSubjectIdsForRow(rowIndex).filter(id => String(id) !== String(subjectId));
+    group.patchValue({ subjectIds: ids });
+  }
+
+  onClassTeacherChange(rowIndex: number): void {
+    const group = this.classAssignments.at(rowIndex) as FormGroup;
+    if (group.get('isClassTeacher')?.value) {
+      this.classAssignments.controls.forEach((ctrl, i) => {
+        if (i !== rowIndex) {
+          ctrl.get('isClassTeacher')?.setValue(false, { emitEvent: false });
+        }
+      });
     }
   }
 
@@ -323,8 +379,12 @@ export class AddTeacherComponent implements OnInit {
   }
 
   nextStep(): void {
-    if (this.currentStep === 2 && this.hasDuplicateAssignments()) {
-      this.snackBar.open('Duplicate entry: This subject is already assigned to this class', 'Close', { duration: 3000 });
+    if (this.currentStep === 2 && this.classAssignments.length === 0) {
+      this.snackBar.open('Add at least one class assignment', 'Close', { duration: 3000 });
+      return;
+    }
+    if (this.currentStep === 2 && this.classAssignments.invalid) {
+      this.snackBar.open('Select class for each assignment row', 'Close', { duration: 3000 });
       return;
     }
     if (this.currentStep < 3) {
@@ -346,29 +406,48 @@ export class AddTeacherComponent implements OnInit {
       return;
     }
 
-    if (this.hasDuplicateAssignments()) {
-      this.snackBar.open('Duplicate entry: This subject is already assigned to this class', 'Close', { duration: 3000 });
-      return;
-    }
-
     const data = this.teacherForm.getRawValue();
-    data.schedule.classId = data.schedule.subjectAssignments?.[0]?.classId || data.schedule.classId || null;
+    const assignments = (data.schedule.classAssignments || []).map((row: any) => ({
+      classId: row.classId,
+      subjectIds: row.subjectIds || [],
+      isClassTeacher: !!row.isClassTeacher,
+      canViewStudents: !!row.canViewStudents,
+      canMarkAttendance: !!row.canMarkAttendance,
+      canAddMarks: !!row.canAddMarks,
+      canSendNotice: !!row.canSendNotice
+    }));
+    data.schedule.classAssignments = assignments;
+    data.schedule.classId = assignments[0]?.classId || data.schedule.classId || null;
+
     const action = this.mode === 'edit'
       ? this.teacherService.updateTeacher(this.teacherId!, data)
       : this.teacherService.createTeacher(data);
 
     action.subscribe({
-      next: () => {
-        if (this.mode === 'add') {
-          this.persistEmployeeSequence();
+      next: (res) => {
+        const teacherId = this.mode === 'edit' ? this.teacherId! : (res?.teacherId ?? res?.TeacherId);
+        const saveAssignments = () => {
+          if (this.mode === 'add') {
+            this.persistEmployeeSequence();
+          }
+          this.snackBar.open(`Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
+          this.saved.emit();
+        };
+
+        if (teacherId && (this.mode === 'edit' || assignments.length > 0)) {
+          this.teacherService.saveTeacherAssignments(teacherId, { classAssignments: assignments }).subscribe({
+            next: () => saveAssignments(),
+            error: () => {
+              this.snackBar.open('Teacher saved but permissions failed to save', 'Close', { duration: 4000 });
+              this.saved.emit();
+            }
+          });
+        } else {
+          saveAssignments();
         }
-        this.snackBar.open(`Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
-        this.saved.emit();
       },
       error: () => {
         this.snackBar.open('Failed to save teacher', 'Close', { duration: 3000 });
-        // For demo, let's pretend it worked
-        // this.saved.emit();
       }
     });
   }
@@ -426,30 +505,4 @@ export class AddTeacherComponent implements OnInit {
     localStorage.setItem(`smartops-emp-sequence-${match[1]}`, String(Number(match[2])));
   }
 
-  hasDuplicateAssignments(): boolean {
-    return this.duplicateIndices.size > 0;
-  }
-
-  checkDuplicates(): void {
-    this.duplicateIndices.clear();
-    const assignments = this.subjectAssignments.getRawValue();
-
-    for (let i = 0; i < assignments.length; i++) {
-      const a = assignments[i];
-      if (!a.subjectId || !a.classId) continue;
-
-      for (let j = i + 1; j < assignments.length; j++) {
-        const b = assignments[j];
-        if (a.subjectId === b.subjectId && a.classId === b.classId) {
-          this.duplicateIndices.add(i);
-          this.duplicateIndices.add(j);
-        }
-      }
-    }
-    this.cdr.detectChanges();
-  }
-
-  isRowDuplicate(index: number): boolean {
-    return this.duplicateIndices.has(index);
-  }
 }

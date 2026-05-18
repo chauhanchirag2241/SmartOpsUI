@@ -89,7 +89,16 @@ export class TeacherService {
         }
       },
       schedule: {
-        classId: teacher.schedule.classId || teacher.schedule.subjectAssignments?.[0]?.classId || null,
+        classId: teacher.schedule.classId || teacher.schedule.classAssignments?.[0]?.classId || null,
+        classAssignments: (teacher.schedule.classAssignments || []).map((row: any) => ({
+          classId: row.classId,
+          subjectIds: row.subjectIds || [],
+          isClassTeacher: !!row.isClassTeacher,
+          canViewStudents: row.canViewStudents !== false,
+          canMarkAttendance: !!row.canMarkAttendance,
+          canAddMarks: !!row.canAddMarks,
+          canSendNotice: !!row.canSendNotice
+        })),
         shift: teacher.schedule.shift,
         weeklyPeriods: Number(teacher.schedule.weeklyPeriods || 30),
         maxPeriodsPerDay: Number(teacher.schedule.maxPeriodsPerDay || 6),
@@ -98,6 +107,14 @@ export class TeacherService {
         username: teacher.schedule.username
       }
     };
+  }
+
+  getTeacherAssignments(teacherId: string): Observable<any> {
+    return this.api.get<any>(`teachers/${teacherId}/assignments`);
+  }
+
+  saveTeacherAssignments(teacherId: string, payload: any): Observable<void> {
+    return this.api.put<void>(`teachers/${teacherId}/assignments`, payload);
   }
 
   private toTeacherUpdatePayload(id: string, teacher: any): any {

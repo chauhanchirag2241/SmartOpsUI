@@ -181,51 +181,82 @@
       </div>
     }
 
-    <!-- TAB 2 — SUBJECTS & SCHEDULE -->
+    <!-- TAB 2 — CLASS & PERMISSIONS -->
     @if (currentStep === 2) {
       <div formGroupName="schedule">
-        <div class="card">
-          <div class="card-title"><mat-icon>menu_book</mat-icon> Subject assignments</div>
-          <table class="subject-table">
-            <thead>
-              <tr>
-                <th>Subject</th>
-                <th>Class</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody formArrayName="subjectAssignments">
-              @for (item of subjectAssignments.controls; track item; let i = $index) {
-                <tr [formGroupName]="i" [class.duplicate-row]="isRowDuplicate(i)">
-                  <td>
-                    <select style="min-width:100px" formControlName="subjectId">
-                      <option value="">Select subject</option>
-                      <option *ngFor="let subject of subjects" [value]="subject.id">{{ subject.name }}</option>
-                    </select>
-                    @if (isRowDuplicate(i)) {
-                      <div class="error-text">Duplicate entry: This subject is already assigned to this class</div>
-                    }
-                  </td>
-                  <td>
-                    <select style="min-width:80px" formControlName="classId">
-                      <option value="">Select class</option>
-                      <option *ngFor="let classItem of classes" [value]="classItem.id">{{ classItem.name }}</option>
-                    </select>
-                  </td>
-                  <td>
-                    <button type="button" class="remove-btn" (click)="removeSubjectAssignment(i)" [disabled]="subjectAssignments.length === 1">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          <div class="add-row-btn" (click)="addSubjectAssignment()">
-            <mat-icon>add</mat-icon> Add subject assignment
-          </div>
+        <div class="info-chip">
+          <mat-icon>info</mat-icon>
+          Teacher will only see students and data for assigned classes below.
         </div>
 
+        <div class="card">
+          <div class="card-title"><mat-icon>grid_view</mat-icon> Class & subject assignment matrix</div>
+          <div class="matrix-wrap">
+            <table class="perm-matrix">
+              <thead>
+                <tr>
+                  <th>Class</th>
+                  <th>Subjects taught</th>
+                  <th class="perm-col">Class teacher</th>
+                  <th class="perm-col">View students</th>
+                  <th class="perm-col">Mark attendance</th>
+                  <th class="perm-col">Add marks</th>
+                  <th class="perm-col">Send notice</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody formArrayName="classAssignments">
+                @for (row of classAssignments.controls; track row; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td>
+                      <select formControlName="classId" class="matrix-select">
+                        <option value="">Select class</option>
+                        @for (classItem of classes; track classItem.id) {
+                          <option [value]="classItem.id">{{ classItem.name }}</option>
+                        }
+                      </select>
+                    </td>
+                    <td>
+                      <div class="subj-pills">
+                        @for (sid of getSubjectIdsForRow(i); track sid) {
+                          <span class="subj-pill">
+                            {{ getSubjectName(sid) }}
+                            @if (mode !== 'view') {
+                              <mat-icon class="pill-remove" (click)="removeSubjectFromRow(i, sid)">close</mat-icon>
+                            }
+                          </span>
+                        }
+                        @if (mode !== 'view') {
+                          <select class="subj-add-select" formControlName="pendingSubjectId" (change)="addSubjectToRow(i)">
+                            <option value="">+ Add</option>
+                            @for (subject of availableSubjectsForRow(i); track subject.id) {
+                              <option [value]="subject.id">{{ subject.name }}</option>
+                            }
+                          </select>
+                        }
+                      </div>
+                    </td>
+                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="isClassTeacher" (change)="onClassTeacherChange(i)" /></td>
+                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canViewStudents" /></td>
+                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canMarkAttendance" /></td>
+                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canAddMarks" /></td>
+                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canSendNotice" /></td>
+                    <td>
+                      <button type="button" class="rm-btn" (click)="removeClassAssignmentRow(i)" [disabled]="classAssignments.length === 1 || mode === 'view'">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (mode !== 'view') {
+            <div class="add-row-btn matrix-add" (click)="addClassAssignmentRow()">
+              <mat-icon>add</mat-icon> Add class assignment
+            </div>
+          }
+        </div>
         <div class="card">
           <div class="card-title"><mat-icon>calendar_today</mat-icon> Working days</div>
           <div class="day-chips">
@@ -334,14 +365,22 @@
         </div>
 
         <div class="card">
-          <div class="card-title"><mat-icon>book</mat-icon> Subject assignments</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            @for (item of subjectAssignments.getRawValue(); track $index) {
-              <span class="pill" [class.pill-green]="$index % 2 === 0" [class.pill-blue]="$index % 2 !== 0">
-                {{ getSubjectName(item.subjectId) }} - {{ getClassName(item.classId) }}
-              </span>
+          <div class="card-title"><mat-icon>grid_view</mat-icon> Class & permissions</div>
+          <div class="summary-matrix">
+            @for (row of classAssignments.getRawValue(); track $index) {
+              <div class="review-row">
+                <span class="pill pill-green">{{ getClassName(row.classId) }}</span>
+                @for (sid of row.subjectIds; track sid) {
+                  <span class="pill pill-blue">{{ getSubjectName(sid) }}</span>
+                }
+                @if (row.isClassTeacher) { <span class="pill">Class teacher</span> }
+                @if (row.canViewStudents) { <span class="pill">View students</span> }
+                @if (row.canMarkAttendance) { <span class="pill">Attendance</span> }
+                @if (row.canAddMarks) { <span class="pill">Marks</span> }
+                @if (row.canSendNotice) { <span class="pill">Notice</span> }
+              </div>
             } @empty {
-              <div class="page-sub">No subjects assigned</div>
+              <div class="page-sub">No class assignments</div>
             }
           </div>
         </div>

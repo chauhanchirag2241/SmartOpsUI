@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, forkJoin, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin, map, switchMap, tap } from 'rxjs';
+import { ScopeService } from './scope.service';
 import { IMenu } from '../models/menu.model';
 import { IMenuPermission, IUserPermissionResponse } from '../models/permission.model';
 import { APP_MENU_APPLICATION } from '../constants/app.constants';
@@ -14,6 +15,7 @@ const APP_QUERY = `app=${APP_MENU_APPLICATION}`;
 export class PermissionService {
   private readonly api = inject(ApiService);
   private readonly storage = inject(StorageService);
+  private readonly scopeService = inject(ScopeService);
 
   private readonly permissionsSubject = new BehaviorSubject<IMenuPermission[]>(
     this.storage.get<IMenuPermission[]>(PERMISSIONS_KEY) ?? [],
@@ -39,6 +41,7 @@ export class PermissionService {
       tap(({ permissions, menus }) => {
         this.setSession(permissions.permissions, menus);
       }),
+      switchMap(() => this.scopeService.loadScopes()),
       map(() => void 0),
     );
   }
@@ -53,6 +56,7 @@ export class PermissionService {
   clear(): void {
     this.storage.remove(PERMISSIONS_KEY);
     this.storage.remove(MENUS_KEY);
+    this.scopeService.clear();
     this.permissionsSubject.next([]);
     this.menusSubject.next([]);
   }

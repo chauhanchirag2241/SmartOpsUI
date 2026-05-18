@@ -716,6 +716,162 @@ app-dynamic-field.col-3, app-dynamic-field.col-2 {
   color: var(--muted);
 }
 
+/* PERMISSION MATRIX */
+.info-chip {
+  background: var(--badge-bg);
+  border: 0.5px solid var(--g400);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 11px;
+  color: var(--badge-text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-chip mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--g600);
+}
+
+.matrix-wrap {
+  overflow-x: auto;
+}
+
+.perm-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.perm-matrix th {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 7px 10px;
+  text-align: left;
+  background: var(--input-bg);
+  border-bottom: 0.5px solid var(--border);
+  white-space: nowrap;
+}
+
+.perm-matrix th.perm-col {
+  text-align: center;
+  width: 72px;
+}
+
+.perm-matrix td {
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.perm-matrix tr:last-child td {
+  border-bottom: none;
+}
+
+.perm-matrix tr:hover td {
+  background: var(--hover);
+}
+
+.matrix-select {
+  min-width: 110px;
+  padding: 6px 8px;
+}
+
+.perm-td {
+  text-align: center;
+}
+
+.perm-cb {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--g400);
+  cursor: pointer;
+}
+
+.subj-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.subj-pill {
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill-remove {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.pill-remove:hover {
+  opacity: 1;
+}
+
+.subj-add-select {
+  min-width: 72px;
+  padding: 4px 6px;
+  font-size: 10px;
+  border: 0.5px dashed var(--border);
+  border-radius: 12px;
+  background: var(--input-bg);
+}
+
+.rm-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 3px 5px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rm-btn:hover:not(:disabled) {
+  color: #A32D2D;
+  background: #FCEBEB;
+}
+
+.rm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.matrix-add {
+  margin-top: 8px;
+}
+
+.summary-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 /* RESPONSIVE DESIGN */
 @media (max-width: 1024px) {
   .photo-fields {
