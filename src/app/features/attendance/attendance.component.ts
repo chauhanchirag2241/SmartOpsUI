@@ -279,24 +279,27 @@ export class AttendanceComponent implements OnInit {
           this.notes[student.id] = '';
         });
 
-        for (const item of res?.students || []) {
-          const studentId = item.studentId;
-          if (!this.students.some(student => student.id === studentId)) {
+        const savedRows = res?.students ?? res?.Students ?? [];
+        for (const item of savedRows) {
+          const apiStudentId = String(item.studentId ?? item.StudentId ?? '');
+          const rosterStudent = this.students.find(s => this.sameId(s.id, apiStudentId));
+          if (!rosterStudent) {
             continue;
           }
 
-          this.status[studentId] = this.statusNumberToKey(item.status);
-          this.notes[studentId] = item.remarks || '';
+          const statusKey = this.parseStatusFromApi(item.status ?? item.Status);
+          this.status[rosterStudent.id] = statusKey;
+          this.notes[rosterStudent.id] = item.remarks ?? item.Remarks ?? '';
         }
 
-        this.submittedInfo = res?.isSubmitted
+        const isSubmitted = !!(res?.isSubmitted ?? res?.IsSubmitted);
+        this.submittedInfo = isSubmitted
           ? {
               date: new Date(this.selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
               by: 'Saved'
             }
           : null;
 
-        // Capture snapshot for change tracking
         this.initialStatus = { ...this.status };
         this.initialNotes = { ...this.notes };
 
@@ -310,6 +313,10 @@ export class AttendanceComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private sameId(a: string, b: string): boolean {
+    return String(a).toLowerCase() === String(b).toLowerCase();
   }
 
   get stats() {
@@ -410,15 +417,36 @@ export class AttendanceComponent implements OnInit {
     return map[status];
   }
 
-  private statusNumberToKey(status: number): string {
-    const map: Record<number, string> = {
+  /** API may return status as number (1–4) or string enum ("Present", …). */
+  private parseStatusFromApi(status: unknown): string {
+    if (status == null || status === '') {
+      return '';
+    }
+
+    const numericMap: Record<number, string> = {
       [AttendanceStatus.Present]: 'present',
       [AttendanceStatus.Absent]: 'absent',
       [AttendanceStatus.Leave]: 'leave',
-      [AttendanceStatus.Late]: 'late'
+      [AttendanceStatus.Late]: 'late',
     };
 
-    return map[status] || '';
+    if (typeof status === 'number') {
+      return numericMap[status] || '';
+    }
+
+    const normalized = String(status).trim().toLowerCase();
+    const stringMap: Record<string, string> = {
+      present: 'present',
+      absent: 'absent',
+      leave: 'leave',
+      late: 'late',
+      '1': 'present',
+      '2': 'absent',
+      '3': 'leave',
+      '4': 'late',
+    };
+
+    return stringMap[normalized] || '';
   }
 
   toggleKbd() {
