@@ -1,0 +1,32 @@
+<div class="chips-wrap" [class.disabled]="disabled">
+  <div class="chips-selected">
+    @for (item of getSelectedOptions(); track item.id) {
+      <span class="chip">
+        {{ item.name }}
+        @if (!disabled) {
+          <mat-icon class="chip-remove" (click)="remove(item.id)">close</mat-icon>
+        }
+      </span>
+    } @empty {
+      <span class="chips-empty">None selected</span>
+    }
+  </div>
+
+  @if (!disabled) {
+    <div class="chips-add">
+      <input
+        type="text"
+        class="chips-search"
+        [placeholder]="placeholder"
+        [value]="searchTerm"
+        (input)="searchTerm = $any($event.target).value"
+      />
+      <select class="chips-select" (change)="onPick($event)">
+        <option value="">+ Add</option>
+        @for (opt of filteredOptions; track opt.id) {
+          <option [value]="opt.id">{{ opt.name }}</option>
+        }
+      </select>
+    </div>
+  }
+</div>

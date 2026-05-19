@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +14,7 @@ import { DigitsOnlyDirective } from '../../../shared/directives/digits-only.dire
 import { BloodGroup, enumToOptions, Gender } from '../../../shared/enums/field-options.enum';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
+import { EntityMappingEditorComponent } from '../../../shared/components/entity-mapping-editor/entity-mapping-editor.component';
 
 @Component({
   selector: 'app-add-teacher',
@@ -29,6 +30,7 @@ import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
     FileUploadComponent,
     DigitsOnlyDirective,
     DynamicFieldComponent,
+    EntityMappingEditorComponent,
   ],
   templateUrl: './add-teacher.component.html',
   styleUrl: './add-teacher.component.css'
@@ -39,6 +41,8 @@ export class AddTeacherComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
+  @ViewChild(EntityMappingEditorComponent) mappingEditor?: EntityMappingEditorComponent;
+
   teacherForm: FormGroup;
   currentStep = 0;
   subjects: any[] = [];
@@ -48,14 +52,14 @@ export class AddTeacherComponent implements OnInit {
   steps = [
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
-    { title: 'Class & Permissions', icon: 'grid_view' },
+    { title: 'Class & Subject Mapping', icon: 'grid_view' },
     { title: 'Review', icon: 'fact_check' }
   ];
 
   hints = [
     'Step 1 of 4 — Personal information',
     'Step 2 of 4 — Professional details',
-    'Step 3 of 4 — Class, subject & permission matrix',
+    'Step 3 of 4 — Class & subject mapping',
     'Step 4 of 4 — Review & save'
   ];
 
@@ -292,10 +296,6 @@ export class AddTeacherComponent implements OnInit {
       classId: [row?.classId ?? '', Validators.required],
       subjectIds: [row?.subjectIds ?? []],
       isClassTeacher: [row?.isClassTeacher ?? false],
-      canViewStudents: [row?.canViewStudents ?? true],
-      canMarkAttendance: [row?.canMarkAttendance ?? false],
-      canAddMarks: [row?.canAddMarks ?? false],
-      canSendNotice: [row?.canSendNotice ?? false],
       pendingSubjectId: ['']
     });
   }
@@ -376,17 +376,12 @@ export class AddTeacherComponent implements OnInit {
 
   goTab(step: number): void {
     this.currentStep = step;
+    if (step === 2 && this.teacherId) {
+      setTimeout(() => this.mappingEditor?.loadMappings());
+    }
   }
 
   nextStep(): void {
-    if (this.currentStep === 2 && this.classAssignments.length === 0) {
-      this.snackBar.open('Add at least one class assignment', 'Close', { duration: 3000 });
-      return;
-    }
-    if (this.currentStep === 2 && this.classAssignments.invalid) {
-      this.snackBar.open('Select class for each assignment row', 'Close', { duration: 3000 });
-      return;
-    }
     if (this.currentStep < 3) {
       this.currentStep++;
     } else {
@@ -407,17 +402,8 @@ export class AddTeacherComponent implements OnInit {
     }
 
     const data = this.teacherForm.getRawValue();
-    const assignments = (data.schedule.classAssignments || []).map((row: any) => ({
-      classId: row.classId,
-      subjectIds: row.subjectIds || [],
-      isClassTeacher: !!row.isClassTeacher,
-      canViewStudents: !!row.canViewStudents,
-      canMarkAttendance: !!row.canMarkAttendance,
-      canAddMarks: !!row.canAddMarks,
-      canSendNotice: !!row.canSendNotice
-    }));
-    data.schedule.classAssignments = assignments;
-    data.schedule.classId = assignments[0]?.classId || data.schedule.classId || null;
+    data.schedule.classId = data.schedule.classId || null;
+    data.schedule.classAssignments = [];
 
     const action = this.mode === 'edit'
       ? this.teacherService.updateTeacher(this.teacherId!, data)
@@ -426,7 +412,7 @@ export class AddTeacherComponent implements OnInit {
     action.subscribe({
       next: (res) => {
         const teacherId = this.mode === 'edit' ? this.teacherId! : (res?.teacherId ?? res?.TeacherId);
-        const saveAssignments = () => {
+        const finish = () => {
           if (this.mode === 'add') {
             this.persistEmployeeSequence();
           }
@@ -434,16 +420,16 @@ export class AddTeacherComponent implements OnInit {
           this.saved.emit();
         };
 
-        if (teacherId && (this.mode === 'edit' || assignments.length > 0)) {
-          this.teacherService.saveTeacherAssignments(teacherId, { classAssignments: assignments }).subscribe({
-            next: () => saveAssignments(),
+        if (teacherId && this.mappingEditor) {
+          this.mappingEditor.save(teacherId).subscribe({
+            next: () => finish(),
             error: () => {
-              this.snackBar.open('Teacher saved but permissions failed to save', 'Close', { duration: 4000 });
+              this.snackBar.open('Teacher saved but mappings failed to save', 'Close', { duration: 4000 });
               this.saved.emit();
-            }
+            },
           });
         } else {
-          saveAssignments();
+          finish();
         }
       },
       error: () => {

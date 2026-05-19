@@ -1,3 +1,9 @@
+.mapping-hint {
+  margin: 0 0 1rem;
+  color: var(--muted, #666);
+  font-size: 0.9rem;
+}
+
 :host {
   display: block;
   --g50: #EAF3DE;

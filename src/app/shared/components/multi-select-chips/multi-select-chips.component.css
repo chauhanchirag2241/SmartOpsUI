@@ -1,0 +1,65 @@
+.chips-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chips-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 2rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-size: 0.85rem;
+}
+
+.chip-remove {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.chip-remove:hover {
+  opacity: 1;
+}
+
+.chips-empty {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.chips-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.chips-search {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.chips-select {
+  min-width: 120px;
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.chips-wrap.disabled {
+  opacity: 0.85;
+}

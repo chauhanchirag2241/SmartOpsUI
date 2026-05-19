@@ -30,6 +30,21 @@
     @case (0) {
       <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
     }
+    @case (1) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>hub</mat-icon> Mapping
+        </div>
+        <p class="mapping-hint">Optionally assign subjects and teachers, then save.</p>
+        <app-entity-mapping-editor
+          perspective="class"
+          [entityId]="classId ?? null"
+          [readOnly]="mode === 'view'"
+          [academicYearId]="classForm.get('academicYear')?.value"
+          [entityDisplayName]="classDisplayName"
+        />
+      </div>
+    }
   }
 </form>
 

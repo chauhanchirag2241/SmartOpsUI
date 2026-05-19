@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { finalize } from 'rxjs';
+import { finalize, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
@@ -11,48 +12,46 @@ import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../sha
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { TeacherService } from '../../../core/services/teacher.service';
+import { EntityMappingEditorComponent } from '../../../shared/components/entity-mapping-editor/entity-mapping-editor.component';
 
-type FieldItem = {
-  key: string;
-  full?: boolean;
-};
-
-type FormCard = {
-  tab: number;
-  icon: string;
-  title: string;
-  grid: 'grid2' | 'grid3';
-  fields: FieldItem[];
-};
+type FieldItem = { key: string; full?: boolean };
+type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'grid3'; fields: FieldItem[] };
 
 @Component({
   selector: 'app-add-class',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    DynamicFieldComponent,
+    EntityMappingEditorComponent,
+  ],
   templateUrl: './add-class.component.html',
   styleUrl: './add-class.component.css',
 })
 export class AddClassComponent implements OnInit {
   @Input() mode: 'add' | 'edit' | 'view' = 'add';
   @Input() classId?: string;
-
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  protected readonly finalTabIndex = 0;
-  protected readonly totalTabs = 1;
+  @ViewChild(EntityMappingEditorComponent) mappingEditor?: EntityMappingEditorComponent;
+
+  protected readonly finalTabIndex = 1;
+  protected readonly totalTabs = 2;
 
   classForm: FormGroup;
   currentTab = 0;
   isSaving = false;
 
   readonly tabs = [
-    { label: 'Details', hint: 'Step 1 of 1 — Class details & assignment' },
+    { label: 'Details', hint: 'Step 1 of 2 — Class details' },
+    { label: 'Mapping', hint: 'Step 2 of 2 — Assign subjects and teachers (optional)' },
   ];
 
-  readonly footerHints = [
-    'Fill class name, section and teacher details',
-  ];
+  readonly footerHints = ['Fill class name, section and academic year', 'Optionally map subjects and teachers, then save'];
 
   readonly configs: Record<string, FormFieldConfig> = {
     className: {
@@ -89,7 +88,7 @@ export class AddClassComponent implements OnInit {
       controlName: 'streamGroup',
       label: 'Stream / group',
       placeholder: 'Select stream or group',
-      options: enumToOptions(StreamGroup, (value) => value === StreamGroup.None ? 'None (primary)' : value),
+      options: enumToOptions(StreamGroup, (value) => (value === StreamGroup.None ? 'None (primary)' : value)),
     },
     academicYear: {
       type: 'select',
@@ -114,19 +113,8 @@ export class AddClassComponent implements OnInit {
       placeholder: 'Select teacher',
       options: [{ label: 'Assign later', value: '' }],
     },
-    roomNumber: {
-      type: 'input',
-      controlName: 'roomNumber',
-      label: 'Room number',
-      placeholder: 'e.g. 101',
-    },
-    shift: {
-      type: 'select',
-      controlName: 'shift',
-      label: 'Shift',
-      placeholder: 'Select shift',
-      options: enumToOptions(Shift),
-    },
+    roomNumber: { type: 'input', controlName: 'roomNumber', label: 'Room number', placeholder: 'e.g. 101' },
+    shift: { type: 'select', controlName: 'shift', label: 'Shift', placeholder: 'Select shift', options: enumToOptions(Shift) },
     medium: {
       type: 'select',
       controlName: 'medium',
@@ -148,21 +136,14 @@ export class AddClassComponent implements OnInit {
       icon: 'school',
       title: 'Class identity',
       grid: 'grid3',
-      fields: [
-        { key: 'className' },
-        { key: 'section' },
-        { key: 'streamGroup' },
-      ],
+      fields: [{ key: 'className' }, { key: 'section' }, { key: 'streamGroup' }],
     },
     {
       tab: 0,
       icon: 'event',
       title: 'Academic details',
       grid: 'grid2',
-      fields: [
-        { key: 'academicYear' },
-        { key: 'studentCapacity' },
-      ],
+      fields: [{ key: 'academicYear' }, { key: 'studentCapacity' }],
     },
     {
       tab: 0,
@@ -185,7 +166,7 @@ export class AddClassComponent implements OnInit {
     private ayService: AcademicYearService,
     private teacherService: TeacherService,
     private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef,
+    private cdr: ChangeDetectorRef
   ) {
     this.classForm = this.fb.group({
       className: ['', Validators.required],
@@ -216,6 +197,12 @@ export class AddClassComponent implements OnInit {
     return this.formCards.filter((c) => c.tab === this.currentTab);
   }
 
+  get classDisplayName(): string {
+    const name = this.classForm.get('className')?.value || '';
+    const section = this.classForm.get('section')?.value || '';
+    return [name, section].filter(Boolean).join(' - ');
+  }
+
   trackFormCard(_index: number, card: FormCard): string {
     return `${card.tab}-${card.title}`;
   }
@@ -231,7 +218,6 @@ export class AddClassComponent implements OnInit {
     }
   }
 
-  /** Maps backend int (1-based) → frontend enum string value */
   private static intToEnum<T extends Record<string, string>>(enumObj: T, intValue: number): string {
     const values = Object.values(enumObj);
     return values[intValue - 1] ?? values[0];
@@ -258,10 +244,8 @@ export class AddClassComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: (err: any) => {
-        console.error('Error loading class:', err);
-        this.snackBar.open('Failed to load class details', 'Close', { duration: 3000, panelClass: 'snack-error' });
-      }
+      error: () =>
+        this.snackBar.open('Failed to load class details', 'Close', { duration: 3000, panelClass: 'snack-error' }),
     });
   }
 
@@ -270,11 +254,12 @@ export class AddClassComponent implements OnInit {
       next: (years: any[]) => {
         this.configs['academicYear'].options = (years || []).map((ay: any) => ({
           label: ay.name,
-          value: ay.id
+          value: ay.id,
         }));
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load academic years', 'Close', { duration: 3000, panelClass: 'snack-error' })
+      error: () =>
+        this.snackBar.open('Failed to load academic years', 'Close', { duration: 3000, panelClass: 'snack-error' }),
     });
   }
 
@@ -283,19 +268,18 @@ export class AddClassComponent implements OnInit {
       next: (teachers: any[]) => {
         this.configs['classTeacher'].options = [
           { label: 'Assign later', value: '' },
-          ...(teachers || []).map((teacher: any) => ({
-            label: teacher.name,
-            value: teacher.id
-          }))
+          ...(teachers || []).map((teacher: any) => ({ label: teacher.name, value: teacher.id })),
         ];
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load class teachers', 'Close', { duration: 3000, panelClass: 'snack-error' })
     });
   }
 
   goTab(index: number) {
     this.currentTab = index;
+    if (index === 1 && this.classId) {
+      setTimeout(() => this.mappingEditor?.loadMappings());
+    }
   }
 
   nextTab() {
@@ -320,26 +304,40 @@ export class AddClassComponent implements OnInit {
     }
 
     this.isSaving = true;
-    const payload = this.classForm.getRawValue();
+    const payloadRaw = this.classForm.getRawValue();
+    const academicYearId = payloadRaw.academicYear;
 
-    const request$ = this.mode === 'edit' && this.classId
-      ? this.classService.updateClass(this.classId, payload)
-      : this.classService.createClass(payload);
+    const request$ =
+      this.mode === 'edit' && this.classId
+        ? this.classService.updateClass(this.classId, payloadRaw)
+        : this.classService.createClass(payloadRaw);
 
     request$
-      .pipe(finalize(() => {
-        this.isSaving = false;
-        this.cdr.detectChanges();
-      }))
+      .pipe(
+        switchMap((res: any) => {
+          const classId = this.classId ?? res?.classId ?? res?.ClassId;
+          if (!classId || !this.mappingEditor) return of(null);
+          if (payloadRaw.classTeacher) {
+            this.mappingEditor.onClassTeacherIdChange(String(payloadRaw.classTeacher));
+          }
+          return this.mappingEditor.save(String(classId));
+        }),
+        finalize(() => {
+          this.isSaving = false;
+          this.cdr.detectChanges();
+        })
+      )
       .subscribe({
         next: () => {
-          this.snackBar.open(this.mode === 'edit' ? 'Class updated successfully' : 'Class added successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+          this.snackBar.open(
+            this.mode === 'edit' ? 'Class updated successfully' : 'Class added successfully',
+            'Close',
+            { duration: 3000, panelClass: 'snack-success' }
+          );
           this.saved.emit();
         },
-        error: (err: any) => {
-          console.error('Class save failed:', err);
-          this.snackBar.open('Failed to save class', 'Close', { duration: 3000, panelClass: 'snack-error' });
-        }
+        error: () =>
+          this.snackBar.open('Failed to save class', 'Close', { duration: 3000, panelClass: 'snack-error' }),
       });
   }
 }

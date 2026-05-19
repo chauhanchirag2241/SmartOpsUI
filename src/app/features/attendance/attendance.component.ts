@@ -74,7 +74,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   loadClasses() {
-    this.classService.getClassDropdown(true).subscribe({
+    this.classService.getClassDropdown().subscribe({
       next: (classes: any[]) => {
         this.classes = classes || [];
         if (this.classes.length > 0) {

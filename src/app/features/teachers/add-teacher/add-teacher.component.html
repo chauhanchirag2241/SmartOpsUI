@@ -186,76 +186,18 @@
       <div formGroupName="schedule">
         <div class="info-chip">
           <mat-icon>info</mat-icon>
-          Teacher will only see students and data for assigned classes below.
+          Mappings sync automatically with Class and Subject screens (single shared table).
         </div>
 
         <div class="card">
-          <div class="card-title"><mat-icon>grid_view</mat-icon> Class & subject assignment matrix</div>
-          <div class="matrix-wrap">
-            <table class="perm-matrix">
-              <thead>
-                <tr>
-                  <th>Class</th>
-                  <th>Subjects taught</th>
-                  <th class="perm-col">Class teacher</th>
-                  <th class="perm-col">View students</th>
-                  <th class="perm-col">Mark attendance</th>
-                  <th class="perm-col">Add marks</th>
-                  <th class="perm-col">Send notice</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody formArrayName="classAssignments">
-                @for (row of classAssignments.controls; track row; let i = $index) {
-                  <tr [formGroupName]="i">
-                    <td>
-                      <select formControlName="classId" class="matrix-select">
-                        <option value="">Select class</option>
-                        @for (classItem of classes; track classItem.id) {
-                          <option [value]="classItem.id">{{ classItem.name }}</option>
-                        }
-                      </select>
-                    </td>
-                    <td>
-                      <div class="subj-pills">
-                        @for (sid of getSubjectIdsForRow(i); track sid) {
-                          <span class="subj-pill">
-                            {{ getSubjectName(sid) }}
-                            @if (mode !== 'view') {
-                              <mat-icon class="pill-remove" (click)="removeSubjectFromRow(i, sid)">close</mat-icon>
-                            }
-                          </span>
-                        }
-                        @if (mode !== 'view') {
-                          <select class="subj-add-select" formControlName="pendingSubjectId" (change)="addSubjectToRow(i)">
-                            <option value="">+ Add</option>
-                            @for (subject of availableSubjectsForRow(i); track subject.id) {
-                              <option [value]="subject.id">{{ subject.name }}</option>
-                            }
-                          </select>
-                        }
-                      </div>
-                    </td>
-                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="isClassTeacher" (change)="onClassTeacherChange(i)" /></td>
-                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canViewStudents" /></td>
-                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canMarkAttendance" /></td>
-                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canAddMarks" /></td>
-                    <td class="perm-td"><input type="checkbox" class="perm-cb" formControlName="canSendNotice" /></td>
-                    <td>
-                      <button type="button" class="rm-btn" (click)="removeClassAssignmentRow(i)" [disabled]="classAssignments.length === 1 || mode === 'view'">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          @if (mode !== 'view') {
-            <div class="add-row-btn matrix-add" (click)="addClassAssignmentRow()">
-              <mat-icon>add</mat-icon> Add class assignment
-            </div>
-          }
+          <div class="card-title"><mat-icon>hub</mat-icon> Mapping</div>
+          <p class="mapping-hint">Optionally assign classes and subjects, then save.</p>
+          <app-entity-mapping-editor
+            perspective="teacher"
+            [entityId]="teacherId ?? null"
+            [readOnly]="mode === 'view'"
+            [entityDisplayName]="(personalGroup.get('firstName')?.value || '') + ' ' + (personalGroup.get('lastName')?.value || '')"
+          />
         </div>
         <div class="card">
           <div class="card-title"><mat-icon>calendar_today</mat-icon> Working days</div>
@@ -365,7 +307,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title"><mat-icon>grid_view</mat-icon> Class & permissions</div>
+          <div class="card-title"><mat-icon>grid_view</mat-icon> Class & subjects</div>
           <div class="summary-matrix">
             @for (row of classAssignments.getRawValue(); track $index) {
               <div class="review-row">
@@ -374,10 +316,6 @@
                   <span class="pill pill-blue">{{ getSubjectName(sid) }}</span>
                 }
                 @if (row.isClassTeacher) { <span class="pill">Class teacher</span> }
-                @if (row.canViewStudents) { <span class="pill">View students</span> }
-                @if (row.canMarkAttendance) { <span class="pill">Attendance</span> }
-                @if (row.canAddMarks) { <span class="pill">Marks</span> }
-                @if (row.canSendNotice) { <span class="pill">Notice</span> }
               </div>
             } @empty {
               <div class="page-sub">No class assignments</div>

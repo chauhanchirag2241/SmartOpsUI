@@ -1,0 +1,92 @@
+<div class="mapping-badge-editor">
+  @if (!lookupsReady) {
+    <div class="mapping-status">Loading options…</div>
+  } @else if (loadError) {
+    <div class="mapping-status error">{{ loadError }}</div>
+  } @else {
+    @if (showClassTeacherPicker) {
+      <div class="class-teacher-row">
+        <label class="field-label">Class teacher</label>
+        <select [disabled]="readOnly" [value]="classTeacherId" (change)="onClassTeacherChange($any($event.target).value)">
+          <option value="">None</option>
+          @for (t of teacherOptions; track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="schedule-custom-container" [class.is-loading]="loadingMappings">
+      @if (showClasses) {
+        <div class="schedule-column">
+          <label class="field-label">Assigned classes</label>
+          <div class="classes-badge-grid">
+            @for (cls of classOptions; track cls.id) {
+              <div
+                class="class-badge"
+                [class.selected]="isSelected('classes', cls.id)"
+                (click)="toggle('classes', cls.id)"
+              >
+                <mat-icon>{{ isSelected('classes', cls.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                <span>{{ cls.name }}</span>
+                @if (perspective === 'teacher' && isSelected('classes', cls.id)) {
+                  <button
+                    type="button"
+                    class="ct-flag"
+                    [class.active]="isClassTeacherClass(cls.id)"
+                    (click)="$event.stopPropagation(); toggleClassTeacherForClass(cls.id)"
+                    [title]="isClassTeacherClass(cls.id) ? 'Class teacher' : 'Mark as class teacher'"
+                  >
+                    CT
+                  </button>
+                }
+              </div>
+            } @empty {
+              <span class="empty-hint">No classes found</span>
+            }
+          </div>
+        </div>
+      }
+
+      @if (showSubjects) {
+        <div class="schedule-column">
+          <label class="field-label">Assigned subjects</label>
+          <div class="classes-badge-grid">
+            @for (sub of subjectOptions; track sub.id) {
+              <div
+                class="class-badge"
+                [class.selected]="isSelected('subjects', sub.id)"
+                (click)="toggle('subjects', sub.id)"
+              >
+                <mat-icon>{{ isSelected('subjects', sub.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                <span>{{ sub.name }}</span>
+              </div>
+            } @empty {
+              <span class="empty-hint">No subjects found</span>
+            }
+          </div>
+        </div>
+      }
+
+      @if (showTeachers) {
+        <div class="schedule-column">
+          <label class="field-label">Assigned teachers</label>
+          <div class="classes-badge-grid">
+            @for (teacher of teacherOptions; track teacher.id) {
+              <div
+                class="class-badge"
+                [class.selected]="isSelected('teachers', teacher.id)"
+                (click)="toggle('teachers', teacher.id)"
+              >
+                <mat-icon>{{ isSelected('teachers', teacher.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                <span>{{ teacher.name }}</span>
+              </div>
+            } @empty {
+              <span class="empty-hint">No teachers found</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

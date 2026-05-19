@@ -93,11 +93,7 @@ export class TeacherService {
         classAssignments: (teacher.schedule.classAssignments || []).map((row: any) => ({
           classId: row.classId,
           subjectIds: row.subjectIds || [],
-          isClassTeacher: !!row.isClassTeacher,
-          canViewStudents: row.canViewStudents !== false,
-          canMarkAttendance: !!row.canMarkAttendance,
-          canAddMarks: !!row.canAddMarks,
-          canSendNotice: !!row.canSendNotice
+          isClassTeacher: !!row.isClassTeacher
         })),
         shift: teacher.schedule.shift,
         weeklyPeriods: Number(teacher.schedule.weeklyPeriods || 30),
