@@ -54,8 +54,9 @@ export class ClassService {
     return this.api.get('classes', params);
   }
 
-  getClassDropdown(): Observable<any[]> {
-    return this.api.get<any[]>('class/dropdown');
+  getClassDropdown(forAttendance = false): Observable<any[]> {
+    const params = forAttendance ? new HttpParams().set('forAttendance', 'true') : undefined;
+    return this.api.get<any[]>('class/dropdown', params);
   }
 
   createClass(classData: any): Observable<any> {
