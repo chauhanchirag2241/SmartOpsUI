@@ -42,15 +42,19 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border-color);
   background: var(--input-bg);
-  color: var(--muted);
-  transition: all .2s;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .badge-opt:hover {
-  border-color: var(--g400);
-  color: var(--text);
+  border-color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .badge-opt.sel-male {

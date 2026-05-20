@@ -747,48 +747,193 @@ button.btn {
    FORMS
 ========================================================= */
 .form-group,
-.field {
+.field,
+.custom-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
+  width: 100%;
 }
 
-.form-group label,
-.field label,
-label {
+.form-group > label,
+.field > label,
+.custom-field > label,
+.gender-field > label {
   font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
+  line-height: 1.3;
 }
 
+/* Native inputs only (not Angular Material fields) */
 .form-control,
-.field input[type='text'],
-.field input[type='email'],
-.field input[type='password'],
-.field input[type='number'],
-.field input[type='tel'],
-.field select,
-.field textarea,
+.field > input[type='text'],
+.field > input[type='email'],
+.field > input[type='password'],
+.field > input[type='number'],
+.field > input[type='tel'],
+.field > select,
+.field > textarea,
 input.form-control,
 select.form-control,
 textarea.form-control {
   background: var(--input-bg);
   border: 0.5px solid var(--border-color);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   padding: 7px 10px;
   font-size: 13px;
   color: var(--text-primary);
   width: 100%;
+  min-height: 32px;
   outline: none;
   font-family: inherit;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 
 .form-control:focus,
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
+.field > input:focus,
+.field > select:focus,
+.field > textarea:focus {
   border-color: var(--primary-color);
+}
+
+/* Dynamic fields in grids — equal width columns */
+.grid2 app-dynamic-field,
+.grid3 app-dynamic-field,
+.grid-two app-dynamic-field,
+.photo-fields app-dynamic-field {
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+
+.gender-field .badge-options {
+  align-items: center;
+  min-height: 32px;
+}
+
+/* =========================================================
+   MATERIAL COMPACT FIELDS (app-dynamic-field)
+========================================================= */
+.compact-field.mat-mdc-form-field {
+  width: 100%;
+  font-size: 13px;
+  --mat-form-field-container-height: 32px;
+  --mat-form-field-container-vertical-padding: 4px;
+  --mdc-outlined-text-field-container-shape: 7px;
+  --mdc-outlined-text-field-outline-color: var(--border-color);
+  --mdc-outlined-text-field-hover-outline-color: var(--primary-color);
+  --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
+  --mdc-outlined-text-field-container-color: var(--input-bg);
+  --mdc-typography-subtitle1-font-size: 13px;
+  --mat-select-enabled-arrow-color: var(--text-secondary);
+  --mat-select-focused-arrow-color: var(--primary-color);
+}
+
+.compact-field .mat-mdc-text-field-wrapper {
+  background-color: var(--input-bg) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 10px !important;
+}
+
+.compact-field .mat-mdc-form-field-flex {
+  align-items: center;
+  min-height: 0;
+}
+
+.compact-field .mat-mdc-form-field-infix {
+  align-items: center;
+  display: flex;
+  min-height: 32px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  width: 100%;
+}
+
+.compact-field .mat-mdc-input-element,
+.compact-field textarea.mat-mdc-input-element {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  margin: 0 !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+}
+
+/* Select — compact height (same as text inputs) */
+.compact-field.mat-mdc-form-field-type-mat-select .mat-mdc-form-field-infix {
+  min-height: 32px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.compact-field.mat-mdc-form-field-type-mat-select .mat-mdc-text-field-wrapper {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.compact-field .mat-mdc-select,
+.compact-field .mat-mdc-select-trigger {
+  align-items: center;
+  display: flex;
+  font-size: 13px;
+  height: 24px !important;
+  min-height: 24px !important;
+}
+
+.compact-field .mat-mdc-select-value,
+.compact-field .mat-mdc-select-value-text {
+  line-height: 18px;
+}
+
+.compact-field .mat-mdc-select-arrow-wrapper {
+  height: 24px;
+  transform: translateY(0);
+}
+
+.compact-field .mat-mdc-select-arrow {
+  margin: 0;
+}
+
+.compact-field .mat-mdc-form-field-subscript-wrapper {
+  padding-left: 0;
+}
+
+.compact-field .mat-mdc-form-field-error {
+  font-size: 11px;
+}
+
+.compact-field:hover .mdc-notched-outline__leading,
+.compact-field:hover .mdc-notched-outline__notch,
+.compact-field:hover .mdc-notched-outline__trailing {
+  border-color: var(--primary-color) !important;
+}
+
+.compact-field.mat-focused .mdc-notched-outline__leading,
+.compact-field.mat-focused .mdc-notched-outline__notch,
+.compact-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--primary-color) !important;
+  border-width: 1px !important;
+}
+
+.compact-field .mat-mdc-icon-button {
+  height: 28px !important;
+  padding: 2px !important;
+  width: 28px !important;
+}
+
+.compact-field .mat-mdc-icon-button .mat-icon,
+.compact-field .mat-datepicker-toggle-default-icon {
+  font-size: 20px;
+  height: 20px !important;
+  line-height: 20px;
+  width: 20px !important;
 }
 
 .topbar,

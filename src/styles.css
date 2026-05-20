@@ -47,74 +47,19 @@ body {
   border-radius: 3px;
 }
 
-/* Material Form Field Overrides */
-.compact-field {
-  --mdc-outlined-text-field-container-shape: 7px;
-  --mdc-outlined-text-field-outline-color: rgba(0, 0, 0, 0.08);
-  --mdc-outlined-text-field-hover-outline-color: var(--primary-color);
-  --mdc-outlined-text-field-focus-outline-color: var(--primary-color) !important;
-  --mdc-outlined-text-field-container-color: var(--input-bg);
-  --mdc-typography-subtitle1-font-size: 13px;
-  --mdc-outlined-text-field-hover-label-text-color: var(--secondary-color);
-  --mdc-outlined-text-field-focus-label-text-color: var(--secondary-color);
-  --mdc-outlined-text-field-hover-input-text-color: var(--secondary-color);
-  --mat-select-focused-arrow-color: var(--primary-color);
-  --mat-select-enabled-arrow-color: var(--text-secondary);
-}
-
-.compact-field:hover .mdc-notched-outline__leading,
-.compact-field:hover .mdc-notched-outline__notch,
-.compact-field:hover .mdc-notched-outline__trailing {
-  border-color: var(--primary-color) !important;
-}
-
+/* Tailwind preflight resets Material inputs — restore compact-field styling */
 .compact-field:hover .mat-mdc-select-arrow,
 .compact-field:hover .mat-mdc-select-value-text,
 .compact-field:hover .mat-datepicker-toggle-default-icon,
-.compact-field:hover input,
-.compact-field:hover textarea {
+.compact-field:hover .mat-mdc-input-element,
+.compact-field:hover textarea.mat-mdc-input-element {
   color: var(--secondary-color) !important;
-}
-
-.compact-field.mat-focused .mdc-notched-outline__leading,
-.compact-field.mat-focused .mdc-notched-outline__notch,
-.compact-field.mat-focused .mdc-notched-outline__trailing {
-  border-color: var(--primary-color) !important;
-  border-width: 1px !important;
 }
 
 .compact-field.mat-focused .mat-mdc-select-arrow,
 .compact-field.mat-focused .mat-mdc-select-value-text,
 .compact-field.mat-focused .mat-datepicker-toggle-default-icon {
   color: var(--primary-color) !important;
-}
-
-.compact-field .mat-mdc-form-field-infix {
-  padding-top: 8px !important;
-  padding-bottom: 8px !important;
-  min-height: 36px !important;
-}
-
-.compact-field .mat-mdc-text-field-wrapper {
-  padding: 0 10px !important;
-}
-
-.compact-field .mat-mdc-form-field-subscript-wrapper {
-  padding-left: 0;
-}
-
-.compact-field .mat-mdc-icon-button {
-  padding: 4px !important;
-  width: 32px !important;
-  height: 32px !important;
-}
-
-.compact-field .mat-mdc-icon-button .mat-icon,
-.compact-field .mat-datepicker-toggle-default-icon {
-  width: 20px !important;
-  height: 20px !important;
-  font-size: 20px;
-  line-height: 20px;
 }
 
 /* Material Select Option Overrides */
