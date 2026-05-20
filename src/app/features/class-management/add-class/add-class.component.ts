@@ -1,10 +1,9 @@
-import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { finalize, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
@@ -12,7 +11,6 @@ import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../sha
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { TeacherService } from '../../../core/services/teacher.service';
-import { EntityMappingEditorComponent } from '../../../shared/components/entity-mapping-editor/entity-mapping-editor.component';
 
 type FieldItem = { key: string; full?: boolean };
 type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'grid3'; fields: FieldItem[] };
@@ -20,14 +18,7 @@ type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'gri
 @Component({
   selector: 'app-add-class',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatIconModule,
-    MatSnackBarModule,
-    DynamicFieldComponent,
-    EntityMappingEditorComponent,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent],
   templateUrl: './add-class.component.html',
   styleUrl: './add-class.component.css',
 })
@@ -37,21 +28,8 @@ export class AddClassComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  @ViewChild(EntityMappingEditorComponent) mappingEditor?: EntityMappingEditorComponent;
-
-  protected readonly finalTabIndex = 1;
-  protected readonly totalTabs = 2;
-
   classForm: FormGroup;
-  currentTab = 0;
   isSaving = false;
-
-  readonly tabs = [
-    { label: 'Details', hint: 'Step 1 of 2 — Class details' },
-    { label: 'Mapping', hint: 'Step 2 of 2 — Assign subjects and teachers (optional)' },
-  ];
-
-  readonly footerHints = ['Fill class name, section and academic year', 'Optionally map subjects and teachers, then save'];
 
   readonly configs: Record<string, FormFieldConfig> = {
     className: {
@@ -189,18 +167,8 @@ export class AddClassComponent implements OnInit {
     return 'Add new class';
   }
 
-  get progressWidthPercent(): number {
-    return ((this.currentTab + 1) / this.totalTabs) * 100;
-  }
-
   get cardsForCurrentTab(): FormCard[] {
-    return this.formCards.filter((c) => c.tab === this.currentTab);
-  }
-
-  get classDisplayName(): string {
-    const name = this.classForm.get('className')?.value || '';
-    const section = this.classForm.get('section')?.value || '';
-    return [name, section].filter(Boolean).join(' - ');
+    return this.formCards.filter((c) => c.tab === 0);
   }
 
   trackFormCard(_index: number, card: FormCard): string {
@@ -275,27 +243,6 @@ export class AddClassComponent implements OnInit {
     });
   }
 
-  goTab(index: number) {
-    this.currentTab = index;
-    if (index === 1 && this.classId) {
-      setTimeout(() => this.mappingEditor?.loadMappings());
-    }
-  }
-
-  nextTab() {
-    if (this.currentTab === this.finalTabIndex) {
-      this.saveClass();
-      return;
-    }
-    this.currentTab++;
-  }
-
-  prevTab() {
-    if (this.currentTab > 0) {
-      this.currentTab--;
-    }
-  }
-
   saveClass(): void {
     if (this.classForm.invalid || this.mode === 'view') {
       this.classForm.markAllAsTouched();
@@ -305,7 +252,6 @@ export class AddClassComponent implements OnInit {
 
     this.isSaving = true;
     const payloadRaw = this.classForm.getRawValue();
-    const academicYearId = payloadRaw.academicYear;
 
     const request$ =
       this.mode === 'edit' && this.classId
@@ -314,14 +260,6 @@ export class AddClassComponent implements OnInit {
 
     request$
       .pipe(
-        switchMap((res: any) => {
-          const classId = this.classId ?? res?.classId ?? res?.ClassId;
-          if (!classId || !this.mappingEditor) return of(null);
-          if (payloadRaw.classTeacher) {
-            this.mappingEditor.onClassTeacherIdChange(String(payloadRaw.classTeacher));
-          }
-          return this.mappingEditor.save(String(classId));
-        }),
         finalize(() => {
           this.isSaving = false;
           this.cdr.detectChanges();

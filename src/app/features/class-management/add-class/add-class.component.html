@@ -5,47 +5,10 @@
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
-<div class="progress-bar">
-  <div class="progress-fill" [style.width.%]="progressWidthPercent"></div>
-</div>
-<div class="step-hint">{{ tabs[currentTab].hint }}</div>
-
-<div class="tabs" role="tablist">
-  @for (tab of tabs; track tab.label; let i = $index) {
-    <div
-      class="tab"
-      [class.active]="currentTab === i"
-      [class.done]="currentTab > i"
-      (click)="goTab(i)"
-      role="tab"
-    >
-      <div class="tab-num">{{ i + 1 }}</div>
-      {{ tab.label }}
-    </div>
-  }
-</div>
+<p class="form-hint">Subject and teacher mappings are managed from the Class Mapping screen.</p>
 
 <form [formGroup]="classForm">
-  @switch (currentTab) {
-    @case (0) {
-      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
-    }
-    @case (1) {
-      <div class="card">
-        <div class="card-title">
-          <mat-icon>hub</mat-icon> Mapping
-        </div>
-        <p class="mapping-hint">Optionally assign subjects and teachers, then save.</p>
-        <app-entity-mapping-editor
-          perspective="class"
-          [entityId]="classId ?? null"
-          [readOnly]="mode === 'view'"
-          [academicYearId]="classForm.get('academicYear')?.value"
-          [entityDisplayName]="classDisplayName"
-        />
-      </div>
-    }
-  }
+  <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
 </form>
 
 <ng-template #dynamicFormCards>
@@ -68,25 +31,12 @@
 </ng-template>
 
 <div class="footer-actions">
-  <button
-    type="button"
-    class="btn-back"
-    [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'"
-    (click)="prevTab()"
-  >
-    <mat-icon>arrow_back</mat-icon> Previous
-  </button>
+  <div class="footer-hint">Save class details, then map subjects and teachers from Class Mapping.</div>
 
-  <div class="footer-hint">{{ footerHints[currentTab] }}</div>
-
-  @if (currentTab < finalTabIndex || mode !== 'view') {
-    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
-      @if (currentTab < finalTabIndex) {
-        Next <mat-icon>arrow_forward</mat-icon>
-      } @else if (mode !== 'view') {
-        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-        {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Class' : 'Confirm & Add') }}
-      }
+  @if (mode !== 'view') {
+    <button type="button" class="btn-next" (click)="saveClass()" [disabled]="isSaving">
+      <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+      {{ isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Class' : 'Confirm & Add') }}
     </button>
   }
 </div>

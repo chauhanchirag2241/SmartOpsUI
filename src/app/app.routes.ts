@@ -42,6 +42,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'class-subject-teacher-mapping',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ClassMappings, permission: 'view' },
+        loadComponent: () =>
+          import('./features/class-subject-teacher-mapping/class-subject-teacher-mapping.component').then(
+            (m) => m.ClassSubjectTeacherMappingComponent,
+          ),
+      },
+      {
         path: 'subjects',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Subjects, permission: 'view' },

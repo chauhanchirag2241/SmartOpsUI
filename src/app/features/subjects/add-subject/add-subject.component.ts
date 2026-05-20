@@ -1,10 +1,9 @@
-import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { finalize, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
@@ -15,7 +14,6 @@ import {
   SubjectCategory,
 } from '../../../shared/enums/field-options.enum';
 import { SubjectService } from '../../../core/services/subject.service';
-import { EntityMappingEditorComponent } from '../../../shared/components/entity-mapping-editor/entity-mapping-editor.component';
 
 type FieldItem = { key: string; full?: boolean };
 type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'grid3'; fields: FieldItem[] };
@@ -23,7 +21,7 @@ type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'gri
 @Component({
   selector: 'app-add-subject',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, DynamicFieldComponent, EntityMappingEditorComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, DynamicFieldComponent],
   templateUrl: './add-subject.component.html',
   styleUrl: './add-subject.component.css',
 })
@@ -33,21 +31,8 @@ export class AddSubjectComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  @ViewChild(EntityMappingEditorComponent) mappingEditor?: EntityMappingEditorComponent;
-
-  protected readonly finalTabIndex = 1;
-  protected readonly totalTabs = 2;
-
   subjectForm: FormGroup;
-  currentTab = 0;
   isSaving = false;
-
-  readonly tabs = [
-    { label: 'Identity', hint: 'Step 1 of 2 — Subject identity' },
-    { label: 'Mapping', hint: 'Step 2 of 2 — Assign classes and teachers (optional)' },
-  ];
-
-  readonly footerHints = ['Fill name, code and select type', 'Optionally map classes and teachers, then save'];
 
   readonly configs: Record<string, FormFieldConfig> = {
     subjectName: {
@@ -118,12 +103,8 @@ export class AddSubjectComponent implements OnInit {
     return 'Add new subject';
   }
 
-  get progressWidthPercent(): number {
-    return ((this.currentTab + 1) / this.totalTabs) * 100;
-  }
-
   get cardsForCurrentTab(): FormCard[] {
-    return this.formCards.filter((c) => c.tab === this.currentTab);
+    return this.formCards;
   }
 
   trackFormCard(_index: number, card: FormCard): string {
@@ -182,25 +163,6 @@ export class AddSubjectComponent implements OnInit {
     };
   }
 
-  goTab(index: number) {
-    this.currentTab = index;
-    if (index === 1 && this.subjectId) {
-      setTimeout(() => this.mappingEditor?.loadMappings());
-    }
-  }
-
-  nextTab() {
-    if (this.currentTab === this.finalTabIndex) {
-      this.saveSubject();
-      return;
-    }
-    this.currentTab++;
-  }
-
-  prevTab() {
-    if (this.currentTab > 0) this.currentTab--;
-  }
-
   saveSubject() {
     if (this.subjectForm.invalid) {
       this.subjectForm.markAllAsTouched();
@@ -221,11 +183,6 @@ export class AddSubjectComponent implements OnInit {
 
     saveObs
       .pipe(
-        switchMap((res: any) => {
-          const subjectId = this.subjectId ?? res?.subjectId ?? res?.SubjectId ?? res?.id;
-          if (!subjectId || !this.mappingEditor) return of(null);
-          return this.mappingEditor.save(String(subjectId));
-        }),
         finalize(() => {
           this.isSaving = false;
           this.cdr.detectChanges();

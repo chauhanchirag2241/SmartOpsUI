@@ -8,6 +8,7 @@ export const MenuCodes = {
   Students: 'STUDENTS',
   Teachers: 'TEACHERS',
   Classes: 'CLASSES',
+  ClassMappings: 'CLASS_MAPPINGS',
   Subjects: 'SUBJECTS',
   AcademicYears: 'ACADEMIC_YEARS',
   Attendance: 'ATTENDANCE',

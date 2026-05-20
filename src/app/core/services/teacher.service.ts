@@ -105,14 +105,6 @@ export class TeacherService {
     };
   }
 
-  getTeacherAssignments(teacherId: string): Observable<any> {
-    return this.api.get<any>(`teachers/${teacherId}/assignments`);
-  }
-
-  saveTeacherAssignments(teacherId: string, payload: any): Observable<void> {
-    return this.api.put<void>(`teachers/${teacherId}/assignments`, payload);
-  }
-
   private toTeacherUpdatePayload(id: string, teacher: any): any {
     if (!teacher?.personal || !teacher?.professional || !teacher?.schedule) {
       return { ...teacher, id };

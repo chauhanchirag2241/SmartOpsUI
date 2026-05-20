@@ -181,24 +181,10 @@
       </div>
     }
 
-    <!-- TAB 2 — CLASS & PERMISSIONS -->
+    <!-- TAB 2 — SCHEDULE & ACCESS -->
     @if (currentStep === 2) {
       <div formGroupName="schedule">
-        <div class="info-chip">
-          <mat-icon>info</mat-icon>
-          Mappings sync automatically with Class and Subject screens (single shared table).
-        </div>
-
-        <div class="card">
-          <div class="card-title"><mat-icon>hub</mat-icon> Mapping</div>
-          <p class="mapping-hint">Optionally assign classes and subjects, then save.</p>
-          <app-entity-mapping-editor
-            perspective="teacher"
-            [entityId]="teacherId ?? null"
-            [readOnly]="mode === 'view'"
-            [entityDisplayName]="(personalGroup.get('firstName')?.value || '') + ' ' + (personalGroup.get('lastName')?.value || '')"
-          />
-        </div>
+                <p class="mapping-hint">Class and subject assignments are managed from the Class Mapping screen.</p>
         <div class="card">
           <div class="card-title"><mat-icon>calendar_today</mat-icon> Working days</div>
           <div class="day-chips">
@@ -303,23 +289,6 @@
               <div class="sum-key">Joining date</div>
               <div class="sum-val">{{ formatDate(teacherForm.get('professional.joiningDate')?.value) }}</div>
             </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title"><mat-icon>grid_view</mat-icon> Class & subjects</div>
-          <div class="summary-matrix">
-            @for (row of classAssignments.getRawValue(); track $index) {
-              <div class="review-row">
-                <span class="pill pill-green">{{ getClassName(row.classId) }}</span>
-                @for (sid of row.subjectIds; track sid) {
-                  <span class="pill pill-blue">{{ getSubjectName(sid) }}</span>
-                }
-                @if (row.isClassTeacher) { <span class="pill">Class teacher</span> }
-              </div>
-            } @empty {
-              <div class="page-sub">No class assignments</div>
-            }
           </div>
         </div>
 

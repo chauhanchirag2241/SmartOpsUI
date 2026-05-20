@@ -1,0 +1,252 @@
+<div class="mapping-page">
+  <div class="topbar">
+    <a routerLink="/classes" class="back-btn" aria-label="Back to classes">
+      <mat-icon>arrow_back</mat-icon>
+      Back
+    </a>
+    <div>
+      <div class="page-title">Class — Subject — Teacher Mapping</div>
+      <div class="page-sub">Map subjects to classes and assign teachers in one place</div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <mat-icon class="spinning">hourglass_empty</mat-icon>
+      Loading mappings…
+    </div>
+  } @else if (errorMessage) {
+    <div class="loading-state error">{{ errorMessage }}</div>
+  } @else {
+    <div class="filter-bar">
+      <div class="sel-wrap">
+        <select [(ngModel)]="selectedAcademicYearId" (ngModelChange)="onAcademicYearChange()" aria-label="Academic year">
+          @for (year of academicYears; track year.id) {
+            <option [value]="year.id">{{ year.name }}</option>
+          }
+        </select>
+      </div>
+
+      <button type="button" class="filter-chip" [class.active]="classFilter === 'all'" (click)="setClassFilter('all')">
+        All classes
+      </button>
+      <button type="button" class="filter-chip" [class.active]="classFilter === 'mapped'" (click)="setClassFilter('mapped')">
+        <mat-icon>check_circle</mat-icon>
+        Mapped
+      </button>
+      <button type="button" class="filter-chip" [class.active]="classFilter === 'unmapped'" (click)="setClassFilter('unmapped')">
+        <mat-icon>error_outline</mat-icon>
+        Unmapped
+      </button>
+
+      <div class="total-info">
+        {{ filteredClasses.length }} classes · {{ subjects.length }} subjects · {{ teachers.length }} teachers
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside class="class-list" aria-label="Classes">
+        <div class="class-list-header">
+          <div class="class-list-title">Classes</div>
+          <div class="class-count">{{ filteredClasses.length }}</div>
+        </div>
+        @for (cls of filteredClasses; track cls.classId) {
+          <button
+            type="button"
+            class="class-item"
+            [class.active]="cls.classId === activeClassId"
+            [class.has-map]="cls.subjectCount > 0"
+            (click)="selectClass(cls.classId)"
+          >
+            <span class="class-dot"></span>
+            <span class="class-name">{{ cls.className }}@if (cls.section) { — {{ cls.section }} }</span>
+            <span class="map-count">{{ cls.subjectCount }} subj</span>
+          </button>
+        } @empty {
+          <div class="empty-side">No classes for this year</div>
+        }
+      </aside>
+
+      <section class="mapping-panel">
+        @if (activeClass; as cls) {
+          <div class="class-header-card">
+            <div class="class-badge">{{ classBadgeLabel(cls) }}</div>
+            <div>
+              <div class="class-header-name">{{ cls.className }}@if (cls.section) { — {{ cls.section }} }</div>
+              <div class="class-header-sub">Academic year mapping</div>
+            </div>
+            <div class="class-stats">
+              <div class="cs-item">
+                <div class="cs-val">{{ mappings.length }}</div>
+                <div class="cs-label">Subjects</div>
+              </div>
+              <div class="cs-item">
+                <div class="cs-val">{{ mappedTeacherCount }}</div>
+                <div class="cs-label">Teachers assigned</div>
+              </div>
+              <div class="cs-item">
+                <div class="cs-val">{{ classTeacherCount }}</div>
+                <div class="cs-label">Class teacher</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="map-card">
+            <div class="map-card-header">
+              <div class="map-card-title">
+                <mat-icon>menu_book</mat-icon>
+                Subject — Teacher mapping
+              </div>
+              @if (canEdit) {
+                <button type="button" class="add-map-btn" (click)="toggleQuickAdd()">
+                  <mat-icon>{{ quickAddOpen ? 'close' : 'add' }}</mat-icon>
+                  {{ quickAddOpen ? 'Cancel' : 'Add subject' }}
+                </button>
+              }
+            </div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Assigned teacher</th>
+                    <th>Class teacher</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (mappings.length === 0) {
+                    <tr>
+                      <td colspan="5">
+                        <div class="empty">
+                          <mat-icon>menu_book</mat-icon>
+                          <div>No subjects mapped yet</div>
+                          <div class="empty-sub">Click "Add subject" to start mapping</div>
+                        </div>
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (row of mappings; track row.id) {
+                      <tr [class.row-saving]="savingId === row.id">
+                        <td>
+                          <span class="subj-tag" [ngClass]="subjectTagClass(row.subjectId)">
+                            {{ row.subjectName }}
+                          </span>
+                          @if (row.subjectCode) {
+                            <div class="subj-code">{{ row.subjectCode }}</div>
+                          }
+                        </td>
+                        <td>
+                          <div class="teacher-assign">
+                            @if (row.teacherName) {
+                              <div class="teacher-av">{{ teacherInitials(row.teacherName) }}</div>
+                            }
+                            <div class="sel-container">
+                              <select
+                                class="teacher-sel"
+                                [disabled]="!canEdit || savingId === row.id"
+                                [ngModel]="row.teacherId ?? ''"
+                                (ngModelChange)="onTeacherChange(row, $event)"
+                              >
+                                <option value="">Assign later</option>
+                                @for (teacher of teachers; track teacher.id) {
+                                  <option [value]="teacher.id">{{ teacher.name }}</option>
+                                }
+                              </select>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="ct-cell">
+                          <label class="ct-label">
+                            <input
+                              type="checkbox"
+                              class="cb"
+                              [disabled]="!canEdit || savingId === row.id"
+                              [checked]="row.isClassTeacher"
+                              (change)="onClassTeacherToggle(row, $any($event.target).checked)"
+                            />
+                            @if (row.isClassTeacher) {
+                              <span class="ct-yes">Yes</span>
+                            }
+                          </label>
+                        </td>
+                        <td>
+                          @if (row.teacherId) {
+                            <span class="s-badge sb-mapped">
+                              <mat-icon>check_circle</mat-icon>
+                              Mapped
+                            </span>
+                          } @else {
+                            <span class="s-badge sb-unmapped">
+                              <mat-icon>schedule</mat-icon>
+                              Pending
+                            </span>
+                          }
+                        </td>
+                        <td>
+                          @if (canEdit) {
+                            <button
+                              type="button"
+                              class="rm-btn"
+                              [disabled]="deletingId === row.id"
+                              (click)="removeMapping(row)"
+                              aria-label="Remove mapping"
+                            >
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (quickAddOpen && canEdit) {
+              <div class="quick-add show">
+                <div class="sel-wrap">
+                  <select [(ngModel)]="quickAddSubjectId" aria-label="Subject">
+                    <option value="">Select subject</option>
+                    @for (subject of availableSubjectsForQuickAdd; track subject.id) {
+                      <option [value]="subject.id">{{ subject.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="sel-wrap">
+                  <select [(ngModel)]="quickAddTeacherId" aria-label="Teacher">
+                    <option value="">Assign later</option>
+                    @for (teacher of teachers; track teacher.id) {
+                      <option [value]="teacher.id">{{ teacher.name }}</option>
+                    }
+                  </select>
+                </div>
+                <label class="ct-label inline">
+                  <input type="checkbox" class="cb" [(ngModel)]="quickAddClassTeacher" />
+                  Class teacher
+                </label>
+                <button type="button" class="qa-save" (click)="addMappingFromQuickAdd()">Add</button>
+                <button type="button" class="qa-cancel" (click)="toggleQuickAdd()">Cancel</button>
+              </div>
+            }
+          </div>
+
+          <div class="summary-footer">
+            <div class="sf-item">
+              <span class="sf-dot mapped"></span>
+              Fully mapped: <span class="sf-val">{{ mappedTeacherCount }}</span>
+            </div>
+            <div class="sf-item">
+              <span class="sf-dot pending"></span>
+              Teacher pending: <span class="sf-val">{{ pendingTeacherCount }}</span>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-panel">Select a class to manage mappings</div>
+        }
+      </section>
+    </div>
+  }
+</div>

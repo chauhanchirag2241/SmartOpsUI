@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,14 +7,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TeacherService } from '../../../core/services/teacher.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ClassService } from '../../../core/services/class.service';
-import { SubjectService } from '../../../core/services/subject.service';
 import { FileUploadComponent, SelectedUploadFile } from '../../../shared/components/file-upload/file-upload.component';
 import { DigitsOnlyDirective } from '../../../shared/directives/digits-only.directive';
 import { BloodGroup, enumToOptions, Gender } from '../../../shared/enums/field-options.enum';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
-import { EntityMappingEditorComponent } from '../../../shared/components/entity-mapping-editor/entity-mapping-editor.component';
 
 @Component({
   selector: 'app-add-teacher',
@@ -30,7 +27,6 @@ import { EntityMappingEditorComponent } from '../../../shared/components/entity-
     FileUploadComponent,
     DigitsOnlyDirective,
     DynamicFieldComponent,
-    EntityMappingEditorComponent,
   ],
   templateUrl: './add-teacher.component.html',
   styleUrl: './add-teacher.component.css'
@@ -41,25 +37,21 @@ export class AddTeacherComponent implements OnInit {
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  @ViewChild(EntityMappingEditorComponent) mappingEditor?: EntityMappingEditorComponent;
-
   teacherForm: FormGroup;
   currentStep = 0;
-  subjects: any[] = [];
-  classes: any[] = [];
   selectedPhoto: SelectedUploadFile | null = null;
   readonly bloodGroupOptions = enumToOptions(BloodGroup);
   steps = [
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
-    { title: 'Class & Subject Mapping', icon: 'grid_view' },
+    { title: 'Schedule & Access', icon: 'schedule' },
     { title: 'Review', icon: 'fact_check' }
   ];
 
   hints = [
     'Step 1 of 4 — Personal information',
     'Step 2 of 4 — Professional details',
-    'Step 3 of 4 — Class & subject mapping',
+    'Step 3 of 4 — Schedule and portal access',
     'Step 4 of 4 — Review & save'
   ];
 
@@ -86,8 +78,6 @@ export class AddTeacherComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private teacherService: TeacherService,
-    private classService: ClassService,
-    private subjectService: SubjectService,
     private snackBar: MatSnackBar
   ) {
     this.teacherForm = this.fb.group({
@@ -128,7 +118,6 @@ export class AddTeacherComponent implements OnInit {
       }),
       schedule: this.fb.group({
         classId: [''],
-        classAssignments: this.fb.array([]),
         workingDays: [[]],
         shift: ['Morning (7:30 AM – 1:30 PM)'],
         weeklyPeriods: [30],
@@ -142,9 +131,6 @@ export class AddTeacherComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadSubjects();
-    this.loadClasses();
-    this.addClassAssignmentRow();
     this.updateWorkingDays();
     if (this.mode === 'add') {
       this.generateEmployeeId();
@@ -180,10 +166,6 @@ export class AddTeacherComponent implements OnInit {
 
   get qualifications() {
     return (this.teacherForm.get('professional.qualifications') as FormArray);
-  }
-
-  get classAssignments() {
-    return this.teacherForm.get('schedule.classAssignments') as FormArray;
   }
 
   get personalGroup(): FormGroup {
@@ -239,29 +221,10 @@ export class AddTeacherComponent implements OnInit {
         if (this.mode === 'view') {
           this.teacherForm.disable();
         }
-        this.loadClassAssignments();
       },
-      error: (err) => {
+      error: () => {
         this.snackBar.open('Failed to load teacher data', 'Close', { duration: 3000 });
       }
-    });
-  }
-
-  loadSubjects(): void {
-    this.subjectService.getSubjectDropdown().subscribe({
-      next: (subjects) => {
-        this.subjects = subjects || [];
-      },
-      error: () => this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 })
-    });
-  }
-
-  loadClasses(): void {
-    this.classService.getClassDropdown().subscribe({
-      next: (classes) => {
-        this.classes = classes || [];
-      },
-      error: () => this.snackBar.open('Failed to load classes', 'Close', { duration: 3000 })
     });
   }
 
@@ -272,78 +235,6 @@ export class AddTeacherComponent implements OnInit {
   removeQualification(index: number): void {
     if (this.qualifications.length > 1) {
       this.qualifications.removeAt(index);
-    }
-  }
-
-  loadClassAssignments(): void {
-    if (!this.teacherId) return;
-    this.teacherService.getTeacherAssignments(this.teacherId).subscribe({
-      next: (data) => {
-        this.classAssignments.clear();
-        const rows = data?.classAssignments ?? [];
-        if (rows.length === 0) {
-          this.addClassAssignmentRow();
-          return;
-        }
-        rows.forEach((row: any) => this.classAssignments.push(this.createClassAssignmentGroup(row)));
-      },
-      error: () => this.snackBar.open('Failed to load class assignments', 'Close', { duration: 3000 })
-    });
-  }
-
-  createClassAssignmentGroup(row?: any): FormGroup {
-    return this.fb.group({
-      classId: [row?.classId ?? '', Validators.required],
-      subjectIds: [row?.subjectIds ?? []],
-      isClassTeacher: [row?.isClassTeacher ?? false],
-      pendingSubjectId: ['']
-    });
-  }
-
-  addClassAssignmentRow(): void {
-    this.classAssignments.push(this.createClassAssignmentGroup());
-  }
-
-  removeClassAssignmentRow(index: number): void {
-    if (this.classAssignments.length > 1) {
-      this.classAssignments.removeAt(index);
-    }
-  }
-
-  getSubjectIdsForRow(index: number): string[] {
-    return (this.classAssignments.at(index)?.get('subjectIds')?.value as string[]) ?? [];
-  }
-
-  availableSubjectsForRow(index: number): any[] {
-    const selected = new Set(this.getSubjectIdsForRow(index).map(String));
-    return this.subjects.filter(s => !selected.has(String(s.id)));
-  }
-
-  addSubjectToRow(index: number): void {
-    const group = this.classAssignments.at(index) as FormGroup;
-    const pending = group.get('pendingSubjectId')?.value;
-    if (!pending) return;
-    const ids = [...this.getSubjectIdsForRow(index)];
-    if (!ids.includes(pending)) {
-      ids.push(pending);
-    }
-    group.patchValue({ subjectIds: ids, pendingSubjectId: '' });
-  }
-
-  removeSubjectFromRow(rowIndex: number, subjectId: string): void {
-    const group = this.classAssignments.at(rowIndex) as FormGroup;
-    const ids = this.getSubjectIdsForRow(rowIndex).filter(id => String(id) !== String(subjectId));
-    group.patchValue({ subjectIds: ids });
-  }
-
-  onClassTeacherChange(rowIndex: number): void {
-    const group = this.classAssignments.at(rowIndex) as FormGroup;
-    if (group.get('isClassTeacher')?.value) {
-      this.classAssignments.controls.forEach((ctrl, i) => {
-        if (i !== rowIndex) {
-          ctrl.get('isClassTeacher')?.setValue(false, { emitEvent: false });
-        }
-      });
     }
   }
 
@@ -376,9 +267,6 @@ export class AddTeacherComponent implements OnInit {
 
   goTab(step: number): void {
     this.currentStep = step;
-    if (step === 2 && this.teacherId) {
-      setTimeout(() => this.mappingEditor?.loadMappings());
-    }
   }
 
   nextStep(): void {
@@ -410,27 +298,12 @@ export class AddTeacherComponent implements OnInit {
       : this.teacherService.createTeacher(data);
 
     action.subscribe({
-      next: (res) => {
-        const teacherId = this.mode === 'edit' ? this.teacherId! : (res?.teacherId ?? res?.TeacherId);
-        const finish = () => {
-          if (this.mode === 'add') {
-            this.persistEmployeeSequence();
-          }
-          this.snackBar.open(`Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
-          this.saved.emit();
-        };
-
-        if (teacherId && this.mappingEditor) {
-          this.mappingEditor.save(teacherId).subscribe({
-            next: () => finish(),
-            error: () => {
-              this.snackBar.open('Teacher saved but mappings failed to save', 'Close', { duration: 4000 });
-              this.saved.emit();
-            },
-          });
-        } else {
-          finish();
+      next: () => {
+        if (this.mode === 'add') {
+          this.persistEmployeeSequence();
         }
+        this.snackBar.open(`Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
+        this.saved.emit();
       },
       error: () => {
         this.snackBar.open('Failed to save teacher', 'Close', { duration: 3000 });
@@ -440,14 +313,6 @@ export class AddTeacherComponent implements OnInit {
 
   onCancel(): void {
     this.cancel.emit();
-  }
-
-  getSubjectName(subjectId: unknown): string {
-    return this.subjects.find(subject => String(subject.id) === String(subjectId))?.name || 'Subject';
-  }
-
-  getClassName(classId: unknown): string {
-    return this.classes.find(classItem => String(classItem.id) === String(classId))?.name || 'Class';
   }
 
   formatDate(value: unknown): string {
