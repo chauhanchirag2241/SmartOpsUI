@@ -12,6 +12,7 @@ export const MenuCodes = {
   Subjects: 'SUBJECTS',
   AcademicYears: 'ACADEMIC_YEARS',
   Attendance: 'ATTENDANCE',
+  Homework: 'HOMEWORK',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

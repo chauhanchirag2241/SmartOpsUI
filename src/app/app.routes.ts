@@ -65,6 +65,27 @@ export const routes: Routes = [
           import('./features/attendance/attendance.component').then((m) => m.AttendanceComponent),
       },
       {
+        path: 'homework',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Homework, permission: 'view' },
+        loadComponent: () =>
+          import('./features/homework/homework-shell.component').then((m) => m.HomeworkShellComponent),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/homework/homework.component').then((m) => m.HomeworkComponent),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./features/homework/homework-detail.component').then(
+                (m) => m.HomeworkDetailComponent,
+              ),
+          },
+        ],
+      },
+      {
         path: 'academic-years',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.AcademicYears, permission: 'view' },

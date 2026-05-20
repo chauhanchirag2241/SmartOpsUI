@@ -1,0 +1,240 @@
+<div class="homework-container">
+  <div class="topbar">
+    <button class="back-btn" aria-label="Back" routerLink="/dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="page-info">
+      <div class="page-title">Homework</div>
+      <div class="page-sub">Create and manage homework for your classes</div>
+    </div>
+    <div class="view-toggle">
+      <button type="button" class="vt-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')" title="Grid view">
+        <mat-icon>grid_view</mat-icon>
+      </button>
+      <button type="button" class="vt-btn" [class.active]="viewMode === 'list'" (click)="setView('list')" title="List view">
+        <mat-icon>view_list</mat-icon>
+      </button>
+    </div>
+    <button type="button" class="create-btn" (click)="openCreate()">
+      <mat-icon>add</mat-icon>
+      Create homework
+    </button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="si si-b"><mat-icon>menu_book</mat-icon></div>
+      <div><div class="sv">{{ stats.totalAssigned }}</div><div class="sl">Total assigned</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="si si-a"><mat-icon>schedule</mat-icon></div>
+      <div><div class="sv">{{ stats.dueToday }}</div><div class="sl">Due today</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="si si-g"><mat-icon>check_circle</mat-icon></div>
+      <div><div class="sv">{{ stats.totalSubmissions }}</div><div class="sl">Submissions</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="si si-r"><mat-icon>error_outline</mat-icon></div>
+      <div><div class="sv">{{ stats.overdue }}</div><div class="sl">Overdue</div></div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="sel-wrap">
+      <select [(ngModel)]="classFilter" (ngModelChange)="loadList()">
+        <option value="">All classes</option>
+        <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+    <div class="sel-wrap">
+      <select [(ngModel)]="subjectFilter" (ngModelChange)="loadList()">
+        <option value="">All subjects</option>
+        <option *ngFor="let s of subjects" [value]="s.id">{{ s.subjectName || s.name }}</option>
+      </select>
+    </div>
+    <button type="button" class="fchip" [class.active]="chipFilter === 'all'" (click)="setChip('all')">All</button>
+    <button type="button" class="fchip" [class.active]="chipFilter === 'active'" (click)="setChip('active')">Active</button>
+    <button type="button" class="fchip" [class.active]="chipFilter === 'today'" (click)="setChip('today')">Due today</button>
+    <button type="button" class="fchip" [class.active]="chipFilter === 'overdue'" (click)="setChip('overdue')">Overdue</button>
+    <button type="button" class="fchip" [class.active]="chipFilter === 'done'" (click)="setChip('done')">Completed</button>
+    <div class="search-wrap">
+      <mat-icon>search</mat-icon>
+      <input type="text" placeholder="Search homework..." [(ngModel)]="searchQuery" (ngModelChange)="loadList()" />
+    </div>
+  </div>
+
+  <div *ngIf="!items.length" class="empty">
+    <mat-icon>menu_book</mat-icon>
+    <div>No homework found</div>
+  </div>
+
+  <div *ngIf="items.length && viewMode === 'grid'" class="hw-grid">
+    <div
+      *ngFor="let hw of items"
+      class="hw-card"
+      [class.overdue]="hw.status === 'overdue'"
+      (click)="openDetail(hw.id)"
+    >
+      <div class="hw-card-body">
+        <div class="hw-line hw-line-title">
+          <span class="pdot" [ngClass]="priorityDotClass(hw.priority)"></span>
+          <span class="hw-line-text">{{ hw.title }}</span>
+        </div>
+        <div class="hw-line">
+          <span class="hw-line-text">{{ hw.className }} · {{ hw.subjectName }}</span>
+        </div>
+        <div class="hw-line hw-line-meta">
+          <span class="hw-line-text" [class.text-overdue]="hw.status === 'overdue'" [class.text-today]="hw.status === 'today'">
+            Due {{ hw.dueDate }}
+            · {{ hw.submitted }}/{{ hw.total || hw.submitted + hw.pending + hw.late }} submitted
+            · {{ statusLabel(hw) }}
+          </span>
+          <div class="prog-mini"><div class="prog-mini-fill" [style.width.%]="submissionPct(hw)"></div></div>
+        </div>
+      </div>
+      <div class="hw-card-footer" (click)="$event.stopPropagation()">
+        <button type="button" class="card-act-btn" title="Edit" (click)="openEdit(hw, $event)">
+          <mat-icon>edit</mat-icon>
+          <span>Edit</span>
+        </button>
+        <button type="button" class="card-act-btn del" title="Delete" (click)="deleteHomework(hw, $event)">
+          <mat-icon>delete</mat-icon>
+          <span>Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="items.length && viewMode === 'list'" class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Class</th>
+          <th>Subject</th>
+          <th>Due date</th>
+          <th>Priority</th>
+          <th>Submissions</th>
+          <th>Status</th>
+          <th style="width: 80px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let hw of items" (click)="openDetail(hw.id)" class="row-click">
+          <td class="title-cell">
+            <span class="pdot" [ngClass]="priorityDotClass(hw.priority)"></span>
+            {{ hw.title }}
+          </td>
+          <td><span class="badge b-gray">{{ hw.className }}</span></td>
+          <td><span class="badge" [ngClass]="subjectBadgeClass(hw.subjectName)">{{ hw.subjectName }}</span></td>
+          <td [class.text-overdue]="hw.status === 'overdue'" [class.text-today]="hw.status === 'today'">{{ hw.dueDate }}</td>
+          <td><span class="badge b-gray">{{ hw.priorityLabel }}</span></td>
+          <td>
+            <div class="prog-row">
+              <div class="prog-inline"><div [style.width.%]="submissionPct(hw)"></div></div>
+              <span>{{ hw.submitted }}/{{ hw.total || hw.submitted + hw.pending + hw.late }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusBadgeClass(hw.status)">
+              {{ hw.status === 'overdue' ? 'Overdue' : hw.status === 'today' ? 'Due today' : hw.status === 'done' ? 'Completed' : 'Active' }}
+            </span>
+          </td>
+          <td (click)="$event.stopPropagation()">
+            <button type="button" class="act-btn" title="Edit" (click)="openEdit(hw, $event)"><mat-icon>edit</mat-icon></button>
+            <button type="button" class="act-btn del" title="Delete" (click)="deleteHomework(hw, $event)"><mat-icon>delete</mat-icon></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="list-loading-overlay" *ngIf="listLoading">
+  <mat-icon class="spinning">sync</mat-icon>
+  <span>Loading homework list...</span>
+</div>
+
+<!-- Create / Edit modal -->
+<div
+  class="overlay"
+  [class.show]="showCreateModal"
+  [class.sidebar-open]="layoutUi.sidebarOpened()"
+  (click)="closeCreate()"
+>
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <mat-icon>menu_book</mat-icon>
+        {{ editingHomeworkId ? 'Edit homework' : 'Create new homework' }}
+      </div>
+      <button type="button" class="modal-close" (click)="closeCreate()"><mat-icon>close</mat-icon></button>
+    </div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="field">
+          <label>Class <span class="req">*</span></label>
+          <select [(ngModel)]="form.classId">
+            <option value="">Select class</option>
+            <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Subject <span class="req">*</span></label>
+          <select [(ngModel)]="form.subjectId">
+            <option value="">Select subject</option>
+            <option *ngFor="let s of subjects" [value]="s.id">{{ s.subjectName || s.name }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Homework title <span class="req">*</span></label>
+        <input [(ngModel)]="form.title" placeholder="e.g. Chapter 4 — Algebra exercises" />
+      </div>
+      <div class="field">
+        <label>Description / Instructions</label>
+        <textarea [(ngModel)]="form.description" placeholder="Write instructions for students..."></textarea>
+      </div>
+      <div class="grid3">
+        <div class="field">
+          <label>Assign date</label>
+          <input type="date" [(ngModel)]="form.assignDate" />
+        </div>
+        <div class="field">
+          <label>Due date <span class="req">*</span></label>
+          <input type="date" [(ngModel)]="form.dueDate" />
+        </div>
+        <div class="field">
+          <label>Priority</label>
+          <select [(ngModel)]="form.priority">
+            <option [ngValue]="HomeworkPriority.Normal">Normal</option>
+            <option [ngValue]="HomeworkPriority.High">High</option>
+            <option [ngValue]="HomeworkPriority.Low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Marks (optional)</label>
+          <input type="number" [(ngModel)]="form.marks" min="0" placeholder="e.g. 10" />
+        </div>
+        <div class="field">
+          <label>Submission type</label>
+          <select [(ngModel)]="form.submissionType">
+            <option [ngValue]="HomeworkSubmissionType.Physical">Physical (in class)</option>
+            <option [ngValue]="HomeworkSubmissionType.Online">Online (portal upload)</option>
+            <option [ngValue]="HomeworkSubmissionType.Both">Both</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeCreate()">Cancel</button>
+      <button type="button" class="btn-save" (click)="saveHomework()">
+        <mat-icon>send</mat-icon>
+        {{ editingHomeworkId ? 'Save changes' : 'Assign homework' }}
+      </button>
+    </div>
+  </div>
+</div>

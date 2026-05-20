@@ -1,0 +1,186 @@
+<div class="hw-detail-page" *ngIf="!loading && detail">
+  <div class="topbar">
+    <button type="button" class="back-btn" (click)="goBack()" aria-label="Back to homework">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to homework</span>
+    </button>
+    <div class="page-info">
+      <div class="page-title">{{ detail.title }}</div>
+      <div class="page-sub">Student submission status</div>
+    </div>
+    <button
+      type="button"
+      class="save-btn"
+      [disabled]="isSubmitting"
+      (click)="submitOrUpdateSubmissions()"
+    >
+      <mat-icon *ngIf="!isSubmitting">{{ isSubmissionsSubmitted ? 'save' : 'check_circle' }}</mat-icon>
+      <mat-icon class="spinning" *ngIf="isSubmitting">sync</mat-icon>
+      {{ isSubmitting ? 'Saving...' : isSubmissionsSubmitted ? 'Update submissions' : 'Submit' }}
+    </button>
+  </div>
+
+  <div class="detail-card">
+    <div class="detail-info">
+      <div class="detail-top-row">
+        <div class="hw-card-badges">
+          <span class="badge" [ngClass]="subjectBadgeClass(detail.subjectName)">{{ detail.subjectName }}</span>
+          <span class="badge b-gray">{{ detail.className }}</span>
+          <span class="badge" [ngClass]="statusBadgeClass(detail.status)">{{ detail.status }}</span>
+        </div>
+        <div class="detail-meta-inline">
+          <span class="meta-item">
+            <mat-icon>event</mat-icon>
+            Assigned: {{ detail.assignDate }} → Due: {{ detail.dueDate }}
+          </span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item">
+            <mat-icon>emoji_events</mat-icon>
+            {{ detail.marks ? detail.marks + ' marks' : 'No marks' }}
+          </span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item">
+            <mat-icon>upload</mat-icon>
+            {{ detail.submissionTypeLabel }}
+          </span>
+        </div>
+      </div>
+      <p class="detail-desc" *ngIf="detail.description">{{ detail.description }}</p>
+    </div>
+
+    <div class="progress-section">
+      <div class="prog-top">
+        <span>Submission progress</span>
+        <span class="pct">{{ detailProgressPct }}%</span>
+      </div>
+      <div class="progress-bar-lg"><div [style.width.%]="detailProgressPct"></div></div>
+      <div class="prog-legend">
+        <span>✓ Submitted: {{ detail.submitted }}</span>
+        <span>⏳ Pending: {{ detail.pending }}</span>
+        <span>⚠ Late: {{ detail.late }}</span>
+      </div>
+    </div>
+
+    <div class="st-header">
+      <div class="st-title"><mat-icon>groups</mat-icon> Students</div>
+      <div class="st-filters">
+        <button type="button" class="st-chip" [class.active]="studentFilter === 'all'" (click)="setStudentFilter('all')">All</button>
+        <button type="button" class="st-chip" [class.active]="studentFilter === 'submitted'" (click)="setStudentFilter('submitted')">Submitted</button>
+        <button type="button" class="st-chip" [class.active]="studentFilter === 'pending'" (click)="setStudentFilter('pending')">Pending</button>
+        <button type="button" class="st-chip" [class.active]="studentFilter === 'late'" (click)="setStudentFilter('late')">Late</button>
+      </div>
+    </div>
+
+    <div class="table-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student</th>
+            <th>Roll</th>
+            <th>Status</th>
+            <th>Submitted on</th>
+            <th>Marks</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of paginatedStudents; trackBy: trackStudent; let i = index">
+            <td class="muted-cell">{{ pageStart + i }}</td>
+            <td class="name-cell">{{ s.studentName }}</td>
+            <td class="muted-cell">{{ s.rollNo }}</td>
+            <td>
+              <div class="status-btns">
+                <button
+                  type="button"
+                  class="st-btn"
+                  [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Submitted)"
+                  (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Submitted)"
+                >
+                  Submitted
+                </button>
+                <button
+                  type="button"
+                  class="st-btn pending"
+                  [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
+                  (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Pending)"
+                >
+                  Pending
+                </button>
+                <button
+                  type="button"
+                  class="st-btn late"
+                  [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Late)"
+                  (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Late)"
+                >
+                  Late
+                </button>
+              </div>
+            </td>
+            <td>
+              <input
+                type="date"
+                class="cell-input"
+                [(ngModel)]="s.submittedOn"
+                [disabled]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
+              />
+            </td>
+            <td>
+              <input
+                type="number"
+                class="cell-input marks-input"
+                [(ngModel)]="s.marks"
+                min="0"
+                [disabled]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
+              />
+            </td>
+            <td>
+              <input
+                class="cell-input remark-input"
+                [(ngModel)]="s.remark"
+                placeholder="Add remark..."
+                [disabled]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
+              />
+            </td>
+          </tr>
+          <tr *ngIf="!paginatedStudents.length">
+            <td colspan="7" class="empty-row">No students match this filter.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar" *ngIf="filteredStudents.length > 0">
+      <div class="page-info-text">
+        Showing {{ pageStart }}–{{ pageEnd }} of {{ filteredStudents.length }} students
+      </div>
+      <div class="page-controls">
+        <label class="page-size-label">
+          Per page
+          <select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+            <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt">{{ opt }}</option>
+          </select>
+        </label>
+        <button type="button" class="page-btn" [disabled]="pageIndex <= 1" (click)="setPage(pageIndex - 1)">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="page-num">Page {{ pageIndex }} / {{ totalPages }}</span>
+        <button type="button" class="page-btn" [disabled]="pageIndex >= totalPages" (click)="setPage(pageIndex + 1)">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hw-detail-page loading-state" *ngIf="loading">
+  <mat-icon class="spinning">sync</mat-icon>
+  <span>Loading homework...</span>
+</div>
+
+<div class="hw-detail-page error-state" *ngIf="!loading && loadError">
+  <mat-icon>error_outline</mat-icon>
+  <p>{{ loadError }}</p>
+  <button type="button" class="back-btn" (click)="goBack()">Back to homework</button>
+  <button type="button" class="save-btn" (click)="retryLoad()">Retry</button>
+</div>

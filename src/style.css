@@ -60,6 +60,9 @@
   --muted: var(--text-secondary);
   --border: var(--border-color);
 
+  /* Layout */
+  --sidenav-width: 230px;
+
   /* Spacing & radius */
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -236,7 +239,7 @@ body {
 .sidenav {
   background: var(--white);
   border-right: 1px solid rgba(0, 0, 0, 0.07);
-  width: 230px;
+  width: var(--sidenav-width);
 }
 
 mat-sidenav-content.main-content {
