@@ -1,9 +1,1 @@
-.auth-wrapper {
-  position: relative;
-  min-height: 100dvh;
-  background: #0f1f0f;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
+/* Auth layout: src/style.css */

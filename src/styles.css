@@ -1,3 +1,4 @@
+@import './style.css';
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'tailwindcss';
 
@@ -7,20 +8,20 @@
 
 html,
 body {
-  background: #f5f6fa;
+  background: var(--bg-page, #f5f6fa);
   font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
   height: 100%;
   margin: 0;
 }
 
 .snack-success {
-  --mdc-snackbar-container-color: #2e7d32;
+  --mdc-snackbar-container-color: var(--success-color, #2e7d32);
   --mat-snack-bar-button-color: #fff;
   --mdc-snackbar-supporting-text-color: #fff;
 }
 
 .snack-error {
-  --mdc-snackbar-container-color: #c62828;
+  --mdc-snackbar-container-color: var(--danger-color, #c62828);
   --mat-snack-bar-button-color: #fff;
   --mdc-snackbar-supporting-text-color: #fff;
 }
@@ -42,7 +43,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #b8bec8;
+  background: var(--text-secondary, #b8bec8);
   border-radius: 3px;
 }
 
@@ -50,21 +51,21 @@ body {
 .compact-field {
   --mdc-outlined-text-field-container-shape: 7px;
   --mdc-outlined-text-field-outline-color: rgba(0, 0, 0, 0.08);
-  --mdc-outlined-text-field-hover-outline-color: #639922;
-  --mdc-outlined-text-field-focus-outline-color: #639922 !important;
-  --mdc-outlined-text-field-container-color: #f9fafb;
+  --mdc-outlined-text-field-hover-outline-color: var(--primary-color);
+  --mdc-outlined-text-field-focus-outline-color: var(--primary-color) !important;
+  --mdc-outlined-text-field-container-color: var(--input-bg);
   --mdc-typography-subtitle1-font-size: 13px;
-  --mdc-outlined-text-field-hover-label-text-color: #3b6d11;
-  --mdc-outlined-text-field-focus-label-text-color: #3b6d11;
-  --mdc-outlined-text-field-hover-input-text-color: #3b6d11;
-  --mat-select-focused-arrow-color: #639922;
-  --mat-select-enabled-arrow-color: #6b7280;
+  --mdc-outlined-text-field-hover-label-text-color: var(--secondary-color);
+  --mdc-outlined-text-field-focus-label-text-color: var(--secondary-color);
+  --mdc-outlined-text-field-hover-input-text-color: var(--secondary-color);
+  --mat-select-focused-arrow-color: var(--primary-color);
+  --mat-select-enabled-arrow-color: var(--text-secondary);
 }
 
 .compact-field:hover .mdc-notched-outline__leading,
 .compact-field:hover .mdc-notched-outline__notch,
 .compact-field:hover .mdc-notched-outline__trailing {
-  border-color: #639922 !important;
+  border-color: var(--primary-color) !important;
 }
 
 .compact-field:hover .mat-mdc-select-arrow,
@@ -72,20 +73,20 @@ body {
 .compact-field:hover .mat-datepicker-toggle-default-icon,
 .compact-field:hover input,
 .compact-field:hover textarea {
-  color: #3b6d11 !important;
+  color: var(--secondary-color) !important;
 }
 
 .compact-field.mat-focused .mdc-notched-outline__leading,
 .compact-field.mat-focused .mdc-notched-outline__notch,
 .compact-field.mat-focused .mdc-notched-outline__trailing {
-  border-color: #639922 !important;
+  border-color: var(--primary-color) !important;
   border-width: 1px !important;
 }
 
 .compact-field.mat-focused .mat-mdc-select-arrow,
 .compact-field.mat-focused .mat-mdc-select-value-text,
 .compact-field.mat-focused .mat-datepicker-toggle-default-icon {
-  color: #639922 !important;
+  color: var(--primary-color) !important;
 }
 
 .compact-field .mat-mdc-form-field-infix {

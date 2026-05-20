@@ -1,314 +1,53 @@
-.mapping-hint {
-  margin: 0 0 1rem;
-  color: var(--muted, #666);
-  font-size: 0.9rem;
-}
-
-:host {
-  display: block;
-  --g50: #EAF3DE;
-  --g100: #C0DD97;
-  --g400: #639922;
-  --g600: #3B6D11;
-  --g800: #27500A;
-  --bg: #f0f4ec;
-  --card: #ffffff;
-  --text: #1a1a1a;
-  --muted: #6b7280;
-  --border: rgba(0, 0, 0, 0.08);
-  --input-bg: #f9fafb;
-  --hover: #f0f7e8;
-  --badge-bg: #EAF3DE;
-  --badge-text: #3B6D11;
-}
-
-.dark :host {
-  --bg: #0e130b;
-  --card: #1a2215;
-  --text: #ddeacc;
-  --muted: #7a9066;
-  --border: rgba(255, 255, 255, 0.07);
-  --input-bg: #1f2a1a;
-  --hover: #1f2d18;
-  --badge-bg: #27500A;
-  --badge-text: #C0DD97;
-}
-
 .add-teacher-container {
   padding: 14px;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg-light);
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   transition: background .2s, color .2s;
   min-height: 100%;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+.dark :host {
+  --bg: var(--dark-bg);
+  --card: var(--dark-card);
+  --text: var(--dark-text);
+  --muted: var(--dark-muted);
+  --border: var(--dark-border);
+  --input-bg: var(--dark-input-bg);
+  --hover: var(--dark-hover);
+  --badge-bg: var(--g800);
+  --badge-text: var(--g100);
 }
 
-.back-btn {
+.add-teacher-container .topbar .back-btn {
   order: 2;
   margin-left: auto;
-  background: var(--card);
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
   padding: 6px 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--muted);
-  transition: all 0.2s;
 }
 
-.back-btn mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.back-btn:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-
-.page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.page-sub {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.progress-bar {
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--g400);
-  border-radius: 2px;
-  transition: width .3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.step-hint {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 16px;
-  font-weight: 500;
-}
-
-.tabs {
-  display: flex;
+.add-teacher-container .tabs {
   gap: 6px;
-  background: var(--card);
-  border: 0.5px solid var(--border);
   border-radius: 12px;
   padding: 6px;
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.tab {
-  flex: 1;
+.add-teacher-container .tab {
   padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all .2s;
-  text-align: center;
-  font-weight: 500;
 }
 
-.tab:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-
-.tab.active {
-  background: var(--g400);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(99, 153, 34, 0.2);
-}
-
-.tab.done {
-  color: var(--g600);
-}
-
-.dark .tab.done {
-  color: var(--badge-text);
-}
-
-.tab-num {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.tab.active .tab-num {
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-}
-
-.tab.done .tab-num {
-  background: var(--g400);
-  color: #fff;
-}
-
-.card {
-  background: var(--card);
-  border: 0.5px solid var(--border);
+.add-teacher-container .card {
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
-.card-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text);
-}
-
-.card-title mat-icon {
-  color: var(--g400);
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-}
-
-.grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.add-teacher-container .grid2,
+.add-teacher-container .grid3 {
   gap: 16px;
 }
-
-.grid3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-}
-
-.full {
-  grid-column: 1/-1;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-label {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 500;
-}
-
-label .req {
-  color: #E24B4A;
-  margin-left: 2px;
-}
-
-input, select, textarea {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: var(--text);
-  width: 100%;
-  outline: none;
-  transition: all .2s;
-  font-family: inherit;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--g400);
-  background: var(--card);
-  box-shadow: 0 0 0 3px rgba(99, 153, 34, 0.1);
-}
-
-input::placeholder, textarea::placeholder {
-  color: #a1a1a1;
-}
-
-input:disabled,
-select:disabled,
-textarea:disabled {
-  color: var(--text);
-  font-weight: 600;
-  -webkit-text-fill-color: var(--text);
-  opacity: 1;
-}
-
-input:disabled::placeholder,
-textarea:disabled::placeholder {
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-
-:host ::ng-deep .mat-mdc-input-element:disabled,
-:host ::ng-deep textarea.mat-mdc-input-element:disabled {
-  color: var(--text) !important;
-  font-weight: 600 !important;
-  -webkit-text-fill-color: var(--text) !important;
-  opacity: 1 !important;
-}
-
-:host ::ng-deep .mat-mdc-select-disabled .mat-mdc-select-value,
-:host ::ng-deep .mat-mdc-select-disabled .mat-mdc-select-value-text {
-  color: var(--text) !important;
-  font-weight: 600 !important;
-  opacity: 1 !important;
-}
-
-:host ::ng-deep .mat-mdc-input-element:disabled::placeholder,
-:host ::ng-deep textarea.mat-mdc-input-element:disabled::placeholder {
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-}
-
-.teacher-date-field ::ng-deep .mat-mdc-input-element:disabled,
-.teacher-date-field ::ng-deep .mat-mdc-input-element:disabled::placeholder {
-  display: none; /* Removed custom date field styles in favor of compact-field */
-}
-
-/* Removed redundant date field overrides */
-
-textarea {
-  resize: none;
-  height: 80px;
-}
-
 /* PHOTO UPLOAD */
 .photo-section {
   display: flex;

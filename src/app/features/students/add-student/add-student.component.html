@@ -158,7 +158,7 @@
   }
 </ng-template>
 
-<div class="footer-actions">
+<div class="footer-actions" [class.view-mode-footer]="mode === 'view'">
   <button
     type="button"
     class="btn-back"
@@ -170,14 +170,14 @@
 
   <div class="footer-hint">{{ footerHints[currentTab] }}</div>
 
-  @if (currentTab < finalTabIndex || mode !== 'view') {
+  @if (currentTab < finalTabIndex) {
     <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
-      @if (currentTab < finalTabIndex) {
-        Next <mat-icon>arrow_forward</mat-icon>
-      } @else if (mode !== 'view') {
-        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-        {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add') }}
-      }
+      Next <mat-icon>arrow_forward</mat-icon>
+    </button>
+  } @else if (mode !== 'view') {
+    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
+      <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+      {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add') }}
     </button>
   }
 </div>

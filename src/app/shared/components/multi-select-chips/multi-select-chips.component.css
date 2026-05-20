@@ -11,12 +11,12 @@
   min-height: 2rem;
 }
 
-.chip {
+.chips-wrap .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
   padding: 0.2rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #e8f5e9;
   color: #1b5e20;
   font-size: 0.85rem;
@@ -35,7 +35,7 @@
 }
 
 .chips-empty {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -48,16 +48,16 @@
 .chips-search {
   flex: 1;
   padding: 0.4rem 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
 }
 
 .chips-select {
   min-width: 120px;
   padding: 0.4rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 }
 
 .chips-wrap.disabled {

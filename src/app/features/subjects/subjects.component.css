@@ -1,16 +1,1 @@
-:host {
-  --g50: #eaf3de;
-  --g100: #c0dd97;
-  --g400: #639922;
-  --g600: #3b6d11;
-  --g800: #27500a;
-  --text: #1a1a1a;
-  --muted: #6b7280;
-  display: block;
-}
-
-.subjects-page {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+/* Page layout: src/style.css */

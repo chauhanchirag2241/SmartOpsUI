@@ -1,13 +1,1 @@
-.app-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border-top: 1px solid #e0e0e0;
-  color: #667085;
-  font-size: 0.8rem;
-  padding: 12px 24px;
-  text-align: center;
-  background: #f5f7f2;
-  z-index: 10;
-}
+/* Footer: src/style.css */

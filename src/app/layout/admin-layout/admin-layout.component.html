@@ -1,18 +1,15 @@
 <div class="admin-wrapper">
   <mat-sidenav-container class="sidenav-container">
-    <mat-sidenav mode="side" [opened]="sidebarOpened" class="sidenav">
+    <mat-sidenav mode="side" [opened]="layoutUi.sidebarOpened()" class="sidenav">
       <app-sidebar (toggle)="onMenuToggle()"></app-sidebar>
     </mat-sidenav>
 
     <mat-sidenav-content class="main-content">
-      @if (!sidebarOpened) {
-        <button mat-icon-button class="floating-toggle" (click)="onMenuToggle()" aria-label="Open menu">
-          <mat-icon>read_more</mat-icon>
-        </button>
-      }
       <app-header></app-header>
       <main class="content-body">
-        <router-outlet></router-outlet>
+        <div class="content-main">
+          <router-outlet></router-outlet>
+        </div>
         <app-footer></app-footer>
       </main>
     </mat-sidenav-content>
