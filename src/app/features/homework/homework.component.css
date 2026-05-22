@@ -76,9 +76,17 @@
 
 .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .sel-wrap select {
-  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-  padding: 8px 12px; font-size: 12px; min-width: 140px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  font-size: 12px;
+  min-width: 140px;
+  appearance: none;
+  cursor: pointer;
 }
+.sel-wrap select:focus { border-color: var(--g400); }
+.sel-wrap::after { right: 10px; font-size: 20px; color: var(--g600); }
 .fchip {
   padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
   font-size: 11px; cursor: pointer; background: var(--card); color: var(--muted);
@@ -124,13 +132,42 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
 }
 .hw-line-title .hw-line-text { color: var(--text); font-weight: 600; font-size: 14px; }
-.hw-line-meta { flex-wrap: wrap; gap: 8px; }
-.hw-line-meta .hw-line-text { flex: 1 1 100%; }
-.hw-line-meta .prog-mini { flex: 1 1 100%; max-width: none; height: 5px; }
-.hw-card-footer {
-  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-  padding: 8px 12px; border-top: 1px solid var(--border); background: var(--input-bg);
+.hw-line-due .hw-line-text,
+.hw-line-sub .hw-line-text { flex: 1; min-width: 0; }
+.hw-line-sub { align-items: flex-start; }
+.hw-sub-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+.hw-line-sub .prog-mini { max-width: none; width: 100%; height: 5px; }
+.hw-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--input-bg);
+}
+.footer-icon-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 6px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.footer-icon-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.footer-icon-btn.edit:hover { color: var(--g600); background: var(--hover); }
+.footer-icon-btn.del:hover { color: #e24b4a; background: #fcebeb; }
+.row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 .card-act-btn {
   display: inline-flex; align-items: center; gap: 4px;
   background: var(--card); border: 1px solid var(--border); border-radius: 8px;

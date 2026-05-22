@@ -1092,6 +1092,11 @@ textarea.form-control {
 /* =========================================================
    DROPDOWNS
 ========================================================= */
+.sel-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .sel-wrap select {
   background: var(--card);
   border: 0.5px solid var(--border-color);
@@ -1107,6 +1112,19 @@ textarea.form-control {
 
 .sel-wrap select:focus {
   border-color: var(--primary-color);
+}
+
+.sel-wrap::after {
+  content: 'expand_more';
+  font-family: 'Material Icons';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--g400, var(--primary-color));
+  pointer-events: none;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .filter-chip {

@@ -11,11 +11,17 @@
   color: var(--text, #1f2937);
 }
 
+.dynamic-array-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .dynamic-array-row {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
   gap: 10px;
-  align-items: start;
+  align-items: center;
 }
 
 .dynamic-array-field.disabled {
@@ -44,7 +50,39 @@
 }
 
 .remove-btn {
-  margin-top: 4px;
+  align-self: center;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.remove-btn mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #e24b4a;
+}
+
+.remove-btn:hover:not(:disabled) {
+  background: #fcebeb;
+}
+
+.remove-btn:hover:not(:disabled) mat-icon {
+  color: #a32d2d;
+}
+
+.remove-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 @media (max-width: 640px) {

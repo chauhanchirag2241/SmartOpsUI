@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
 import { EMPTY, switchMap, catchError, finalize, timeout } from 'rxjs';
 import {
   HomeworkService,
@@ -24,7 +25,7 @@ const GUID_REGEX =
 @Component({
   selector: 'app-homework-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ActionButtonComponent],
   templateUrl: './homework-detail.component.html',
   styleUrl: './homework-detail.component.css',
 })
@@ -252,7 +253,7 @@ export class HomeworkDetailComponent implements OnInit {
   setStudentStatus(studentId: string, status: HomeworkSubmissionStatus): void {
     this.studentRows = this.studentRows.map((row) => {
       if (row.studentId !== studentId) return row;
-      const nextStatus = row.status === status ? HomeworkSubmissionStatus.Pending : status;
+      const nextStatus = status;
       if (nextStatus === HomeworkSubmissionStatus.Submitted || nextStatus === HomeworkSubmissionStatus.Late) {
         return {
           ...row,

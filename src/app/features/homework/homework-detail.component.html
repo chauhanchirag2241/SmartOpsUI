@@ -4,6 +4,7 @@
       <div class="page-title">{{ detail.title }}</div>
       <div class="page-sub">Student submission status</div>
     </div>
+    <app-action-button type="back" class="topbar-back" (action)="goBack()"></app-action-button>
     <button
       type="button"
       class="save-btn"
@@ -60,10 +61,10 @@
     <div class="st-header">
       <div class="st-title"><mat-icon>groups</mat-icon> Students</div>
       <div class="st-filters">
-        <button type="button" class="st-chip" [class.active]="studentFilter === 'all'" (click)="setStudentFilter('all')">All</button>
-        <button type="button" class="st-chip" [class.active]="studentFilter === 'submitted'" (click)="setStudentFilter('submitted')">Submitted</button>
-        <button type="button" class="st-chip" [class.active]="studentFilter === 'pending'" (click)="setStudentFilter('pending')">Pending</button>
-        <button type="button" class="st-chip" [class.active]="studentFilter === 'late'" (click)="setStudentFilter('late')">Late</button>
+        <button type="button" class="filter-chip" [class.active]="studentFilter === 'all'" (click)="setStudentFilter('all')">All</button>
+        <button type="button" class="filter-chip" [class.active]="studentFilter === 'submitted'" (click)="setStudentFilter('submitted')">Submitted</button>
+        <button type="button" class="filter-chip" [class.active]="studentFilter === 'pending'" (click)="setStudentFilter('pending')">Pending</button>
+        <button type="button" class="filter-chip" [class.active]="studentFilter === 'late'" (click)="setStudentFilter('late')">Late</button>
       </div>
     </div>
 
@@ -84,33 +85,36 @@
             <td class="muted-cell">{{ s.rollNo }}</td>
             <td class="name-cell">{{ s.studentName }}</td>
             <td>
-              <div class="status-btns compact">
+              <div class="status-toggle" role="group" aria-label="Submission status">
                 <button
                   type="button"
-                  class="st-chip"
+                  class="status-opt submitted"
                   [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Submitted)"
                   (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Submitted)"
                   title="Submitted"
                 >
-                  S
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Submitted</span>
                 </button>
                 <button
                   type="button"
-                  class="st-chip pending"
+                  class="status-opt pending"
                   [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
                   (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Pending)"
                   title="Pending"
                 >
-                  P
+                  <mat-icon>schedule</mat-icon>
+                  <span>Pending</span>
                 </button>
                 <button
                   type="button"
-                  class="st-chip late"
+                  class="status-opt late"
                   [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Late)"
                   (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Late)"
                   title="Late"
                 >
-                  L
+                  <mat-icon>error_outline</mat-icon>
+                  <span>Late</span>
                 </button>
               </div>
             </td>
