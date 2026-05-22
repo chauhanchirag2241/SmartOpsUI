@@ -30,25 +30,16 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { FileUploadComponent, SelectedUploadFile } from '../../../shared/components/file-upload/file-upload.component';
+import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { enumToOptions, Gender, BloodGroup, PaymentMode } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 
-type FieldItem = {
-  key: string;
-  full?: boolean;
-};
 
-type FormCard = {
-  tab: number;
-  icon: string;
-  title: string;
-  grid: 'grid2' | 'grid3';
-  fields: FieldItem[];
-};
 
 type FeeStructureRow = {
   name: string;
@@ -87,6 +78,7 @@ type ReviewSection = {
     DynamicFieldComponent,
     DynamicArrayFieldComponent,
     FileUploadComponent,
+    ActionButtonComponent,
   ],
   templateUrl: './add-student.component.html',
   styleUrl: './add-student.component.css',
@@ -127,6 +119,7 @@ export class AddStudentComponent implements OnInit {
   ];
 
   readonly configs: Record<string, FormFieldConfig> = {
+    photo: { type: 'file', controlName: 'photo', label: '', fileMode: 'avatar', accept: 'image/png,image/jpeg' },
     admissionNo: {
       type: 'input',
       controlName: 'admissionNo',
@@ -162,7 +155,7 @@ export class AddStudentComponent implements OnInit {
       validations: nameValidationConfig(true, PERSON_NAME_MAX_LENGTH).validations,
     },
     dob: { type: 'datepicker', controlName: 'dob', label: 'Date of birth', validations: [{ name: 'required', message: 'DOB is required', validator: Validators.required }] },
-    gender: { type: 'select', controlName: 'gender', label: 'Gender', options: enumToOptions(Gender), validations: [{ name: 'required', message: 'Gender is required', validator: Validators.required }] },
+    gender: { type: 'badges', controlName: 'gender', label: 'Gender', options: enumToOptions(Gender), validations: [{ name: 'required', message: 'Gender is required', validator: Validators.required }] },
     bloodGroup: { type: 'select', controlName: 'bloodGroup', label: 'Blood group', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(BloodGroup) },
     cast: { type: 'input', controlName: 'cast', label: 'Cast', placeholder: 'Cast', inputFormat: 'name', validations: nameValidationConfig().validations },
     category: {
@@ -245,67 +238,43 @@ export class AddStudentComponent implements OnInit {
     remarks: { type: 'textarea', controlName: 'remarks', label: 'Remarks (optional)', placeholder: 'Any special notes about the student...' },
   };
 
-  readonly formCards: FormCard[] = [
+  readonly formTabs: FormTab[] = [
     {
-      tab: 0,
-      icon: 'group',
-      title: 'Parent / Guardian details',
-      grid: 'grid3',
-      fields: [
-        { key: 'fatherName' },
-        { key: 'fatherMobile' },
-        { key: 'fatherOcc' },
-        { key: 'motherName' },
-        { key: 'motherMobile' },
-        { key: 'motherOcc' },
+      stepIndex: 0,
+      sections: [
+        { title: 'Photo & basic details', icon: 'account_circle', layout: 'photo-grid', fields: ['photo', 'firstName', 'middleName', 'lastName', 'dob', 'gender', 'bloodGroup', 'cast', 'category', 'aadhaar', 'mobile', 'email', 'address'] },
+        { title: 'Parent / Guardian details', icon: 'group', layout: 'grid3', fields: ['fatherName', 'fatherMobile', 'fatherOcc', 'motherName', 'motherMobile', 'motherOcc'] },
       ],
     },
     {
-      tab: 1,
-      icon: 'school',
-      title: 'Admission details',
-      grid: 'grid3',
-      fields: [{ key: 'academicYear' }, { key: 'admissionDate' }, { key: 'admissionNo' }],
-    },
-    {
-      tab: 1,
-      icon: 'co_present',
-      title: 'Class & section',
-      grid: 'grid3',
-      fields: [{ key: 'class' }, { key: 'rollNumber' }],
-    },
-    {
-      tab: 1,
-      icon: 'domain',
-      title: 'Previous school',
-      grid: 'grid2',
-      fields: [{ key: 'prevSchool' }, { key: 'prevClass' }, { key: 'percentage' }, { key: 'tcNo' }],
-    },
-    {
-      tab: 2,
-      icon: 'local_offer',
-      title: 'Discount / Concession',
-      grid: 'grid3',
-      fields: [
-        { key: 'discountType' },
-        { key: 'discountUnit' },
-        { key: 'discountValue' },
-        { key: 'discountRemarks', full: true },
+      stepIndex: 1,
+      sections: [
+        { title: 'Admission details', icon: 'school', layout: 'grid3', fields: ['academicYear', 'admissionDate', 'admissionNo'] },
+        { title: 'Class & section', icon: 'co_present', layout: 'grid3', fields: ['class', 'rollNumber'] },
+        { title: 'Previous school', icon: 'domain', layout: 'grid2', fields: ['prevSchool', 'prevClass', 'percentage', 'tcNo'] },
       ],
     },
     {
-      tab: 2,
-      icon: 'event',
-      title: 'Payment schedule',
-      grid: 'grid2',
-      fields: [{ key: 'paymentMode' }, { key: 'firstDueDate' }],
+      stepIndex: 2,
+      sections: [
+        { title: 'Fee structure — Class 10', icon: 'payments', layout: 'fee-structure', fields: [] },
+        { title: 'Discount / Concession', icon: 'local_offer', layout: 'grid3', fields: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'] },
+        { title: 'Payment schedule', icon: 'event', layout: 'grid2', fields: ['paymentMode', 'firstDueDate'] },
+      ],
     },
     {
-      tab: 3,
-      icon: 'notes',
-      title: 'Additional notes',
-      grid: 'grid2',
-      fields: [{ key: 'remarks', full: true }],
+      stepIndex: 3,
+      sections: [
+        { title: 'Required documents', icon: 'folder', layout: 'document-grid', fields: [] },
+        { title: 'Custom fields', icon: 'tune', layout: 'custom-fields', fields: [] },
+        { title: 'Additional notes', icon: 'notes', layout: 'grid2', fields: ['remarks'] },
+      ],
+    },
+    {
+      stepIndex: 4,
+      sections: [
+        { title: 'Review', icon: 'checklist', layout: 'review', fields: [] },
+      ],
     },
   ];
 
@@ -395,6 +364,7 @@ export class AddStudentComponent implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {
     this.studentForm = this.fb.group({
+      photo: [null],
       admissionNo: [{ value: '', disabled: true }],
       firstName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
       middleName: ['', nameValidator(PERSON_NAME_MAX_LENGTH)],
@@ -571,10 +541,6 @@ export class AddStudentComponent implements OnInit {
     return ((this.currentTab + 1) / this.totalTabs) * 100;
   }
 
-  get cardsForCurrentTab(): FormCard[] {
-    return this.formCards.filter((c) => c.tab === this.currentTab);
-  }
-
   /** Read-only rows for view mode (API-loaded custom fields). */
   get customFieldsForDisplay(): { label: string; value: string }[] {
     const raw = this.studentForm.get('customFields')?.value;
@@ -587,10 +553,6 @@ export class AddStudentComponent implements OnInit {
         value: String(r?.value ?? '').trim(),
       }))
       .filter((r) => r.label || r.value);
-  }
-
-  trackFormCard(_index: number, card: FormCard): string {
-    return `${card.tab}-${card.title}`;
   }
 
   loadStudentData(id: string) {

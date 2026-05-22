@@ -1,0 +1,78 @@
+:host {
+  display: inline-block;
+}
+
+.btn-back {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.btn-back mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+.btn-back:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--g600);
+}
+
+.btn-back:hover:not(:disabled) mat-icon {
+  transform: translateX(-2px);
+}
+
+.btn-next {
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s;
+  background: var(--g400);
+  color: #fff;
+  border: none;
+}
+
+.btn-next:hover:not(:disabled) {
+  background: var(--g600);
+}
+
+.btn-next:disabled, .btn-back:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-next mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 640px) {
+  :host {
+    display: block;
+    width: 100%;
+  }
+
+  .btn-back, .btn-next {
+    width: 100%;
+    padding: 12px;
+  }
+}

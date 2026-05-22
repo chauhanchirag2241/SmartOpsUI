@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { SELECT_PLACEHOLDER } from '../../constants/form.constants';
 import { DigitsOnlyDirective } from '../../directives/digits-only.directive';
 import { LettersOnlyDirective } from '../../directives/letters-only.directive';
+import { FileUploadComponent } from '../../components/file-upload/file-upload.component';
 import type { FormFieldConfig, SelectOption } from '../../interfaces/form-field-config';
 import {
   formatAadhaarDisplay,
@@ -33,6 +34,7 @@ import {
     MatCheckboxModule,
     DigitsOnlyDirective,
     LettersOnlyDirective,
+    FileUploadComponent,
   ],
   templateUrl: './dynamic-field.component.html',
   styleUrl: './dynamic-field.component.css',
@@ -47,6 +49,11 @@ export class DynamicFieldComponent {
   @HostBinding('class.full')
   get fullClass(): boolean {
     return this.full;
+  }
+
+  @HostBinding('class')
+  get customClass(): string {
+    return this.config?.className || '';
   }
 
   @HostBinding('style.min-width')
@@ -118,6 +125,13 @@ export class DynamicFieldComponent {
     }
 
     control.setValue(newArray);
+    control.markAsTouched();
+  }
+
+  setControlValue(controlName: string, value: unknown): void {
+    const control = this.group.get(controlName);
+    if (!control || this.config.disabled) return;
+    control.setValue(value);
     control.markAsTouched();
   }
 

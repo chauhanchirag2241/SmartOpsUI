@@ -1,19 +1,34 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormArray,
+} from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TeacherService } from '../../../core/services/teacher.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { FileUploadComponent, SelectedUploadFile } from '../../../shared/components/file-upload/file-upload.component';
+import {
+  FileUploadComponent,
+  SelectedUploadFile,
+} from '../../../shared/components/file-upload/file-upload.component';
 import { DigitsOnlyDirective } from '../../../shared/directives/digits-only.directive';
 import { LettersOnlyDirective } from '../../../shared/directives/letters-only.directive';
 import { BloodGroup, enumToOptions, Gender } from '../../../shared/enums/field-options.enum';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
-import { BANK_NAME_MAX_LENGTH, PERSON_NAME_MAX_LENGTH, SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
+import {
+  BANK_NAME_MAX_LENGTH,
+  PERSON_NAME_MAX_LENGTH,
+  SELECT_PLACEHOLDER,
+} from '../../../shared/constants/form.constants';
 import {
   aadhaarValidationConfig,
   aadhaarValidator,
@@ -37,6 +52,8 @@ import {
 } from '../../../shared/utils/form-validators.util';
 import { validateFormControls } from '../../../shared/utils/form-validation.util';
 
+import { FormSection, FormTab } from '../../../shared/interfaces/form-layout';
+
 @Component({
   selector: 'app-add-teacher',
   standalone: true,
@@ -49,13 +66,11 @@ import { validateFormControls } from '../../../shared/utils/form-validation.util
     MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
-    FileUploadComponent,
-    DigitsOnlyDirective,
-    LettersOnlyDirective,
     DynamicFieldComponent,
+    ActionButtonComponent,
   ],
   templateUrl: './add-teacher.component.html',
-  styleUrl: './add-teacher.component.css'
+  styleUrl: './add-teacher.component.css',
 })
 export class AddTeacherComponent implements OnInit {
   @Input() mode: 'add' | 'edit' | 'view' = 'add';
@@ -71,21 +86,29 @@ export class AddTeacherComponent implements OnInit {
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
     { title: 'Schedule & Access', icon: 'schedule' },
-    { title: 'Review', icon: 'fact_check' }
+    { title: 'Review', icon: 'fact_check' },
   ];
 
   hints = [
     'Step 1 of 4 — Personal information',
     'Step 2 of 4 — Professional details',
     'Step 3 of 4 — Schedule and portal access',
-    'Step 4 of 4 — Review & save'
+    'Step 4 of 4 — Review & save',
   ];
 
   readonly configs: Record<string, FormFieldConfig> = {
+    photo: {
+      type: 'file',
+      controlName: 'photo',
+      label: '',
+      fileMode: 'avatar',
+      accept: 'image/png,image/jpeg',
+    },
     firstName: {
       type: 'input',
       controlName: 'firstName',
       label: 'First name',
+      className: 'col-3',
       placeholder: 'First Name',
       inputFormat: 'name',
       maxLength: PERSON_NAME_MAX_LENGTH,
@@ -95,35 +118,480 @@ export class AddTeacherComponent implements OnInit {
       type: 'input',
       controlName: 'lastName',
       label: 'Last name',
+      className: 'col-3',
       placeholder: 'Last Name',
       inputFormat: 'name',
       maxLength: PERSON_NAME_MAX_LENGTH,
       validations: nameValidationConfig(true, PERSON_NAME_MAX_LENGTH).validations,
     },
-    dob: { type: 'datepicker', controlName: 'dob', label: 'Date of birth', validations: [{ name: 'required', message: 'DOB is required', validator: Validators.required }] },
-    bloodGroup: { type: 'select', controlName: 'bloodGroup', label: 'Blood group', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(BloodGroup) },
-    aadhaarNumber: { type: 'input', controlName: 'aadhaarNumber', label: 'Aadhaar number', placeholder: 'XXXX XXXX XXXX', inputFormat: 'aadhaar', validations: aadhaarValidationConfig().validations },
-    panNumber: { type: 'input', controlName: 'panNumber', label: 'PAN number', placeholder: 'ABCDE1234F', inputFormat: 'pan', validations: panValidationConfig().validations },
-    joiningDate: { type: 'datepicker', controlName: 'joiningDate', label: 'Joining date', validations: [{ name: 'required', message: 'Joining date is required', validator: Validators.required }] },
+    dob: {
+      type: 'datepicker',
+      controlName: 'dob',
+      label: 'Date of birth',
+      className: 'col-3',
+      validations: [
+        { name: 'required', message: 'DOB is required', validator: Validators.required },
+      ],
+    },
+    gender: {
+      type: 'badges',
+      controlName: 'gender',
+      label: 'Gender',
+      className: 'col-3',
+      options: enumToOptions(Gender),
+      validations: [
+        { name: 'required', message: 'Gender is required', validator: Validators.required },
+      ],
+    },
+    bloodGroup: {
+      type: 'select',
+      controlName: 'bloodGroup',
+      label: 'Blood group',
+      className: 'col-2',
+      placeholder: SELECT_PLACEHOLDER,
+      options: enumToOptions(BloodGroup),
+    },
+    aadhaarNumber: {
+      type: 'input',
+      controlName: 'aadhaarNumber',
+      label: 'Aadhaar number',
+      className: 'col-2',
+      placeholder: 'XXXX XXXX XXXX',
+      inputFormat: 'aadhaar',
+      validations: aadhaarValidationConfig().validations,
+    },
+    panNumber: {
+      type: 'input',
+      controlName: 'panNumber',
+      label: 'PAN number',
+      className: 'col-2',
+      placeholder: 'ABCDE1234F',
+      inputFormat: 'pan',
+      validations: panValidationConfig().validations,
+    },
+    joiningDate: {
+      type: 'datepicker',
+      controlName: 'joiningDate',
+      label: 'Joining date',
+      validations: [
+        { name: 'required', message: 'Joining date is required', validator: Validators.required },
+      ],
+    },
+    employmentType: {
+      type: 'badges',
+      controlName: 'employmentType',
+      label: 'Employment type',
+      options: [
+        { label: 'Full-time', value: 'Full-time' },
+        { label: 'Part-time', value: 'Part-time' },
+        { label: 'Contract', value: 'Contract' },
+        { label: 'Visiting', value: 'Visiting' },
+      ],
+      validations: [
+        {
+          name: 'required',
+          message: 'Employment type is required',
+          validator: Validators.required,
+        },
+      ],
+    },
+    relation: {
+      type: 'select',
+      controlName: 'relation',
+      label: 'Relation',
+      placeholder: 'Select',
+      options: [
+        { label: 'Spouse', value: 'Spouse' },
+        { label: 'Parent', value: 'Parent' },
+        { label: 'Sibling', value: 'Sibling' },
+        { label: 'Other', value: 'Other' },
+      ],
+    },
+    designation: {
+      type: 'select',
+      controlName: 'designation',
+      label: 'Designation',
+      placeholder: 'Select Option',
+      options: [
+        { label: 'TGT', value: 'TGT' },
+        { label: 'PGT', value: 'PGT' },
+        { label: 'PRT', value: 'PRT' },
+        { label: 'HOD', value: 'HOD' },
+        { label: 'Principal', value: 'Principal' },
+        { label: 'Vice Principal', value: 'Vice Principal' },
+      ],
+    },
+    salaryGrade: {
+      type: 'select',
+      controlName: 'salaryGrade',
+      label: 'Salary grade',
+      placeholder: 'Select',
+      options: [
+        { label: 'Grade 1', value: 'Grade 1' },
+        { label: 'Grade 2', value: 'Grade 2' },
+        { label: 'Grade 3', value: 'Grade 3' },
+        { label: 'Grade 4', value: 'Grade 4' },
+      ],
+    },
+    role: {
+      type: 'select',
+      controlName: 'role',
+      label: 'Role',
+      options: [
+        { label: 'Teacher', value: 'Teacher' },
+        { label: 'HOD', value: 'HOD' },
+        { label: 'Class Teacher', value: 'Class Teacher' },
+        { label: 'Admin', value: 'Admin' },
+      ],
+      validations: [
+        { name: 'required', message: 'Role is required', validator: Validators.required },
+      ],
+    },
+    portalAccess: {
+      type: 'select',
+      controlName: 'portalAccess',
+      label: 'Portal access',
+      options: [
+        { label: 'Enabled', value: 'Enabled' },
+        { label: 'Disabled', value: 'Disabled' },
+      ],
+    },
+    sendWelcomeEmail: {
+      type: 'select',
+      controlName: 'sendWelcomeEmail',
+      label: 'Send welcome email',
+      options: [
+        { label: 'Yes — send credentials', value: 'Yes — send credentials' },
+        { label: 'No', value: 'No' },
+      ],
+    },
+    mobile: {
+      type: 'input',
+      controlName: 'mobile',
+      label: 'Mobile',
+      placeholder: '10-digit',
+      inputType: 'tel',
+      maxLength: 10,
+      validations: [
+        { name: 'required', message: 'Mobile is required', validator: Validators.required },
+        {
+          name: 'pattern',
+          message: 'Enter a valid 10-digit number',
+          validator: Validators.pattern('^[0-9]{10}$'),
+        },
+      ],
+    },
+    alternateMobile: {
+      type: 'input',
+      controlName: 'alternateMobile',
+      label: 'Alternate mobile',
+      placeholder: '10-digit',
+      inputType: 'tel',
+      maxLength: 10,
+      validations: [
+        {
+          name: 'pattern',
+          message: 'Enter a valid 10-digit number',
+          validator: Validators.pattern('^[0-9]{10}$'),
+        },
+      ],
+    },
+    email: {
+      type: 'input',
+      controlName: 'email',
+      label: 'Email',
+      placeholder: 'Email Address',
+      inputType: 'email',
+      validations: [
+        { name: 'required', message: 'Email is required', validator: Validators.required },
+        { name: 'email', message: 'Enter a valid email address', validator: Validators.email },
+      ],
+    },
+    address: {
+      type: 'textarea',
+      controlName: 'address',
+      label: 'Residential address',
+      placeholder: 'Full address...',
+      className: 'full',
+    },
+    emergencyContactName: {
+      type: 'input',
+      controlName: 'name',
+      label: 'Contact name',
+      placeholder: 'Contact Name',
+      inputFormat: 'name',
+      maxLength: PERSON_NAME_MAX_LENGTH,
+      validations: nameValidationConfig(false, PERSON_NAME_MAX_LENGTH).validations,
+    },
+    emergencyContactMobile: {
+      type: 'input',
+      controlName: 'mobile',
+      label: 'Mobile',
+      placeholder: '10-digit',
+      inputType: 'tel',
+      maxLength: 10,
+      validations: [
+        {
+          name: 'pattern',
+          message: 'Enter a valid 10-digit number',
+          validator: Validators.pattern('^[0-9]{10}$'),
+        },
+      ],
+    },
+    employeeId: { type: 'input', controlName: 'employeeId', label: 'Employee ID', disabled: true },
+    experience: {
+      type: 'input',
+      controlName: 'experience',
+      label: 'Experience (years)',
+      inputType: 'tel',
+      maxLength: 2,
+      placeholder: '0–99',
+    },
+    degree: {
+      type: 'input',
+      controlName: 'degree',
+      label: 'Degree / qualification',
+      placeholder: 'e.g. B.Ed',
+    },
+    university: {
+      type: 'input',
+      controlName: 'university',
+      label: 'Board / university',
+      placeholder: 'e.g. CBSE',
+    },
+    year: {
+      type: 'input',
+      controlName: 'year',
+      label: 'Passing year',
+      inputType: 'tel',
+      maxLength: 4,
+      placeholder: 'YYYY',
+    },
+    percentage: {
+      type: 'input',
+      controlName: 'percentage',
+      label: 'Percentage (%)',
+      inputType: 'tel',
+      maxLength: 5,
+      placeholder: '0–100',
+    },
+    shiftStartTime: {
+      type: 'input',
+      controlName: 'shiftStartTime',
+      label: 'Shift start',
+      inputType: 'time',
+    },
+    shiftEndTime: {
+      type: 'input',
+      controlName: 'shiftEndTime',
+      label: 'Shift end',
+      inputType: 'time',
+    },
+    weeklyPeriods: {
+      type: 'input',
+      controlName: 'weeklyPeriods',
+      label: 'Weekly periods',
+      inputType: 'tel',
+      maxLength: 2,
+      placeholder: 'e.g. 30',
+    },
+    maxPeriodsPerDay: {
+      type: 'input',
+      controlName: 'maxPeriodsPerDay',
+      label: 'Max periods/day',
+      inputType: 'tel',
+      maxLength: 2,
+      placeholder: 'e.g. 6',
+    },
+    username: {
+      type: 'input',
+      controlName: 'username',
+      label: 'Username (auto)',
+      placeholder: 'e.g. ramesh.sharma',
+      disabled: true,
+    },
+    accountNumber: {
+      type: 'input',
+      controlName: 'accountNumber',
+      label: 'Account number',
+      inputType: 'tel',
+      maxLength: 18,
+      placeholder: '9–18 digits',
+    },
+    ifscCode: {
+      type: 'input',
+      controlName: 'ifscCode',
+      label: 'IFSC code',
+      placeholder: 'e.g. SBIN0001234',
+      maxLength: 11,
+      validations: [
+        {
+          name: 'pattern',
+          message: 'Enter a valid IFSC code',
+          validator: Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'),
+        },
+      ],
+    },
+    bankName: {
+      type: 'input',
+      controlName: 'bankName',
+      label: 'Bank name',
+      placeholder: 'e.g. State Bank of India',
+      maxLength: 50,
+    },
   };
 
   private readonly stepFieldPaths: Record<number, string[]> = {
     0: [
-      'personal.firstName', 'personal.lastName', 'personal.dob', 'personal.gender',
-      'personal.aadhaarNumber', 'personal.panNumber', 'personal.mobile', 'personal.email',
-      'personal.emergencyContact.name', 'personal.emergencyContact.mobile',
+      'personal.firstName',
+      'personal.lastName',
+      'personal.dob',
+      'personal.gender',
+      'personal.aadhaarNumber',
+      'personal.panNumber',
+      'personal.mobile',
+      'personal.email',
+      'personal.emergencyContact.name',
+      'personal.emergencyContact.mobile',
     ],
     1: ['professional.joiningDate'],
     2: ['schedule.role'],
   };
 
+  readonly personalFields = [
+    'firstName',
+    'lastName',
+    'dob',
+    'gender',
+    'bloodGroup',
+    'aadhaarNumber',
+    'panNumber',
+  ];
+  readonly contactFields = ['mobile', 'alternateMobile', 'email', 'address'];
+  readonly emergencyContactFields = ['emergencyContactName', 'relation', 'emergencyContactMobile'];
+  readonly employmentFields = [
+    'employeeId',
+    'joiningDate',
+    'designation',
+    'experience',
+    'salaryGrade',
+    'employmentType',
+  ];
+  readonly qualificationFields = ['degree', 'university', 'year', 'percentage'];
+  readonly bankFields = ['accountNumber', 'ifscCode', 'bankName'];
+  readonly scheduleFields = ['shiftStartTime', 'shiftEndTime', 'weeklyPeriods', 'maxPeriodsPerDay'];
+  readonly systemAccessFields = ['role', 'portalAccess', 'username', 'sendWelcomeEmail'];
+
+  readonly tabs: FormTab[] = [
+    {
+      stepIndex: 0,
+      groupPath: 'personal',
+      sections: [
+        {
+          title: 'Photo & basic details',
+          icon: 'account_circle',
+          layout: 'photo-grid',
+          fields: this.personalFields,
+        },
+        { title: 'Contact details', icon: 'phone', layout: 'grid3', fields: this.contactFields },
+        {
+          title: 'Emergency contact',
+          icon: 'groups',
+          layout: 'grid3',
+          fields: this.emergencyContactFields,
+          subGroup: 'emergencyContact',
+        },
+      ],
+    },
+    {
+      stepIndex: 1,
+      sections: [
+        {
+          title: 'Employment details',
+          icon: 'badge',
+          layout: 'grid3',
+          fields: this.employmentFields,
+          groupPath: 'professional',
+        },
+        {
+          title: 'Qualifications',
+          icon: 'school',
+          layout: 'form-array',
+          fields: this.qualificationFields,
+          groupPath: 'professional',
+          formArrayName: 'qualifications',
+        },
+        {
+          title: 'Bank details',
+          icon: 'account_balance',
+          layout: 'grid3',
+          fields: this.bankFields,
+          groupPath: 'bankDetails',
+        },
+      ],
+    },
+    {
+      stepIndex: 2,
+      groupPath: 'schedule',
+      hint: 'Class and subject assignments are managed from the Class Mapping screen.',
+      sections: [
+        { title: 'Timing', icon: 'schedule', layout: 'grid3', fields: this.scheduleFields },
+        {
+          title: 'System access',
+          icon: 'security',
+          layout: 'grid2',
+          fields: this.systemAccessFields,
+        },
+      ],
+    },
+    {
+      stepIndex: 3,
+      sections: [
+        {
+          title: 'Personal summary',
+          icon: 'verified_user',
+          layout: 'review',
+          fields: [...this.personalFields, ...this.contactFields, ...this.emergencyContactFields],
+          groupPath: 'personal',
+          subGroupMap: {
+            emergencyContactName: 'emergencyContact',
+            relation: 'emergencyContact',
+            emergencyContactMobile: 'emergencyContact',
+          },
+        },
+        {
+          title: 'Professional summary',
+          icon: 'work_outline',
+          layout: 'review',
+          fields: this.employmentFields,
+          groupPath: 'professional',
+        },
+        {
+          title: 'Banking',
+          icon: 'account_balance',
+          layout: 'review',
+          fields: this.bankFields,
+          groupPath: 'bankDetails',
+        },
+        {
+          title: 'Schedule & access',
+          icon: 'schedule',
+          layout: 'review',
+          fields: [...this.scheduleFields, ...this.systemAccessFields],
+          groupPath: 'schedule',
+        },
+      ],
+    },
+  ];
+
   constructor(
     private fb: FormBuilder,
     private teacherService: TeacherService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {
     this.teacherForm = this.fb.group({
       personal: this.fb.group({
+        photo: [null],
         firstName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
         lastName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
         dob: ['', Validators.required],
@@ -138,8 +606,8 @@ export class AddTeacherComponent implements OnInit {
         emergencyContact: this.fb.group({
           name: ['', nameValidator(PERSON_NAME_MAX_LENGTH)],
           relation: [''],
-          mobile: ['', Validators.pattern('^[0-9]{10}$')]
-        })
+          mobile: ['', Validators.pattern('^[0-9]{10}$')],
+        }),
       }),
       professional: this.fb.group({
         employeeId: [{ value: 'Auto-generated', disabled: true }],
@@ -152,8 +620,8 @@ export class AddTeacherComponent implements OnInit {
         bankDetails: this.fb.group({
           accountNumber: ['', bankAccountValidator()],
           ifscCode: ['', ifscValidator()],
-          bankName: ['', bankNameValidator(BANK_NAME_MAX_LENGTH)]
-        })
+          bankName: ['', bankNameValidator(BANK_NAME_MAX_LENGTH)],
+        }),
       }),
       schedule: this.fb.group({
         classId: [''],
@@ -164,8 +632,8 @@ export class AddTeacherComponent implements OnInit {
         role: ['Teacher', Validators.required],
         portalAccess: ['Enabled'],
         username: [{ value: '', disabled: true }],
-        sendWelcomeEmail: ['Yes — send credentials']
-      })
+        sendWelcomeEmail: ['Yes — send credentials'],
+      }),
     });
   }
 
@@ -210,11 +678,43 @@ export class AddTeacherComponent implements OnInit {
   }
 
   get qualifications() {
-    return (this.teacherForm.get('professional.qualifications') as FormArray);
+    return this.teacherForm.get('professional.qualifications') as FormArray;
   }
 
   get personalGroup(): FormGroup {
     return this.teacherForm.get('personal') as FormGroup;
+  }
+
+  get emergencyContactGroup(): FormGroup {
+    return this.personalGroup.get('emergencyContact') as FormGroup;
+  }
+
+  getGroupForTab(tab: any): FormGroup | null {
+    if (!tab.groupPath) return null;
+    return this.teacherForm.get(tab.groupPath) as FormGroup;
+  }
+
+  getGroupForSection(tab: any, section: any): FormGroup {
+    const basePath = section.groupPath || tab.groupPath;
+    let group = this.teacherForm.get(basePath) as FormGroup;
+    if (section.subGroup) {
+      group = group.get(section.subGroup) as FormGroup;
+    }
+    return group;
+  }
+
+  getReviewValue(section: any, field: string): any {
+    const basePath = section.groupPath;
+    let actualPath = basePath;
+    if (section.subGroupMap && section.subGroupMap[field]) {
+      actualPath += '.' + section.subGroupMap[field];
+    }
+    const controlName = this.configs[field].controlName;
+    actualPath += '.' + controlName;
+    const val = this.teacherForm.get(actualPath)?.value;
+    if (val === true) return 'Yes';
+    if (val === false) return 'No';
+    return val || '—';
   }
 
   get professionalGroup(): FormGroup {
@@ -244,7 +744,7 @@ export class AddTeacherComponent implements OnInit {
             mobile: data.mobile,
             alternateMobile: data.alternateMobile,
             email: data.email,
-            address: data.address
+            address: data.address,
           },
           professional: {
             employeeId: data.employeeId,
@@ -258,8 +758,8 @@ export class AddTeacherComponent implements OnInit {
                 ? sanitizeBankAccountInput(String(data.bankAccountNumber))
                 : '',
               ifscCode: data.bankIfscCode ? sanitizeIfscInput(String(data.bankIfscCode)) : '',
-              bankName: data.bankName
-            }
+              bankName: data.bankName,
+            },
           },
           schedule: {
             classId: data.classId,
@@ -269,8 +769,8 @@ export class AddTeacherComponent implements OnInit {
             maxPeriodsPerDay: data.maxPeriodsPerDay ?? null,
             role: data.role,
             portalAccess: data.portalAccess ? 'Enabled' : 'Disabled',
-            username: data.username
-          }
+            username: data.username,
+          },
         });
         this.setQualificationsFromApi(data.qualifications);
         if (this.mode === 'view') {
@@ -279,7 +779,7 @@ export class AddTeacherComponent implements OnInit {
       },
       error: () => {
         this.snackBar.open('Failed to load teacher data', 'Close', { duration: 3000 });
-      }
+      },
     });
   }
 
@@ -401,11 +901,19 @@ export class AddTeacherComponent implements OnInit {
   }
 
   get bankAccountError(): string {
-    return this.resolveFieldError(this.bankDetailsGroup.get('accountNumber'), 'bankAccount', 'Enter a valid bank account number (9–18 digits)');
+    return this.resolveFieldError(
+      this.bankDetailsGroup.get('accountNumber'),
+      'bankAccount',
+      'Enter a valid bank account number (9–18 digits)',
+    );
   }
 
   get ifscError(): string {
-    return this.resolveFieldError(this.bankDetailsGroup.get('ifscCode'), 'ifsc', 'Enter a valid 11-character IFSC (e.g. SBIN0001234)');
+    return this.resolveFieldError(
+      this.bankDetailsGroup.get('ifscCode'),
+      'ifsc',
+      'Enter a valid 11-character IFSC (e.g. SBIN0001234)',
+    );
   }
 
   get shiftTimeError(): string {
@@ -535,7 +1043,9 @@ export class AddTeacherComponent implements OnInit {
   nextStep(): void {
     if (this.currentStep < 3) {
       if (!this.validateStep(this.currentStep)) {
-        this.snackBar.open('Please fix errors on this step before continuing', 'Close', { duration: 3000 });
+        this.snackBar.open('Please fix errors on this step before continuing', 'Close', {
+          duration: 3000,
+        });
         return;
       }
       this.currentStep++;
@@ -558,7 +1068,10 @@ export class AddTeacherComponent implements OnInit {
   saveTeacher(): void {
     if (this.teacherForm.invalid) {
       this.teacherForm.markAllAsTouched();
-      this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
+      this.snackBar.open('Please fill all required fields', 'Close', {
+        duration: 3000,
+        panelClass: 'snack-error',
+      });
       return;
     }
 
@@ -566,16 +1079,21 @@ export class AddTeacherComponent implements OnInit {
     data.schedule.classId = data.schedule.classId || null;
     data.schedule.classAssignments = [];
 
-    const action = this.mode === 'edit'
-      ? this.teacherService.updateTeacher(this.teacherId!, data)
-      : this.teacherService.createTeacher(data);
+    const action =
+      this.mode === 'edit'
+        ? this.teacherService.updateTeacher(this.teacherId!, data)
+        : this.teacherService.createTeacher(data);
 
     action.subscribe({
       next: () => {
         if (this.mode === 'add') {
           this.persistEmployeeSequence();
         }
-        this.snackBar.open(`Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
+        this.snackBar.open(
+          `Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`,
+          'Close',
+          { duration: 3000 },
+        );
         this.saved.emit();
       },
       error: (err) => {
@@ -594,7 +1112,7 @@ export class AddTeacherComponent implements OnInit {
           message = err.error.title;
         }
         this.snackBar.open(message, 'Close', { duration: 5000, panelClass: 'snack-error' });
-      }
+      },
     });
   }
 
@@ -642,5 +1160,4 @@ export class AddTeacherComponent implements OnInit {
     if (!match) return;
     localStorage.setItem(`smartops-emp-sequence-${match[1]}`, String(Number(match[2])));
   }
-
 }

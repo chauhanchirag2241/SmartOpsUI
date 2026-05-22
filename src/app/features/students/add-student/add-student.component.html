@@ -1,7 +1,5 @@
 <div class="topbar">
-  <button type="button" class="back-btn" (click)="cancel.emit()">
-    <mat-icon>arrow_back</mat-icon> Back
-  </button>
+  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
@@ -26,176 +24,163 @@
 </div>
 
 <form [formGroup]="studentForm">
-  @switch (currentTab) {
-    @case (0) {
-      <div class="card">
-        <div class="card-title"><mat-icon>account_circle</mat-icon> Photo & basic details</div>
-        <div class="photo-section">
-          <app-file-upload
-            accept="image/png,image/jpeg"
-            [disabled]="mode === 'view'"
-            (fileSelected)="onPhotoSelected($event)"
-          />
-          <div class="photo-fields">
-            <app-dynamic-field [config]="configs['firstName']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['middleName']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['lastName']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['dob']" [group]="studentForm" />
-            <div class="gender-field">
-              <label>Gender <span class="req">*</span></label>
-              <div class="badge-options">
-                @for (option of genderOptions; track option.value) {
-                  <div
-                    class="badge-opt"
-                    [class.sel-male]="studentForm.get('gender')?.value === option.value && option.value === 'Male'"
-                    [class.sel-female]="studentForm.get('gender')?.value === option.value && option.value === 'Female'"
-                    [class.sel-other]="studentForm.get('gender')?.value === option.value && option.value === 'Other'"
-                    (click)="setGender(option.value)"
-                  >
-                    {{ option.label }}
-                  </div>
-                }
-              </div>
-            </div>
-            <app-dynamic-field [config]="configs['bloodGroup']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['cast']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['category']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['aadhaar']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['mobile']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['email']" [group]="studentForm" />
-            <app-dynamic-field [config]="configs['address']" [group]="studentForm" [full]="true" />
-          </div>
-        </div>
-      </div>
-      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
-    }
-    @case (1) {
-      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
-    }
-    @case (2) {
-      <div class="card">
-        <div class="card-title"><mat-icon>payments</mat-icon>Fee structure - Class 10</div>
-        @for (row of feeStructureRows; track row.name) {
-          <div class="fee-row">
-            <span class="fee-name">{{ row.name }}</span>
-            <span class="fee-amt">{{ row.amount }}</span>
-          </div>
-        }
-        <div class="fee-total-row">
-          <span class="fee-total-label">{{ feeTotalLabel }}</span>
-          <span class="fee-total-amt">{{ feeTotalAmount }}</span>
-        </div>
-      </div>
-      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
-    }
-    @case (3) {
-      <div class="card">
-        <div class="card-title"><mat-icon>folder</mat-icon>Required documents</div>
-        <div class="doc-grid">
-          @for (doc of documentChecklist; track doc.name) {
-            <div class="doc-card" [class.uploaded]="doc.uploaded">
-              <div class="doc-icon"><mat-icon>{{ doc.icon }}</mat-icon></div>
-              <div>
-                <div class="doc-name">{{ doc.name }}</div>
-                <app-file-upload
-                  mode="document"
-                  accept=".pdf,image/png,image/jpeg"
-                  [disabled]="mode === 'view'"
-                  (fileSelected)="onDocumentSelected(doc.name, $event)"
-                />
-              </div>
-              <div class="doc-status">
-                @if (doc.uploaded) {
-                  <mat-icon>check_circle</mat-icon>
-                } @else {
-                  <mat-icon class="upload-icon">upload</mat-icon>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title"><mat-icon>tune</mat-icon>Custom fields</div>
-        @if (mode === 'view') {
-          <div class="custom-fields-readonly">
-            <div class="custom-fields-readonly-label">Additional information</div>
-            @if (customFieldsForDisplay.length) {
-              @for (row of customFieldsForDisplay; track $index) {
-                <div class="custom-field-readonly-row">
-                  <span class="cf-label">{{ row.label || 'Field' }}</span>
-                  <span class="cf-value">{{ row.value || '—' }}</span>
-                </div>
-              }
-            } @else {
-              <div class="custom-fields-empty">None</div>
-            }
-          </div>
-        } @else {
-          <app-dynamic-array-field formControlName="customFields" label="Additional information" />
-        }
-      </div>
-      <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
-    }
-    @case (4) {
-      <div class="review-section">
-        @for (section of reviewSections; track section.title) {
+  @for (tab of formTabs; track tab.stepIndex) {
+    @if (currentTab === tab.stepIndex) {
+      @for (section of tab.sections; track section.title) {
+        <!-- PHOTO-GRID layout -->
+        @if (section.layout === 'photo-grid') {
           <div class="card">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
-            <div class="summary-grid">
-              @for (item of section.items; track item.label) {
-                <div class="sum-item" [class.full]="item.full">
-                  <div class="sum-key">{{ item.label }}</div>
-                  <div class="sum-val">{{ getReviewDisplay(item) }}</div>
+            <div class="photo-section">
+              <app-dynamic-field [config]="configs['photo']" [group]="studentForm" />
+              <div class="photo-fields">
+                @for (field of section.fields; track field) {
+                  @if (field !== 'photo') {
+                    <app-dynamic-field
+                      [config]="configs[field]"
+                      [group]="studentForm"
+                      [full]="field === 'address'"
+                    />
+                  }
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- FEE-STRUCTURE layout -->
+        @else if (section.layout === 'fee-structure') {
+          <div class="card">
+            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            @for (row of feeStructureRows; track row.name) {
+              <div class="fee-row">
+                <span class="fee-name">{{ row.name }}</span>
+                <span class="fee-amt">{{ row.amount }}</span>
+              </div>
+            }
+            <div class="fee-total-row">
+              <span class="fee-total-label">{{ feeTotalLabel }}</span>
+              <span class="fee-total-amt">{{ feeTotalAmount }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- DOCUMENT-GRID layout -->
+        @else if (section.layout === 'document-grid') {
+          <div class="card">
+            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="doc-grid">
+              @for (doc of documentChecklist; track doc.name) {
+                <div class="doc-card" [class.uploaded]="doc.uploaded">
+                  <div class="doc-icon"><mat-icon>{{ doc.icon }}</mat-icon></div>
+                  <div>
+                    <div class="doc-name">{{ doc.name }}</div>
+                    <app-file-upload
+                      mode="document"
+                      accept=".pdf,image/png,image/jpeg"
+                      [disabled]="mode === 'view'"
+                      (fileSelected)="onDocumentSelected(doc.name, $event)"
+                    />
+                  </div>
+                  <div class="doc-status">
+                    @if (doc.uploaded) {
+                      <mat-icon>check_circle</mat-icon>
+                    } @else {
+                      <mat-icon class="upload-icon">upload</mat-icon>
+                    }
+                  </div>
                 </div>
               }
             </div>
           </div>
         }
-      </div>
+
+        <!-- CUSTOM-FIELDS layout -->
+        @else if (section.layout === 'custom-fields') {
+          <div class="card">
+            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            @if (mode === 'view') {
+              <div class="custom-fields-readonly">
+                <div class="custom-fields-readonly-label">Additional information</div>
+                @if (customFieldsForDisplay.length) {
+                  @for (row of customFieldsForDisplay; track $index) {
+                    <div class="custom-field-readonly-row">
+                      <span class="cf-label">{{ row.label || 'Field' }}</span>
+                      <span class="cf-value">{{ row.value || '—' }}</span>
+                    </div>
+                  }
+                } @else {
+                  <div class="custom-fields-empty">None</div>
+                }
+              </div>
+            } @else {
+              <app-dynamic-array-field formControlName="customFields" label="Additional information" />
+            }
+          </div>
+        }
+
+        <!-- REVIEW layout -->
+        @else if (section.layout === 'review') {
+          <div class="review-section">
+            @for (rs of reviewSections; track rs.title) {
+              <div class="card">
+                <div class="card-title"><mat-icon>{{ rs.icon }}</mat-icon>{{ rs.title }}</div>
+                <div class="summary-grid">
+                  @for (item of rs.items; track item.label) {
+                    <div class="sum-item" [class.full]="item.full">
+                      <div class="sum-key">{{ item.label }}</div>
+                      <div class="sum-val">{{ getReviewDisplay(item) }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- STANDARD grid2 / grid3 layouts -->
+        @else {
+          <div class="card">
+            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div [class]="section.layout">
+              @for (field of section.fields; track field) {
+                <app-dynamic-field
+                  [config]="configs[field]"
+                  [group]="studentForm"
+                  [full]="field === 'address' || field === 'discountRemarks' || field === 'remarks'"
+                />
+              }
+            </div>
+          </div>
+        }
+      }
     }
   }
 </form>
 
-<ng-template #dynamicFormCards>
-  @for (card of cardsForCurrentTab; track trackFormCard($index, card)) {
-    <div class="card">
-      <div class="card-title">
-        <mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}
-      </div>
-      <div [class]="card.grid">
-        @for (field of card.fields; track field.key) {
-          <app-dynamic-field
-            [config]="configs[field.key]"
-            [group]="studentForm"
-            [full]="field.full ?? false"
-          />
-        }
-      </div>
-    </div>
-  }
-</ng-template>
-
 <div class="footer-actions" [class.view-mode-footer]="mode === 'view'">
-  <button
-    type="button"
-    class="btn-back"
+  <app-action-button
+    type="back"
+    label="Previous"
     [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'"
-    (click)="prevTab()"
-  >
-    <mat-icon>arrow_back</mat-icon> Previous
-  </button>
+    (action)="prevTab()">
+  </app-action-button>
 
   <div class="footer-hint">{{ footerHints[currentTab] }}</div>
 
   @if (currentTab < finalTabIndex) {
-    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
-      Next <mat-icon>arrow_forward</mat-icon>
-    </button>
+    <app-action-button
+      type="next"
+      [disabled]="isSaving"
+      (action)="nextTab()">
+    </app-action-button>
   } @else if (mode !== 'view') {
-    <button type="button" class="btn-next" (click)="nextTab()" [disabled]="isSaving">
-      <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-      {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add') }}
-    </button>
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="nextTab()">
+    </app-action-button>
   }
 </div>

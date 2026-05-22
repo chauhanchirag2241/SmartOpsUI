@@ -82,3 +82,39 @@
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
+
+/* BADGE OPTIONS */
+.badge-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge-opt {
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+}
+
+.badge-opt:hover {
+  background: var(--hover);
+}
+
+.badge-opt.disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* generic active badge for anything else */
+.badge-opt.sel-active {
+  background: rgba(16, 185, 129, 0.1); 
+  color: #10b981; 
+  border-color: #10b981; 
+}

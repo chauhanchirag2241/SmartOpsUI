@@ -153,4 +153,50 @@
       </mat-form-field>
     </div>
   }
+  @case ('badges') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (isRequired) {
+          <span class="req">*</span>
+        }
+      </label>
+      <div class="badge-options">
+        @for (option of config.options ?? []; track optionTrack($index, option)) {
+          <div
+            class="badge-opt"
+            [class.sel-active]="group.get(config.controlName)?.value === option.value"
+            [class.disabled]="config.disabled"
+            (click)="setControlValue(config.controlName, option.value)"
+          >
+            {{ option.label }}
+          </div>
+        }
+      </div>
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <span class="inline-error">{{ getError() }}</span>
+      }
+    </div>
+  }
+  @case ('file') {
+    <div class="custom-field" [formGroup]="group">
+      @if (config.label) {
+        <label [attr.for]="controlId">
+          {{ config.label }}
+          @if (isRequired) {
+            <span class="req">*</span>
+          }
+        </label>
+      }
+      <app-file-upload
+        [accept]="config.accept || 'image/png,image/jpeg'"
+        [mode]="config.fileMode || 'avatar'"
+        [disabled]="config.disabled ?? false"
+        (fileSelected)="setControlValue(config.controlName, $event.file)"
+      />
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <span class="inline-error">{{ getError() }}</span>
+      }
+    </div>
+  }
 }

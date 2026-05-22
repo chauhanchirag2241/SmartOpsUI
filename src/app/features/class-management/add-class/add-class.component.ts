@@ -6,19 +6,20 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 
-type FieldItem = { key: string; full?: boolean };
-type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'grid3'; fields: FieldItem[] };
+
 
 @Component({
   selector: 'app-add-class',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent, ActionButtonComponent],
   templateUrl: './add-class.component.html',
   styleUrl: './add-class.component.css',
 })
@@ -101,31 +102,28 @@ export class AddClassComponent implements OnInit {
     },
   };
 
-  readonly formCards: FormCard[] = [
+  readonly tabs: FormTab[] = [
     {
-      tab: 0,
-      icon: 'school',
-      title: 'Class identity',
-      grid: 'grid3',
-      fields: [{ key: 'className' }, { key: 'section' }, { key: 'streamGroup' }],
-    },
-    {
-      tab: 0,
-      icon: 'event',
-      title: 'Academic details',
-      grid: 'grid2',
-      fields: [{ key: 'academicYear' }, { key: 'studentCapacity' }],
-    },
-    {
-      tab: 0,
-      icon: 'meeting_room',
-      title: 'Room & schedule',
-      grid: 'grid2',
-      fields: [
-        { key: 'roomNumber' },
-        { key: 'shift' },
-        { key: 'medium' },
-        { key: 'description', full: true },
+      stepIndex: 0,
+      sections: [
+        {
+          title: 'Class identity',
+          icon: 'school',
+          layout: 'grid3',
+          fields: ['className', 'section', 'streamGroup'],
+        },
+        {
+          title: 'Academic details',
+          icon: 'event',
+          layout: 'grid2',
+          fields: ['academicYear', 'studentCapacity'],
+        },
+        {
+          title: 'Room & schedule',
+          icon: 'meeting_room',
+          layout: 'grid2',
+          fields: ['roomNumber', 'shift', 'medium', 'description'],
+        },
       ],
     },
   ];
@@ -157,13 +155,7 @@ export class AddClassComponent implements OnInit {
     return 'Add new class';
   }
 
-  get cardsForCurrentTab(): FormCard[] {
-    return this.formCards.filter((c) => c.tab === 0);
-  }
 
-  trackFormCard(_index: number, card: FormCard): string {
-    return `${card.tab}-${card.title}`;
-  }
 
   ngOnInit(): void {
     this.loadAcademicYears();

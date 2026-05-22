@@ -1,42 +1,41 @@
 <div class="topbar">
-  <button type="button" class="back-btn" (click)="cancel.emit()">
-    <mat-icon>arrow_back</mat-icon> Back
-  </button>
+  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
 <p class="form-hint">Subject and teacher mappings are managed from the Class Mapping screen.</p>
 
 <form [formGroup]="classForm">
-  <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
-</form>
-
-<ng-template #dynamicFormCards>
-  @for (card of cardsForCurrentTab; track trackFormCard($index, card)) {
-    <div class="card">
-      <div class="card-title">
-        <mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}
+  @for (tab of tabs; track tab.stepIndex) {
+    @for (section of tab.sections; track section.title) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}
+        </div>
+        <div [class]="section.layout">
+          @for (field of section.fields; track field) {
+            <app-dynamic-field
+              [config]="configs[field]"
+              [group]="classForm"
+              [full]="configs[field]?.controlName === 'description'"
+            />
+          }
+        </div>
       </div>
-      <div [class]="card.grid">
-        @for (field of card.fields; track field.key) {
-          <app-dynamic-field
-            [config]="configs[field.key]"
-            [group]="classForm"
-            [full]="field.full ?? false"
-          />
-        }
-      </div>
-    </div>
+    }
   }
-</ng-template>
+</form>
 
 <div class="footer-actions">
   <div class="footer-hint">Save class details, then map subjects and teachers from Class Mapping.</div>
 
   @if (mode !== 'view') {
-    <button type="button" class="btn-next" (click)="saveClass()" [disabled]="isSaving">
-      <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-      {{ isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Class' : 'Confirm & Add') }}
-    </button>
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Class' : 'Confirm & Add')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="saveClass()">
+    </app-action-button>
   }
 </div>

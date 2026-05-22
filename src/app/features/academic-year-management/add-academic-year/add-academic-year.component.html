@@ -1,42 +1,42 @@
 <div class="topbar">
-  <button type="button" class="back-btn" (click)="cancel.emit()">
-    <mat-icon>arrow_back</mat-icon> Back
-  </button>
+  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
 <div class="step-hint">Academic year details</div>
 
 <form [formGroup]="ayForm">
-  @for (card of formCards; track card.title) {
-    <div class="card">
-      <div class="card-title">
-        <mat-icon>{{ card.icon }}</mat-icon>{{ card.title }}
+  @for (tab of tabs; track tab.stepIndex) {
+    @for (section of tab.sections; track section.title) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}
+        </div>
+        <div [class]="section.layout">
+          @for (field of section.fields; track field) {
+            <app-dynamic-field
+              [config]="configs[field]"
+              [group]="ayForm"
+            />
+          }
+        </div>
       </div>
-      <div [class]="card.grid">
-        @for (field of card.fields; track field.key) {
-          <app-dynamic-field
-            [config]="configs[field.key]"
-            [group]="ayForm"
-            [full]="field.full ?? false"
-          />
-        }
-      </div>
-    </div>
+    }
   }
 </form>
 
 <div class="footer-actions">
-  <button type="button" class="btn-back" style="visibility: hidden;">
-    <mat-icon>arrow_back</mat-icon> Previous
-  </button>
+  <app-action-button type="back" style="visibility: hidden;"></app-action-button>
 
   <div class="footer-hint">Set academic year title and date range</div>
 
   @if (mode !== 'view') {
-    <button type="button" class="btn-next" (click)="saveYear()" [disabled]="isSaving">
-        <mat-icon>{{ isSaving ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
-        {{ isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Year' : 'Confirm & Add') }}
-    </button>
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Year' : 'Confirm & Add')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="saveYear()">
+    </app-action-button>
   }
 </div>

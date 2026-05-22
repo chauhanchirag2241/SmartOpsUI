@@ -8,7 +8,7 @@
   min-width: 0;
 }
 
-.photo-section > app-file-upload {
+.photo-section > app-dynamic-field:first-child {
   flex: 0 0 100px;
   width: 100px;
 }
@@ -41,51 +41,6 @@
 
 .photo-fields app-dynamic-field.full {
   grid-column: 1 / -1;
-}
-
-.badge-options {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.badge-opt {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 0.5px solid var(--border-color);
-  background: var(--input-bg);
-  color: var(--text-secondary);
-  transition: all 0.15s;
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-.badge-opt:hover {
-  border-color: var(--primary-color);
-  color: var(--text-primary);
-}
-
-.badge-opt.sel-male {
-  background: #DBEAFE;
-  color: #1E40AF;
-  border-color: #93C5FD;
-}
-
-.badge-opt.sel-female {
-  background: #FCE7F3;
-  color: #9D174D;
-  border-color: #F9A8D4;
-}
-
-.badge-opt.sel-other {
-  background: var(--badge-bg);
-  color: var(--badge-text);
-  border-color: var(--g400);
 }
 
 :host ::ng-deep .mat-mdc-input-element:disabled,
@@ -277,59 +232,8 @@
   margin-bottom: 28px;
 }
 
-.btn-back {
-  background: transparent;
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 
-.btn-back mat-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-}
 
-.btn-back:hover {
-  background: var(--hover);
-  color: var(--g600);
-  border-color: var(--g400);
-}
-
-.btn-next {
-  background: var(--g400);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: background 0.15s;
-}
-
-.btn-next mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.btn-next:hover {
-  background: var(--g600);
-}
-
-.btn-next:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 .progress-bar {
   height: 3px;
@@ -384,11 +288,6 @@
   .footer-actions {
     flex-direction: column;
     gap: 12px;
-  }
-  
-  .btn-back, .btn-next {
-    width: 100%;
-    justify-content: center;
   }
 }
 

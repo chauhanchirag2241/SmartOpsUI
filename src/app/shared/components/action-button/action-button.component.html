@@ -1,0 +1,14 @@
+<button 
+  type="button" 
+  [class]="buttonClass" 
+  [disabled]="disabled" 
+  (click)="onClick()"
+>
+  @if (type !== 'next') {
+    <mat-icon>{{ icon || defaultIcon }}</mat-icon>
+    {{ label || defaultLabel }}
+  } @else {
+    {{ label || defaultLabel }}
+    <mat-icon>{{ icon || defaultIcon }}</mat-icon>
+  }
+</button>

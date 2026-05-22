@@ -6,6 +6,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import {
@@ -16,13 +18,10 @@ import {
 } from '../../../shared/enums/field-options.enum';
 import { SubjectService } from '../../../core/services/subject.service';
 
-type FieldItem = { key: string; full?: boolean };
-type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'grid3'; fields: FieldItem[] };
-
 @Component({
   selector: 'app-add-subject',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, DynamicFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
   templateUrl: './add-subject.component.html',
   styleUrl: './add-subject.component.css',
 })
@@ -61,18 +60,16 @@ export class AddSubjectComponent implements OnInit {
     medium: { type: 'select', controlName: 'medium', label: 'Medium of instruction', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(Medium) },
   };
 
-  readonly formCards: FormCard[] = [
+  readonly tabs: FormTab[] = [
     {
-      tab: 0,
-      icon: 'auto_stories',
-      title: 'Subject identity',
-      grid: 'grid2',
-      fields: [
-        { key: 'subjectName' },
-        { key: 'subjectCode' },
-        { key: 'subjectType' },
-        { key: 'subjectCategory' },
-        { key: 'medium', full: true },
+      stepIndex: 0,
+      sections: [
+        {
+          title: 'Subject identity',
+          icon: 'auto_stories',
+          layout: 'grid2',
+          fields: ['subjectName', 'subjectCode', 'subjectType', 'subjectCategory', 'medium'],
+        },
       ],
     },
   ];
@@ -105,13 +102,7 @@ export class AddSubjectComponent implements OnInit {
     return 'Add new subject';
   }
 
-  get cardsForCurrentTab(): FormCard[] {
-    return this.formCards;
-  }
 
-  trackFormCard(_index: number, card: FormCard): string {
-    return `${card.tab}-${card.title}`;
-  }
 
   loadSubjectData(id: string) {
     this.subjectService.getSubject(id).subscribe({
