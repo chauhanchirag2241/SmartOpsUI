@@ -8,8 +8,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-weight: 700;
-  color: #fff;
+  font-weight: 600;
   letter-spacing: 0.02em;
   user-select: none;
 }
@@ -21,13 +20,39 @@
 }
 
 .portal-avatar.size-md {
-  width: 36px;
-  height: 36px;
-  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
 }
 
 .portal-avatar.size-lg {
   width: 44px;
   height: 44px;
   font-size: 14px;
+}
+
+/* Same palette as student list (.av + .av-*) */
+.portal-avatar.av-g {
+  background: var(--badge-bg, #eaf3de);
+  color: var(--g800, #27500a);
+}
+
+.portal-avatar.av-b {
+  background: var(--status-blue-bg, #dbeafe);
+  color: var(--status-blue-text, #1e40af);
+}
+
+.portal-avatar.av-p {
+  background: var(--status-purple-bg, #ede9fe);
+  color: var(--status-purple-text, #5b21b6);
+}
+
+.portal-avatar.av-o {
+  background: #ffedd5;
+  color: #92400e;
+}
+
+.portal-avatar.av-gray {
+  background: #e5e7eb;
+  color: #4b5563;
 }

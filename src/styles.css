@@ -38,13 +38,30 @@ body {
   --mdc-snackbar-supporting-text-color: #fff;
 }
 
+/* Theme scrollbars (WebKit) */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--g50, #eaf3de);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-secondary, #b8bec8);
-  border-radius: 3px;
+  background: var(--g100, #c0dd97);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--g400, #639922);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--g400, #639922) var(--g50, #eaf3de);
 }
 
 /* Tailwind preflight resets Material inputs — restore compact-field styling */

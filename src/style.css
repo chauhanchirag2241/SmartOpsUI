@@ -227,13 +227,15 @@ body {
   grid-column: 1 / -1;
 }
 
-/* Admin layout */
+/* Admin layout — shell fixed; only .content-main scrolls */
 .admin-wrapper {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .sidenav-container {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .sidenav {
@@ -245,9 +247,10 @@ body {
 mat-sidenav-content.main-content {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
   background: var(--bg-light);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .main-content {
@@ -258,13 +261,25 @@ mat-sidenav-content.main-content {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  min-height: calc(100dvh - 52px);
-  padding: 14px 16px 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 0 0 16px;
 }
 
 .content-main {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   width: 100%;
+  box-sizing: border-box;
+}
+
+/* Inner padding = visible gap between page content and scrollbar */
+.content-main-inner {
+  box-sizing: border-box;
+  padding-right: 20px;
+  padding-bottom: 12px;
 }
 
 /* Form pages: wizard footer + copyright footer spacing */
@@ -476,8 +491,6 @@ app-sidebar,
   color: var(--text-primary);
   flex-shrink: 0;
   height: 52px;
-  position: sticky;
-  top: 0;
   z-index: 20;
 }
 

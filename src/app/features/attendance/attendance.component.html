@@ -120,7 +120,7 @@
            tabindex="0">
         <div class="status-dot"></div>
         <div class="roll-no">ROLL {{ s.roll }}</div>
-        <app-avatar [name]="s.name" size="md" />
+        <app-avatar [name]="s.name" size="lg" class="stu-avatar" />
         <div class="stu-name">{{ s.name }}</div>
         <div class="stu-actions">
           <div class="sa-btn sa-p" (click)="setStatus(s.id, 'present', $event)" title="Present (P)">P</div>
