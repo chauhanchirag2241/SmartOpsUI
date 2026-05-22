@@ -58,22 +58,23 @@ export class TeacherService {
     return Number.isNaN(num) ? null : num;
   }
 
-  /** Each row: { degree, institution } → "degree — institution" for DB storage. */
+  /** Each row: { degree, university, year, percentage } → "degree — university — year — percentage" for DB storage. */
   private mapQualifications(rows: unknown): string[] {
     if (!Array.isArray(rows)) {
       return [];
     }
     return rows
-      .map((row: { degree?: string; institution?: string } | string) => {
+      .map((row: any) => {
         if (typeof row === 'string') {
           return row.trim();
         }
         const degree = String(row?.degree ?? '').trim();
-        const institution = String(row?.institution ?? '').trim();
-        if (degree && institution) {
-          return `${degree} — ${institution}`;
-        }
-        return degree || institution;
+        const university = String(row?.university ?? row?.institution ?? '').trim();
+        const year = String(row?.year ?? '').trim();
+        const percentage = String(row?.percentage ?? '').trim();
+        
+        const parts = [degree, university, year, percentage].filter(Boolean);
+        return parts.join(' — ');
       })
       .filter(Boolean);
   }

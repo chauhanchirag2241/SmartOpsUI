@@ -21,6 +21,7 @@
           [attr.maxlength]="inputMaxLength"
           (input)="isAadhaarField() ? onAadhaarInput($event, config.controlName) : isPanField() ? onPanInput($event, config.controlName) : isNameField() ? onNameInput($event, config.controlName) : isAlphanumericField() ? onAlphanumericInput($event, config.controlName) : isDiscountField() ? onDiscountInput($event, config.controlName) : null"
           (blur)="isNameField() ? onNameBlur(config.controlName) : isAlphanumericField() ? onAlphanumericBlur(config.controlName) : null"
+          (click)="config.inputType === 'time' ? openTimePicker($event) : null"
         />
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>

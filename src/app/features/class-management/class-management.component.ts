@@ -31,7 +31,7 @@ export class ClassManagementComponent implements OnInit {
   constructor(
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
-    private dialog: MatDialog
+    private dialog: MatDialog,
   ) {}
 
   showAddForm = false;
@@ -57,19 +57,24 @@ export class ClassManagementComponent implements OnInit {
     searchQuery = '',
     sortColumn: string | null = null,
     sortDirection: string | null = null,
-    filter = this.currentFilter
+    filter = this.currentFilter,
   ): void {
-    this.classService.getClasses(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
-      next: (res: any) => {
-        this.classes = res?.items || [];
-        this.totalClasses = res?.totalCount || 0;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error loading classes:', err);
-        this.snackBar.open('Failed to load classes', 'Close', { duration: 3000, panelClass: 'snack-error' });
-      }
-    });
+    this.classService
+      .getClasses(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
+      .subscribe({
+        next: (res: any) => {
+          this.classes = res?.items || [];
+          this.totalClasses = res?.totalCount || 0;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading classes:', err);
+          this.snackBar.open('Failed to load classes', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          });
+        },
+      });
   }
 
   openAddForm(): void {
@@ -97,7 +102,14 @@ export class ClassManagementComponent implements OnInit {
     currentFilter: string | null;
   }): void {
     const filterValue = event.currentFilter ?? this.currentFilter;
-    this.loadClasses(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection, filterValue);
+    this.loadClasses(
+      event.pageIndex,
+      event.pageSize,
+      event.searchQuery,
+      event.sortColumn,
+      event.sortDirection,
+      filterValue,
+    );
   }
 
   onFilterChanged(filter: DataTableFilter | null): void {
@@ -117,7 +129,7 @@ export class ClassManagementComponent implements OnInit {
       showAddButton: true,
       addButtonText: 'Add class',
       addButtonIcon: 'add',
-      addButtonClass: 'btn-primary'
+      addButtonClass: 'btn-primary',
     },
     columns: [
       { key: 'className', label: 'Class', sortable: true },
@@ -126,7 +138,15 @@ export class ClassManagementComponent implements OnInit {
       { key: 'academicYear', label: 'Academic year', sortable: true },
       { key: 'capacity', label: 'Capacity', sortable: true },
       { key: 'roomNumber', label: 'Room', sortable: true },
-      { key: 'status', label: 'Status', cellType: 'badge', badgeMap: { Active: { cssClass: 'b-green', label: 'Active' }, Inactive: { cssClass: 'b-red', label: 'Inactive' } } },
+      {
+        key: 'status',
+        label: 'Status',
+        cellType: 'badge',
+        badgeMap: {
+          Active: { cssClass: 'b-green', label: 'Active' },
+          Inactive: { cssClass: 'b-red', label: 'Inactive' },
+        },
+      },
     ],
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
@@ -181,29 +201,40 @@ export class ClassManagementComponent implements OnInit {
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete class?',
-          description: 'This will permanently remove the class section and any linked scheduling data.',
+          description:
+            'This will permanently remove the class section and any linked scheduling data.',
           recordName: `${event.row['className']} - ${event.row['section']}`,
           recordMeta: `${event.row['academicYear']} · ${event.row['classTeacher'] || 'No teacher assigned'}`,
           initials: `${String(event.row['className']).charAt(0)}${String(event.row['section']).charAt(0)}`,
-          warningMessage: 'This action cannot be undone.'
+          warningMessage: 'This action cannot be undone.',
         },
         panelClass: 'erp-dialog',
-        disableClose: true
+        disableClose: true,
       });
 
       dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
           this.classService.deleteClass(id).subscribe({
             next: () => {
-              this.snackBar.open('Class deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+              this.snackBar.open('Class deleted successfully', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-success',
+              });
               this.loadClasses();
             },
-            error: () => this.snackBar.open('Failed to delete class', 'Close', { duration: 3000, panelClass: 'snack-error' })
+            error: () =>
+              this.snackBar.open('Failed to delete class', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-error',
+              }),
           });
         }
       });
     } else {
-      this.snackBar.open(`${event.action.label} → ${event.row['className']}`, 'Close', { duration: 3000, panelClass: 'snack-info' });
+      this.snackBar.open(`${event.action.label} → ${event.row['className']}`, 'Close', {
+        duration: 3000,
+        panelClass: 'snack-info',
+      });
     }
   }
 
@@ -230,19 +261,27 @@ export class ClassManagementComponent implements OnInit {
           recordName: `${event.selectedRows.length} Classes Selected`,
           recordMeta: 'Bulk Deletion',
           initials: 'BD',
-          warningMessage: 'This will permanently remove all selected class records.'
+          warningMessage: 'This will permanently remove all selected class records.',
         },
         panelClass: 'erp-dialog',
-        disableClose: true
+        disableClose: true,
       });
 
       dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
-          this.snackBar.open(`Bulk delete for ${event.selectedRows.length} classes initiated`, 'Close', { duration: 3000, panelClass: 'snack-success' });
+          this.snackBar.open(
+            `Bulk delete for ${event.selectedRows.length} classes initiated`,
+            'Close',
+            { duration: 3000, panelClass: 'snack-success' },
+          );
         }
       });
     } else {
-      this.snackBar.open(`${event.action.label} → ${event.selectedRows.length} class(es)`, 'Close', { duration: 3000, panelClass: 'snack-info' });
+      this.snackBar.open(
+        `${event.action.label} → ${event.selectedRows.length} class(es)`,
+        'Close',
+        { duration: 3000, panelClass: 'snack-info' },
+      );
     }
   }
 }

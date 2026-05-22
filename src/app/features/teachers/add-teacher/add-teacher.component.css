@@ -49,29 +49,7 @@
   gap: 16px;
 }
 
-.add-teacher-container .field input:not(.time-input),
-.add-teacher-container .field textarea,
-.add-teacher-container .field select,
-.add-teacher-container .qual-row input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
-  border-radius: 8px;
-  background: var(--input-bg, #f9fafb);
-  color: var(--text-primary, #1a1a1a);
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
 
-.add-teacher-container .field input:not(.time-input):focus,
-.add-teacher-container .field textarea:focus,
-.add-teacher-container .field select:focus,
-.add-teacher-container .qual-row input:focus {
-  border-color: var(--g400, #639922);
-  box-shadow: 0 0 0 2px rgba(99, 153, 34, 0.12);
-}
 /* PHOTO UPLOAD */
 .photo-section {
   display: flex;
@@ -286,7 +264,7 @@ app-dynamic-field.col-3, app-dynamic-field.col-2 {
 
 .qual-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   flex: 1;
   min-width: 0;

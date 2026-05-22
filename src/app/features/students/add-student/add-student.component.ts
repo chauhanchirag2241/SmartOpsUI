@@ -24,22 +24,31 @@ import {
   stripAadhaarDigits,
   textMaxLengthValidationConfig,
 } from '../../../shared/utils/form-validators.util';
-import { controlNamesFromFieldKeys, validateFormControls } from '../../../shared/utils/form-validation.util';
+import {
+  controlNamesFromFieldKeys,
+  validateFormControls,
+} from '../../../shared/utils/form-validation.util';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
-import { FileUploadComponent, SelectedUploadFile } from '../../../shared/components/file-upload/file-upload.component';
+import {
+  FileUploadComponent,
+  SelectedUploadFile,
+} from '../../../shared/components/file-upload/file-upload.component';
 import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
-import { enumToOptions, Gender, BloodGroup, PaymentMode } from '../../../shared/enums/field-options.enum';
+import {
+  enumToOptions,
+  Gender,
+  BloodGroup,
+  PaymentMode,
+} from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
-
-
 
 type FeeStructureRow = {
   name: string;
@@ -119,7 +128,13 @@ export class AddStudentComponent implements OnInit {
   ];
 
   readonly configs: Record<string, FormFieldConfig> = {
-    photo: { type: 'file', controlName: 'photo', label: '', fileMode: 'avatar', accept: 'image/png,image/jpeg' },
+    photo: {
+      type: 'file',
+      controlName: 'photo',
+      label: '',
+      fileMode: 'avatar',
+      accept: 'image/png,image/jpeg',
+    },
     admissionNo: {
       type: 'input',
       controlName: 'admissionNo',
@@ -154,10 +169,38 @@ export class AddStudentComponent implements OnInit {
       maxLength: PERSON_NAME_MAX_LENGTH,
       validations: nameValidationConfig(true, PERSON_NAME_MAX_LENGTH).validations,
     },
-    dob: { type: 'datepicker', controlName: 'dob', label: 'Date of birth', validations: [{ name: 'required', message: 'DOB is required', validator: Validators.required }] },
-    gender: { type: 'badges', controlName: 'gender', label: 'Gender', options: enumToOptions(Gender), validations: [{ name: 'required', message: 'Gender is required', validator: Validators.required }] },
-    bloodGroup: { type: 'select', controlName: 'bloodGroup', label: 'Blood group', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(BloodGroup) },
-    cast: { type: 'input', controlName: 'cast', label: 'Cast', placeholder: 'Cast', inputFormat: 'name', validations: nameValidationConfig().validations },
+    dob: {
+      type: 'datepicker',
+      controlName: 'dob',
+      label: 'Date of birth',
+      validations: [
+        { name: 'required', message: 'DOB is required', validator: Validators.required },
+      ],
+    },
+    gender: {
+      type: 'badges',
+      controlName: 'gender',
+      label: 'Gender',
+      options: enumToOptions(Gender),
+      validations: [
+        { name: 'required', message: 'Gender is required', validator: Validators.required },
+      ],
+    },
+    bloodGroup: {
+      type: 'select',
+      controlName: 'bloodGroup',
+      label: 'Blood group',
+      placeholder: SELECT_PLACEHOLDER,
+      options: enumToOptions(BloodGroup),
+    },
+    cast: {
+      type: 'input',
+      controlName: 'cast',
+      label: 'Cast',
+      placeholder: 'Cast',
+      inputFormat: 'name',
+      validations: nameValidationConfig().validations,
+    },
     category: {
       type: 'select',
       controlName: 'category',
@@ -170,21 +213,136 @@ export class AddStudentComponent implements OnInit {
         { label: 'General', value: 'General' },
       ],
     },
-    mobile: { type: 'input', inputType: 'tel', controlName: 'mobile', label: 'Mobile number', placeholder: '10-digit number', validations: [{ name: 'required', message: 'Mobile is required', validator: Validators.required }, { name: 'pattern', message: 'Invalid mobile', validator: Validators.pattern('^[0-9]{10}$') }] },
-    email: { type: 'input', inputType: 'email', controlName: 'email', label: 'Email', placeholder: 'Email Address', validations: [{ name: 'email', message: 'Invalid email', validator: Validators.email }] },
-    aadhaar: { type: 'input', controlName: 'aadhaar', label: 'Aadhaar number', placeholder: 'XXXX XXXX XXXX', inputFormat: 'aadhaar', validations: aadhaarValidationConfig().validations },
-    address: { type: 'textarea', controlName: 'address', label: 'Address', placeholder: 'Full residential address', validations: [{ name: 'required', message: 'Address is required', validator: Validators.required }] },
+    mobile: {
+      type: 'input',
+      inputType: 'tel',
+      controlName: 'mobile',
+      label: 'Mobile number',
+      placeholder: '10-digit number',
+      validations: [
+        { name: 'required', message: 'Mobile is required', validator: Validators.required },
+        {
+          name: 'pattern',
+          message: 'Invalid mobile',
+          validator: Validators.pattern('^[0-9]{10}$'),
+        },
+      ],
+    },
+    email: {
+      type: 'input',
+      inputType: 'email',
+      controlName: 'email',
+      label: 'Email',
+      placeholder: 'Email Address',
+      validations: [{ name: 'email', message: 'Invalid email', validator: Validators.email }],
+    },
+    aadhaar: {
+      type: 'input',
+      controlName: 'aadhaar',
+      label: 'Aadhaar number',
+      placeholder: 'XXXX XXXX XXXX',
+      inputFormat: 'aadhaar',
+      validations: aadhaarValidationConfig().validations,
+    },
+    address: {
+      type: 'textarea',
+      controlName: 'address',
+      label: 'Address',
+      placeholder: 'Full residential address',
+      validations: [
+        { name: 'required', message: 'Address is required', validator: Validators.required },
+      ],
+    },
 
-    fatherName: { type: 'input', controlName: 'fatherName', label: "Father's name", placeholder: 'Father Name', inputFormat: 'name', validations: nameValidationConfig(true).validations },
-    fatherMobile: { type: 'input', inputType: 'tel', controlName: 'fatherMobile', label: "Father's mobile", placeholder: '10-digit number', validations: [{ name: 'required', message: 'Mobile is required', validator: Validators.required }, { name: 'pattern', message: 'Invalid mobile', validator: Validators.pattern('^[0-9]{10}$') }] },
-    fatherOcc: { type: 'input', controlName: 'fatherOcc', label: "Father's occupation", placeholder: 'Father Occupation', inputFormat: 'name', validations: nameValidationConfig().validations },
-    motherName: { type: 'input', controlName: 'motherName', label: "Mother's name", placeholder: 'Mother Name', inputFormat: 'name', validations: nameValidationConfig().validations },
-    motherMobile: { type: 'input', inputType: 'tel', controlName: 'motherMobile', label: "Mother's mobile", placeholder: '10-digit number', validations: [{ name: 'pattern', message: 'Invalid mobile', validator: Validators.pattern('^[0-9]{10}$') }] },
-    motherOcc: { type: 'input', controlName: 'motherOcc', label: "Mother's occupation", placeholder: 'Mother Occupation', inputFormat: 'name', validations: nameValidationConfig().validations },
+    fatherName: {
+      type: 'input',
+      controlName: 'fatherName',
+      label: "Father's name",
+      placeholder: 'Father Name',
+      inputFormat: 'name',
+      validations: nameValidationConfig(true).validations,
+    },
+    fatherMobile: {
+      type: 'input',
+      inputType: 'tel',
+      controlName: 'fatherMobile',
+      label: "Father's mobile",
+      placeholder: '10-digit number',
+      validations: [
+        { name: 'required', message: 'Mobile is required', validator: Validators.required },
+        {
+          name: 'pattern',
+          message: 'Invalid mobile',
+          validator: Validators.pattern('^[0-9]{10}$'),
+        },
+      ],
+    },
+    fatherOcc: {
+      type: 'input',
+      controlName: 'fatherOcc',
+      label: "Father's occupation",
+      placeholder: 'Father Occupation',
+      inputFormat: 'name',
+      validations: nameValidationConfig().validations,
+    },
+    motherName: {
+      type: 'input',
+      controlName: 'motherName',
+      label: "Mother's name",
+      placeholder: 'Mother Name',
+      inputFormat: 'name',
+      validations: nameValidationConfig().validations,
+    },
+    motherMobile: {
+      type: 'input',
+      inputType: 'tel',
+      controlName: 'motherMobile',
+      label: "Mother's mobile",
+      placeholder: '10-digit number',
+      validations: [
+        {
+          name: 'pattern',
+          message: 'Invalid mobile',
+          validator: Validators.pattern('^[0-9]{10}$'),
+        },
+      ],
+    },
+    motherOcc: {
+      type: 'input',
+      controlName: 'motherOcc',
+      label: "Mother's occupation",
+      placeholder: 'Mother Occupation',
+      inputFormat: 'name',
+      validations: nameValidationConfig().validations,
+    },
 
-    admissionDate: { type: 'datepicker', controlName: 'admissionDate', label: 'Admission date', validations: [{ name: 'required', message: 'Admission date is required', validator: Validators.required }] },
-    academicYear: { type: 'select', controlName: 'academicYearId', label: 'Academic year', options: [], validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }] },
-    class: { type: 'select', controlName: 'classId', label: 'Class', placeholder: 'Select class', options: [], validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }] },
+    admissionDate: {
+      type: 'datepicker',
+      controlName: 'admissionDate',
+      label: 'Admission date',
+      validations: [
+        { name: 'required', message: 'Admission date is required', validator: Validators.required },
+      ],
+    },
+    academicYear: {
+      type: 'select',
+      controlName: 'academicYearId',
+      label: 'Academic year',
+      options: [],
+      validations: [
+        { name: 'required', message: 'Academic year is required', validator: Validators.required },
+      ],
+    },
+    class: {
+      type: 'select',
+      controlName: 'classId',
+      label: 'Class',
+      placeholder: 'Select class',
+      options: [],
+      validations: [
+        { name: 'required', message: 'Class is required', validator: Validators.required },
+      ],
+    },
     rollNumber: {
       type: 'input',
       controlName: 'rollNumber',
@@ -209,7 +367,12 @@ export class AddStudentComponent implements OnInit {
       maxLength: PREV_CLASS_MAX_LENGTH,
       validations: alphanumericValidationConfig(PREV_CLASS_MAX_LENGTH).validations,
     },
-    percentage: { type: 'input', controlName: 'percentage', label: 'Percentage / CGPA', placeholder: 'e.g. 85% / 8.5 CGPA' },
+    percentage: {
+      type: 'input',
+      controlName: 'percentage',
+      label: 'Percentage / CGPA',
+      placeholder: 'e.g. 85% / 8.5 CGPA',
+    },
     tcNo: {
       type: 'input',
       controlName: 'tcNo',
@@ -220,8 +383,29 @@ export class AddStudentComponent implements OnInit {
       validations: alphanumericValidationConfig(TC_NUMBER_MAX_LENGTH).validations,
     },
 
-    discountType: { type: 'select', controlName: 'discountType', label: 'Discount type', placeholder: SELECT_PLACEHOLDER, options: [{ label: 'Merit scholarship', value: 'merit' }, { label: 'Staff ward', value: 'staff' }, { label: 'Sibling discount', value: 'sibling' }, { label: 'RTE', value: 'rte' }, { label: 'Custom', value: 'custom' }] },
-    discountUnit: { type: 'select', controlName: 'discountUnit', label: 'Discount unit', placeholder: SELECT_PLACEHOLDER, options: [{ label: '%', value: '%' }, { label: 'Rs', value: 'amount' }] },
+    discountType: {
+      type: 'select',
+      controlName: 'discountType',
+      label: 'Discount type',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [
+        { label: 'Merit scholarship', value: 'merit' },
+        { label: 'Staff ward', value: 'staff' },
+        { label: 'Sibling discount', value: 'sibling' },
+        { label: 'RTE', value: 'rte' },
+        { label: 'Custom', value: 'custom' },
+      ],
+    },
+    discountUnit: {
+      type: 'select',
+      controlName: 'discountUnit',
+      label: 'Discount unit',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [
+        { label: '%', value: '%' },
+        { label: 'Rs', value: 'amount' },
+      ],
+    },
     discountValue: {
       type: 'input',
       inputType: 'tel',
@@ -231,35 +415,123 @@ export class AddStudentComponent implements OnInit {
       placeholder: 'Enter value',
       validations: discountValidationConfig(() => null).validations,
     },
-    discountRemarks: { type: 'input', controlName: 'discountRemarks', label: 'Discount remarks', placeholder: 'Reason for discount' },
-    paymentMode: { type: 'select', controlName: 'paymentMode', label: 'Payment mode', options: enumToOptions(PaymentMode, (value) => value === PaymentMode.OneTime ? 'One-time' : value.charAt(0).toUpperCase() + value.slice(1)), validations: [{ name: 'required', message: 'Payment mode is required', validator: Validators.required }] },
-    firstDueDate: { type: 'datepicker', controlName: 'firstDueDate', label: 'First due date', validations: [{ name: 'required', message: 'First due date is required', validator: Validators.required }] },
+    discountRemarks: {
+      type: 'input',
+      controlName: 'discountRemarks',
+      label: 'Discount remarks',
+      placeholder: 'Reason for discount',
+    },
+    paymentMode: {
+      type: 'select',
+      controlName: 'paymentMode',
+      label: 'Payment mode',
+      options: enumToOptions(PaymentMode, (value) =>
+        value === PaymentMode.OneTime ? 'One-time' : value.charAt(0).toUpperCase() + value.slice(1),
+      ),
+      validations: [
+        { name: 'required', message: 'Payment mode is required', validator: Validators.required },
+      ],
+    },
+    firstDueDate: {
+      type: 'datepicker',
+      controlName: 'firstDueDate',
+      label: 'First due date',
+      validations: [
+        { name: 'required', message: 'First due date is required', validator: Validators.required },
+      ],
+    },
 
-    remarks: { type: 'textarea', controlName: 'remarks', label: 'Remarks (optional)', placeholder: 'Any special notes about the student...' },
+    remarks: {
+      type: 'textarea',
+      controlName: 'remarks',
+      label: 'Remarks (optional)',
+      placeholder: 'Any special notes about the student...',
+    },
   };
 
   readonly formTabs: FormTab[] = [
     {
       stepIndex: 0,
       sections: [
-        { title: 'Photo & basic details', icon: 'account_circle', layout: 'photo-grid', fields: ['photo', 'firstName', 'middleName', 'lastName', 'dob', 'gender', 'bloodGroup', 'cast', 'category', 'aadhaar', 'mobile', 'email', 'address'] },
-        { title: 'Parent / Guardian details', icon: 'group', layout: 'grid3', fields: ['fatherName', 'fatherMobile', 'fatherOcc', 'motherName', 'motherMobile', 'motherOcc'] },
+        {
+          title: 'Photo & basic details',
+          icon: 'account_circle',
+          layout: 'photo-grid',
+          fields: [
+            'photo',
+            'firstName',
+            'middleName',
+            'lastName',
+            'dob',
+            'gender',
+            'bloodGroup',
+            'cast',
+            'category',
+            'aadhaar',
+            'mobile',
+            'email',
+            'address',
+          ],
+        },
+        {
+          title: 'Parent / Guardian details',
+          icon: 'group',
+          layout: 'grid3',
+          fields: [
+            'fatherName',
+            'fatherMobile',
+            'fatherOcc',
+            'motherName',
+            'motherMobile',
+            'motherOcc',
+          ],
+        },
       ],
     },
     {
       stepIndex: 1,
       sections: [
-        { title: 'Admission details', icon: 'school', layout: 'grid3', fields: ['academicYear', 'admissionDate', 'admissionNo'] },
-        { title: 'Class & section', icon: 'co_present', layout: 'grid3', fields: ['class', 'rollNumber'] },
-        { title: 'Previous school', icon: 'domain', layout: 'grid2', fields: ['prevSchool', 'prevClass', 'percentage', 'tcNo'] },
+        {
+          title: 'Admission details',
+          icon: 'school',
+          layout: 'grid3',
+          fields: ['academicYear', 'admissionDate', 'admissionNo'],
+        },
+        {
+          title: 'Class & section',
+          icon: 'co_present',
+          layout: 'grid3',
+          fields: ['class', 'rollNumber'],
+        },
+        {
+          title: 'Previous school',
+          icon: 'domain',
+          layout: 'grid2',
+          fields: ['prevSchool', 'prevClass', 'percentage', 'tcNo'],
+        },
       ],
     },
     {
       stepIndex: 2,
       sections: [
-        { title: 'Fee structure — Class 10', icon: 'payments', layout: 'fee-structure', fields: [] },
-        { title: 'Discount / Concession', icon: 'local_offer', layout: 'grid3', fields: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'] },
-        { title: 'Payment schedule', icon: 'event', layout: 'grid2', fields: ['paymentMode', 'firstDueDate'] },
+        {
+          title: 'Fee structure — Class 10',
+          icon: 'payments',
+          layout: 'fee-structure',
+          fields: [],
+        },
+        {
+          title: 'Discount / Concession',
+          icon: 'local_offer',
+          layout: 'grid3',
+          fields: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'],
+        },
+        {
+          title: 'Payment schedule',
+          icon: 'event',
+          layout: 'grid2',
+          fields: ['paymentMode', 'firstDueDate'],
+        },
       ],
     },
     {
@@ -272,9 +544,7 @@ export class AddStudentComponent implements OnInit {
     },
     {
       stepIndex: 4,
-      sections: [
-        { title: 'Review', icon: 'checklist', layout: 'review', fields: [] },
-      ],
+      sections: [{ title: 'Review', icon: 'checklist', layout: 'review', fields: [] }],
     },
   ];
 
@@ -300,12 +570,34 @@ export class AddStudentComponent implements OnInit {
 
   private readonly tabFieldKeys: Record<number, string[]> = {
     0: [
-      'firstName', 'middleName', 'lastName', 'dob', 'gender', 'bloodGroup', 'cast', 'category',
-      'aadhaar', 'mobile', 'email', 'address',
-      'fatherName', 'fatherMobile', 'fatherOcc', 'motherName', 'motherMobile', 'motherOcc',
+      'firstName',
+      'middleName',
+      'lastName',
+      'dob',
+      'gender',
+      'bloodGroup',
+      'cast',
+      'category',
+      'aadhaar',
+      'mobile',
+      'email',
+      'address',
+      'fatherName',
+      'fatherMobile',
+      'fatherOcc',
+      'motherName',
+      'motherMobile',
+      'motherOcc',
     ],
     1: ['admissionDate', 'academicYear', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
-    2: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks', 'paymentMode', 'firstDueDate'],
+    2: [
+      'discountType',
+      'discountUnit',
+      'discountValue',
+      'discountRemarks',
+      'paymentMode',
+      'firstDueDate',
+    ],
     3: ['remarks', 'customFields'],
   };
 
@@ -351,7 +643,9 @@ export class AddStudentComponent implements OnInit {
     {
       title: 'Custom fields',
       icon: 'tune',
-      items: [{ label: 'Additional information', key: 'customFields', full: true, emptyText: 'None' }],
+      items: [
+        { label: 'Additional information', key: 'customFields', full: true, emptyText: 'None' },
+      ],
     },
   ];
 
@@ -403,7 +697,7 @@ export class AddStudentComponent implements OnInit {
       firstDueDate: ['', Validators.required],
 
       remarks: [''],
-      status: ['Active']
+      status: ['Active'],
     });
   }
 
@@ -457,7 +751,7 @@ export class AddStudentComponent implements OnInit {
 
   private setupAutoGeneration() {
     // Admission No generation
-    this.studentForm.get('academicYearId')?.valueChanges.subscribe(yearId => {
+    this.studentForm.get('academicYearId')?.valueChanges.subscribe((yearId) => {
       if (yearId) {
         this.generateAdmissionNo(yearId);
         // Also trigger roll number generation if class is already selected
@@ -469,7 +763,7 @@ export class AddStudentComponent implements OnInit {
     });
 
     // Roll Number generation
-    this.studentForm.get('classId')?.valueChanges.subscribe(classId => {
+    this.studentForm.get('classId')?.valueChanges.subscribe((classId) => {
       const yearId = this.studentForm.get('academicYearId')?.value;
       if (classId && yearId) {
         this.generateRollNumber(yearId, classId);
@@ -483,7 +777,8 @@ export class AddStudentComponent implements OnInit {
         this.studentForm.patchValue({ admissionNo: res.admissionNo });
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Error generating admission number', 'Close', { duration: 3000 })
+      error: () =>
+        this.snackBar.open('Error generating admission number', 'Close', { duration: 3000 }),
     });
   }
 
@@ -493,11 +788,9 @@ export class AddStudentComponent implements OnInit {
         this.studentForm.patchValue({ rollNumber: res.rollNumber });
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Error generating roll number', 'Close', { duration: 3000 })
+      error: () => this.snackBar.open('Error generating roll number', 'Close', { duration: 3000 }),
     });
   }
-
-
 
   loadAcademicYears() {
     this.academicYearService.getAcademicYearDropdown().subscribe({
@@ -505,11 +798,11 @@ export class AddStudentComponent implements OnInit {
         this.academicYears = years || [];
         this.configs['academicYear'].options = this.academicYears.map((year: any) => ({
           label: year.name,
-          value: year.id
+          value: year.id,
         }));
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Error loading academic years', 'Close', { duration: 3000 })
+      error: () => this.snackBar.open('Error loading academic years', 'Close', { duration: 3000 }),
     });
   }
 
@@ -519,11 +812,11 @@ export class AddStudentComponent implements OnInit {
         this.classes = classes || [];
         this.configs['class'].options = this.classes.map((c: any) => ({
           label: c.name,
-          value: c.id
+          value: c.id,
         }));
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 })
+      error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 }),
     });
   }
 
@@ -564,7 +857,7 @@ export class AddStudentComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Error loading student data', 'Close', { duration: 3000 })
+      error: () => this.snackBar.open('Error loading student data', 'Close', { duration: 3000 }),
     });
   }
 
@@ -617,13 +910,14 @@ export class AddStudentComponent implements OnInit {
 
       remarks: data.remarks,
       status: data.status,
-      customFields: (data.customFields ?? []).map((f: { label?: string; value?: string; fieldLabel?: string; fieldValue?: string }) => ({
-        label: f.label ?? f.fieldLabel ?? '',
-        value: f.value ?? f.fieldValue ?? '',
-      })),
+      customFields: (data.customFields ?? []).map(
+        (f: { label?: string; value?: string; fieldLabel?: string; fieldValue?: string }) => ({
+          label: f.label ?? f.fieldLabel ?? '',
+          value: f.value ?? f.fieldValue ?? '',
+        }),
+      ),
     });
   }
-
 
   // ════════════════════════════════════════
   // TAB NAVIGATION
@@ -687,30 +981,39 @@ export class AddStudentComponent implements OnInit {
 
     const payload = {
       ...rawValue,
-      academics: [{
-        admissionDate: rawValue.admissionDate,
-        academicYearId: rawValue.academicYearId,
-        classId: rawValue.classId,
-        rollNumber: rawValue.rollNumber
-      }]
+      academics: [
+        {
+          admissionDate: rawValue.admissionDate,
+          academicYearId: rawValue.academicYearId,
+          classId: rawValue.classId,
+          rollNumber: rawValue.rollNumber,
+        },
+      ],
     };
 
     try {
-      const saveObs = (this.mode === 'edit' && this.studentId)
-        ? this.studentService.updateStudent(this.studentId, payload)
-        : this.studentService.createStudent(payload);
+      const saveObs =
+        this.mode === 'edit' && this.studentId
+          ? this.studentService.updateStudent(this.studentId, payload)
+          : this.studentService.createStudent(payload);
 
       saveObs
-        .pipe(finalize(() => {
-          this.isSaving = false;
-          this.cdr.detectChanges();
-        }))
+        .pipe(
+          finalize(() => {
+            this.isSaving = false;
+            this.cdr.detectChanges();
+          }),
+        )
         .subscribe({
           next: () => {
-            this.snackBar.open(`Student ${this.mode === 'edit' ? 'updated' : 'saved'} successfully`, 'Close', {
-              duration: 3000,
-              panelClass: 'snack-success',
-            });
+            this.snackBar.open(
+              `Student ${this.mode === 'edit' ? 'updated' : 'saved'} successfully`,
+              'Close',
+              {
+                duration: 3000,
+                panelClass: 'snack-success',
+              },
+            );
             this.saved.emit();
           },
           error: (err) => {
@@ -719,7 +1022,7 @@ export class AddStudentComponent implements OnInit {
               duration: 4000,
               panelClass: 'snack-error',
             });
-          }
+          },
         });
     } catch (e) {
       this.isSaving = false;

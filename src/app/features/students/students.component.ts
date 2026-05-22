@@ -22,7 +22,13 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 @Component({
   selector: 'app-students',
   standalone: true,
-  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, AddStudentComponent],
+  imports: [
+    SmartDataTableComponent,
+    MatIconModule,
+    MatSnackBarModule,
+    MatDialogModule,
+    AddStudentComponent,
+  ],
   templateUrl: './students.component.html',
   styleUrl: './students.component.css',
 })
@@ -33,8 +39,8 @@ export class StudentsComponent implements OnInit {
     private snackBar: MatSnackBar,
     private studentService: StudentService,
     private cdr: ChangeDetectorRef,
-    private dialog: MatDialog
-  ) { }
+    private dialog: MatDialog,
+  ) {}
 
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
@@ -43,7 +49,11 @@ export class StudentsComponent implements OnInit {
   currentFilter: StudentFilter = StudentFilter.Active;
 
   ngOnInit(): void {
-    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.permissionService, MenuCodes.Students);
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.Students,
+    );
     this.loadStudents();
   }
 
@@ -53,20 +63,25 @@ export class StudentsComponent implements OnInit {
     searchQuery = '',
     sortColumn: string | null = null,
     sortDirection: string | null = null,
-    filter: StudentFilter = this.currentFilter
+    filter: StudentFilter = this.currentFilter,
   ): void {
-    this.studentService.getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
-      next: (res: any) => {
-        // The backend now returns PagedResult format { items, totalCount, ... }
-        this.students = res?.items || [];
-        this.totalStudents = res?.totalCount || 0;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error loading students:', err);
-        this.snackBar.open('Failed to load students', 'Close', { duration: 3000, panelClass: 'snack-error' });
-      }
-    });
+    this.studentService
+      .getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
+      .subscribe({
+        next: (res: any) => {
+          // The backend now returns PagedResult format { items, totalCount, ... }
+          this.students = res?.items || [];
+          this.totalStudents = res?.totalCount || 0;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading students:', err);
+          this.snackBar.open('Failed to load students', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          });
+        },
+      });
   }
 
   openAddForm(): void {
@@ -95,8 +110,17 @@ export class StudentsComponent implements OnInit {
     sortDirection: string | null;
     currentFilter: string | null;
   }): void {
-    const filterValue = event.currentFilter ? (event.currentFilter as unknown as StudentFilter) : this.currentFilter;
-    this.loadStudents(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection, filterValue);
+    const filterValue = event.currentFilter
+      ? (event.currentFilter as unknown as StudentFilter)
+      : this.currentFilter;
+    this.loadStudents(
+      event.pageIndex,
+      event.pageSize,
+      event.searchQuery,
+      event.sortColumn,
+      event.sortDirection,
+      filterValue,
+    );
   }
 
   onFilterChanged(filter: DataTableFilter | null): void {
@@ -120,7 +144,7 @@ export class StudentsComponent implements OnInit {
       showAddButton: true,
       addButtonText: 'Add student',
       addButtonIcon: 'add',
-      addButtonClass: 'btn-primary'
+      addButtonClass: 'btn-primary',
     },
     columns: [
       {
@@ -169,8 +193,8 @@ export class StudentsComponent implements OnInit {
         label: 'Status',
         cellType: 'badge',
         badgeMap: {
-          'true': { cssClass: 'b-green', label: 'Active' },
-          'false': { cssClass: 'b-red', label: 'Inactive' },
+          true: { cssClass: 'b-green', label: 'Active' },
+          false: { cssClass: 'b-red', label: 'Inactive' },
         },
       },
     ],
@@ -195,10 +219,20 @@ export class StudentsComponent implements OnInit {
     ],
 
     actions: [
-      { label: 'View profile', icon: 'visibility', iconColor: '#639922', permission: 'student.read' },
+      {
+        label: 'View profile',
+        icon: 'visibility',
+        iconColor: '#639922',
+        permission: 'student.read',
+      },
       { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF', permission: 'student.update' },
       { label: 'Collect fees', icon: 'payments', iconColor: '#854F0B', permission: 'student.read' },
-      { label: 'View attendance', icon: 'how_to_reg', iconColor: '#639922', permission: 'student.read' },
+      {
+        label: 'View attendance',
+        icon: 'how_to_reg',
+        iconColor: '#639922',
+        permission: 'student.read',
+      },
       { label: 'Download TC', icon: 'download', iconColor: '#6b7280', permission: 'student.read' },
       {
         label: 'Delete student',
@@ -257,33 +291,41 @@ export class StudentsComponent implements OnInit {
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete student?',
-          description: 'This will permanently remove the student and all associated records including documents, fee history, and academic data.',
+          description:
+            'This will permanently remove the student and all associated records including documents, fee history, and academic data.',
           recordName: event.row['name'] as string,
           recordMeta: `${event.row['email']} · Class ${event.row['class']}`,
           initials: this.getInitials(event.row['name'] as string),
-          warningMessage: 'This action cannot be undone. All linked documents stored in Azure Blob will also be deleted.'
+          warningMessage:
+            'This action cannot be undone. All linked documents stored in Azure Blob will also be deleted.',
         },
         panelClass: 'erp-dialog',
-        disableClose: true
+        disableClose: true,
       });
 
       dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
           this.studentService.deleteStudent(id).subscribe({
             next: () => {
-              this.snackBar.open('Student deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
+              this.snackBar.open('Student deleted successfully', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-success',
+              });
               this.loadStudents();
             },
-            error: () => this.snackBar.open('Failed to delete student', 'Close', { duration: 3000, panelClass: 'snack-error' })
+            error: () =>
+              this.snackBar.open('Failed to delete student', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-error',
+              }),
           });
         }
       });
     } else {
-      this.snackBar.open(
-        `${event.action.label} → ${event.row['name']}`,
-        'Close',
-        { duration: 3000, panelClass: 'snack-info' },
-      );
+      this.snackBar.open(`${event.action.label} → ${event.row['name']}`, 'Close', {
+        duration: 3000,
+        panelClass: 'snack-info',
+      });
     }
   }
 
@@ -310,16 +352,21 @@ export class StudentsComponent implements OnInit {
           recordName: `${event.selectedRows.length} Students Selected`,
           recordMeta: 'Bulk Deletion',
           initials: 'BD',
-          warningMessage: 'This will permanently remove all selected students and their associated data.'
+          warningMessage:
+            'This will permanently remove all selected students and their associated data.',
         },
         panelClass: 'erp-dialog',
-        disableClose: true
+        disableClose: true,
       });
 
       dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
           // Implement bulk delete logic here
-          this.snackBar.open(`Bulk delete for ${event.selectedRows.length} students initiated`, 'Close', { duration: 3000, panelClass: 'snack-success' });
+          this.snackBar.open(
+            `Bulk delete for ${event.selectedRows.length} students initiated`,
+            'Close',
+            { duration: 3000, panelClass: 'snack-success' },
+          );
         }
       });
     } else {

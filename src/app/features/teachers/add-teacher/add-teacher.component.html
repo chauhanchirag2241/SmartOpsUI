@@ -32,14 +32,14 @@
         
         <!-- PHOTO-GRID layout -->
         @if (section.layout === 'photo-grid') {
-          <div class="card" [formGroupName]="tab.groupPath || ''">
+          <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
             <div class="photo-section">
-              <app-dynamic-field [config]="configs['photo']" [group]="$any(teacherForm.get(tab.groupPath || ''))" />
+              <app-dynamic-field [config]="configs['photo']" [group]="$any(getGroupForSection(tab, section))" />
               <div class="photo-fields">
                 @for (field of section.fields; track field) {
                   @if (field !== 'photo') {
-                    <app-dynamic-field [config]="configs[field]" [group]="$any(teacherForm.get(tab.groupPath || ''))" />
+                    <app-dynamic-field [config]="configs[field]" [group]="$any(getGroupForSection(tab, section))" />
                   }
                 }
               </div>
@@ -49,26 +49,26 @@
 
         <!-- FORM-ARRAY layout -->
         @else if (section.layout === 'form-array') {
-          <div class="card" [formGroupName]="tab.groupPath || ''">
+          <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
             <div [formArrayName]="section.formArrayName || ''">
               @for (row of qualifications.controls; track $index) {
-                <div [formGroupName]="$index" class="form-array-row">
-                  <div class="grid3">
+                <div [formGroupName]="$index" class="form-array-row qual-row">
+                  <div class="qual-fields">
                     @for (field of section.fields; track field) {
                       <app-dynamic-field [config]="configs[field]" [group]="$any(row)" />
                     }
                   </div>
                   @if (mode !== 'view') {
-                    <button type="button" class="btn-remove" (click)="removeQualification($index)" *ngIf="qualifications.length > 1">
-                      <mat-icon>remove_circle_outline</mat-icon>
+                    <button type="button" class="qual-remove" (click)="removeQualification($index)" *ngIf="qualifications.length > 1">
+                      <mat-icon>delete_outline</mat-icon>
                     </button>
                   }
                 </div>
               }
             </div>
             @if (mode !== 'view') {
-              <button type="button" class="btn-add" (click)="addQualification()">
+              <button type="button" class="add-row-btn" (click)="addQualification()">
                 <mat-icon>add</mat-icon> Add {{ section.title }}
               </button>
             }
@@ -92,11 +92,11 @@
 
         <!-- STANDARD grid2 / grid3 layouts -->
         @else {
-          <div class="card" [formGroupName]="section.subGroup ? tab.groupPath + '.' + section.subGroup : (tab.groupPath || '')">
+          <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
             <div [class]="section.layout">
               @for (field of section.fields; track field) {
-                <app-dynamic-field [config]="configs[field]" [group]="$any(teacherForm.get(section.subGroup ? tab.groupPath + '.' + section.subGroup : (tab.groupPath || '')))" [full]="field === 'address'" />
+                <app-dynamic-field [config]="configs[field]" [group]="$any(getGroupForSection(tab, section))" [full]="field === 'address'" />
               }
             </div>
           </div>

@@ -1,5 +1,9 @@
 <div class="topbar">
-  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
+  <app-action-button
+    type="back"
+    style="order: 2; margin-left: auto"
+    (action)="cancel.emit()"
+  ></app-action-button>
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
@@ -30,7 +34,10 @@
         <!-- PHOTO-GRID layout -->
         @if (section.layout === 'photo-grid') {
           <div class="card">
-            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="card-title">
+              <mat-icon>{{ section.icon }}</mat-icon
+              >{{ section.title }}
+            </div>
             <div class="photo-section">
               <app-dynamic-field [config]="configs['photo']" [group]="studentForm" />
               <div class="photo-fields">
@@ -51,7 +58,10 @@
         <!-- FEE-STRUCTURE layout -->
         @else if (section.layout === 'fee-structure') {
           <div class="card">
-            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="card-title">
+              <mat-icon>{{ section.icon }}</mat-icon
+              >{{ section.title }}
+            </div>
             @for (row of feeStructureRows; track row.name) {
               <div class="fee-row">
                 <span class="fee-name">{{ row.name }}</span>
@@ -68,11 +78,16 @@
         <!-- DOCUMENT-GRID layout -->
         @else if (section.layout === 'document-grid') {
           <div class="card">
-            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="card-title">
+              <mat-icon>{{ section.icon }}</mat-icon
+              >{{ section.title }}
+            </div>
             <div class="doc-grid">
               @for (doc of documentChecklist; track doc.name) {
                 <div class="doc-card" [class.uploaded]="doc.uploaded">
-                  <div class="doc-icon"><mat-icon>{{ doc.icon }}</mat-icon></div>
+                  <div class="doc-icon">
+                    <mat-icon>{{ doc.icon }}</mat-icon>
+                  </div>
                   <div>
                     <div class="doc-name">{{ doc.name }}</div>
                     <app-file-upload
@@ -98,7 +113,10 @@
         <!-- CUSTOM-FIELDS layout -->
         @else if (section.layout === 'custom-fields') {
           <div class="card">
-            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="card-title">
+              <mat-icon>{{ section.icon }}</mat-icon
+              >{{ section.title }}
+            </div>
             @if (mode === 'view') {
               <div class="custom-fields-readonly">
                 <div class="custom-fields-readonly-label">Additional information</div>
@@ -114,7 +132,10 @@
                 }
               </div>
             } @else {
-              <app-dynamic-array-field formControlName="customFields" label="Additional information" />
+              <app-dynamic-array-field
+                formControlName="customFields"
+                label="Additional information"
+              />
             }
           </div>
         }
@@ -124,7 +145,10 @@
           <div class="review-section">
             @for (rs of reviewSections; track rs.title) {
               <div class="card">
-                <div class="card-title"><mat-icon>{{ rs.icon }}</mat-icon>{{ rs.title }}</div>
+                <div class="card-title">
+                  <mat-icon>{{ rs.icon }}</mat-icon
+                  >{{ rs.title }}
+                </div>
                 <div class="summary-grid">
                   @for (item of rs.items; track item.label) {
                     <div class="sum-item" [class.full]="item.full">
@@ -141,7 +165,10 @@
         <!-- STANDARD grid2 / grid3 layouts -->
         @else {
           <div class="card">
-            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+            <div class="card-title">
+              <mat-icon>{{ section.icon }}</mat-icon
+              >{{ section.title }}
+            </div>
             <div [class]="section.layout">
               @for (field of section.fields; track field) {
                 <app-dynamic-field
@@ -163,24 +190,22 @@
     type="back"
     label="Previous"
     [style.visibility]="currentTab === 0 ? 'hidden' : 'visible'"
-    (action)="prevTab()">
+    (action)="prevTab()"
+  >
   </app-action-button>
 
   <div class="footer-hint">{{ footerHints[currentTab] }}</div>
 
   @if (currentTab < finalTabIndex) {
-    <app-action-button
-      type="next"
-      [disabled]="isSaving"
-      (action)="nextTab()">
-    </app-action-button>
+    <app-action-button type="next" [disabled]="isSaving" (action)="nextTab()"> </app-action-button>
   } @else if (mode !== 'view') {
     <app-action-button
       type="save"
-      [label]="isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Student' : 'Confirm & Add')"
+      [label]="isSaving ? 'Confirming...' : mode === 'edit' ? 'Update Student' : 'Confirm & Add'"
       [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
       [disabled]="isSaving"
-      (action)="nextTab()">
+      (action)="nextTab()"
+    >
     </app-action-button>
   }
 </div>

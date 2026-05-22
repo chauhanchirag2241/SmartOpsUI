@@ -352,12 +352,14 @@ export class AddTeacherComponent implements OnInit {
       controlName: 'degree',
       label: 'Degree / qualification',
       placeholder: 'e.g. B.Ed',
+      maxLength: 255,
     },
     university: {
       type: 'input',
       controlName: 'university',
       label: 'Board / university',
       placeholder: 'e.g. CBSE',
+      maxLength: 255,
     },
     year: {
       type: 'input',
@@ -366,14 +368,28 @@ export class AddTeacherComponent implements OnInit {
       inputType: 'tel',
       maxLength: 4,
       placeholder: 'YYYY',
+      validations: [
+        {
+          name: 'pattern',
+          validator: Validators.pattern(/^\d{4}$/),
+          message: 'Passing year must be exactly 4 numbers',
+        },
+      ],
     },
     percentage: {
       type: 'input',
       controlName: 'percentage',
       label: 'Percentage (%)',
       inputType: 'tel',
-      maxLength: 5,
+      maxLength: 3,
       placeholder: '0–100',
+      validations: [
+        {
+          name: 'pattern',
+          validator: Validators.pattern(/^(100|\d{1,2})$/),
+          message: 'Enter a valid percentage (0–100)',
+        },
+      ],
     },
     shiftStartTime: {
       type: 'input',
@@ -526,7 +542,8 @@ export class AddTeacherComponent implements OnInit {
           icon: 'account_balance',
           layout: 'grid3',
           fields: this.bankFields,
-          groupPath: 'bankDetails',
+          groupPath: 'professional',
+          subGroup: 'bankDetails',
         },
       ],
     },
@@ -571,7 +588,8 @@ export class AddTeacherComponent implements OnInit {
           icon: 'account_balance',
           layout: 'review',
           fields: this.bankFields,
-          groupPath: 'bankDetails',
+          groupPath: 'professional',
+          subGroup: 'bankDetails',
         },
         {
           title: 'Schedule & access',
@@ -706,6 +724,9 @@ export class AddTeacherComponent implements OnInit {
   getReviewValue(section: any, field: string): any {
     const basePath = section.groupPath;
     let actualPath = basePath;
+    if (section.subGroup) {
+      actualPath += '.' + section.subGroup;
+    }
     if (section.subGroupMap && section.subGroupMap[field]) {
       actualPath += '.' + section.subGroupMap[field];
     }
@@ -799,10 +820,12 @@ export class AddTeacherComponent implements OnInit {
     }
   }
 
-  private createQualificationRow(degree = '', institution = ''): FormGroup {
+  private createQualificationRow(degree = '', university = '', year = '', percentage = ''): FormGroup {
     return this.fb.group({
-      degree: [degree],
-      institution: [institution],
+      degree: [degree, [Validators.maxLength(255)]],
+      university: [university, [Validators.maxLength(255)]],
+      year: [year, [Validators.pattern(/^\d{4}$/)]],
+      percentage: [percentage, [Validators.pattern(/^(100|\d{1,2})$/)]],
     });
   }
 
@@ -820,21 +843,19 @@ export class AddTeacherComponent implements OnInit {
       return;
     }
     for (const item of items) {
-      const { degree, institution } = this.parseQualificationEntry(item);
-      arr.push(this.createQualificationRow(degree, institution), { emitEvent: false });
+      const { degree, university, year, percentage } = this.parseQualificationEntry(item);
+      arr.push(this.createQualificationRow(degree, university, year, percentage), { emitEvent: false });
     }
   }
 
-  private parseQualificationEntry(text: string): { degree: string; institution: string } {
-    const value = text.trim();
-    const sep = value.indexOf(' — ');
-    if (sep >= 0) {
-      return {
-        degree: value.slice(0, sep).trim(),
-        institution: value.slice(sep + 3).trim(),
-      };
-    }
-    return { degree: value, institution: '' };
+  private parseQualificationEntry(text: string): { degree: string; university: string; year: string; percentage: string } {
+    const parts = text.trim().split(' — ').map(p => p.trim());
+    return {
+      degree: parts[0] || '',
+      university: parts[1] || '',
+      year: parts[2] || '',
+      percentage: parts[3] || '',
+    };
   }
 
   onPhotoSelected(file: SelectedUploadFile): void {

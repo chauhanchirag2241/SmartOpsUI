@@ -149,7 +149,7 @@ export class DynamicFieldComponent {
   get inputMaxLength(): number | null {
     if (this.isAadhaarField()) return 14;
     if (this.isPanField()) return 10;
-    if (this.config.inputType === 'tel') return 10;
+    if (this.config.inputType === 'tel') return this.config.maxLength || 10;
     if (this.isNameField() && this.config.maxLength) return this.config.maxLength;
     if (this.config.maxLength) return this.config.maxLength;
     return null;
@@ -240,6 +240,16 @@ export class DynamicFieldComponent {
 
   isPanField(): boolean {
     return this.config.inputFormat === 'pan';
+  }
+
+  openTimePicker(event: Event): void {
+    try {
+      if ('showPicker' in HTMLInputElement.prototype) {
+        (event.target as HTMLInputElement).showPicker();
+      }
+    } catch {
+      // Fallback if showPicker fails
+    }
   }
 
   isNameField(): boolean {
