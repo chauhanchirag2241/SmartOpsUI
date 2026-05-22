@@ -1,0 +1,33 @@
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.portal-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.portal-avatar.size-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+
+.portal-avatar.size-md {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+
+.portal-avatar.size-lg {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+}

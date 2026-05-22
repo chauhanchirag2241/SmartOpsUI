@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { stripAadhaarDigits } from '../../shared/utils/form-validators.util';
 
 @Injectable({
   providedIn: 'root'
@@ -49,14 +50,66 @@ export class TeacherService {
     return this.api.delete<any>(`teachers/${id}`);
   }
 
-  private formatDate(date: any): string | null {
-    if (!date) return null;
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return date; // Return original if not a valid date object
+  private optionalInt(value: unknown): number | null {
+    if (value == null || value === '') {
+      return null;
+    }
+    const num = Number(value);
+    return Number.isNaN(num) ? null : num;
+  }
+
+  /** Each row: { degree, institution } → "degree — institution" for DB storage. */
+  private mapQualifications(rows: unknown): string[] {
+    if (!Array.isArray(rows)) {
+      return [];
+    }
+    return rows
+      .map((row: { degree?: string; institution?: string } | string) => {
+        if (typeof row === 'string') {
+          return row.trim();
+        }
+        const degree = String(row?.degree ?? '').trim();
+        const institution = String(row?.institution ?? '').trim();
+        if (degree && institution) {
+          return `${degree} — ${institution}`;
+        }
+        return degree || institution;
+      })
+      .filter(Boolean);
+  }
+
+  private formatDate(date: unknown): string | null {
+    if (!date) {
+      return null;
+    }
+    if (date instanceof Date) {
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    const d = new Date(date as string);
+    if (isNaN(d.getTime())) {
+      return null;
+    }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private emptyGuidToNull(value: unknown): string | null {
+    if (value == null || value === '') {
+      return null;
+    }
+    const s = String(value);
+    return s === '00000000-0000-0000-0000-000000000000' ? null : s;
   }
 
   private toTeacherCreatePayload(teacher: any): any {
@@ -67,8 +120,8 @@ export class TeacherService {
         dob: this.formatDate(teacher.personal.dob),
         gender: teacher.personal.gender,
         bloodGroup: teacher.personal.bloodGroup,
-        aadhaarNumber: teacher.personal.aadhaarNumber,
-        panNumber: teacher.personal.panNumber,
+        aadhaarNumber: stripAadhaarDigits(String(teacher.personal.aadhaarNumber ?? '')) || null,
+        panNumber: teacher.personal.panNumber?.toUpperCase?.() ?? teacher.personal.panNumber,
         mobile: teacher.personal.mobile,
         alternateMobile: teacher.personal.alternateMobile,
         email: teacher.personal.email,
@@ -76,12 +129,11 @@ export class TeacherService {
       },
       professional: {
         joiningDate: this.formatDate(teacher.professional.joiningDate),
-        department: teacher.professional.department,
-        designation: teacher.professional.designation,
+        designation: teacher.professional.designation || null,
         experience: Number(teacher.professional.experience || 0),
         salaryGrade: teacher.professional.salaryGrade,
         employmentType: teacher.professional.employmentType,
-        qualifications: (teacher.professional.qualifications || []).filter((q: any) => !!q),
+        qualifications: this.mapQualifications(teacher.professional.qualifications),
         bankDetails: {
           accountNumber: teacher.professional.bankDetails?.accountNumber,
           ifscCode: teacher.professional.bankDetails?.ifscCode,
@@ -89,15 +141,18 @@ export class TeacherService {
         }
       },
       schedule: {
-        classId: teacher.schedule.classId || teacher.schedule.classAssignments?.[0]?.classId || null,
+        classId: this.emptyGuidToNull(
+          teacher.schedule.classId || teacher.schedule.classAssignments?.[0]?.classId
+        ),
         classAssignments: (teacher.schedule.classAssignments || []).map((row: any) => ({
           classId: row.classId,
           subjectIds: row.subjectIds || [],
           isClassTeacher: !!row.isClassTeacher
         })),
-        shift: teacher.schedule.shift,
-        weeklyPeriods: Number(teacher.schedule.weeklyPeriods || 30),
-        maxPeriodsPerDay: Number(teacher.schedule.maxPeriodsPerDay || 6),
+        shiftStartTime: teacher.schedule.shiftStartTime || null,
+        shiftEndTime: teacher.schedule.shiftEndTime || null,
+        weeklyPeriods: this.optionalInt(teacher.schedule.weeklyPeriods),
+        maxPeriodsPerDay: this.optionalInt(teacher.schedule.maxPeriodsPerDay),
         role: teacher.schedule.role,
         portalAccess: teacher.schedule.portalAccess || 'Enabled',
         username: teacher.schedule.username
@@ -117,27 +172,29 @@ export class TeacherService {
       dob: this.formatDate(teacher.personal.dob),
       gender: teacher.personal.gender,
       bloodGroup: teacher.personal.bloodGroup,
-      aadhaarNo: teacher.personal.aadhaarNumber,
-      panNo: teacher.personal.panNumber,
+      aadhaarNo: stripAadhaarDigits(String(teacher.personal.aadhaarNumber ?? '')) || null,
+      panNo: teacher.personal.panNumber?.toUpperCase?.() ?? teacher.personal.panNumber,
       mobile: teacher.personal.mobile,
       alternateMobile: teacher.personal.alternateMobile,
       email: teacher.personal.email,
       address: teacher.personal.address,
       employeeId: teacher.professional.employeeId === 'Auto-generated' ? null : teacher.professional.employeeId,
       joiningDate: this.formatDate(teacher.professional.joiningDate),
-      department: teacher.professional.department,
-      designation: teacher.professional.designation,
+      designation: teacher.professional.designation || null,
       experience: Number(teacher.professional.experience || 0),
       salaryGrade: teacher.professional.salaryGrade,
       employmentType: teacher.professional.employmentType,
-      qualifications: (teacher.professional.qualifications || []).filter(Boolean).join('; '),
+      qualifications: this.mapQualifications(teacher.professional.qualifications).join('; '),
       bankAccountNumber: teacher.professional.bankDetails?.accountNumber,
       bankIfscCode: teacher.professional.bankDetails?.ifscCode,
       bankName: teacher.professional.bankDetails?.bankName,
-      classId: teacher.schedule.classId || teacher.schedule.subjectAssignments?.[0]?.classId || null,
-      shift: teacher.schedule.shift,
-      weeklyPeriods: Number(teacher.schedule.weeklyPeriods || 30),
-      maxPeriodsPerDay: Number(teacher.schedule.maxPeriodsPerDay || 6),
+      classId: this.emptyGuidToNull(
+        teacher.schedule.classId || teacher.schedule.subjectAssignments?.[0]?.classId
+      ),
+      shiftStartTime: teacher.schedule.shiftStartTime || null,
+      shiftEndTime: teacher.schedule.shiftEndTime || null,
+      weeklyPeriods: this.optionalInt(teacher.schedule.weeklyPeriods),
+      maxPeriodsPerDay: this.optionalInt(teacher.schedule.maxPeriodsPerDay),
       role: teacher.schedule.role,
       portalAccess: teacher.schedule.portalAccess === 'Enabled' || teacher.schedule.portalAccess === true,
       username: teacher.schedule.username,

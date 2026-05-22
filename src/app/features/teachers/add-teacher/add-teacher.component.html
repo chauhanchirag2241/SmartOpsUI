@@ -37,8 +37,6 @@
           <div class="card-title"><mat-icon>account_circle</mat-icon> Photo & basic details</div>
           <div class="photo-section">
             <app-file-upload
-              label="Upload photo"
-              subLabel="JPG, PNG - max 2MB"
               accept="image/png,image/jpeg"
               [disabled]="mode === 'view'"
               (fileSelected)="onPhotoSelected($event)"
@@ -77,7 +75,7 @@
             </div>
             <div class="field">
               <label>Email <span class="req">*</span></label>
-              <input [placeholder]="mode === 'view' ? '' : 'teacher@school.com'" type="email" formControlName="email">
+              <input [placeholder]="mode === 'view' ? '' : 'Email Address'" type="email" formControlName="email">
             </div>
             <div class="field full">
               <label>Residential address</label>
@@ -89,7 +87,7 @@
         <div class="card" formGroupName="emergencyContact">
           <div class="card-title"><mat-icon>groups</mat-icon> Emergency contact</div>
           <div class="grid3">
-            <div class="field"><label>Contact name</label><input placeholder="e.g. Priya Sharma" formControlName="name"></div>
+            <div class="field"><label>Contact name</label><input placeholder="Contact Name" formControlName="name" [appLettersOnly]="true"></div>
             <div class="field">
               <label>Relation</label>
               <select formControlName="relation">
@@ -114,24 +112,29 @@
               <app-dynamic-field [config]="configs['joiningDate']" [group]="professionalGroup" />
             </div>
             <div class="field">
-              <label>Department <span class="req">*</span></label>
-              <select formControlName="department">
-                <option value="">Select</option>
-                <option>Science</option><option>Mathematics</option><option>Languages</option>
-                <option>Social Studies</option><option>Arts</option><option>Physical Education</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Designation <span class="req">*</span></label>
+              <label>Designation</label>
               <select formControlName="designation">
-                <option value="">Select</option>
+                <option [ngValue]="null">Select Option</option>
                 <option>TGT</option><option>PGT</option><option>PRT</option>
                 <option>HOD</option><option>Principal</option><option>Vice Principal</option>
               </select>
             </div>
             <div class="field">
               <label>Experience (years)</label>
-              <input type="number" placeholder="e.g. 5" min="0" formControlName="experience">
+              <input
+                type="tel"
+                inputmode="numeric"
+                placeholder="0–99"
+                maxlength="2"
+                formControlName="experience"
+                [appDigitsOnly]="true"
+                [maxDigits]="2"
+                (input)="onExperienceInput($event)"
+                (blur)="onExperienceBlur()"
+              />
+              @if (professionalGroup.get('experience')?.invalid && professionalGroup.get('experience')?.touched) {
+                <span class="field-error">{{ experienceError }}</span>
+              }
             </div>
             <div class="field">
               <label>Salary grade</label>
@@ -156,16 +159,30 @@
         <div class="card">
           <div class="card-title"><mat-icon>card_membership</mat-icon> Qualifications</div>
           <div formArrayName="qualifications">
-            @for (qual of qualifications.controls; track qual; let i = $index) {
-              <div class="qual-row">
-                <input placeholder="e.g. B.Ed — Delhi University — 2015" [formControlName]="i">
-                <button type="button" class="qual-remove" (click)="removeQualification(i)">
+            @for (qual of qualifications.controls; track i; let i = $index) {
+              <div class="qual-row" [formGroupName]="i">
+                <div class="qual-fields">
+                  <div class="field">
+                    <label>Degree / qualification</label>
+                    <input formControlName="degree" placeholder="e.g. B.Ed" />
+                  </div>
+                  <div class="field">
+                    <label>University / year</label>
+                    <input formControlName="institution" placeholder="e.g. Delhi University — 2015" />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="qual-remove"
+                  [disabled]="mode === 'view' || qualifications.length <= 1"
+                  (click)="removeQualification(i)"
+                >
                   <mat-icon>close</mat-icon>
                 </button>
               </div>
             }
           </div>
-          <div class="add-row-btn" (click)="addQualification()">
+          <div class="add-row-btn" [class.disabled]="mode === 'view'" (click)="addQualification()">
             <mat-icon>add</mat-icon> Add qualification
           </div>
         </div>
@@ -173,9 +190,50 @@
         <div class="card" formGroupName="bankDetails">
           <div class="card-title"><mat-icon>account_balance</mat-icon> Bank details</div>
           <div class="grid3">
-            <div class="field"><label>Account number</label><input placeholder="Account number" formControlName="accountNumber"></div>
-            <div class="field"><label>IFSC code</label><input placeholder="e.g. SBIN0001234" formControlName="ifscCode"></div>
-            <div class="field"><label>Bank name</label><input placeholder="e.g. State Bank of India" formControlName="bankName"></div>
+            <div class="field">
+              <label>Account number</label>
+              <input
+                type="tel"
+                inputmode="numeric"
+                placeholder="9–18 digits"
+                maxlength="18"
+                formControlName="accountNumber"
+                [appDigitsOnly]="true"
+                [maxDigits]="18"
+                (input)="onBankAccountInput($event)"
+                (blur)="onBankAccountBlur()"
+              />
+              @if (bankDetailsGroup.get('accountNumber')?.invalid && bankDetailsGroup.get('accountNumber')?.touched) {
+                <span class="field-error">{{ bankAccountError }}</span>
+              }
+            </div>
+            <div class="field">
+              <label>IFSC code</label>
+              <input
+                type="text"
+                placeholder="e.g. SBIN0001234"
+                maxlength="11"
+                autocapitalize="characters"
+                spellcheck="false"
+                formControlName="ifscCode"
+                (input)="onIfscInput($event)"
+                (blur)="onIfscBlur()"
+              />
+              @if (bankDetailsGroup.get('ifscCode')?.invalid && bankDetailsGroup.get('ifscCode')?.touched) {
+                <span class="field-error">{{ ifscError }}</span>
+              }
+            </div>
+            <div class="field">
+              <label>Bank name</label>
+              <input
+                placeholder="e.g. State Bank of India"
+                formControlName="bankName"
+                maxlength="50"
+              />
+              @if (bankDetailsGroup.get('bankName')?.invalid && bankDetailsGroup.get('bankName')?.touched) {
+                <span class="field-error">{{ bankNameError }}</span>
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -186,33 +244,76 @@
       <div formGroupName="schedule">
                 <p class="mapping-hint">Class and subject assignments are managed from the Class Mapping screen.</p>
         <div class="card">
-          <div class="card-title"><mat-icon>calendar_today</mat-icon> Working days</div>
-          <div class="day-chips">
-            @for (day of workingDays; track $index) {
-              <div 
-                class="day-chip" 
-                [class.sel]="day.selected" 
-                (click)="toggleDay($index)"
-              >
-                {{ day.label }}
+          <div class="card-title"><mat-icon>schedule</mat-icon> Timing</div>
+          <div class="grid3 timing-grid">
+            <div class="field time-field">
+              <label>Shift start</label>
+              <div class="time-input-wrap" (click)="openTimePicker($event)">
+                <mat-icon class="time-icon" aria-hidden="true">schedule</mat-icon>
+                <input
+                  type="time"
+                  class="time-input"
+                  formControlName="shiftStartTime"
+                  (change)="onShiftTimeChange()"
+                  (blur)="onShiftTimeBlur()"
+                />
+              </div>
+            </div>
+            <div class="field time-field">
+              <label>Shift end</label>
+              <div class="time-input-wrap" (click)="openTimePicker($event)">
+                <mat-icon class="time-icon" aria-hidden="true">schedule</mat-icon>
+                <input
+                  type="time"
+                  class="time-input"
+                  formControlName="shiftEndTime"
+                  (change)="onShiftTimeChange()"
+                  (blur)="onShiftTimeBlur()"
+                />
+              </div>
+            </div>
+            @if (
+              (scheduleGroup.get('shiftStartTime')?.invalid || scheduleGroup.get('shiftEndTime')?.invalid) &&
+              (scheduleGroup.get('shiftStartTime')?.touched || scheduleGroup.get('shiftEndTime')?.touched)
+            ) {
+              <div class="field shift-time-error">
+                <span class="field-error">{{ shiftTimeError }}</span>
               </div>
             }
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title"><mat-icon>schedule</mat-icon> Timing</div>
-          <div class="grid3">
             <div class="field">
-              <label>Shift</label>
-              <select formControlName="shift">
-                <option>Morning (7:30 AM – 1:30 PM)</option>
-                <option>Afternoon (12:00 PM – 6:00 PM)</option>
-                <option>Full day</option>
-              </select>
+              <label>Weekly periods</label>
+              <input
+                type="tel"
+                inputmode="numeric"
+                placeholder="e.g. 30"
+                maxlength="2"
+                formControlName="weeklyPeriods"
+                [appDigitsOnly]="true"
+                [maxDigits]="2"
+                (input)="onPeriodsInput($event, 'weeklyPeriods')"
+                (blur)="onPeriodsBlur('weeklyPeriods')"
+              />
+              @if (scheduleGroup.get('weeklyPeriods')?.invalid && scheduleGroup.get('weeklyPeriods')?.touched) {
+                <span class="field-error">{{ weeklyPeriodsError }}</span>
+              }
             </div>
-            <div class="field"><label>Weekly periods</label><input type="number" formControlName="weeklyPeriods"></div>
-            <div class="field"><label>Max periods/day</label><input type="number" formControlName="maxPeriodsPerDay"></div>
+            <div class="field">
+              <label>Max periods/day</label>
+              <input
+                type="tel"
+                inputmode="numeric"
+                placeholder="e.g. 6"
+                maxlength="2"
+                formControlName="maxPeriodsPerDay"
+                [appDigitsOnly]="true"
+                [maxDigits]="2"
+                (input)="onPeriodsInput($event, 'maxPeriodsPerDay')"
+                (blur)="onPeriodsBlur('maxPeriodsPerDay')"
+              />
+              @if (scheduleGroup.get('maxPeriodsPerDay')?.invalid && scheduleGroup.get('maxPeriodsPerDay')?.touched) {
+                <span class="field-error">{{ maxPeriodsPerDayError }}</span>
+              }
+            </div>
           </div>
         </div>
 
@@ -276,10 +377,6 @@
               <div class="sum-val">{{ teacherForm.get('professional.designation')?.value || '—' }}</div>
             </div>
             <div class="sum-item">
-              <div class="sum-key">Department</div>
-              <div class="sum-val">{{ teacherForm.get('professional.department')?.value || '—' }}</div>
-            </div>
-            <div class="sum-item">
               <div class="sum-key">Type</div>
               <div class="sum-val">
                 <span class="pill pill-green">{{ teacherForm.get('professional.employmentType')?.value }}</span>
@@ -296,16 +393,16 @@
           <div class="card-title"><mat-icon>event_available</mat-icon> Schedule</div>
           <div class="summary-grid">
             <div class="sum-item">
-              <div class="sum-key">Working days</div>
-              <div class="sum-val">{{ teacherForm.get('schedule.workingDays')?.value?.join(', ') || 'None' }}</div>
-            </div>
-            <div class="sum-item">
               <div class="sum-key">Shift</div>
-              <div class="sum-val">{{ teacherForm.get('schedule.shift')?.value }}</div>
+              <div class="sum-val">{{ shiftSummary }}</div>
             </div>
             <div class="sum-item">
               <div class="sum-key">Periods/week</div>
-              <div class="sum-val">{{ teacherForm.get('schedule.weeklyPeriods')?.value }}</div>
+              <div class="sum-val">{{ teacherForm.get('schedule.weeklyPeriods')?.value ?? '—' }}</div>
+            </div>
+            <div class="sum-item">
+              <div class="sum-key">Max periods/day</div>
+              <div class="sum-val">{{ teacherForm.get('schedule.maxPeriodsPerDay')?.value ?? '—' }}</div>
             </div>
             <div class="sum-item">
               <div class="sum-key">Portal access</div>

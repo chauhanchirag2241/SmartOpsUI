@@ -12,8 +12,10 @@
   }
   <span class="spacer"></span>
 
-  <span class="header-chip"><mat-icon>calendar_month</mat-icon>2026-27</span>
-  <span class="header-chip"><mat-icon>business</mat-icon>ABC School</span>
+  @if (academicYearLabel) {
+    <span class="header-chip"><mat-icon>calendar_month</mat-icon>{{ academicYearLabel }}</span>
+  }
+  <span class="header-chip"><mat-icon>business</mat-icon>{{ schoolName }}</span>
 
   <button class="notification" mat-icon-button type="button" aria-label="Notifications">
     <mat-icon>notifications</mat-icon>

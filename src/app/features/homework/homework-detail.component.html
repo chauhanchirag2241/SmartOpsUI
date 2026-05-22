@@ -1,9 +1,5 @@
 <div class="hw-detail-page" *ngIf="!loading && detail">
   <div class="topbar">
-    <button type="button" class="back-btn" (click)="goBack()" aria-label="Back to homework">
-      <mat-icon>arrow_back</mat-icon>
-      <span>Back to homework</span>
-    </button>
     <div class="page-info">
       <div class="page-title">{{ detail.title }}</div>
       <div class="page-sub">Student submission status</div>
@@ -75,9 +71,8 @@
       <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Student</th>
             <th>Roll</th>
+            <th>Student</th>
             <th>Status</th>
             <th>Submitted on</th>
             <th>Marks</th>
@@ -86,34 +81,36 @@
         </thead>
         <tbody>
           <tr *ngFor="let s of paginatedStudents; trackBy: trackStudent; let i = index">
-            <td class="muted-cell">{{ pageStart + i }}</td>
-            <td class="name-cell">{{ s.studentName }}</td>
             <td class="muted-cell">{{ s.rollNo }}</td>
+            <td class="name-cell">{{ s.studentName }}</td>
             <td>
-              <div class="status-btns">
+              <div class="status-btns compact">
                 <button
                   type="button"
-                  class="st-btn"
+                  class="st-chip"
                   [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Submitted)"
                   (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Submitted)"
+                  title="Submitted"
                 >
-                  Submitted
+                  S
                 </button>
                 <button
                   type="button"
-                  class="st-btn pending"
+                  class="st-chip pending"
                   [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
                   (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Pending)"
+                  title="Pending"
                 >
-                  Pending
+                  P
                 </button>
                 <button
                   type="button"
-                  class="st-btn late"
+                  class="st-chip late"
                   [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Late)"
                   (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Late)"
+                  title="Late"
                 >
-                  Late
+                  L
                 </button>
               </div>
             </td>
@@ -144,7 +141,7 @@
             </td>
           </tr>
           <tr *ngIf="!paginatedStudents.length">
-            <td colspan="7" class="empty-row">No students match this filter.</td>
+            <td colspan="6" class="empty-row">No students match this filter.</td>
           </tr>
         </tbody>
       </table>

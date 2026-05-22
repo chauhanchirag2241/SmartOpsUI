@@ -1,7 +1,6 @@
 import { Component, OnInit, HostListener, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClassService } from '../../core/services/class.service';
@@ -9,15 +8,13 @@ import { StudentService } from '../../core/services/student.service';
 import { AttendanceService } from '../../core/services/attendance.service';
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
-import { AvatarColorService } from '../../shared/services/avatar-color.service';
+import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 
 interface Student {
   id: string;
   classId?: string;
   roll: string;
   name: string;
-  avClass: string;
-  initials: string;
 }
 
 interface AttendanceStatusMap {
@@ -31,7 +28,7 @@ interface AttendanceNote {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, AvatarComponent],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css'
 })
@@ -41,7 +38,6 @@ export class AttendanceComponent implements OnInit {
   private attendanceService = inject(AttendanceService);
   private snackBar = inject(MatSnackBar);
   private cdr = inject(ChangeDetectorRef);
-  private avatarColor = inject(AvatarColorService);
 
   students: Student[] = [];
   status: AttendanceStatusMap = {};
@@ -122,14 +118,14 @@ export class AttendanceComponent implements OnInit {
       next: (res: any) => {
         const classStudents = this.filterStudentsBySelectedClass(res?.items || []);
 
-        this.students = classStudents.map((s: any, idx: number) => ({
-          id: s.id,
-          classId: s.classId,
-          roll: s.rollNumber || (idx + 1).toString().padStart(2, '0'),
-          name: s.name,
-          avClass: this.avatarColor.getAvatarClass(s.id || s.name),
-          initials: this.avatarColor.getInitials(s.name)
-        }));
+        this.students = classStudents
+          .map((s: any) => ({
+            id: s.id,
+            classId: s.classId,
+            roll: String(s.rollNumber ?? s.RollNumber ?? '').trim(),
+            name: s.name,
+          }))
+          .sort((a, b) => this.compareRollNumbers(a.roll, b.roll));
 
         this.students.forEach(s => {
           this.status[s.id] = '';
@@ -508,5 +504,14 @@ export class AttendanceComponent implements OnInit {
 
   onCardFocus(idx: number) {
     this.focusIdx = idx;
+  }
+
+  private compareRollNumbers(a: string, b: string): number {
+    const numA = parseInt(a, 10);
+    const numB = parseInt(b, 10);
+    if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+      return numA - numB;
+    }
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
   }
 }

@@ -7,6 +7,7 @@ import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
+import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import {
   enumToOptions,
   Medium,
@@ -49,14 +50,15 @@ export class AddSubjectComponent implements OnInit {
       placeholder: 'e.g. MATH-01',
       validations: [{ name: 'required', message: 'Subject code is required', validator: Validators.required }],
     },
-    subjectType: { type: 'select', controlName: 'subjectType', label: 'Subject type', options: enumToOptions(SubjectType) },
+    subjectType: { type: 'select', controlName: 'subjectType', label: 'Subject type', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(SubjectType) },
     subjectCategory: {
       type: 'select',
       controlName: 'subjectCategory',
       label: 'Subject category',
+      placeholder: SELECT_PLACEHOLDER,
       options: enumToOptions(SubjectCategory),
     },
-    medium: { type: 'select', controlName: 'medium', label: 'Medium of instruction', options: enumToOptions(Medium) },
+    medium: { type: 'select', controlName: 'medium', label: 'Medium of instruction', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(Medium) },
   };
 
   readonly formCards: FormCard[] = [
@@ -84,9 +86,9 @@ export class AddSubjectComponent implements OnInit {
     this.subjectForm = this.fb.group({
       subjectName: ['', Validators.required],
       subjectCode: ['', Validators.required],
-      subjectType: [''],
-      subjectCategory: [''],
-      medium: [''],
+      subjectType: [null],
+      subjectCategory: [null],
+      medium: [null],
       isActive: [true],
     });
   }
@@ -131,36 +133,63 @@ export class AddSubjectComponent implements OnInit {
     });
   }
 
-  private normalizeEnumValue<T extends Record<string, string>>(enumObj: T, value: unknown): string {
-    if (value === null || value === undefined || value === '') return '';
-    if (typeof value === 'number') return Object.values(enumObj)[value - 1] ?? '';
+  private normalizeEnumValue<T extends Record<string, string>>(enumObj: T, value: unknown): string | null {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value === 'number') {
+      const label = Object.values(enumObj)[value - 1];
+      return label ?? null;
+    }
     const text = String(value);
     const exact = Object.values(enumObj).find((o) => o === text);
     if (exact) return exact;
     const n = text.replace(/[-_\s]/g, '').toLowerCase();
-    return Object.values(enumObj).find((o) => o.replace(/[-_\s]/g, '').toLowerCase() === n) ?? '';
+    return Object.values(enumObj).find((o) => o.replace(/[-_\s]/g, '').toLowerCase() === n) ?? null;
   }
 
   private buildSubjectApiPayload(raw: Record<string, unknown>): Record<string, unknown> {
     return {
-      subjectName: raw['subjectName'],
-      subjectCode: raw['subjectCode'],
-      subjectType: raw['subjectType'],
-      subjectCategory: raw['subjectCategory'],
-      medium: raw['medium'],
+      subjectName: String(raw['subjectName'] ?? '').trim(),
+      subjectCode: String(raw['subjectCode'] ?? '').trim(),
+      subjectType: raw['subjectType'] ?? null,
+      subjectCategory: raw['subjectCategory'] ?? null,
+      medium: raw['medium'] ?? null,
       assignedClasses: [],
       periodsPerWeek: 1,
-      periodDuration: '',
+      periodDuration: '45',
       teachingDays: [],
       maxTheory: 80,
       maxPractical: 20,
       passingMarks: 33,
       gradeSystem: 'marks',
-      syllabusTextbook: '',
-      curriculum: '',
-      description: '',
+      syllabusTextbook: null,
+      curriculum: null,
+      description: null,
       isActive: raw['isActive'] ?? true,
     };
+  }
+
+  private resolveSaveError(err: unknown): string {
+    const body = (err as { error?: unknown })?.error;
+    if (typeof body === 'string' && body.trim()) {
+      return body;
+    }
+    if (body && typeof body === 'object') {
+      const record = body as Record<string, unknown>;
+      if (record['errors'] && typeof record['errors'] === 'object') {
+        const messages = Object.values(record['errors'] as Record<string, unknown>)
+          .flatMap((v) => (Array.isArray(v) ? v : [v]))
+          .map((m) => String(m))
+          .filter(Boolean);
+        if (messages.length) {
+          return messages.join(' ');
+        }
+      }
+      const message = record['message'] ?? record['title'];
+      if (typeof message === 'string' && message.trim()) {
+        return message;
+      }
+    }
+    return 'Failed to save subject. Please check the form and try again.';
   }
 
   saveSubject() {
@@ -197,8 +226,7 @@ export class AddSubjectComponent implements OnInit {
           this.saved.emit();
         },
         error: (err) => {
-          const errorMsg = err?.error?.message || err?.message || 'Error saving subject';
-          this.snackBar.open(errorMsg, 'Close', { duration: 4000, panelClass: 'snack-error' });
+          this.snackBar.open(this.resolveSaveError(err), 'Close', { duration: 5000, panelClass: 'snack-error' });
         },
       });
   }

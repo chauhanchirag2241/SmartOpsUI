@@ -1,7 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { finalize, forkJoin } from 'rxjs';
@@ -22,7 +21,7 @@ const SUBJECT_TAG_CLASSES = ['st-blue', 'st-purple', 'st-green', 'st-amber', 'st
 @Component({
   selector: 'app-class-subject-teacher-mapping',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
   templateUrl: './class-subject-teacher-mapping.component.html',
   styleUrl: './class-subject-teacher-mapping.component.css',
 })
@@ -271,9 +270,8 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
         isClassTeacher: this.quickAddClassTeacher,
       })
       .subscribe({
-        next: (created) => {
-          this.mappings = [...this.mappings, created];
-          this.buildSubjectColors();
+        next: () => {
+          this.loadMappingsForClass(this.activeClassId);
           this.toggleQuickAdd();
           this.refreshSummaries();
           this.snackBar.open('Subject mapped successfully', 'Close', { duration: 2500, panelClass: 'snack-success' });

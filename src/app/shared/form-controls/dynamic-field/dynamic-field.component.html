@@ -3,7 +3,7 @@
     <div class="custom-field" [formGroup]="group">
       <label [attr.for]="controlId">
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </label>
@@ -15,9 +15,12 @@
           [placeholder]="getPlaceholder()"
           [formControlName]="config.controlName"
           [disabled]="config.disabled ?? false"
-          [appDigitsOnly]="config.inputType === 'tel'"
-          [maxDigits]="10"
-          [attr.maxlength]="config.inputType === 'tel' ? 10 : null"
+          [appDigitsOnly]="usesDigitsOnly()"
+          [appLettersOnly]="isNameField()"
+          [maxDigits]="isAadhaarField() ? 12 : isDiscountField() ? discountMaxDigits : (config.inputType === 'tel' ? 10 : 0)"
+          [attr.maxlength]="inputMaxLength"
+          (input)="isAadhaarField() ? onAadhaarInput($event, config.controlName) : isPanField() ? onPanInput($event, config.controlName) : isNameField() ? onNameInput($event, config.controlName) : isAlphanumericField() ? onAlphanumericInput($event, config.controlName) : isDiscountField() ? onDiscountInput($event, config.controlName) : null"
+          (blur)="isNameField() ? onNameBlur(config.controlName) : isAlphanumericField() ? onAlphanumericBlur(config.controlName) : null"
         />
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>
@@ -27,7 +30,7 @@
     <div class="custom-field" [formGroup]="group">
       <label [attr.for]="controlId">
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </label>
@@ -50,7 +53,7 @@
     <div class="custom-field" [formGroup]="group">
       <label [attr.for]="controlId">
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </label>
@@ -73,7 +76,7 @@
     <div class="custom-field" [formGroup]="group">
       <label [attr.for]="controlId">
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </label>
@@ -94,7 +97,7 @@
     <div class="custom-field checkbox-field" [formGroup]="group">
       <mat-checkbox [formControlName]="config.controlName" [id]="controlId" [disabled]="config.disabled ?? false">
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </mat-checkbox>
@@ -107,7 +110,7 @@
     <div class="custom-field multi-checkbox-field" [formGroup]="group">
       <label>
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </label>
@@ -133,7 +136,7 @@
     <div class="custom-field" [formGroup]="group">
       <label [attr.for]="controlId">
         {{ config.label }}
-        @if (config.validations?.length) {
+        @if (isRequired) {
           <span class="req">*</span>
         }
       </label>

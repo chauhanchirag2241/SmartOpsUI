@@ -73,6 +73,40 @@
 .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .save-btn mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
+.status-btns.compact {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.st-chip {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.st-chip.active {
+  background: var(--g400);
+  border-color: var(--g400);
+  color: #fff;
+}
+
+.st-chip.pending.active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.st-chip.late.active {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
 .detail-card {
   background: var(--card);
   border: 1px solid var(--border);

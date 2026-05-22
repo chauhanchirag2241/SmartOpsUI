@@ -7,10 +7,10 @@ import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
+import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
-import { TeacherService } from '../../../core/services/teacher.service';
 
 type FieldItem = { key: string; full?: boolean };
 type FormCard = { tab: number; icon: string; title: string; grid: 'grid2' | 'grid3'; fields: FieldItem[] };
@@ -65,14 +65,14 @@ export class AddClassComponent implements OnInit {
       type: 'select',
       controlName: 'streamGroup',
       label: 'Stream / group',
-      placeholder: 'Select stream or group',
+      placeholder: SELECT_PLACEHOLDER,
       options: enumToOptions(StreamGroup, (value) => (value === StreamGroup.None ? 'None (primary)' : value)),
     },
     academicYear: {
       type: 'select',
       controlName: 'academicYear',
       label: 'Academic year',
-      placeholder: 'Select year',
+      placeholder: SELECT_PLACEHOLDER,
       options: [],
       validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }],
     },
@@ -84,20 +84,13 @@ export class AddClassComponent implements OnInit {
       placeholder: 'Enter capacity',
       validations: [{ name: 'required', message: 'Capacity is required', validator: Validators.required }],
     },
-    classTeacher: {
-      type: 'select',
-      controlName: 'classTeacher',
-      label: 'Class teacher',
-      placeholder: 'Select teacher',
-      options: [{ label: 'Assign later', value: '' }],
-    },
-    roomNumber: { type: 'input', controlName: 'roomNumber', label: 'Room number', placeholder: 'e.g. 101' },
-    shift: { type: 'select', controlName: 'shift', label: 'Shift', placeholder: 'Select shift', options: enumToOptions(Shift) },
+    roomNumber: { type: 'input', controlName: 'roomNumber', label: 'Room number', placeholder: 'Room number' },
+    shift: { type: 'select', controlName: 'shift', label: 'Shift', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(Shift) },
     medium: {
       type: 'select',
       controlName: 'medium',
       label: 'Medium',
-      placeholder: 'Select medium',
+      placeholder: SELECT_PLACEHOLDER,
       options: enumToOptions(Medium),
     },
     description: {
@@ -125,11 +118,10 @@ export class AddClassComponent implements OnInit {
     },
     {
       tab: 0,
-      icon: 'person',
-      title: 'Assignment & Room',
+      icon: 'meeting_room',
+      title: 'Room & schedule',
       grid: 'grid2',
       fields: [
-        { key: 'classTeacher' },
         { key: 'roomNumber' },
         { key: 'shift' },
         { key: 'medium' },
@@ -142,20 +134,18 @@ export class AddClassComponent implements OnInit {
     private fb: FormBuilder,
     private classService: ClassService,
     private ayService: AcademicYearService,
-    private teacherService: TeacherService,
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef
   ) {
     this.classForm = this.fb.group({
       className: ['', Validators.required],
       section: ['', Validators.required],
-      streamGroup: [StreamGroup.None],
+      streamGroup: [null],
       academicYear: ['', Validators.required],
       studentCapacity: ['', Validators.required],
-      classTeacher: [''],
       roomNumber: [''],
-      shift: [''],
-      medium: [''],
+      shift: [null],
+      medium: [null],
       description: [''],
       status: ['Active'],
     });
@@ -177,7 +167,6 @@ export class AddClassComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAcademicYears();
-    this.loadClassTeachers();
     if ((this.mode === 'edit' || this.mode === 'view') && this.classId) {
       this.loadClass(this.classId);
     }
@@ -186,9 +175,15 @@ export class AddClassComponent implements OnInit {
     }
   }
 
-  private static intToEnum<T extends Record<string, string>>(enumObj: T, intValue: number): string {
+  private static intToEnum<T extends Record<string, string>>(
+    enumObj: T,
+    intValue: number | null | undefined
+  ): string | null {
+    if (intValue == null || intValue <= 0) {
+      return null;
+    }
     const values = Object.values(enumObj);
-    return values[intValue - 1] ?? values[0];
+    return values[intValue - 1] ?? null;
   }
 
   private loadClass(id: string): void {
@@ -200,7 +195,6 @@ export class AddClassComponent implements OnInit {
           streamGroup: AddClassComponent.intToEnum(StreamGroup, res.streamGroup),
           academicYear: res.academicYearId,
           studentCapacity: res.capacity,
-          classTeacher: res.classTeacher,
           roomNumber: res.roomNumber,
           shift: AddClassComponent.intToEnum(Shift, res.shift),
           medium: AddClassComponent.intToEnum(Medium, res.medium),
@@ -228,18 +222,6 @@ export class AddClassComponent implements OnInit {
       },
       error: () =>
         this.snackBar.open('Failed to load academic years', 'Close', { duration: 3000, panelClass: 'snack-error' }),
-    });
-  }
-
-  private loadClassTeachers(): void {
-    this.teacherService.getClassTeacherDropdown().subscribe({
-      next: (teachers: any[]) => {
-        this.configs['classTeacher'].options = [
-          { label: 'Assign later', value: '' },
-          ...(teachers || []).map((teacher: any) => ({ label: teacher.name, value: teacher.id })),
-        ];
-        this.cdr.detectChanges();
-      },
     });
   }
 

@@ -48,12 +48,42 @@
 .add-teacher-container .grid3 {
   gap: 16px;
 }
+
+.add-teacher-container .field input:not(.time-input),
+.add-teacher-container .field textarea,
+.add-teacher-container .field select,
+.add-teacher-container .qual-row input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  border-radius: 8px;
+  background: var(--input-bg, #f9fafb);
+  color: var(--text-primary, #1a1a1a);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.add-teacher-container .field input:not(.time-input):focus,
+.add-teacher-container .field textarea:focus,
+.add-teacher-container .field select:focus,
+.add-teacher-container .qual-row input:focus {
+  border-color: var(--g400, #639922);
+  box-shadow: 0 0 0 2px rgba(99, 153, 34, 0.12);
+}
 /* PHOTO UPLOAD */
 .photo-section {
   display: flex;
   align-items: flex-start;
   gap: 24px;
   margin-bottom: 20px;
+  min-width: 0;
+}
+
+.photo-section > app-file-upload {
+  flex: 0 0 100px;
+  width: 100px;
 }
 
 .photo-upload {
@@ -92,10 +122,17 @@
 }
 
 .photo-fields {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
+}
+
+.photo-fields > app-dynamic-field,
+.photo-fields > .field {
+  min-width: 0;
 }
 
 .col-3 {
@@ -303,8 +340,34 @@ app-dynamic-field.col-3, app-dynamic-field.col-2 {
 .qual-row {
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
+}
+
+.qual-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.qual-fields .field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.qual-fields .field input {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .qual-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .qual-remove {
@@ -705,4 +768,113 @@ app-dynamic-field.col-3, app-dynamic-field.col-2 {
     display: block;
     overflow-x: auto;
   }
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--danger-color, #dc2626);
+  font-size: 12px;
+}
+
+.timing-grid {
+  align-items: start;
+}
+
+.timing-grid .time-field {
+  min-width: 0;
+}
+
+.timing-grid .shift-time-error {
+  grid-column: 1 / -1;
+}
+
+.time-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 12px 0 40px;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  border-radius: 8px;
+  background: var(--input-bg, #f9fafb);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+
+.time-input-wrap:hover {
+  border-color: var(--g400, #639922);
+  background: var(--hover, #f0f7e8);
+}
+
+.time-input-wrap:focus-within {
+  border-color: var(--g400, #639922);
+  box-shadow: 0 0 0 2px rgba(99, 153, 34, 0.12);
+}
+
+.time-input-wrap .time-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  color: var(--g600, #639922);
+  pointer-events: none;
+}
+
+.time-input-wrap .time-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary, #1a1a1a);
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  color-scheme: light;
+}
+
+.dark .time-input-wrap .time-input {
+  color-scheme: dark;
+}
+
+/* Hide native clock icon — use single green icon on the left */
+.time-input-wrap .time-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.time-input-wrap .time-input::-webkit-datetime-edit {
+  padding: 0;
+}
+
+.time-input-wrap .time-input::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+.time-input-wrap .time-input::-webkit-datetime-edit-hour-field,
+.time-input-wrap .time-input::-webkit-datetime-edit-minute-field,
+.time-input-wrap .time-input::-webkit-datetime-edit-ampm-field {
+  padding: 0 2px;
+}
+
+.time-input-wrap .time-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }

@@ -1,8 +1,5 @@
 <div class="homework-container">
   <div class="topbar">
-    <button class="back-btn" aria-label="Back" routerLink="/dashboard">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
     <div class="page-info">
       <div class="page-title">Homework</div>
       <div class="page-sub">Create and manage homework for your classes</div>
@@ -78,13 +75,16 @@
     >
       <div class="hw-card-body">
         <div class="hw-line hw-line-title">
+          <mat-icon class="hw-line-icon">assignment</mat-icon>
           <span class="pdot" [ngClass]="priorityDotClass(hw.priority)"></span>
           <span class="hw-line-text">{{ hw.title }}</span>
         </div>
         <div class="hw-line">
+          <mat-icon class="hw-line-icon">school</mat-icon>
           <span class="hw-line-text">{{ hw.className }} · {{ hw.subjectName }}</span>
         </div>
         <div class="hw-line hw-line-meta">
+          <mat-icon class="hw-line-icon">event</mat-icon>
           <span class="hw-line-text" [class.text-overdue]="hw.status === 'overdue'" [class.text-today]="hw.status === 'today'">
             Due {{ hw.dueDate }}
             · {{ hw.submitted }}/{{ hw.total || hw.submitted + hw.pending + hw.late }} submitted
@@ -94,14 +94,19 @@
         </div>
       </div>
       <div class="hw-card-footer" (click)="$event.stopPropagation()">
-        <button type="button" class="card-act-btn" title="Edit" (click)="openEdit(hw, $event)">
-          <mat-icon>edit</mat-icon>
-          <span>Edit</span>
+        <button type="button" class="act-menu-btn" [matMenuTriggerFor]="cardMenu" aria-label="Actions">
+          <mat-icon>more_vert</mat-icon>
         </button>
-        <button type="button" class="card-act-btn del" title="Delete" (click)="deleteHomework(hw, $event)">
-          <mat-icon>delete</mat-icon>
-          <span>Delete</span>
-        </button>
+        <mat-menu #cardMenu="matMenu">
+          <button mat-menu-item type="button" (click)="openEdit(hw, $event)">
+            <mat-icon>edit</mat-icon>
+            <span>Edit</span>
+          </button>
+          <button mat-menu-item type="button" class="menu-danger" (click)="deleteHomework(hw, $event)">
+            <mat-icon>delete</mat-icon>
+            <span>Delete</span>
+          </button>
+        </mat-menu>
       </div>
     </div>
   </div>
@@ -142,8 +147,19 @@
             </span>
           </td>
           <td (click)="$event.stopPropagation()">
-            <button type="button" class="act-btn" title="Edit" (click)="openEdit(hw, $event)"><mat-icon>edit</mat-icon></button>
-            <button type="button" class="act-btn del" title="Delete" (click)="deleteHomework(hw, $event)"><mat-icon>delete</mat-icon></button>
+            <button type="button" class="act-menu-btn" [matMenuTriggerFor]="rowMenu" aria-label="Actions">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #rowMenu="matMenu">
+              <button mat-menu-item type="button" (click)="openEdit(hw, $event)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+              <button mat-menu-item type="button" class="menu-danger" (click)="deleteHomework(hw, $event)">
+                <mat-icon>delete</mat-icon>
+                <span>Delete</span>
+              </button>
+            </mat-menu>
           </td>
         </tr>
       </tbody>

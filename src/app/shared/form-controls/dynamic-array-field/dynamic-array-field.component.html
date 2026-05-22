@@ -1,0 +1,29 @@
+<div class="dynamic-array-field" [class.disabled]="disabled">
+  <div class="dynamic-array-label">{{ label }}</div>
+  <div class="dynamic-array-rows">
+    @for (row of arrayForm.controls; track $index; let i = $index) {
+      <div class="dynamic-array-row" [formGroup]="row">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field">
+          <input matInput formControlName="label" placeholder="Field name" (blur)="onFieldBlur()" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field">
+          <input matInput formControlName="value" placeholder="Field value" (blur)="onFieldBlur()" />
+        </mat-form-field>
+        <button
+          type="button"
+          mat-icon-button
+          class="remove-btn"
+          [disabled]="disabled || arrayForm.length <= 1"
+          (click)="removeRow(i)"
+          aria-label="Remove field"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+  </div>
+  <button type="button" class="add-row-btn" [disabled]="disabled" (click)="addRow()">
+    <mat-icon>add</mat-icon>
+    Add field
+  </button>
+</div>

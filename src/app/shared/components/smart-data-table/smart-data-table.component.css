@@ -54,6 +54,11 @@ th.sort-desc .si .sort-arrow:last-child {
   color: var(--text-secondary);
 }
 
+.cell-empty {
+  color: var(--text-secondary, #9ca3af);
+  font-size: 12px;
+}
+
 .prog-wrap {
   display: flex;
   align-items: center;

@@ -9,10 +9,19 @@ import { Section, StreamGroup, Shift, Medium } from '../../shared/enums/field-op
  * Maps a frontend string enum value to the backend 1-based integer.
  * E.g. Section.A → 1, Shift.Morning → 1
  */
-function enumToInt<T extends Record<string, string>>(enumObj: T, value: string | null | undefined): number {
-  if (!value) return 1;
+function enumToInt<T extends Record<string, string>>(
+  enumObj: T,
+  value: string | null | undefined,
+  required = false
+): number | null {
+  if (!value) {
+    return required ? 1 : null;
+  }
   const idx = Object.values(enumObj).indexOf(value);
-  return idx >= 0 ? idx + 1 : 1;
+  if (idx < 0) {
+    return required ? 1 : null;
+  }
+  return idx + 1;
 }
 
 /** Maps frontend filter label → ClassFilter int */
@@ -61,11 +70,10 @@ export class ClassService {
   createClass(classData: any): Observable<any> {
     const payload = {
       className: classData.className,
-      section: enumToInt(Section, classData.section),
+      section: enumToInt(Section, classData.section, true),
       streamGroup: enumToInt(StreamGroup, classData.streamGroup),
       academicYearId: classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
-      classTeacher: classData.classTeacher,
       roomNumber: classData.roomNumber,
       shift: enumToInt(Shift, classData.shift),
       medium: enumToInt(Medium, classData.medium),
@@ -83,11 +91,10 @@ export class ClassService {
     const payload = {
       id,
       className: classData.className,
-      section: enumToInt(Section, classData.section),
+      section: enumToInt(Section, classData.section, true),
       streamGroup: enumToInt(StreamGroup, classData.streamGroup),
       academicYearId: classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
-      classTeacher: classData.classTeacher,
       roomNumber: classData.roomNumber,
       shift: enumToInt(Shift, classData.shift),
       medium: enumToInt(Medium, classData.medium),

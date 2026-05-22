@@ -38,8 +38,12 @@
       </div>
     </div>
 
-    <div class="error-msg" *ngIf="tenant.loadError">{{ tenant.loadError }}</div>
-    <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
+    @if (tenant.loadError) {
+      <div class="error-msg">{{ tenant.loadError }}</div>
+    }
+    @if (errorMessage()) {
+      <div class="error-msg auth-error" role="alert">{{ errorMessage() }}</div>
+    }
 
     <!-- Welcome Text -->
     <div class="heading">
@@ -58,12 +62,23 @@
               <polyline points="22,6 12,13 2,6"/>
             </svg>
           </span>
-          <input type="email" formControlName="email" placeholder="admin@smartops.com" />
+          <input
+            type="email"
+            formControlName="email"
+            placeholder="Email Address"
+            (blur)="onEmailBlur()"
+            (input)="onEmailInput()"
+          />
         </div>
-        <div class="error-msg" *ngIf="loginForm.controls.email.touched && loginForm.controls.email.invalid">
-          <span *ngIf="loginForm.controls.email.hasError('required')">Email is required</span>
-          <span *ngIf="loginForm.controls.email.hasError('email')">Please enter a valid email</span>
-        </div>
+        @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+          <div class="error-msg field-error">
+            @if (loginForm.controls.email.hasError('required')) {
+              <span>Email is required</span>
+            } @else if (loginForm.controls.email.hasError('email')) {
+              <span>Please enter a valid email</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="field">
@@ -75,22 +90,36 @@
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           </span>
-          <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" />
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Password"
+            (blur)="onPasswordBlur()"
+            (input)="onPasswordInput()"
+          />
           <button type="button" class="eye-btn" (click)="togglePassword()" aria-label="Toggle password visibility">
-            <svg *ngIf="!showPassword" viewBox="0 0 24 24">
+            @if (!showPassword()) {
+            <svg viewBox="0 0 24 24">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
-            <svg *ngIf="showPassword" viewBox="0 0 24 24">
+            } @else {
+            <svg viewBox="0 0 24 24">
               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
               <line x1="1" y1="1" x2="23" y2="23"></line>
             </svg>
+            }
           </button>
         </div>
-        <div class="error-msg" *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">
-          <span *ngIf="loginForm.controls.password.hasError('required')">Password is required</span>
-          <span *ngIf="loginForm.controls.password.hasError('minlength')">Minimum 6 characters required</span>
-        </div>
+        @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+          <div class="error-msg field-error">
+            @if (loginForm.controls.password.hasError('required')) {
+              <span>Password is required</span>
+            } @else if (loginForm.controls.password.hasError('minlength')) {
+              <span>Minimum 6 characters required</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="row-opts">
@@ -101,9 +130,12 @@
         <button type="button" class="forgot">Forgot password?</button>
       </div>
 
-      <button type="submit" class="btn-login" [disabled]="loading">
-        <span *ngIf="!loading">Sign In →</span>
-        <span *ngIf="loading">✓ Authenticating...</span>
+      <button type="submit" class="btn-login" [disabled]="loading()">
+        @if (!loading()) {
+          <span>Sign In →</span>
+        } @else {
+          <span>✓ Authenticating...</span>
+        }
       </button>
     </form>
 

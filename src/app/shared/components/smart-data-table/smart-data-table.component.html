@@ -155,12 +155,16 @@
                   @let cellVal = getCellValue(row, col.key);
                   @switch (col.cellType) {
                     @case ('badge') {
-                      <span class="badge" [ngClass]="getBadgeClass(col, cellVal)">
-                        @if (getBadgeIcon(col, cellVal)) {
-                          <mat-icon class="badge-icon">{{ getBadgeIcon(col, cellVal) }}</mat-icon>
-                        }
-                        {{ getBadgeLabel(col, cellVal) }}
-                      </span>
+                      @if (isEmptyCellValue(cellVal)) {
+                        <span class="cell-empty">{{ formatCellDisplay(cellVal) }}</span>
+                      } @else {
+                        <span class="badge" [ngClass]="getBadgeClass(col, cellVal)">
+                          @if (getBadgeIcon(col, cellVal)) {
+                            <mat-icon class="badge-icon">{{ getBadgeIcon(col, cellVal) }}</mat-icon>
+                          }
+                          {{ getBadgeLabel(col, cellVal) }}
+                        </span>
+                      }
                     }
                     @case ('progress') {
                       <div class="prog-wrap">
@@ -203,7 +207,7 @@
                       {{ $any(cellVal) | date:'dd-MM-yyyy' }}
                     }
                     @default {
-                      {{ cellVal }}
+                      {{ formatCellDisplay(cellVal) }}
                     }
                   }
                 </td>

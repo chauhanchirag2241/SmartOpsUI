@@ -5,17 +5,7 @@
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
-<div class="progress-bar">
-  <div class="progress-fill" style="width: 100%"></div>
-</div>
-<div class="step-hint">Step 1 of 1 — Academic year details</div>
-
-<div class="tabs" role="tablist">
-  <div class="tab active" role="tab">
-    <div class="tab-num">1</div>
-    Details
-  </div>
-</div>
+<div class="step-hint">Academic year details</div>
 
 <form [formGroup]="ayForm">
   @for (card of formCards; track card.title) {

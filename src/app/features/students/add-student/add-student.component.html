@@ -32,8 +32,6 @@
         <div class="card-title"><mat-icon>account_circle</mat-icon> Photo & basic details</div>
         <div class="photo-section">
           <app-file-upload
-            label="Upload photo"
-            subLabel="JPG, PNG - max 2MB"
             accept="image/png,image/jpeg"
             [disabled]="mode === 'view'"
             (fileSelected)="onPhotoSelected($event)"
@@ -60,6 +58,8 @@
               </div>
             </div>
             <app-dynamic-field [config]="configs['bloodGroup']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['cast']" [group]="studentForm" />
+            <app-dynamic-field [config]="configs['category']" [group]="studentForm" />
             <app-dynamic-field [config]="configs['aadhaar']" [group]="studentForm" />
             <app-dynamic-field [config]="configs['mobile']" [group]="studentForm" />
             <app-dynamic-field [config]="configs['email']" [group]="studentForm" />
@@ -99,8 +99,6 @@
                 <div class="doc-name">{{ doc.name }}</div>
                 <app-file-upload
                   mode="document"
-                  label="{{ selectedDocuments[doc.name]?.file?.name || doc.sub }}"
-                  subLabel="PDF, JPG, PNG"
                   accept=".pdf,image/png,image/jpeg"
                   [disabled]="mode === 'view'"
                   (fileSelected)="onDocumentSelected(doc.name, $event)"
@@ -116,6 +114,26 @@
             </div>
           }
         </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><mat-icon>tune</mat-icon>Custom fields</div>
+        @if (mode === 'view') {
+          <div class="custom-fields-readonly">
+            <div class="custom-fields-readonly-label">Additional information</div>
+            @if (customFieldsForDisplay.length) {
+              @for (row of customFieldsForDisplay; track $index) {
+                <div class="custom-field-readonly-row">
+                  <span class="cf-label">{{ row.label || 'Field' }}</span>
+                  <span class="cf-value">{{ row.value || '—' }}</span>
+                </div>
+              }
+            } @else {
+              <div class="custom-fields-empty">None</div>
+            }
+          </div>
+        } @else {
+          <app-dynamic-array-field formControlName="customFields" label="Additional information" />
+        }
       </div>
       <ng-container *ngTemplateOutlet="dynamicFormCards"></ng-container>
     }

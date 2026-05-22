@@ -126,11 +126,6 @@ export class TeachersComponent implements OnInit {
         },
       },
       {
-        key: 'dept',
-        label: 'Department',
-        sortable: true,
-      },
-      {
         key: 'designation',
         label: 'Designation',
         sortable: true,
@@ -167,8 +162,8 @@ export class TeachersComponent implements OnInit {
       { label: 'Export', icon: 'download', permission: 'teacher.read' },
       { label: 'Delete', icon: 'delete', danger: true, permission: 'hr.manage' },
     ],
-    searchPlaceholder: 'Search by name, department...',
-    searchKeys: ['name', 'dept', 'email'],
+    searchPlaceholder: 'Search by name or email...',
+    searchKeys: ['name', 'email', 'designation'],
     itemLabel: 'teachers',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],

@@ -484,17 +484,34 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     return row[key];
   }
 
+  isEmptyCellValue(value: unknown): boolean {
+    return value == null || value === '';
+  }
+
+  formatCellDisplay(value: unknown): string {
+    return this.isEmptyCellValue(value) ? '—' : String(value);
+  }
+
   getBadgeClass(column: DataTableColumn, value: unknown): string {
+    if (this.isEmptyCellValue(value)) {
+      return '';
+    }
     const badge = column.badgeMap?.[String(value)];
     return badge?.cssClass ?? 'b-gray';
   }
 
   getBadgeIcon(column: DataTableColumn, value: unknown): string {
+    if (this.isEmptyCellValue(value)) {
+      return '';
+    }
     const badge = column.badgeMap?.[String(value)];
     return badge?.icon ?? '';
   }
 
   getBadgeLabel(column: DataTableColumn, value: unknown): string {
+    if (this.isEmptyCellValue(value)) {
+      return '—';
+    }
     const badge = column.badgeMap?.[String(value)];
     return badge?.label ?? String(value);
   }

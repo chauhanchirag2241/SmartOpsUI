@@ -4,6 +4,7 @@ import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
+import { stripAadhaarDigits } from '../../shared/utils/form-validators.util';
 
 @Injectable({ providedIn: 'root' })
 export class StudentService {
@@ -51,7 +52,9 @@ export class StudentService {
       bloodGroup: studentData.bloodGroup,
       mobile: studentData.mobile,
       email: studentData.email,
-      aadhaarNo: studentData.aadhaar,
+      aadhaarNo: stripAadhaarDigits(String(studentData.aadhaar ?? '')) || null,
+      caste: studentData.cast || null,
+      category: studentData.category || null,
       address: studentData.address,
       remarks: studentData.remarks,
       status: studentData.status,
@@ -94,7 +97,8 @@ export class StudentService {
           paymentMode: studentData.paymentMode,
           firstDueDate: this.toDateOnlyString(studentData.firstDueDate)
         }
-      ]
+      ],
+      customFields: this.mapCustomFields(studentData.customFields),
     };
 
     console.log('Sending student payload:', payload);
@@ -117,7 +121,9 @@ export class StudentService {
       bloodGroup: studentData.bloodGroup,
       mobile: studentData.mobile,
       email: studentData.email,
-      aadhaarNo: studentData.aadhaar,
+      aadhaarNo: stripAadhaarDigits(String(studentData.aadhaar ?? '')) || null,
+      caste: studentData.cast || null,
+      category: studentData.category || null,
       address: studentData.address,
       remarks: studentData.remarks,
       status: studentData.status,
@@ -160,7 +166,8 @@ export class StudentService {
           paymentMode: studentData.paymentMode,
           firstDueDate: this.toDateOnlyString(studentData.firstDueDate)
         }
-      ]
+      ],
+      customFields: this.mapCustomFields(studentData.customFields),
     };
     return this.api.put(`students/${id}`, payload);
   }
@@ -185,6 +192,18 @@ export class StudentService {
   }
 
 
+
+  private mapCustomFields(rows: unknown): { label: string; value: string }[] {
+    if (!Array.isArray(rows)) {
+      return [];
+    }
+    return rows
+      .map((row: any) => ({
+        label: String(row?.label ?? row?.fieldLabel ?? '').trim(),
+        value: String(row?.value ?? row?.fieldValue ?? '').trim(),
+      }))
+      .filter((row) => row.label || row.value);
+  }
 
   private toDateOnlyString(value: unknown): string | null {
     if (!value) {

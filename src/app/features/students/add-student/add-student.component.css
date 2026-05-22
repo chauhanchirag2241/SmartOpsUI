@@ -5,13 +5,26 @@
   align-items: flex-start;
   gap: 24px;
   margin-bottom: 20px;
+  min-width: 0;
+}
+
+.photo-section > app-file-upload {
+  flex: 0 0 100px;
+  width: 100px;
 }
 
 .photo-fields {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+.photo-fields > app-dynamic-field,
+.photo-fields > .gender-field {
+  min-width: 0;
 }
 
 .gender-field {
@@ -216,6 +229,42 @@
 
 .doc-status .upload-icon {
   color: var(--muted);
+}
+
+.custom-fields-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-fields-readonly-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+}
+
+.custom-field-readonly-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  background: var(--input-bg, #f9fafb);
+}
+
+.cf-label {
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+}
+
+.cf-value {
+  color: var(--text, #1f2937);
+}
+
+.custom-fields-empty {
+  font-size: 13px;
+  color: var(--muted, #6b7280);
 }
 
 .footer-actions {

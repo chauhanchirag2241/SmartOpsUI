@@ -2,8 +2,9 @@ import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/c
 import { LayoutUiService } from '../../core/services/layout-ui.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClassService } from '../../core/services/class.service';
 import { SubjectService } from '../../core/services/subject.service';
@@ -24,7 +25,7 @@ import {
 @Component({
   selector: 'app-homework',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatMenuModule, MatSnackBarModule],
   templateUrl: './homework.component.html',
   styleUrl: './homework.component.css',
 })

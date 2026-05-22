@@ -1,0 +1,54 @@
+.dynamic-array-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.dynamic-array-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+}
+
+.dynamic-array-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.dynamic-array-field.disabled {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.add-row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  border: 1px dashed var(--border, rgba(0, 0, 0, 0.12));
+  background: var(--input-bg, #f9fafb);
+  color: var(--g600, #639922);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-row-btn:hover:not(:disabled) {
+  border-color: var(--g400, #639922);
+  background: var(--hover, #f0f7e8);
+}
+
+.remove-btn {
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .dynamic-array-row {
+    grid-template-columns: 1fr;
+  }
+}

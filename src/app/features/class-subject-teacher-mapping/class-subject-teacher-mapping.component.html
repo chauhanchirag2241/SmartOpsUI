@@ -1,9 +1,5 @@
 <div class="mapping-page">
   <div class="topbar">
-  <a routerLink="/classes" class="back-btn" aria-label="Back to classes">
-      <mat-icon>arrow_back</mat-icon>
-      Back
-    </a>
     <div>
       <div class="page-title">Class — Subject — Teacher Mapping</div>
       <div class="page-sub">Map subjects to classes and assign teachers in one place</div>
@@ -167,9 +163,6 @@
                               [checked]="row.isClassTeacher"
                               (change)="onClassTeacherToggle(row, $any($event.target).checked)"
                             />
-                            @if (row.isClassTeacher) {
-                              <span class="ct-yes">Yes</span>
-                            }
                           </label>
                         </td>
                         <td>

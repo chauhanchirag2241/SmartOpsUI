@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { UPLOAD_PLACEHOLDER } from '../../constants/form.constants';
 
 export interface SelectedUploadFile {
   file: File;
@@ -15,16 +16,27 @@ export interface SelectedUploadFile {
   styleUrl: './file-upload.component.css',
 })
 export class FileUploadComponent {
-  @Input() label = 'Upload photo';
-  @Input() subLabel = 'JPG, PNG - max 2MB';
   @Input() accept = 'image/*';
   @Input() mode: 'avatar' | 'document' = 'avatar';
   @Input() disabled = false;
 
+  @HostBinding('class.avatar-mode')
+  get isAvatarMode(): boolean {
+    return this.mode === 'avatar';
+  }
+
+  @HostBinding('class.document-mode')
+  get isDocumentMode(): boolean {
+    return this.mode === 'document';
+  }
+
   @Output() fileSelected = new EventEmitter<SelectedUploadFile>();
+
+  readonly uploadPlaceholder = UPLOAD_PLACEHOLDER;
 
   previewUrl: string | null = null;
   fileName = '';
+  hasFile = false;
 
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -38,6 +50,7 @@ export class FileUploadComponent {
     }
 
     this.fileName = file.name;
+    this.hasFile = true;
     this.previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
     this.fileSelected.emit({ file, previewUrl: this.previewUrl });
   }

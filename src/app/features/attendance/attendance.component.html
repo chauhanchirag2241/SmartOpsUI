@@ -1,9 +1,6 @@
 <div class="attendance-container">
   <!-- Topbar -->
   <div class="topbar">
-  <button class="back-btn" aria-label="Back" routerLink="/dashboard">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
     <div class="page-info" style="flex:1">
       <div class="page-title">Attendance</div>
       <div class="page-sub">
@@ -123,7 +120,7 @@
            tabindex="0">
         <div class="status-dot"></div>
         <div class="roll-no">ROLL {{ s.roll }}</div>
-        <div class="stu-av" [ngClass]="s.avClass">{{ s.initials }}</div>
+        <app-avatar [name]="s.name" size="md" />
         <div class="stu-name">{{ s.name }}</div>
         <div class="stu-actions">
           <div class="sa-btn sa-p" (click)="setStatus(s.id, 'present', $event)" title="Present (P)">P</div>
@@ -144,7 +141,7 @@
            (click)="cardClick(s.id)"
            (focus)="onCardFocus(i)"
            tabindex="0">
-        <div class="list-av" [ngClass]="s.avClass">{{ s.initials }}</div>
+        <app-avatar [name]="s.name" size="sm" />
         <div class="list-roll">Roll {{ s.roll }}</div>
         <div class="list-name">{{ s.name }}</div>
         <div class="list-btns">
