@@ -13,6 +13,9 @@ export const MenuCodes = {
   AcademicYears: 'ACADEMIC_YEARS',
   Attendance: 'ATTENDANCE',
   Homework: 'HOMEWORK',
+  FeesStructure: 'FEES_STRUCTURE',
+  FeesClassAmounts: 'FEES_CLASS_AMOUNTS',
+  FeesCollection: 'FEES_COLLECTION',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

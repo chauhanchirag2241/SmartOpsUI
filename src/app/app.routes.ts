@@ -86,6 +86,33 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'fees-structure',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeesStructure, permission: 'view' },
+        loadComponent: () =>
+          import('./features/fees/fee-structure/fee-structure.component').then(
+            (m) => m.FeeStructureComponent,
+          ),
+      },
+      {
+        path: 'fees-class-amounts',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeesClassAmounts, permission: 'view' },
+        loadComponent: () =>
+          import('./features/fees/class-fee-amounts/class-fee-amounts.component').then(
+            (m) => m.ClassFeeAmountsComponent,
+          ),
+      },
+      {
+        path: 'fees-collection',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeesCollection, permission: 'view' },
+        loadComponent: () =>
+          import('./features/fees/fee-collection/fee-collection.component').then(
+            (m) => m.FeeCollectionComponent,
+          ),
+      },
+      {
         path: 'academic-years',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.AcademicYears, permission: 'view' },

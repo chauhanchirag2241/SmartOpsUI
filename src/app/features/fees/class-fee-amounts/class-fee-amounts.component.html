@@ -1,0 +1,92 @@
+<div class="fees-page">
+<div class="topbar">
+  <div class="page-info">
+    <div class="page-title">Fees Management — Class-wise Amounts</div>
+    <div class="page-sub">Set fee amounts per class for each fee type</div>
+  </div>
+</div>
+
+<div class="info-chip">
+  <mat-icon>info</mat-icon>
+  Class select karo → Fee type wise amount set karo. Amount set thay to students ma auto-apply thase.
+</div>
+
+<div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center">
+  <select class="sel-filter" [(ngModel)]="academicYearId" (ngModelChange)="onYearChange()">
+    <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
+  </select>
+  <span style="font-size: 11px; color: var(--muted); margin-left: auto">Click class to set amounts</span>
+</div>
+
+<div class="split-layout">
+  <div class="side-list">
+    <div class="sl-header">
+      <span style="font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase">Classes</span>
+    </div>
+    <div
+      *ngFor="let c of classes"
+      class="list-item"
+      [class.active]="c.classId === selectedClassId"
+      (click)="selectClass(c.classId)"
+    >
+      <div class="s-av">{{ (c.className || '?').slice(0, 2).toUpperCase() }}</div>
+      <div style="flex: 1">
+        <div style="font-size: 12px; font-weight: 500">{{ c.className }}</div>
+        <div style="font-size: 10px; color: var(--muted)">{{ c.studentCount }} students</div>
+      </div>
+      <div style="font-size: 11px; font-weight: 500" [style.color]="c.totalAmount ? 'var(--g600)' : 'var(--muted)'">
+        {{ c.totalAmount ? formatInr(c.totalAmount) : '—' }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!selectedClassId" class="card">
+    <div class="empty-panel">
+      <mat-icon>arrow_back</mat-icon>
+      Select a class to set fee amounts
+    </div>
+  </div>
+
+  <div *ngIf="selectedClassId && amountData" class="card">
+    <div class="card-header">
+      <div class="card-title"><mat-icon>school</mat-icon>{{ amountData.className }} — Fee amounts</div>
+      <div style="font-size: 13px; font-weight: 500; color: var(--g600)">Total: {{ formatInr(totalAmount) }}</div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Fee type</th>
+          <th>Category</th>
+          <th>Frequency</th>
+          <th style="width: 130px; text-align: right">Amount (₹) <span class="req">*</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of amountData.items">
+          <td style="font-weight: 500">{{ item.feeTypeName }}</td>
+          <td><span class="badge b-gray">{{ item.categoryLabel }}</span></td>
+          <td><span class="badge b-gray">{{ item.frequencyLabel }}</span></td>
+          <td style="text-align: right">
+            <input
+              type="number"
+              class="amt-input"
+              min="0"
+              [(ngModel)]="amountEdits[item.feeTypeId]"
+              placeholder="0"
+            />
+          </td>
+        </tr>
+        <tr style="background: var(--input-bg)">
+          <td colspan="3" style="font-weight: 500; text-align: right; padding-right: 8px">Total annual fees</td>
+          <td style="text-align: right; font-weight: 500; font-size: 14px; color: var(--g600)">{{ formatInr(totalAmount) }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="padding: 10px 14px; border-top: 0.5px solid var(--border); display: flex; justify-content: flex-end">
+      <button type="button" class="btn-save" (click)="saveAmounts()">
+        <mat-icon>save</mat-icon> Save amounts
+      </button>
+    </div>
+  </div>
+</div>
+</div>
