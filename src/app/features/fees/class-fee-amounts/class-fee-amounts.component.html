@@ -6,11 +6,6 @@
   </div>
 </div>
 
-<div class="info-chip">
-  <mat-icon>info</mat-icon>
-  Class select karo → Fee type wise amount set karo. Amount set thay to students ma auto-apply thase.
-</div>
-
 <div class="filters-row">
   <select class="sel-filter" [(ngModel)]="academicYearId" (ngModelChange)="onYearChange()">
     <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>

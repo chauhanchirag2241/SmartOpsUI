@@ -184,6 +184,7 @@ export class StudentsComponent implements OnInit {
         cellType: 'badge',
         badgeMap: {
           Paid: { cssClass: 'b-green', icon: 'check_circle' },
+          Partial: { cssClass: 'b-amber', icon: 'schedule' },
           Overdue: { cssClass: 'b-red', icon: 'error' },
           Pending: { cssClass: 'b-amber', icon: 'schedule' },
         },

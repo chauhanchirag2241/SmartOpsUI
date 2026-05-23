@@ -1,0 +1,174 @@
+<div class="fees-page salary-page">
+  <div class="topbar">
+    <div class="page-info">
+      <div class="page-title">Salary Management — Employee Salary</div>
+      <div class="page-sub">Assign published structure and per-teacher component amounts</div>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <div class="sl-search-wrap" style="min-width: 180px">
+      <mat-icon>search</mat-icon>
+      <input class="sl-search" [(ngModel)]="search" (ngModelChange)="loadEmployees()" placeholder="Search employee..." />
+    </div>
+    <select class="sel-filter" [(ngModel)]="departmentFilter" (ngModelChange)="loadEmployees()">
+      <option value="All">All departments</option>
+      <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+    </select>
+    <select class="sel-filter" [(ngModel)]="designationFilter" (ngModelChange)="loadEmployees()">
+      <option value="All">All designations</option>
+      <option *ngFor="let d of designations" [value]="d">{{ d }}</option>
+    </select>
+    <span class="filter-hint">{{ employees.length }} employees</span>
+  </div>
+
+  <div class="emp-layout">
+    <div class="side-list">
+      <div *ngIf="loadingList" class="empty-panel" style="padding: 16px">Loading...</div>
+      <div
+        *ngFor="let e of employees"
+        class="list-item"
+        [class.active]="selectedTeacherId === e.teacherId"
+        (click)="selectEmployee(e.teacherId)"
+      >
+        <div class="s-av">{{ studentInitials(e.employeeName) }}</div>
+        <div style="flex: 1; min-width: 0">
+          <div class="cell-name" style="font-size: 12px">{{ e.employeeName }}</div>
+          <div style="font-size: 10px; color: var(--muted)">{{ e.designation || '—' }}</div>
+        </div>
+        <div style="font-size: 10px; font-weight: 500; color: var(--g600)">
+          {{ e.netSalary != null ? formatInr(e.netSalary) : '—' }}
+        </div>
+      </div>
+      <div *ngIf="!loadingList && !employees.length" class="empty-panel" style="padding: 16px">No employees found.</div>
+    </div>
+
+    <div>
+      <div *ngIf="!selectedTeacherId" class="card">
+        <div class="empty-panel">
+          <mat-icon>person_search</mat-icon>
+          Select an employee to view or assign salary
+        </div>
+      </div>
+
+      <div *ngIf="selectedTeacherId && loadingDetail" class="card">
+        <div class="empty-panel">Loading salary details...</div>
+      </div>
+
+      <ng-container *ngIf="detail && !loadingDetail">
+        <div class="sal-header">
+          <div class="sal-top">
+            <div class="sal-av">{{ studentInitials(detail.employeeName) }}</div>
+            <div style="flex: 1">
+              <div style="font-size: 14px; font-weight: 500">{{ detail.employeeName }}</div>
+              <div style="font-size: 11px; color: var(--muted)">
+                {{ detail.employeeId || '—' }} · {{ detail.department || '—' }} · {{ detail.designation || '—' }}
+              </div>
+              <div style="font-size: 11px; margin-top: 4px">
+                <span class="badge" [ngClass]="detail.employeeSalaryId ? 'b-green' : 'b-gray'">
+                  {{ detail.employeeSalaryId ? 'Salary configured' : 'Not configured' }}
+                </span>
+              </div>
+            </div>
+            <button *ngIf="canEdit()" type="button" class="btn-primary" (click)="openAssignModal()">
+              <mat-icon>{{ detail.employeeSalaryId ? 'edit' : 'add' }}</mat-icon>
+              {{ detail.employeeSalaryId ? 'Edit salary' : 'Assign salary' }}
+            </button>
+          </div>
+          <div class="sal-amounts" *ngIf="detail.employeeSalaryId">
+            <div class="sa">
+              <div class="sa-val">{{ formatInr(detail.basicSalary) }}</div>
+              <div class="sa-label">Basic</div>
+            </div>
+            <div class="sa">
+              <div class="sa-val">{{ formatInr(detail.grossSalary) }}</div>
+              <div class="sa-label">Gross</div>
+            </div>
+            <div class="sa">
+              <div class="sa-val" style="color: #a32d2d">{{ formatInr(detail.totalDeductions) }}</div>
+              <div class="sa-label">Deductions</div>
+            </div>
+            <div class="sa">
+              <div class="sa-val" style="color: var(--g600)">{{ formatInr(detail.netSalary) }}</div>
+              <div class="sa-label">Net salary</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" *ngIf="detail.employeeSalaryId">
+          <div class="card-header">
+            <div class="card-title"><mat-icon>receipt_long</mat-icon> Salary breakdown</div>
+          </div>
+          <div style="padding: 12px 14px">
+            <div style="font-size: 11px; font-weight: 500; color: var(--g600); margin-bottom: 6px">Earnings</div>
+            <div *ngFor="let line of detail.earnings" class="comp-row">
+              <span class="comp-name">{{ line.name }}</span>
+              <span class="comp-amt comp-earning">{{ formatInr(line.amount) }}</span>
+            </div>
+            <div *ngIf="!detail.earnings.length" class="empty-panel" style="padding: 12px">No earnings.</div>
+
+            <div style="font-size: 11px; font-weight: 500; color: #a32d2d; margin: 12px 0 6px">Deductions</div>
+            <div *ngFor="let line of detail.deductions" class="comp-row">
+              <span class="comp-name">{{ line.name }}</span>
+              <span class="comp-amt comp-deduction">{{ formatInr(line.amount) }}</span>
+            </div>
+            <div *ngIf="!detail.deductions.length" class="empty-panel" style="padding: 12px">No deductions.</div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="overlay" [class.show]="showAssignModal" (click)="showAssignModal = false">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="mh">
+        <div class="mt"><mat-icon>assignment</mat-icon> Assign component-wise salary</div>
+        <button type="button" class="mc-btn" (click)="showAssignModal = false"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mb">
+        <div class="field">
+          <label>Salary structure <span class="req">*</span></label>
+          <select
+            [(ngModel)]="assignForm.salaryStructureVersionId"
+            (ngModelChange)="onAssignVersionChange()"
+            [disabled]="loadingAssignVersions"
+          >
+            <option *ngFor="let v of assignableVersions" [value]="v.id">
+              {{ v.academicYearTitle }} — {{ v.versionLabel }} ({{ v.statusLabel }})
+            </option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Effective date <span class="req">*</span></label>
+          <input type="date" [(ngModel)]="assignForm.effectiveDate" />
+        </div>
+        <p class="info-chip">
+          <mat-icon>info</mat-icon>
+          Structure defaults come from the published version. Override amounts per teacher (e.g. different basic or HRA).
+        </p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Calculation</th>
+              <th style="text-align: right; width: 140px">Value for employee</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of assignForm.componentValues">
+              <td style="font-weight: 500">{{ row.name }}</td>
+              <td><span class="badge b-gray">{{ row.calculationTypeLabel }}</span></td>
+              <td style="text-align: right">
+                <input type="number" class="amt-input" [(ngModel)]="row.value" style="width: 120px" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mf">
+        <button type="button" class="btn-cancel" (click)="showAssignModal = false">Cancel</button>
+        <button type="button" class="btn-save" (click)="saveAssignment()"><mat-icon>check</mat-icon> Save</button>
+      </div>
+    </div>
+  </div>
+</div>

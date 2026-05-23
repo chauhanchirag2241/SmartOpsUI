@@ -113,6 +113,62 @@
   text-align: center;
 }
 
+.fee-version-note {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--input-bg);
+  border-radius: 6px;
+  border: 0.5px solid var(--border);
+}
+
+.fee-structure-warning {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 4px 0 8px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #fff8e6;
+  border: 1px solid #f0d9a8;
+}
+
+.fee-structure-warning mat-icon {
+  color: #b45309;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.fee-warning-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+
+.fee-warning-body p {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #78350f;
+}
+
+.fee-warning-body p:last-child {
+  margin-bottom: 0;
+}
+
+.fee-warning-steps {
+  font-size: 11px !important;
+}
+
+.footer-hint.footer-hint-warn {
+  color: #b45309;
+  font-weight: 500;
+}
+
 .doc-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

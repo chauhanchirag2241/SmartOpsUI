@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { FeeStructureService } from '../../../core/services/fee-structure.service';
+import { SalaryStructureService } from '../../../core/services/salary-structure.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table/smart-data-table.component';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
@@ -13,24 +13,23 @@ import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import {
-  FEE_CATEGORY_OPTIONS,
-  FEE_FREQUENCY_OPTIONS,
-  FeeCategory,
-  FeeFrequency,
-  FeeStructureVersionStatus,
+  CALCULATION_TYPE_OPTIONS,
+  COMPONENT_TYPE_OPTIONS,
+  SalaryCalculationType,
+  SalaryComponentType,
+  SalaryStructureVersionStatus,
   asArray,
-  categoryBadgeClass,
+  componentTypeBadgeClass,
   extractApiError,
-  frequencyBadgeClass,
+  formatValueDisplay,
   normalizeDropdownItem,
-  normalizeFeeStats,
-  normalizeFeeStructureVersion,
-  normalizeFeeType,
+  normalizeSalaryStructureVersion,
+  normalizeSalaryVersionComponent,
   versionStatusBadgeClass,
-} from '../fees.shared';
+} from '../salary.shared';
 
 @Component({
-  selector: 'app-fee-structure',
+  selector: 'app-salary-structure',
   standalone: true,
   imports: [
     CommonModule,
@@ -40,11 +39,11 @@ import {
     MatDialogModule,
     SmartDataTableComponent,
   ],
-  templateUrl: './fee-structure.component.html',
-  styleUrl: '../fees.shared.css',
+  templateUrl: './salary-structure.component.html',
+  styleUrl: '../salary.shared.css',
 })
-export class FeeStructureComponent implements OnInit {
-  private readonly service = inject(FeeStructureService);
+export class SalaryStructureComponent implements OnInit {
+  private readonly service = inject(SalaryStructureService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly permissionService = inject(PermissionService);
   private readonly snackBar = inject(MatSnackBar);
@@ -59,29 +58,34 @@ export class FeeStructureComponent implements OnInit {
   currentStatusFilter = 'All';
   loading = false;
 
-  stats = { feeTypeCount: 0, classesConfigured: 0, paymentCycleLabel: '—', lateFeePerDay: 0 };
+  stats = { versionCount: 0, activeComponents: 0, publishedCount: 0, draftCount: 0 };
 
-  selectedVersion: ReturnType<typeof normalizeFeeStructureVersion> | null = null;
-  feeTypes: ReturnType<typeof normalizeFeeType>[] = [];
-  loadingTypes = false;
+  selectedVersion: ReturnType<typeof normalizeSalaryStructureVersion> | null = null;
+  components: ReturnType<typeof normalizeSalaryVersionComponent>[] = [];
+  loadingComponents = false;
 
   showCreateVersionModal = false;
-  showFeeTypeModal = false;
+  showComponentModal = false;
   createVersionForm = { academicYearId: '', effectiveDate: '', cloneFromVersionId: '' };
-  categoryOptions = FEE_CATEGORY_OPTIONS;
-  frequencyOptions = FEE_FREQUENCY_OPTIONS;
-  feeTypeForm = {
+  componentTypeOptions = COMPONENT_TYPE_OPTIONS;
+  calculationTypeOptions = CALCULATION_TYPE_OPTIONS;
+  componentForm = {
     name: '',
-    category: FeeCategory.Academic,
-    frequency: FeeFrequency.Quarterly,
-    isMandatory: true,
-    isRefundable: false,
+    shortCode: '',
+    componentType: SalaryComponentType.Earning,
+    calculationType: SalaryCalculationType.PercentOfBasic,
+    value: 0,
+    isTaxable: true,
   };
+
+  formatValueDisplay = formatValueDisplay;
+  typeClass = componentTypeBadgeClass;
+  statusClass = versionStatusBadgeClass;
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
-      title: 'Fee structure versions',
-      subtitle: 'Academic year wise fee structures with draft, publish and activate workflow',
+      title: 'Salary structure versions',
+      subtitle: 'Academic year wise salary components — draft, publish and activate',
       showAddButton: true,
       addButtonText: 'New structure',
       addButtonIcon: 'add',
@@ -102,7 +106,7 @@ export class FeeStructureComponent implements OnInit {
         },
       },
       { key: 'effectiveDate', label: 'Effective date', sortable: true, cellType: 'date' },
-      { key: 'feeTypeCount', label: 'Fee heads', sortable: true, align: 'right', width: '90px' },
+      { key: 'componentCount', label: 'Components', sortable: true, align: 'right', width: '100px' },
     ],
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
@@ -111,7 +115,7 @@ export class FeeStructureComponent implements OnInit {
       { label: 'Archived', icon: 'inventory_2', value: 'Archived' },
     ],
     actions: [
-      { label: 'Manage fee heads', icon: 'list_alt', iconColor: '#639922' },
+      { label: 'Manage components', icon: 'list_alt', iconColor: '#639922' },
       { label: 'Publish', icon: 'publish', iconColor: '#1E40AF' },
       { label: 'Activate', icon: 'play_circle', iconColor: '#639922' },
       { label: 'Create new version', icon: 'content_copy', iconColor: '#854f0b' },
@@ -129,10 +133,9 @@ export class FeeStructureComponent implements OnInit {
     this.tableConfig = applyModuleTablePermissions(
       this.baseTableConfig,
       this.permissionService,
-      MenuCodes.FeesStructure,
+      MenuCodes.SalaryStructure,
     );
     this.loadAcademicYears();
-    this.loadStats();
   }
 
   loadAcademicYears(): void {
@@ -157,35 +160,33 @@ export class FeeStructureComponent implements OnInit {
     this.service.getVersions(this.academicYearFilter || undefined, status).subscribe({
       next: (list) => {
         this.versions = asArray(list).map((v) => {
-          const n = normalizeFeeStructureVersion(v);
-          return {
-            ...n,
-            effectiveDate: n.effectiveDate || null,
-          } as Record<string, unknown>;
+          const n = normalizeSalaryStructureVersion(v);
+          return { ...n, effectiveDate: n.effectiveDate || null } as Record<string, unknown>;
         });
+        this.updateStats();
         this.loading = false;
         this.refreshView();
       },
       error: () => {
         this.loading = false;
         this.versions = [];
-        this.toast('Failed to load fee structures', true);
+        this.toast('Failed to load salary structures', true);
         this.refreshView();
       },
     });
   }
 
-  loadStats(): void {
-    this.service.getStats().subscribe({
-      next: (s) => {
-        this.stats = normalizeFeeStats(s);
-        this.refreshView();
-      },
-    });
+  private updateStats(): void {
+    const normalized = this.versions.map((v) => normalizeSalaryStructureVersion(v));
+    this.stats.versionCount = normalized.length;
+    this.stats.draftCount = normalized.filter((v) => v.statusLabel === 'Draft').length;
+    this.stats.publishedCount = normalized.filter((v) => v.statusLabel === 'Published').length;
+    const active = normalized.find((v) => v.statusLabel === 'Active');
+    this.stats.activeComponents = active?.componentCount ?? 0;
   }
 
   versionRowClass = (row: Record<string, unknown>): string => {
-    if (row['hasStudentPayments'] === true && row['statusLabel'] === 'Archived') {
+    if (row['hasAssignedEmployees'] === true && row['statusLabel'] === 'Archived') {
       return 'row-version-paid-archived';
     }
     return '';
@@ -198,7 +199,7 @@ export class FeeStructureComponent implements OnInit {
   }
 
   onAddButtonClicked(): void {
-    if (!this.permissionService.canAdd(MenuCodes.FeesStructure)) return;
+    if (!this.permissionService.canAdd(MenuCodes.SalaryStructure)) return;
     this.createVersionForm = {
       academicYearId: this.academicYearFilter || this.academicYears[0]?.id || '',
       effectiveDate: new Date().toISOString().split('T')[0],
@@ -210,10 +211,10 @@ export class FeeStructureComponent implements OnInit {
 
   onActionClicked(event: { action: DataTableAction; row: Record<string, unknown> }): void {
     const id = String(event.row['id'] ?? '');
-    const version = normalizeFeeStructureVersion(event.row);
+    const version = normalizeSalaryStructureVersion(event.row);
 
     switch (event.action.label) {
-      case 'Manage fee heads':
+      case 'Manage components':
         this.openManagePanel(id);
         break;
       case 'Publish':
@@ -232,21 +233,21 @@ export class FeeStructureComponent implements OnInit {
   }
 
   openManagePanel(versionId: string): void {
-    this.loadingTypes = true;
+    this.loadingComponents = true;
     this.selectedVersion = null;
-    this.feeTypes = [];
+    this.components = [];
     this.refreshView();
 
     this.service.getVersionDetail(versionId).subscribe({
       next: (detail) => {
-        this.selectedVersion = normalizeFeeStructureVersion(detail);
-        this.feeTypes = asArray(detail?.feeTypes ?? detail?.FeeTypes).map(normalizeFeeType);
-        this.loadingTypes = false;
+        this.selectedVersion = normalizeSalaryStructureVersion(detail);
+        this.components = asArray(detail?.components ?? detail?.Components).map(normalizeSalaryVersionComponent);
+        this.loadingComponents = false;
         this.refreshView();
       },
       error: (e) => {
-        this.loadingTypes = false;
-        this.toast(extractApiError(e, 'Failed to load fee heads'), true);
+        this.loadingComponents = false;
+        this.toast(extractApiError(e, 'Failed to load components'), true);
         this.refreshView();
       },
     });
@@ -254,7 +255,7 @@ export class FeeStructureComponent implements OnInit {
 
   closeManagePanel(): void {
     this.selectedVersion = null;
-    this.feeTypes = [];
+    this.components = [];
     this.refreshView();
   }
 
@@ -274,7 +275,7 @@ export class FeeStructureComponent implements OnInit {
       next: () => {
         this.showCreateVersionModal = false;
         this.loadVersions();
-        this.toast('Fee structure created');
+        this.toast('Salary structure created');
       },
       error: (e) => this.toast(extractApiError(e, 'Create failed'), true),
     });
@@ -283,7 +284,7 @@ export class FeeStructureComponent implements OnInit {
   publishVersion(id: string): void {
     if (
       !confirm(
-        'Publish this fee structure? The current published version for this academic year will be moved to Archived.',
+        'Publish this salary structure? The current published version for this academic year will be archived.',
       )
     ) {
       return;
@@ -299,11 +300,12 @@ export class FeeStructureComponent implements OnInit {
   }
 
   activateVersion(id: string): void {
-    if (!confirm('Activate this fee structure? Previous active structure for this year will be archived.')) return;
+    if (!confirm('Activate this salary structure? Previous active structure for this year will be archived.')) {
+      return;
+    }
     this.service.activateVersion(id).subscribe({
       next: () => {
         this.loadVersions();
-        this.loadStats();
         if (this.selectedVersion?.id === id) this.openManagePanel(id);
         this.toast('Activated');
       },
@@ -321,8 +323,8 @@ export class FeeStructureComponent implements OnInit {
     });
   }
 
-  private isDraftVersion(version: ReturnType<typeof normalizeFeeStructureVersion>): boolean {
-    return version.status === FeeStructureVersionStatus.Draft || version.statusLabel === 'Draft';
+  private isDraftVersion(version: ReturnType<typeof normalizeSalaryStructureVersion>): boolean {
+    return version.status === SalaryStructureVersionStatus.Draft || version.statusLabel === 'Draft';
   }
 
   isVersionActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
@@ -341,17 +343,17 @@ export class FeeStructureComponent implements OnInit {
     }
   }
 
-  deleteVersion(version: ReturnType<typeof normalizeFeeStructureVersion>): void {
+  deleteVersion(version: ReturnType<typeof normalizeSalaryStructureVersion>): void {
     if (!this.isDraftVersion(version)) {
       this.toast('Only draft structures can be deleted', true);
       return;
     }
     const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
       data: {
-        title: 'Delete draft fee structure?',
-        description: 'This draft and its fee heads will be removed.',
+        title: 'Delete draft salary structure?',
+        description: 'This draft and its salary components will be removed.',
         recordName: `${version.academicYearTitle} ${version.versionLabel}`,
-        initials: 'FS',
+        initials: 'SS',
       },
       panelClass: 'erp-dialog',
       disableClose: true,
@@ -369,51 +371,48 @@ export class FeeStructureComponent implements OnInit {
     });
   }
 
-  openAddFeeType(): void {
+  openAddComponent(): void {
     if (!this.selectedVersion || this.selectedVersion.isLocked) return;
-    this.feeTypeForm = {
+    this.componentForm = {
       name: '',
-      category: FeeCategory.Academic,
-      frequency: FeeFrequency.Quarterly,
-      isMandatory: true,
-      isRefundable: false,
+      shortCode: '',
+      componentType: SalaryComponentType.Earning,
+      calculationType: SalaryCalculationType.PercentOfBasic,
+      value: 0,
+      isTaxable: true,
     };
-    this.showFeeTypeModal = true;
+    this.showComponentModal = true;
     this.refreshView();
   }
 
-  saveFeeType(): void {
-    if (!this.selectedVersion || !this.feeTypeForm.name.trim()) {
-      this.toast('Fee type name is required', true);
+  saveComponent(): void {
+    if (!this.selectedVersion || !this.componentForm.name.trim()) {
+      this.toast('Component name is required', true);
       return;
     }
-    this.service.createFeeType(this.selectedVersion.id, this.feeTypeForm).subscribe({
+    this.service.createComponent(this.selectedVersion.id, this.componentForm).subscribe({
       next: () => {
-        this.showFeeTypeModal = false;
+        this.showComponentModal = false;
         this.openManagePanel(this.selectedVersion!.id);
         this.loadVersions();
-        this.toast('Fee head added');
+        this.toast('Component added');
       },
-      error: (e) => this.toast(extractApiError(e, 'Failed to add fee head'), true),
+      error: (e) => this.toast(extractApiError(e, 'Failed to add component'), true),
     });
   }
 
-  deleteFeeType(ft: ReturnType<typeof normalizeFeeType>): void {
+  deleteComponent(c: ReturnType<typeof normalizeSalaryVersionComponent>): void {
     if (!this.selectedVersion || this.selectedVersion.isLocked) return;
-    if (!confirm(`Delete fee head "${ft.name}"?`)) return;
-    this.service.deleteFeeType(ft.id).subscribe({
+    if (!confirm(`Delete component "${c.name}"?`)) return;
+    this.service.deleteComponent(c.id).subscribe({
       next: () => {
         this.openManagePanel(this.selectedVersion!.id);
         this.loadVersions();
-        this.toast('Fee head removed');
+        this.toast('Component removed');
       },
       error: (e) => this.toast(extractApiError(e, 'Delete failed'), true),
     });
   }
-
-  catClass = categoryBadgeClass;
-  freqClass = frequencyBadgeClass;
-  statusClass = versionStatusBadgeClass;
 
   private refreshView(): void {
     this.ngZone.run(() => this.cdr.detectChanges());

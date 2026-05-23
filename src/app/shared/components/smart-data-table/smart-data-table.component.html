@@ -292,12 +292,14 @@
   [style.left.px]="ctxMenuLeft"
 >
   @for (action of config.actions ?? []; track trackContextAction($index, action)) {
-    @if (action.separatorBefore) {
-      <div class="ctx-sep"></div>
+    @if (!config.actionVisibleFn || config.actionVisibleFn(action, ctxMenuRow)) {
+      @if (action.separatorBefore) {
+        <div class="ctx-sep"></div>
+      }
+      <button type="button" class="ctx-item" [class.danger]="action.danger" (click)="onActionClick(action)">
+        <mat-icon [style.color]="action.iconColor ?? 'inherit'">{{ action.icon }}</mat-icon>
+        {{ action.label }}
+      </button>
     }
-    <button type="button" class="ctx-item" [class.danger]="action.danger" (click)="onActionClick(action)">
-      <mat-icon [style.color]="action.iconColor ?? 'inherit'">{{ action.icon }}</mat-icon>
-      {{ action.label }}
-    </button>
   }
 </div>

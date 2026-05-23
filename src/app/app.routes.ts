@@ -114,6 +114,31 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'salary-structure',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.SalaryStructure, permission: 'view' },
+        loadComponent: () =>
+          import('./features/salary/salary-structure/salary-structure.component').then(
+            (m) => m.SalaryStructureComponent,
+          ),
+      },
+      {
+        path: 'salary-employees',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.SalaryEmployees, permission: 'view' },
+        loadComponent: () =>
+          import('./features/salary/employee-salary/employee-salary.component').then(
+            (m) => m.EmployeeSalaryComponent,
+          ),
+      },
+      {
+        path: 'salary-payroll',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.SalaryPayroll, permission: 'view' },
+        loadComponent: () =>
+          import('./features/salary/payroll/payroll.component').then((m) => m.PayrollComponent),
+      },
+      {
         path: 'academic-years',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.AcademicYears, permission: 'view' },

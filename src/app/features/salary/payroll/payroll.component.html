@@ -1,0 +1,227 @@
+<div class="fees-page salary-page">
+  <div class="topbar">
+    <div class="page-info">
+      <div class="page-title">Salary Management — Payroll</div>
+      <div class="page-sub">Process monthly payroll and view payslips</div>
+    </div>
+  </div>
+
+  <div class="pr-filters">
+    <select class="sel-filter" [(ngModel)]="payMonth" (ngModelChange)="loadPayroll()">
+      <option *ngFor="let m of monthOptions" [ngValue]="m.value">{{ m.label }}</option>
+    </select>
+    <select class="sel-filter" [(ngModel)]="payYear" (ngModelChange)="loadPayroll()">
+      <option [ngValue]="payYear - 1">{{ payYear - 1 }}</option>
+      <option [ngValue]="payYear">{{ payYear }}</option>
+      <option [ngValue]="payYear + 1">{{ payYear + 1 }}</option>
+    </select>
+    <div style="margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap">
+      <div class="export-row">
+        <button type="button" class="exp-btn" (click)="exportPlaceholder('Excel')">
+          <mat-icon>table_chart</mat-icon> Export Excel
+        </button>
+        <button type="button" class="exp-btn" (click)="exportPlaceholder('PDF')">
+          <mat-icon>picture_as_pdf</mat-icon> Export PDF
+        </button>
+      </div>
+      <button *ngIf="canProcess()" type="button" class="btn-primary" (click)="openProcessModal()">
+        <mat-icon>play_arrow</mat-icon> Process payroll
+      </button>
+      <button *ngIf="canMarkPaid() && payroll?.entries?.length" type="button" class="btn-outline" (click)="markSelectedPaid()">
+        <mat-icon>check_circle</mat-icon> Mark paid
+      </button>
+    </div>
+  </div>
+
+  <div class="pr-status-row" *ngIf="payroll">
+    <div class="pr-stat">
+      <div class="si si-b" style="width: 28px; height: 28px"><mat-icon style="font-size: 13px">groups</mat-icon></div>
+      <div>
+        <div class="pr-stat-val">{{ payroll.employeeCount }}</div>
+        <div class="pr-stat-label">Total employees</div>
+      </div>
+    </div>
+    <div class="pr-stat">
+      <div class="si si-g" style="width: 28px; height: 28px"><mat-icon style="font-size: 13px">currency_rupee</mat-icon></div>
+      <div>
+        <div class="pr-stat-val">{{ formatInr(payroll.totalGross) }}</div>
+        <div class="pr-stat-label">Gross payroll</div>
+      </div>
+    </div>
+    <div class="pr-stat">
+      <div class="si si-r" style="width: 28px; height: 28px"><mat-icon style="font-size: 13px">remove</mat-icon></div>
+      <div>
+        <div class="pr-stat-val">{{ formatInr(payroll.totalDeductions) }}</div>
+        <div class="pr-stat-label">Total deductions</div>
+      </div>
+    </div>
+    <div class="pr-stat">
+      <div class="si si-a" style="width: 28px; height: 28px"><mat-icon style="font-size: 13px">check</mat-icon></div>
+      <div>
+        <div class="pr-stat-val">{{ formatInr(payroll.totalNet) }}</div>
+        <div class="pr-stat-label">Net payable</div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="empty-panel">Loading payroll...</div>
+
+  <div class="card" *ngIf="!loading && payroll">
+    <div class="card-header">
+      <div class="card-title">
+        <mat-icon>payments</mat-icon>
+        Payroll — {{ monthLabel }} {{ payYear }}
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span class="badge" [ngClass]="payrollStatusBadgeClass(payroll.statusLabel)">{{ payroll.statusLabel }}</span>
+        <span *ngIf="payroll.useAttendanceWiseSalary" class="badge b-purple">Attendance-wise</span>
+        <span style="font-size: 11px; color: var(--muted)">{{ payroll.employeeCount }} employees</span>
+      </div>
+    </div>
+    <div style="overflow-x: auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 36px">
+              <input type="checkbox" class="cb" [checked]="isAllSelected()" (change)="toggleSelectAll($any($event.target).checked)" />
+            </th>
+            <th>Employee</th>
+            <th>Department</th>
+            <th style="text-align: right">Basic</th>
+            <th style="text-align: right">HRA</th>
+            <th style="text-align: right">Allowances</th>
+            <th style="text-align: right">Gross</th>
+            <th style="text-align: right">Deductions</th>
+            <th style="text-align: right">Net salary</th>
+            <th>Status</th>
+            <th style="width: 70px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of payroll.entries">
+            <td>
+              <input type="checkbox" class="cb" [checked]="selectedEntryIds.has(e.id)" (change)="toggleEntry(e.id, $any($event.target).checked)" />
+            </td>
+            <td style="font-weight: 500">{{ e.employeeName }}</td>
+            <td>{{ e.department || '—' }}</td>
+            <td style="text-align: right">{{ formatInr(e.basicSalary) }}</td>
+            <td style="text-align: right">{{ formatInr(e.hraAmount) }}</td>
+            <td style="text-align: right">{{ formatInr(e.allowances) }}</td>
+            <td style="text-align: right">{{ formatInr(e.grossSalary) }}</td>
+            <td style="text-align: right; color: #a32d2d">{{ formatInr(e.totalDeductions) }}</td>
+            <td style="text-align: right; color: var(--g600); font-weight: 500">{{ formatInr(e.netSalary) }}</td>
+            <td><span class="badge" [ngClass]="payrollStatusBadgeClass(e.statusLabel)">{{ e.statusLabel }}</span></td>
+            <td>
+              <button type="button" class="act-btn" title="Payslip" (click)="openPayslip(e.id)">
+                <mat-icon>receipt</mat-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!payroll.entries.length">
+            <td colspan="11" class="empty-panel">No payroll entries. Process payroll to generate entries.</td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="payroll.entries.length">
+          <tr class="tfoot-total">
+            <td colspan="3">Total</td>
+            <td style="text-align: right">{{ formatInr(payroll.entries.reduce((s, e) => s + e.basicSalary, 0)) }}</td>
+            <td style="text-align: right">{{ formatInr(payroll.entries.reduce((s, e) => s + e.hraAmount, 0)) }}</td>
+            <td style="text-align: right">{{ formatInr(payroll.entries.reduce((s, e) => s + e.allowances, 0)) }}</td>
+            <td style="text-align: right">{{ formatInr(payroll.totalGross) }}</td>
+            <td class="ded" style="text-align: right">{{ formatInr(payroll.totalDeductions) }}</td>
+            <td class="net" style="text-align: right">{{ formatInr(payroll.totalNet) }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="overlay" [class.show]="showProcessModal" (click)="showProcessModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="mh">
+        <div class="mt"><mat-icon>play_arrow</mat-icon> Process payroll — {{ monthLabel }} {{ payYear }}</div>
+        <button type="button" class="mc-btn" (click)="showProcessModal = false"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mb">
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px">
+          This will create or refresh payroll entries for all employees with an active salary assignment.
+        </p>
+        <div class="attendance-option">
+          <input type="checkbox" id="att-wise" [(ngModel)]="processForm.useAttendanceWiseSalary" />
+          <div>
+            <label for="att-wise" class="attendance-option-title">Attendance-wise salary</label>
+            <div class="attendance-option-hint">
+              When enabled, salary will be prorated based on attendance and leave (logic will be connected when the leave module is added). The setting is saved on the payroll run for this month.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mf">
+        <button type="button" class="btn-cancel" (click)="showProcessModal = false">Cancel</button>
+        <button type="button" class="btn-save" (click)="processPayroll()"><mat-icon>check</mat-icon> Process</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" [class.show]="showPayslipModal" (click)="showPayslipModal = false">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="mh">
+        <div class="mt"><mat-icon>receipt</mat-icon> Payslip — {{ payslip?.employeeName }} — {{ monthLabel }} {{ payYear }}</div>
+        <button type="button" class="mc-btn" (click)="showPayslipModal = false"><mat-icon>close</mat-icon></button>
+      </div>
+      <div class="mb" *ngIf="payslip">
+        <div class="payslip">
+          <div class="ps-header">
+            <div class="ps-school">SmartOps School</div>
+            <div class="ps-title">Salary Slip — {{ monthLabel }} {{ payslip.payYear }}</div>
+          </div>
+          <div class="ps-grid">
+            <div>
+              <div class="ps-row"><span class="ps-key">Employee name</span><span class="ps-val">{{ payslip.employeeName }}</span></div>
+              <div class="ps-row"><span class="ps-key">Employee ID</span><span class="ps-val">{{ payslip.employeeId || '—' }}</span></div>
+              <div class="ps-row"><span class="ps-key">Department</span><span class="ps-val">{{ payslip.department || '—' }}</span></div>
+              <div class="ps-row"><span class="ps-key">Designation</span><span class="ps-val">{{ payslip.designation || '—' }}</span></div>
+            </div>
+            <div>
+              <div class="ps-row"><span class="ps-key">Working days</span><span class="ps-val">{{ payslip.presentDays }} / {{ payslip.workingDays }}</span></div>
+            </div>
+          </div>
+          <table class="ps-comp-table">
+            <thead>
+              <tr>
+                <th style="text-align: left">Earnings</th>
+                <th style="text-align: right">Amount (₹)</th>
+                <th style="text-align: left">Deductions</th>
+                <th style="text-align: right">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of payslipRows()">
+                <td>{{ row.earning }}</td>
+                <td style="text-align: right">{{ row.earning ? (row.earningAmt | number) : '' }}</td>
+                <td>{{ row.deduction }}</td>
+                <td style="text-align: right">{{ row.deduction ? (row.deductionAmt | number) : '' }}</td>
+              </tr>
+              <tr style="background: var(--input-bg)">
+                <td style="font-weight: 500">Gross earnings</td>
+                <td style="text-align: right; font-weight: 500">{{ payslip.grossSalary | number }}</td>
+                <td style="font-weight: 500">Total deductions</td>
+                <td style="text-align: right; font-weight: 500; color: #a32d2d">{{ payslip.totalDeductions | number }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ps-total"><span>Net salary payable</span><span>{{ formatInr(payslip.netSalary) }}</span></div>
+          <div class="ps-bank" *ngIf="payslip.bankName || payslip.bankAccountNumber">
+            <div *ngIf="payslip.bankName">Bank: {{ payslip.bankName }}</div>
+            <div *ngIf="payslip.bankAccountNumber">A/C: {{ payslip.bankAccountNumber }}</div>
+            <div *ngIf="payslip.bankIfscCode">IFSC: {{ payslip.bankIfscCode }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="mf">
+        <button type="button" class="btn-cancel" (click)="showPayslipModal = false">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

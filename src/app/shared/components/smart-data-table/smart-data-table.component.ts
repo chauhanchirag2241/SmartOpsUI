@@ -120,6 +120,14 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   ctxMenuLeft = 0;
   ctxMenuRowIndex = -1;
 
+  get ctxMenuRow(): Record<string, unknown> {
+    if (this.ctxMenuRowIndex < 0 || this.ctxMenuRowIndex >= this.pagedData.length) {
+      return {};
+    }
+    const globalIdx = (this.currentPage - 1) * this.pageSize + this.ctxMenuRowIndex;
+    return this.filteredData[globalIdx] ?? {};
+  }
+
   get visibleColumns(): DataTableColumn[] {
     return this.config?.columns?.filter((col) => this.columnVisibility[col.key] !== false) ?? [];
   }

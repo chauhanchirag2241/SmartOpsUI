@@ -552,6 +552,10 @@ export class AddStudentComponent implements OnInit {
 
   feeStructureRows: FeeStructureRow[] = [];
   feeStructureLoading = false;
+  hasActiveFeeStructure = false;
+  /** Version locked at student admission — used in edit/view (not latest published). */
+  private assignedFeeStructureVersionId = '';
+  assignedFeeStructureVersionLabel = '';
   private feeStructureTotal = 0;
 
   readonly feeTotalLabel = 'Total fees';
@@ -778,7 +782,11 @@ export class AddStudentComponent implements OnInit {
   get feeStructureTitle(): string {
     const classId = this.studentForm.get('classId')?.value;
     const className = this.classes.find((c) => String(c.id) === String(classId))?.name;
-    return className ? `Fee structure — ${className}` : 'Fee structure';
+    let title = className ? `Fee structure — ${className}` : 'Fee structure';
+    if (this.mode !== 'add' && this.assignedFeeStructureVersionLabel) {
+      title += ` (${this.assignedFeeStructureVersionLabel})`;
+    }
+    return title;
   }
 
   get feeTotalAmount(): string {
@@ -791,18 +799,34 @@ export class AddStudentComponent implements OnInit {
     if (!classId || !yearId) {
       return 'Select academic year and class to view fee structure';
     }
-    return 'No active fee structure for this class. Publish and activate fees in Fee Structure first.';
+    return 'No published fee structure for this academic year. Publish fees in Fee Structure before admitting students.';
+  }
+
+  private isAdmissionFeeStructureReady(statusLabel: string): boolean {
+    return statusLabel === 'Active' || statusLabel === 'Published';
   }
 
   private loadFeeStructure(classId: string, academicYearId: string): void {
+    if (this.mode !== 'add') {
+      this.loadFeeStructureForEdit(classId, academicYearId);
+      return;
+    }
+
     this.feeStructureLoading = true;
+    this.hasActiveFeeStructure = false;
     this.feeStructureRows = [];
     this.feeStructureTotal = 0;
     this.cdr.detectChanges();
 
-    this.classFeeAmountService.getClassAmounts(classId, academicYearId).subscribe({
+    this.classFeeAmountService.getClassAmountsForAdmission(classId, academicYearId).subscribe({
       next: (data) => {
         const normalized = normalizeClassAmounts(data);
+        if (!this.isAdmissionFeeStructureReady(normalized.versionStatusLabel) || !normalized.items.length) {
+          this.clearFeeStructure();
+          this.cdr.detectChanges();
+          return;
+        }
+        this.hasActiveFeeStructure = true;
         this.feeStructureRows = normalized.items.map((item) => ({
           name: item.feeTypeName,
           amount: formatInr(item.amount),
@@ -819,10 +843,49 @@ export class AddStudentComponent implements OnInit {
     });
   }
 
+  private loadFeeStructureForEdit(classId: string, academicYearId: string): void {
+    this.feeStructureLoading = true;
+    this.feeStructureRows = [];
+    this.feeStructureTotal = 0;
+    this.cdr.detectChanges();
+
+    const versionId = this.assignedFeeStructureVersionId;
+    const request$ = versionId
+      ? this.classFeeAmountService.getClassAmounts(classId, academicYearId, versionId)
+      : this.classFeeAmountService.getClassAmountsForAdmission(classId, academicYearId);
+
+    request$.subscribe({
+      next: (data) => {
+        const normalized = normalizeClassAmounts(data);
+        this.assignedFeeStructureVersionLabel =
+          normalized.versionNumber > 0
+            ? `V${normalized.versionNumber} · ${normalized.versionStatusLabel}`
+            : normalized.versionStatusLabel;
+        this.feeStructureRows = normalized.items.map((item) => ({
+          name: item.feeTypeName,
+          amount: formatInr(item.amount),
+        }));
+        this.feeStructureTotal = normalized.totalAmount;
+        this.hasActiveFeeStructure = normalized.items.length > 0;
+        this.feeStructureLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.clearFeeStructure();
+        this.feeStructureLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   private clearFeeStructure(): void {
     this.feeStructureRows = [];
     this.feeStructureTotal = 0;
     this.feeStructureLoading = false;
+    this.hasActiveFeeStructure = false;
+    if (this.mode === 'add') {
+      this.assignedFeeStructureVersionLabel = '';
+    }
   }
 
   private generateAdmissionNo(academicYearId: string) {
@@ -972,6 +1035,10 @@ export class AddStudentComponent implements OnInit {
       ),
     });
 
+    this.assignedFeeStructureVersionId = String(
+      academic?.feeStructureVersionId ?? academic?.FeeStructureVersionId ?? '',
+    );
+
     const classId = academic?.classId;
     const yearId = academic?.academicYearId;
     if (classId && yearId) {
@@ -987,6 +1054,9 @@ export class AddStudentComponent implements OnInit {
       return;
     }
     this.currentTab = index;
+    if (index === 2) {
+      this.refreshFeeStructureForCurrentSelection();
+    }
   }
 
   nextTab() {
@@ -996,14 +1066,21 @@ export class AddStudentComponent implements OnInit {
     }
 
     if (!this.validateTab(this.currentTab)) {
-      this.snackBar.open('Please fix errors on this step before continuing', 'Close', {
-        duration: 3000,
-        panelClass: 'snack-error',
-      });
+      const feesTabBlocked =
+        this.mode === 'add' && this.currentTab === 2 && !this.hasActiveFeeStructure;
+      if (!feesTabBlocked) {
+        this.snackBar.open('Please fix errors on this step before continuing', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
+      }
       return;
     }
 
     this.currentTab++;
+    if (this.mode === 'add' && this.currentTab === 2) {
+      this.refreshFeeStructureForCurrentSelection();
+    }
   }
 
   private validateTab(tab: number): boolean {
@@ -1012,7 +1089,32 @@ export class AddStudentComponent implements OnInit {
     if (tab === 3) {
       controlNames.push('customFields');
     }
-    return validateFormControls(this.studentForm, controlNames);
+    if (this.mode === 'add' && tab === 2 && !this.hasActiveFeeStructure) {
+      return false;
+    }
+
+    if (!validateFormControls(this.studentForm, controlNames)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private refreshFeeStructureForCurrentSelection(): void {
+    const classId = this.studentForm.get('classId')?.value;
+    const yearId = this.studentForm.get('academicYearId')?.value;
+    if (classId && yearId) {
+      this.loadFeeStructure(classId, yearId);
+    } else {
+      this.clearFeeStructure();
+    }
+  }
+
+  get feesTabFooterHint(): string {
+    if (this.mode === 'add' && this.currentTab === 2 && !this.hasActiveFeeStructure && !this.feeStructureLoading) {
+      return 'Publish fee structure before continuing';
+    }
+    return this.footerHints[this.currentTab] ?? '';
   }
 
   prevTab() {
@@ -1031,6 +1133,15 @@ export class AddStudentComponent implements OnInit {
         duration: 3000,
         panelClass: 'snack-error',
       });
+      return;
+    }
+
+    if (this.mode === 'add' && !this.hasActiveFeeStructure) {
+      this.snackBar.open(
+        'Cannot add student without a published fee structure. Publish fees first.',
+        'Close',
+        { duration: 4000, panelClass: 'snack-error' },
+      );
       return;
     }
 

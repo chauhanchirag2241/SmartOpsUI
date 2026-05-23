@@ -149,4 +149,6 @@ export interface DataTableConfig {
   itemLabel?: string;
   /** Header configuration */
   header?: DataTableHeader;
+  /** Optional per-row filter for context menu actions */
+  actionVisibleFn?: (action: DataTableAction, row: Record<string, unknown>) => boolean;
 }

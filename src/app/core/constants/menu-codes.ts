@@ -16,6 +16,9 @@ export const MenuCodes = {
   FeesStructure: 'FEES_STRUCTURE',
   FeesClassAmounts: 'FEES_CLASS_AMOUNTS',
   FeesCollection: 'FEES_COLLECTION',
+  SalaryStructure: 'SALARY_STRUCTURE',
+  SalaryEmployees: 'SALARY_EMPLOYEES',
+  SalaryPayroll: 'SALARY_PAYROLL',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

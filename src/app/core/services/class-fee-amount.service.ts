@@ -19,6 +19,12 @@ export class ClassFeeAmountService {
     return this.api.get<any>(`fees/class-amounts/${classId}`, params);
   }
 
+  /** Active fee structure only — used on student admission form. */
+  getClassAmountsForAdmission(classId: string, academicYearId: string): Observable<any> {
+    const params = new HttpParams().set('academicYearId', academicYearId);
+    return this.api.get<any>(`fees/class-amounts/${classId}/admission-preview`, params);
+  }
+
   saveClassAmounts(classId: string, body: unknown): Observable<any> {
     return this.api.put<any>(`fees/class-amounts/${classId}`, body);
   }
