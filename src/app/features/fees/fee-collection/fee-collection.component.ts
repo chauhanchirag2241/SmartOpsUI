@@ -10,6 +10,7 @@ import {
   FEE_PAYMENT_MODE_OPTIONS,
   FeePaymentMode,
   asArray,
+  extractApiError,
   formatInr,
   normalizeDropdownItem,
   normalizeStudentDetail,
@@ -42,6 +43,7 @@ export class FeeCollectionComponent implements OnInit {
   selectedStudentId = '';
   detail: ReturnType<typeof normalizeStudentDetail> | null = null;
   showCollectModal = false;
+  collectingInProgress = false;
 
   paymentModes = FEE_PAYMENT_MODE_OPTIONS;
   collectForm = {
@@ -50,7 +52,7 @@ export class FeeCollectionComponent implements OnInit {
     transactionNo: '',
     paymentDate: new Date().toISOString().split('T')[0],
     remarks: '',
-    allocations: [] as { feeTypeId: string; amount: number; checked: boolean }[],
+    allocations: [] as { feeTypeId: string; feeTypeName: string; amount: number; checked: boolean }[],
   };
 
   ngOnInit(): void {
@@ -98,7 +100,40 @@ export class FeeCollectionComponent implements OnInit {
       });
   }
 
+  get canCollectFee(): boolean {
+    return !!this.detail && this.detail.dueAmount > 0 && !this.collectingInProgress;
+  }
+
+  get selectedAllocCount(): number {
+    return this.collectForm.allocations.filter((a) => a.checked).length;
+  }
+
+  get selectedAllocDue(): number {
+    return this.collectForm.allocations
+      .filter((a) => a.checked)
+      .reduce((sum, a) => sum + (a.amount || 0), 0);
+  }
+
+  toggleAllocation(row: { checked: boolean; amount: number }): void {
+    if (this.collectingInProgress || row.amount <= 0) return;
+    row.checked = !row.checked;
+    this.syncCollectAmountToSelection();
+  }
+
+  onAllocationCheckChange(): void {
+    this.syncCollectAmountToSelection();
+  }
+
+  private syncCollectAmountToSelection(): void {
+    const max = this.selectedAllocDue;
+    if (max > 0 && this.collectForm.amount > max) {
+      this.collectForm.amount = max;
+    }
+  }
+
   selectStudent(id: string): void {
+    this.closeCollectModal();
+    this.collectingInProgress = false;
     this.selectedStudentId = id;
     this.service.getStudentDetail(id, this.academicYearId || undefined).subscribe({
       next: (d) => {
@@ -110,51 +145,90 @@ export class FeeCollectionComponent implements OnInit {
   }
 
   openCollect(): void {
-    if (!this.detail) return;
+    const detail = this.detail;
+    if (!detail || detail.dueAmount <= 0 || this.collectingInProgress) return;
+
     this.collectForm = {
-      amount: this.detail.dueAmount ?? 0,
+      amount: detail.dueAmount,
       paymentMode: FeePaymentMode.Cash,
       transactionNo: '',
       paymentDate: new Date().toISOString().split('T')[0],
       remarks: '',
-      allocations: (this.detail.feeHeads ?? []).map((h) => ({
-        feeTypeId: h.feeTypeId,
-        amount: h.dueAmount,
-        checked: true,
-      })),
+      allocations: detail.feeHeads
+        .filter((h) => h.dueAmount > 0)
+        .map((h) => ({
+          feeTypeId: h.feeTypeId,
+          feeTypeName: h.feeTypeName,
+          amount: h.dueAmount,
+          checked: true,
+        })),
     };
+    this.syncCollectAmountToSelection();
     this.showCollectModal = true;
     this.refreshView();
   }
 
+  closeCollectModal(): void {
+    if (this.collectingInProgress) return;
+    this.showCollectModal = false;
+    this.refreshView();
+  }
+
   collectFee(): void {
+    if (this.collectingInProgress || !this.canCollectFee) return;
+
     if (!this.selectedStudentId || !this.collectForm.amount) {
       this.toast('Enter amount', true);
       return;
     }
-    const allocations = this.collectForm.allocations
-      .filter((a) => a.checked && a.amount > 0)
-      .map((a) => ({ feeTypeId: a.feeTypeId, amount: a.amount }));
+
+    if (this.detail && this.collectForm.amount > this.detail.dueAmount) {
+      this.toast('Amount cannot exceed due balance', true);
+      return;
+    }
+
+    if (this.collectForm.amount > this.selectedAllocDue) {
+      this.toast(`Amount cannot exceed ${formatInr(this.selectedAllocDue)} on selected fee heads`, true);
+      return;
+    }
+
+    const selectedHeads = this.collectForm.allocations.filter((a) => a.checked && a.feeTypeId);
+    if (!selectedHeads.length) {
+      this.toast('Select at least one fee head', true);
+      return;
+    }
+
+    const allocations = selectedHeads.map((a) => ({ feeTypeId: a.feeTypeId, amount: 0 }));
+
+    const collectedAmount = this.collectForm.amount;
+    this.collectingInProgress = true;
+    this.refreshView();
 
     this.service
       .collectFee({
         studentId: this.selectedStudentId,
-        amount: this.collectForm.amount,
+        amount: collectedAmount,
         paymentMode: this.collectForm.paymentMode,
         transactionNo: this.collectForm.transactionNo || null,
         paymentDate: this.collectForm.paymentDate,
         remarks: this.collectForm.remarks || null,
         allocations,
+        academicYearId: this.academicYearId || null,
       })
       .subscribe({
         next: (res) => {
+          this.collectingInProgress = false;
           this.showCollectModal = false;
           this.detail = normalizeStudentDetail(pick(res, 'studentDetail', 'StudentDetail') ?? res);
           this.loadStudents();
-          this.toast(formatInr(this.collectForm.amount) + ' collected');
+          this.toast(formatInr(collectedAmount) + ' collected');
           this.refreshView();
         },
-        error: (e) => this.toast(e?.error ?? 'Collection failed', true),
+        error: (e) => {
+          this.collectingInProgress = false;
+          this.toast(extractApiError(e, 'Collection failed'), true);
+          this.refreshView();
+        },
       });
   }
 

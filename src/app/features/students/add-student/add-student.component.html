@@ -59,19 +59,24 @@
         @else if (section.layout === 'fee-structure') {
           <div class="card">
             <div class="card-title">
-              <mat-icon>{{ section.icon }}</mat-icon
-              >{{ section.title }}
+              <mat-icon>{{ section.icon }}</mat-icon>{{ feeStructureTitle }}
             </div>
-            @for (row of feeStructureRows; track row.name) {
-              <div class="fee-row">
-                <span class="fee-name">{{ row.name }}</span>
-                <span class="fee-amt">{{ row.amount }}</span>
+            @if (feeStructureLoading) {
+              <div class="fee-empty-hint">Loading fee structure...</div>
+            } @else if (!feeStructureRows.length) {
+              <div class="fee-empty-hint">{{ feeStructureEmptyHint }}</div>
+            } @else {
+              @for (row of feeStructureRows; track row.name) {
+                <div class="fee-row">
+                  <span class="fee-name">{{ row.name }}</span>
+                  <span class="fee-amt">{{ row.amount }}</span>
+                </div>
+              }
+              <div class="fee-total-row">
+                <span class="fee-total-label">{{ feeTotalLabel }}</span>
+                <span class="fee-total-amt">{{ feeTotalAmount }}</span>
               </div>
             }
-            <div class="fee-total-row">
-              <span class="fee-total-label">{{ feeTotalLabel }}</span>
-              <span class="fee-total-amt">{{ feeTotalAmount }}</span>
-            </div>
           </div>
         }
 

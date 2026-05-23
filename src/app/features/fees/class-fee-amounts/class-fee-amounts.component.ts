@@ -4,13 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
+import { FeeStructureService } from '../../../core/services/fee-structure.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import {
   asArray,
+  extractApiError,
   formatInr,
   normalizeClassAmounts,
   normalizeClassSummary,
   normalizeDropdownItem,
+  normalizeFeeStructureVersion,
+  versionStatusBadgeClass,
 } from '../fees.shared';
 
 @Component({
@@ -22,18 +26,25 @@ import {
 })
 export class ClassFeeAmountsComponent implements OnInit {
   private readonly service = inject(ClassFeeAmountService);
+  private readonly feeStructureService = inject(FeeStructureService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
 
   academicYears: ReturnType<typeof normalizeDropdownItem>[] = [];
+  versions: ReturnType<typeof normalizeFeeStructureVersion>[] = [];
   academicYearId = '';
+  feeStructureVersionId = '';
   classes: ReturnType<typeof normalizeClassSummary>[] = [];
   selectedClassId = '';
   amountData: ReturnType<typeof normalizeClassAmounts> | null = null;
   amountEdits: Record<string, number> = {};
+  private amountEditsSnapshot: Record<string, number> = {};
+  isEditing = false;
+  saving = false;
   loading = false;
+  loadingVersions = false;
 
   ngOnInit(): void {
     this.academicYearService.getAcademicYearDropdown().subscribe({
@@ -42,7 +53,7 @@ export class ClassFeeAmountsComponent implements OnInit {
         const first = this.academicYears[0];
         if (first?.id) {
           this.academicYearId = first.id;
-          this.loadClasses();
+          this.loadVersions();
         }
         this.refreshView();
       },
@@ -56,12 +67,49 @@ export class ClassFeeAmountsComponent implements OnInit {
   onYearChange(): void {
     this.selectedClassId = '';
     this.amountData = null;
+    this.feeStructureVersionId = '';
+    this.isEditing = false;
+    this.loadVersions();
+  }
+
+  onVersionChange(): void {
+    this.selectedClassId = '';
+    this.amountData = null;
+    this.isEditing = false;
     this.loadClasses();
   }
 
-  loadClasses(): void {
+  loadVersions(): void {
     if (!this.academicYearId) return;
-    this.service.getClassSummaries(this.academicYearId).subscribe({
+    this.loadingVersions = true;
+    this.refreshView();
+    this.feeStructureService.getVersions(this.academicYearId).subscribe({
+      next: (list) => {
+        this.versions = asArray(list).map(normalizeFeeStructureVersion);
+        const active = this.versions.find((v) => v.statusLabel === 'Active');
+        const draft = this.versions.find((v) => v.statusLabel === 'Draft');
+        this.feeStructureVersionId =
+          draft?.id || active?.id || this.versions[0]?.id || '';
+        this.loadingVersions = false;
+        this.loadClasses();
+        this.refreshView();
+      },
+      error: () => {
+        this.loadingVersions = false;
+        this.versions = [];
+        this.toast('Failed to load fee structure versions', true);
+        this.refreshView();
+      },
+    });
+  }
+
+  get selectedVersion(): ReturnType<typeof normalizeFeeStructureVersion> | undefined {
+    return this.versions.find((v) => v.id === this.feeStructureVersionId);
+  }
+
+  loadClasses(): void {
+    if (!this.academicYearId || !this.feeStructureVersionId) return;
+    this.service.getClassSummaries(this.academicYearId, this.feeStructureVersionId).subscribe({
       next: (list) => {
         this.classes = asArray(list).map(normalizeClassSummary);
         if (!this.selectedClassId && this.classes.length) {
@@ -80,30 +128,48 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   selectClass(classId: string): void {
     this.selectedClassId = classId;
+    this.isEditing = false;
     this.loadAmounts();
   }
 
+  startEdit(): void {
+    if (!this.amountData?.isEditable || this.loading) return;
+    this.amountEditsSnapshot = { ...this.amountEdits };
+    this.isEditing = true;
+    this.refreshView();
+  }
+
+  cancelEdit(): void {
+    this.amountEdits = { ...this.amountEditsSnapshot };
+    this.isEditing = false;
+    this.refreshView();
+  }
+
   loadAmounts(): void {
-    if (!this.selectedClassId || !this.academicYearId) return;
+    if (!this.selectedClassId || !this.academicYearId || !this.feeStructureVersionId) return;
     this.loading = true;
     this.refreshView();
 
-    this.service.getClassAmounts(this.selectedClassId, this.academicYearId).subscribe({
-      next: (data) => {
-        this.amountData = normalizeClassAmounts(data);
-        this.amountEdits = {};
-        this.amountData.items.forEach((i) => {
-          this.amountEdits[i.feeTypeId] = i.amount ?? 0;
-        });
-        this.loading = false;
-        this.refreshView();
-      },
-      error: () => {
-        this.loading = false;
-        this.toast('Failed to load amounts', true);
-        this.refreshView();
-      },
-    });
+    this.service
+      .getClassAmounts(this.selectedClassId, this.academicYearId, this.feeStructureVersionId)
+      .subscribe({
+        next: (data) => {
+          this.amountData = normalizeClassAmounts(data);
+          this.amountEdits = {};
+          this.amountData.items.forEach((i) => {
+            this.amountEdits[i.feeTypeId] = i.amount ?? 0;
+          });
+          this.amountEditsSnapshot = { ...this.amountEdits };
+          this.isEditing = false;
+          this.loading = false;
+          this.refreshView();
+        },
+        error: () => {
+          this.loading = false;
+          this.toast('Failed to load amounts', true);
+          this.refreshView();
+        },
+      });
   }
 
   get totalAmount(): number {
@@ -111,28 +177,46 @@ export class ClassFeeAmountsComponent implements OnInit {
   }
 
   saveAmounts(): void {
-    if (!this.selectedClassId) return;
+    if (!this.selectedClassId || !this.isEditing || this.saving || !this.amountData?.isEditable) return;
     const amounts = Object.entries(this.amountEdits).map(([feeTypeId, amount]) => ({
       feeTypeId,
       amount: Number(amount) || 0,
     }));
+    this.saving = true;
+    this.refreshView();
     this.service
       .saveClassAmounts(this.selectedClassId, {
         academicYearId: this.academicYearId,
+        feeStructureVersionId: this.feeStructureVersionId,
         amounts,
       })
       .subscribe({
         next: (data) => {
           this.amountData = normalizeClassAmounts(data);
+          this.amountData.items.forEach((i) => {
+            this.amountEdits[i.feeTypeId] = i.amount ?? 0;
+          });
+          this.amountEditsSnapshot = { ...this.amountEdits };
+          this.isEditing = false;
+          this.saving = false;
           this.loadClasses();
           this.toast('Amounts saved');
           this.refreshView();
         },
-        error: (e) => this.toast(e?.error ?? 'Save failed', true),
+        error: (e) => {
+          this.saving = false;
+          this.toast(extractApiError(e, 'Save failed'), true);
+          this.refreshView();
+        },
       });
   }
 
+  amountFor(feeTypeId: string): number {
+    return Number(this.amountEdits[feeTypeId]) || 0;
+  }
+
   formatInr = formatInr;
+  versionStatusClass = versionStatusBadgeClass;
 
   private refreshView(): void {
     this.ngZone.run(() => this.cdr.detectChanges());

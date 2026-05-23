@@ -7,8 +7,47 @@ import { ApiService } from './api.service';
 export class FeeStructureService {
   private readonly api = inject(ApiService);
 
-  getFeeTypes(): Observable<any[]> {
-    return this.api.get<any[]>('fees/structure/types');
+  getVersions(academicYearId?: string, status?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (academicYearId) params = params.set('academicYearId', academicYearId);
+    if (status && status !== 'all') params = params.set('status', status);
+    return this.api.get<any[]>('fees/structure/versions', params);
+  }
+
+  getVersionDetail(versionId: string): Observable<any> {
+    return this.api.get<any>(`fees/structure/versions/${versionId}`);
+  }
+
+  createVersion(body: unknown): Observable<any> {
+    return this.api.post<any>('fees/structure/versions', body);
+  }
+
+  publishVersion(versionId: string): Observable<any> {
+    return this.api.post<any>(`fees/structure/versions/${versionId}/publish`, {});
+  }
+
+  activateVersion(versionId: string): Observable<any> {
+    return this.api.post<any>(`fees/structure/versions/${versionId}/activate`, {});
+  }
+
+  createNewVersionFrom(sourceVersionId: string): Observable<any> {
+    return this.api.post<any>(`fees/structure/versions/${sourceVersionId}/new-version`, {});
+  }
+
+  deleteVersion(versionId: string): Observable<void> {
+    return this.api.delete<void>(`fees/structure/versions/${versionId}`);
+  }
+
+  createFeeType(versionId: string, body: unknown): Observable<any> {
+    return this.api.post<any>(`fees/structure/versions/${versionId}/types`, body);
+  }
+
+  updateFeeType(typeId: string, body: unknown): Observable<any> {
+    return this.api.put<any>(`fees/structure/types/${typeId}`, body);
+  }
+
+  deleteFeeType(typeId: string): Observable<void> {
+    return this.api.delete<void>(`fees/structure/types/${typeId}`);
   }
 
   getStats(): Observable<any> {
@@ -21,21 +60,5 @@ export class FeeStructureService {
 
   upsertSettings(body: unknown): Observable<any> {
     return this.api.put<any>('fees/structure/settings', body);
-  }
-
-  createFeeType(body: unknown): Observable<any> {
-    return this.api.post<any>('fees/structure/types', body);
-  }
-
-  updateFeeType(id: string, body: unknown): Observable<any> {
-    return this.api.put<any>(`fees/structure/types/${id}`, body);
-  }
-
-  deleteFeeType(id: string): Observable<void> {
-    return this.api.delete<void>(`fees/structure/types/${id}`);
-  }
-
-  setActive(id: string, isActive: boolean): Observable<any> {
-    return this.api.patch<any>(`fees/structure/types/${id}/active`, { isActive });
   }
 }

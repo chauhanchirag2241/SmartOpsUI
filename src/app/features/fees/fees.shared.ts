@@ -28,6 +28,14 @@ export enum FeePaymentMode {
   Card = 4,
 }
 
+/** Matches backend FeeStructureVersionStatus */
+export enum FeeStructureVersionStatus {
+  Draft = 0,
+  Published = 1,
+  Active = 2,
+  Archived = 3,
+}
+
 export const FEE_CATEGORY_OPTIONS = [
   { value: FeeCategory.Academic, label: 'Academic' },
   { value: FeeCategory.Development, label: 'Development' },
@@ -76,6 +84,41 @@ export function formatInr(n: number): string {
   return '₹' + (n ?? 0).toLocaleString('en-IN');
 }
 
+/** Read API error text from HttpErrorResponse (string body, { error }, or validation details). */
+export function extractApiError(err: unknown, fallback = 'Something went wrong'): string {
+  if (!err || typeof err !== 'object' || !('error' in err)) {
+    return fallback;
+  }
+
+  const body = (err as { error?: unknown; message?: string }).error;
+  if (typeof body === 'string' && body.trim()) {
+    return body.trim();
+  }
+
+  if (body && typeof body === 'object') {
+    const record = body as Record<string, unknown>;
+    const apiError = record['error'];
+    if (typeof apiError === 'string' && apiError.trim()) {
+      return apiError.trim();
+    }
+    const apiMessage = record['message'];
+    if (typeof apiMessage === 'string' && apiMessage.trim()) {
+      return apiMessage.trim();
+    }
+    const details = record['details'] ?? record['errors'];
+    if (Array.isArray(details) && details.length) {
+      return details.map(String).join(' ');
+    }
+  }
+
+  const message = (err as { message?: string }).message;
+  if (typeof message === 'string' && message.trim()) {
+    return message.trim();
+  }
+
+  return fallback;
+}
+
 export function studentInitials(name: string): string {
   const parts = (name ?? '').split(' ').filter(Boolean);
   if (parts.length > 1) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -100,15 +143,47 @@ export function normalizeDropdownItem(raw: any): { id: string; name: string } {
   };
 }
 
+export function versionStatusBadgeClass(status: string): string {
+  const m: Record<string, string> = {
+    Draft: 'b-amber',
+    Published: 'b-blue',
+    Active: 'b-green',
+    Archived: 'b-gray',
+  };
+  return m[status] ?? 'b-gray';
+}
+
+export function normalizeFeeStructureVersion(raw: any) {
+  const versionNumber = Number(pick(raw, 'versionNumber', 'VersionNumber') ?? 0);
+  const statusLabel = String(pick(raw, 'statusLabel', 'StatusLabel') ?? '');
+  return {
+    id: String(pick(raw, 'id', 'Id') ?? ''),
+    academicYearId: String(pick(raw, 'academicYearId', 'AcademicYearId') ?? ''),
+    academicYearTitle: String(pick(raw, 'academicYearTitle', 'AcademicYearTitle') ?? ''),
+    versionNumber,
+    versionLabel: `V${versionNumber}`,
+    status: Number(pick(raw, 'status', 'Status') ?? 0),
+    statusLabel,
+    effectiveDate: String(pick(raw, 'effectiveDate', 'EffectiveDate') ?? ''),
+    publishedOn: pick(raw, 'publishedOn', 'PublishedOn') as string | null,
+    activatedOn: pick(raw, 'activatedOn', 'ActivatedOn') as string | null,
+    feeTypeCount: Number(pick(raw, 'feeTypeCount', 'FeeTypeCount') ?? 0),
+    hasStudentPayments: Boolean(pick(raw, 'hasStudentPayments', 'HasStudentPayments')),
+    isLocked: Boolean(pick(raw, 'isLocked', 'IsLocked')),
+  };
+}
+
 export function normalizeFeeType(raw: any) {
   return {
     id: String(pick(raw, 'id', 'Id') ?? ''),
+    feeStructureVersionId: String(pick(raw, 'feeStructureVersionId', 'FeeStructureVersionId') ?? ''),
     name: String(pick(raw, 'name', 'Name') ?? ''),
     categoryLabel: String(pick(raw, 'categoryLabel', 'CategoryLabel') ?? ''),
     frequencyLabel: String(pick(raw, 'frequencyLabel', 'FrequencyLabel') ?? ''),
     isMandatory: Boolean(pick(raw, 'isMandatory', 'IsMandatory')),
     isRefundable: Boolean(pick(raw, 'isRefundable', 'IsRefundable')),
     isActive: pick(raw, 'isActive', 'IsActive') !== false,
+    hasStudentPayments: Boolean(pick(raw, 'hasStudentPayments', 'HasStudentPayments')),
   };
 }
 
@@ -142,6 +217,10 @@ export function normalizeClassAmounts(raw: any) {
     classId: String(pick(raw, 'classId', 'ClassId') ?? ''),
     className: String(pick(raw, 'className', 'ClassName') ?? ''),
     academicYearId: String(pick(raw, 'academicYearId', 'AcademicYearId') ?? ''),
+    feeStructureVersionId: String(pick(raw, 'feeStructureVersionId', 'FeeStructureVersionId') ?? ''),
+    versionNumber: Number(pick(raw, 'versionNumber', 'VersionNumber') ?? 0),
+    versionStatusLabel: String(pick(raw, 'versionStatusLabel', 'VersionStatusLabel') ?? ''),
+    isEditable: Boolean(pick(raw, 'isEditable', 'IsEditable')),
     totalAmount: Number(pick(raw, 'totalAmount', 'TotalAmount') ?? 0),
     items,
   };

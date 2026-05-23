@@ -7,13 +7,15 @@ import { ApiService } from './api.service';
 export class ClassFeeAmountService {
   private readonly api = inject(ApiService);
 
-  getClassSummaries(academicYearId: string): Observable<any[]> {
-    const params = new HttpParams().set('academicYearId', academicYearId);
+  getClassSummaries(academicYearId: string, feeStructureVersionId?: string): Observable<any[]> {
+    let params = new HttpParams().set('academicYearId', academicYearId);
+    if (feeStructureVersionId) params = params.set('feeStructureVersionId', feeStructureVersionId);
     return this.api.get<any[]>('fees/class-amounts/classes', params);
   }
 
-  getClassAmounts(classId: string, academicYearId: string): Observable<any> {
-    const params = new HttpParams().set('academicYearId', academicYearId);
+  getClassAmounts(classId: string, academicYearId: string, feeStructureVersionId?: string): Observable<any> {
+    let params = new HttpParams().set('academicYearId', academicYearId);
+    if (feeStructureVersionId) params = params.set('feeStructureVersionId', feeStructureVersionId);
     return this.api.get<any>(`fees/class-amounts/${classId}`, params);
   }
 

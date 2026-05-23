@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
 import { tenantGuard } from './core/guards/tenant.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 import { MenuCodes } from './core/constants/menu-codes';
@@ -130,9 +131,10 @@ export const routes: Routes = [
       { path: '', redirectTo: 'login', pathMatch: 'full' },
       {
         path: 'login',
+        canActivate: [guestGuard],
         loadComponent: () => import('./auth/login/login.component').then((m) => m.LoginComponent),
       },
     ],
   },
-  { path: '**', redirectTo: '' },
+  { path: '**', redirectTo: 'auth/login' },
 ];

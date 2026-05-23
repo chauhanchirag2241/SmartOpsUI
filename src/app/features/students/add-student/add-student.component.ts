@@ -49,6 +49,8 @@ import {
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
+import { formatInr, normalizeClassAmounts } from '../../fees/fees.shared';
 
 type FeeStructureRow = {
   name: string;
@@ -515,7 +517,7 @@ export class AddStudentComponent implements OnInit {
       stepIndex: 2,
       sections: [
         {
-          title: 'Fee structure — Class 10',
+          title: 'Fee structure',
           icon: 'payments',
           layout: 'fee-structure',
           fields: [],
@@ -548,16 +550,11 @@ export class AddStudentComponent implements OnInit {
     },
   ];
 
-  readonly feeStructureRows: ReadonlyArray<FeeStructureRow> = [
-    { name: 'Tuition fee', amount: 'Rs 12,000' },
-    { name: 'Admission fee', amount: 'Rs 2,500' },
-    { name: 'Exam fee', amount: 'Rs 1,500' },
-    { name: 'Library fee', amount: 'Rs 500' },
-    { name: 'Sports fee', amount: 'Rs 800' },
-  ];
+  feeStructureRows: FeeStructureRow[] = [];
+  feeStructureLoading = false;
+  private feeStructureTotal = 0;
 
   readonly feeTotalLabel = 'Total fees';
-  readonly feeTotalAmount = 'Rs 17,300';
 
   readonly documentChecklist: ReadonlyArray<DocumentChecklistItem> = [
     { icon: 'badge', name: 'Aadhaar card', sub: '', uploaded: false },
@@ -655,6 +652,7 @@ export class AddStudentComponent implements OnInit {
     private studentService: StudentService,
     private classService: ClassService,
     private academicYearService: AcademicYearService,
+    private classFeeAmountService: ClassFeeAmountService,
     private cdr: ChangeDetectorRef,
   ) {
     this.studentForm = this.fb.group({
@@ -754,21 +752,77 @@ export class AddStudentComponent implements OnInit {
     this.studentForm.get('academicYearId')?.valueChanges.subscribe((yearId) => {
       if (yearId) {
         this.generateAdmissionNo(yearId);
-        // Also trigger roll number generation if class is already selected
         const classId = this.studentForm.get('classId')?.value;
         if (classId) {
           this.generateRollNumber(yearId, classId);
+          this.loadFeeStructure(classId, yearId);
+        } else {
+          this.clearFeeStructure();
         }
+      } else {
+        this.clearFeeStructure();
       }
     });
 
-    // Roll Number generation
     this.studentForm.get('classId')?.valueChanges.subscribe((classId) => {
       const yearId = this.studentForm.get('academicYearId')?.value;
       if (classId && yearId) {
         this.generateRollNumber(yearId, classId);
+        this.loadFeeStructure(classId, yearId);
+      } else {
+        this.clearFeeStructure();
       }
     });
+  }
+
+  get feeStructureTitle(): string {
+    const classId = this.studentForm.get('classId')?.value;
+    const className = this.classes.find((c) => String(c.id) === String(classId))?.name;
+    return className ? `Fee structure — ${className}` : 'Fee structure';
+  }
+
+  get feeTotalAmount(): string {
+    return formatInr(this.feeStructureTotal);
+  }
+
+  get feeStructureEmptyHint(): string {
+    const classId = this.studentForm.get('classId')?.value;
+    const yearId = this.studentForm.get('academicYearId')?.value;
+    if (!classId || !yearId) {
+      return 'Select academic year and class to view fee structure';
+    }
+    return 'No active fee structure for this class. Publish and activate fees in Fee Structure first.';
+  }
+
+  private loadFeeStructure(classId: string, academicYearId: string): void {
+    this.feeStructureLoading = true;
+    this.feeStructureRows = [];
+    this.feeStructureTotal = 0;
+    this.cdr.detectChanges();
+
+    this.classFeeAmountService.getClassAmounts(classId, academicYearId).subscribe({
+      next: (data) => {
+        const normalized = normalizeClassAmounts(data);
+        this.feeStructureRows = normalized.items.map((item) => ({
+          name: item.feeTypeName,
+          amount: formatInr(item.amount),
+        }));
+        this.feeStructureTotal = normalized.totalAmount;
+        this.feeStructureLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.clearFeeStructure();
+        this.feeStructureLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private clearFeeStructure(): void {
+    this.feeStructureRows = [];
+    this.feeStructureTotal = 0;
+    this.feeStructureLoading = false;
   }
 
   private generateAdmissionNo(academicYearId: string) {
@@ -917,6 +971,12 @@ export class AddStudentComponent implements OnInit {
         }),
       ),
     });
+
+    const classId = academic?.classId;
+    const yearId = academic?.academicYearId;
+    if (classId && yearId) {
+      this.loadFeeStructure(classId, yearId);
+    }
   }
 
   // ════════════════════════════════════════

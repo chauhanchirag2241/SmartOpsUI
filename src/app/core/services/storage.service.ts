@@ -8,7 +8,15 @@ export class StorageService {
 
   get<T>(key: string): T | null {
     const item = localStorage.getItem(key);
-    return item ? (JSON.parse(item) as T) : null;
+    if (!item) {
+      return null;
+    }
+    try {
+      return JSON.parse(item) as T;
+    } catch {
+      localStorage.removeItem(key);
+      return null;
+    }
   }
 
   remove(key: string): void {

@@ -106,6 +106,13 @@
   color: var(--g600);
 }
 
+.fee-empty-hint {
+  padding: 12px 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
 .doc-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

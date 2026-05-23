@@ -4,9 +4,6 @@
     <div class="page-title">Fees Management — Student Collection</div>
     <div class="page-sub">Collect and track fees for individual students</div>
   </div>
-  <button type="button" class="btn-primary" [disabled]="!detail" (click)="openCollect()">
-    <mat-icon>payments</mat-icon> Collect fee
-  </button>
 </div>
 
 <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
@@ -91,6 +88,18 @@
         <span>Payment progress</span>
         <span>{{ detail.paymentProgressPercent }}% paid</span>
       </div>
+      <div class="collect-actions">
+        <button
+          type="button"
+          class="btn-save collect-btn"
+          [disabled]="!canCollectFee"
+          (click)="openCollect()"
+        >
+          <mat-icon>payments</mat-icon>
+          {{ detail.dueAmount > 0 ? 'Collect fee' : 'Fully paid' }}
+        </button>
+        <span *ngIf="detail.dueAmount <= 0" class="collect-hint">All fees collected for this student</span>
+      </div>
     </div>
 
     <div class="card">
@@ -142,11 +151,13 @@
   </div>
 </div>
 
-<div class="overlay" [class.show]="showCollectModal" (click)="showCollectModal = false">
+<div class="overlay" [class.show]="showCollectModal" (click)="closeCollectModal()">
   <div class="modal" style="max-width: 440px" (click)="$event.stopPropagation()">
     <div class="mh">
       <div class="mt"><mat-icon>payments</mat-icon> Collect fee — {{ detail?.studentName }}</div>
-      <button type="button" class="mc-btn" (click)="showCollectModal = false"><mat-icon>close</mat-icon></button>
+      <button type="button" class="mc-btn" [disabled]="collectingInProgress" (click)="closeCollectModal()">
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
     <div class="mb" *ngIf="detail">
       <div style="display: flex; gap: 16px; margin-bottom: 12px; background: var(--input-bg); border-radius: 8px; padding: 10px">
@@ -156,7 +167,7 @@
       </div>
       <div class="field">
         <label>Amount collected <span class="req">*</span></label>
-        <input type="number" [(ngModel)]="collectForm.amount" min="1" />
+        <input type="number" [(ngModel)]="collectForm.amount" min="1" [max]="detail.dueAmount" [disabled]="collectingInProgress" />
       </div>
       <div class="field">
         <label>Payment mode</label>
@@ -168,14 +179,55 @@
         <div class="field"><label>Transaction / Receipt no.</label><input [(ngModel)]="collectForm.transactionNo" /></div>
         <div class="field"><label>Payment date</label><input type="date" [(ngModel)]="collectForm.paymentDate" /></div>
       </div>
+      <div class="field fee-alloc-field">
+        <div class="fee-alloc-head">
+          <span class="fee-alloc-title">Apply to fee heads</span>
+          <span class="fee-alloc-meta" *ngIf="collectForm.allocations.length">
+            {{ selectedAllocCount }} selected · {{ formatInr(selectedAllocDue) }} due
+          </span>
+        </div>
+        <div class="alloc-panel" *ngIf="collectForm.allocations.length; else noAllocHeads">
+          <div class="alloc-table-head">
+            <span></span>
+            <span>Fee head</span>
+            <span class="text-right">Due</span>
+          </div>
+          <div class="alloc-body">
+            <div
+              *ngFor="let a of collectForm.allocations"
+              class="alloc-row"
+              [class.is-selected]="a.checked"
+              (click)="toggleAllocation(a)"
+            >
+              <span class="alloc-check">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="a.checked"
+                  [disabled]="collectingInProgress || a.amount <= 0"
+                  (click)="$event.stopPropagation()"
+                  (ngModelChange)="onAllocationCheckChange()"
+                />
+              </span>
+              <span class="alloc-name" [title]="a.feeTypeName">{{ a.feeTypeName }}</span>
+              <span class="alloc-due">{{ formatInr(a.amount) }}</span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noAllocHeads>
+          <div class="alloc-empty">No pending fee heads for this student.</div>
+        </ng-template>
+      </div>
       <div class="field">
         <label>Remarks</label>
-        <input [(ngModel)]="collectForm.remarks" placeholder="Optional" />
+        <input [(ngModel)]="collectForm.remarks" placeholder="Optional" [disabled]="collectingInProgress" />
       </div>
     </div>
     <div class="mf">
-      <button type="button" class="btn-cancel" (click)="showCollectModal = false">Cancel</button>
-      <button type="button" class="btn-save" (click)="collectFee()"><mat-icon>check</mat-icon> Collect & receipt</button>
+      <button type="button" class="btn-cancel" [disabled]="collectingInProgress" (click)="closeCollectModal()">Cancel</button>
+      <button type="button" class="btn-save" [disabled]="collectingInProgress || !collectForm.amount" (click)="collectFee()">
+        <mat-icon>{{ collectingInProgress ? 'hourglass_empty' : 'check' }}</mat-icon>
+        {{ collectingInProgress ? 'Collecting...' : 'Collect & receipt' }}
+      </button>
     </div>
   </div>
 </div>

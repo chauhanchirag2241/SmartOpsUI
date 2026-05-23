@@ -1,7 +1,7 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { TenantService } from '../../core/services/tenant.service';
@@ -34,6 +34,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -42,6 +43,17 @@ export class LoginComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.auth.ensureValidSessionOrClear();
+
+    if (this.auth.isLoggedIn) {
+      void this.router.navigate(['/dashboard']);
+      return;
+    }
+
+    if (this.route.snapshot.queryParamMap.get('sessionExpired') === '1') {
+      this.errorMessage.set('Your session expired. Please sign in again.');
+    }
+
     this.generateParticles();
     this.valueSub = this.loginForm.valueChanges.subscribe(() => {
       if (this.errorMessage()) {

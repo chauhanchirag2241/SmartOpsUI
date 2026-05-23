@@ -4,6 +4,7 @@ import { ScopeService } from './scope.service';
 import { IMenu } from '../models/menu.model';
 import { IMenuPermission, IUserPermissionResponse } from '../models/permission.model';
 import { APP_MENU_APPLICATION } from '../constants/app.constants';
+import { isUsableAccessToken } from '../utils/token.util';
 import { ApiService } from './api.service';
 import { StorageService } from './storage.service';
 
@@ -16,11 +17,12 @@ export class PermissionService {
   private readonly api = inject(ApiService);
   private readonly storage = inject(StorageService);
   private readonly scopeService = inject(ScopeService);
+  private static readonly tokenKey = 'erp_token';
 
   private readonly permissionsSubject = new BehaviorSubject<IMenuPermission[]>(
-    this.storage.get<IMenuPermission[]>(PERMISSIONS_KEY) ?? [],
+    this.readCachedPermissions(),
   );
-  private readonly menusSubject = new BehaviorSubject<IMenu[]>(this.storage.get<IMenu[]>(MENUS_KEY) ?? []);
+  private readonly menusSubject = new BehaviorSubject<IMenu[]>(this.readCachedMenus());
 
   readonly permissions$ = this.permissionsSubject.asObservable();
   readonly menus$ = this.menusSubject.asObservable();
@@ -75,6 +77,18 @@ export class PermissionService {
 
   canEdit(menuCode: string): boolean {
     return this.getPermission(menuCode)?.canEdit ?? false;
+  }
+
+  private hasStoredToken(): boolean {
+    return isUsableAccessToken(this.storage.get<string>(PermissionService.tokenKey));
+  }
+
+  private readCachedPermissions(): IMenuPermission[] {
+    return this.hasStoredToken() ? (this.storage.get<IMenuPermission[]>(PERMISSIONS_KEY) ?? []) : [];
+  }
+
+  private readCachedMenus(): IMenu[] {
+    return this.hasStoredToken() ? (this.storage.get<IMenu[]>(MENUS_KEY) ?? []) : [];
   }
 
   canDelete(menuCode: string): boolean {

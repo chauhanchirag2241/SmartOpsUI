@@ -11,11 +11,24 @@
   Class select karo → Fee type wise amount set karo. Amount set thay to students ma auto-apply thase.
 </div>
 
-<div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center">
+<div class="filters-row">
   <select class="sel-filter" [(ngModel)]="academicYearId" (ngModelChange)="onYearChange()">
     <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
   </select>
-  <span style="font-size: 11px; color: var(--muted); margin-left: auto">Click class to set amounts</span>
+  <select
+    class="sel-filter"
+    [(ngModel)]="feeStructureVersionId"
+    (ngModelChange)="onVersionChange()"
+    [disabled]="loadingVersions || !versions.length"
+  >
+    <option *ngFor="let v of versions" [value]="v.id">
+      {{ v.versionLabel }} — {{ v.statusLabel }}
+    </option>
+  </select>
+  <span *ngIf="selectedVersion" class="version-badge badge" [ngClass]="versionStatusClass(selectedVersion.statusLabel)">
+    {{ selectedVersion.statusLabel }}
+  </span>
+  <span class="filter-hint">Click class to set amounts · Only draft structures are editable</span>
 </div>
 
 <div class="split-layout">
@@ -49,16 +62,26 @@
 
   <div *ngIf="selectedClassId && amountData" class="card">
     <div class="card-header">
-      <div class="card-title"><mat-icon>school</mat-icon>{{ amountData.className }} — Fee amounts</div>
+      <div class="card-title">
+        <mat-icon>school</mat-icon>
+        {{ amountData.className }} — Fee amounts
+        <span class="badge" [ngClass]="versionStatusClass(amountData.versionStatusLabel)">
+          V{{ amountData.versionNumber }} · {{ amountData.versionStatusLabel }}
+        </span>
+      </div>
       <div style="font-size: 13px; font-weight: 500; color: var(--g600)">Total: {{ formatInr(totalAmount) }}</div>
     </div>
+    <p *ngIf="!amountData.isEditable" class="lock-hint">
+      <mat-icon>lock</mat-icon>
+      This fee structure is not editable. Select a <strong>Draft</strong> version to change amounts.
+    </p>
     <table class="data-table">
       <thead>
         <tr>
           <th>Fee type</th>
           <th>Category</th>
           <th>Frequency</th>
-          <th style="width: 130px; text-align: right">Amount (₹) <span class="req">*</span></th>
+          <th style="width: 130px; text-align: right">Amount (₹)</th>
         </tr>
       </thead>
       <tbody>
@@ -67,7 +90,9 @@
           <td><span class="badge b-gray">{{ item.categoryLabel }}</span></td>
           <td><span class="badge b-gray">{{ item.frequencyLabel }}</span></td>
           <td style="text-align: right">
+            <span *ngIf="!isEditing" class="amt-view">{{ formatInr(amountFor(item.feeTypeId)) }}</span>
             <input
+              *ngIf="isEditing"
               type="number"
               class="amt-input"
               min="0"
@@ -82,10 +107,23 @@
         </tr>
       </tbody>
     </table>
-    <div style="padding: 10px 14px; border-top: 0.5px solid var(--border); display: flex; justify-content: flex-end">
-      <button type="button" class="btn-save" (click)="saveAmounts()">
-        <mat-icon>save</mat-icon> Save amounts
+    <div class="card-footer-actions">
+      <button
+        *ngIf="!isEditing && amountData.isEditable"
+        type="button"
+        class="btn-save"
+        [disabled]="loading"
+        (click)="startEdit()"
+      >
+        <mat-icon>edit</mat-icon> Edit
       </button>
+      <ng-container *ngIf="isEditing">
+        <button type="button" class="btn-cancel" [disabled]="saving" (click)="cancelEdit()">Cancel</button>
+        <button type="button" class="btn-save" [disabled]="saving" (click)="saveAmounts()">
+          <mat-icon>{{ saving ? 'hourglass_empty' : 'save' }}</mat-icon>
+          {{ saving ? 'Saving...' : 'Save amounts' }}
+        </button>
+      </ng-container>
     </div>
   </div>
 </div>
