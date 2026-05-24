@@ -53,8 +53,13 @@ import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.s
 import { formatInr, normalizeClassAmounts } from '../../fees/fees.shared';
 
 type FeeStructureRow = {
+  feeTypeId: string;
   name: string;
   amount: string;
+  amountValue: number;
+  defaultAmountValue: number;
+  isMandatory: boolean;
+  isIncluded: boolean;
 };
 
 type DocumentChecklistItem = {
@@ -557,6 +562,9 @@ export class AddStudentComponent implements OnInit {
   private assignedFeeStructureVersionId = '';
   assignedFeeStructureVersionLabel = '';
   private feeStructureTotal = 0;
+  /** Saved selections when editing/viewing an existing student. */
+  private savedFeeHeadIncluded = new Map<string, boolean>();
+  private savedFeeHeadAmounts = new Map<string, number>();
 
   readonly feeTotalLabel = 'Total fees';
 
@@ -827,11 +835,8 @@ export class AddStudentComponent implements OnInit {
           return;
         }
         this.hasActiveFeeStructure = true;
-        this.feeStructureRows = normalized.items.map((item) => ({
-          name: item.feeTypeName,
-          amount: formatInr(item.amount),
-        }));
-        this.feeStructureTotal = normalized.totalAmount;
+        this.feeStructureRows = this.mapFeeStructureItems(normalized.items);
+        this.recalculateFeeStructureTotal();
         this.feeStructureLoading = false;
         this.cdr.detectChanges();
       },
@@ -861,11 +866,10 @@ export class AddStudentComponent implements OnInit {
           normalized.versionNumber > 0
             ? `V${normalized.versionNumber} · ${normalized.versionStatusLabel}`
             : normalized.versionStatusLabel;
-        this.feeStructureRows = normalized.items.map((item) => ({
-          name: item.feeTypeName,
-          amount: formatInr(item.amount),
-        }));
-        this.feeStructureTotal = normalized.totalAmount;
+        this.feeStructureRows = this.applyFeeStructureViewFilter(
+          this.mapFeeStructureItems(normalized.items),
+        );
+        this.recalculateFeeStructureTotal();
         this.hasActiveFeeStructure = normalized.items.length > 0;
         this.feeStructureLoading = false;
         this.cdr.detectChanges();
@@ -878,6 +882,14 @@ export class AddStudentComponent implements OnInit {
     });
   }
 
+  /** View mode: only show fee heads applied to this student. */
+  private applyFeeStructureViewFilter(rows: FeeStructureRow[]): FeeStructureRow[] {
+    if (this.mode !== 'view') {
+      return rows;
+    }
+    return rows.filter((row) => row.isIncluded);
+  }
+
   private clearFeeStructure(): void {
     this.feeStructureRows = [];
     this.feeStructureTotal = 0;
@@ -886,6 +898,59 @@ export class AddStudentComponent implements OnInit {
     if (this.mode === 'add') {
       this.assignedFeeStructureVersionLabel = '';
     }
+  }
+
+  private mapFeeStructureItems(
+    items: Array<{
+      feeTypeId: string;
+      feeTypeName: string;
+      amount: number;
+      isMandatory: boolean;
+    }>,
+  ): FeeStructureRow[] {
+    return items.map((item) => {
+      const savedIncluded = this.savedFeeHeadIncluded.get(item.feeTypeId);
+      const isIncluded = savedIncluded ?? true;
+      const savedAmount = this.savedFeeHeadAmounts.get(item.feeTypeId);
+      const amountValue = savedAmount ?? item.amount;
+      return {
+        feeTypeId: item.feeTypeId,
+        name: item.feeTypeName,
+        amount: formatInr(amountValue),
+        amountValue,
+        defaultAmountValue: item.amount,
+        isMandatory: item.isMandatory,
+        isIncluded: item.isMandatory ? true : isIncluded,
+      };
+    });
+  }
+
+  onFeeHeadAmountChange(row: FeeStructureRow, event: Event): void {
+    if (!row.isIncluded || row.isMandatory || this.mode !== 'add') {
+      return;
+    }
+    const raw = (event.target as HTMLInputElement).value.replace(/[^\d.]/g, '');
+    const parsed = Number(raw);
+    row.amountValue = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    row.amount = formatInr(row.amountValue);
+    this.recalculateFeeStructureTotal();
+    this.cdr.detectChanges();
+  }
+
+  onFeeHeadToggle(row: FeeStructureRow, event: Event): void {
+    if (row.isMandatory || this.mode !== 'add') {
+      return;
+    }
+    const checked = (event.target as HTMLInputElement).checked;
+    row.isIncluded = checked;
+    this.recalculateFeeStructureTotal();
+    this.cdr.detectChanges();
+  }
+
+  private recalculateFeeStructureTotal(): void {
+    this.feeStructureTotal = this.feeStructureRows
+      .filter((row) => row.isIncluded)
+      .reduce((sum, row) => sum + row.amountValue, 0);
   }
 
   private generateAdmissionNo(academicYearId: string) {
@@ -1039,6 +1104,22 @@ export class AddStudentComponent implements OnInit {
       academic?.feeStructureVersionId ?? academic?.FeeStructureVersionId ?? '',
     );
 
+    this.savedFeeHeadIncluded.clear();
+    this.savedFeeHeadAmounts.clear();
+    const assignments = data.feeHeadAssignments ?? data.FeeHeadAssignments ?? [];
+    for (const assignment of assignments) {
+      const feeTypeId = String(assignment.feeTypeId ?? assignment.FeeTypeId ?? '');
+      if (!feeTypeId) {
+        continue;
+      }
+      const included = assignment.isIncluded ?? assignment.IsIncluded;
+      this.savedFeeHeadIncluded.set(feeTypeId, included === undefined ? true : Boolean(included));
+      const custom = assignment.customAnnualAmount ?? assignment.CustomAnnualAmount;
+      if (custom != null && Number(custom) > 0) {
+        this.savedFeeHeadAmounts.set(feeTypeId, Number(custom));
+      }
+    }
+
     const classId = academic?.classId;
     const yearId = academic?.academicYearId;
     if (classId && yearId) {
@@ -1160,6 +1241,17 @@ export class AddStudentComponent implements OnInit {
           rollNumber: rawValue.rollNumber,
         },
       ],
+      feeHeadSelections:
+        this.mode === 'add' && this.feeStructureRows.length
+          ? this.feeStructureRows.map((row) => ({
+              feeTypeId: row.feeTypeId,
+              isIncluded: row.isIncluded,
+              customAnnualAmount:
+                row.isIncluded && row.amountValue !== row.defaultAmountValue
+                  ? row.amountValue
+                  : null,
+            }))
+          : [],
     };
 
     try {

@@ -98,6 +98,14 @@ export class StudentService {
           firstDueDate: this.toDateOnlyString(studentData.firstDueDate)
         }
       ],
+      feeHeadSelections: (studentData.feeHeadSelections ?? []).map((s: any) => ({
+        feeTypeId: s.feeTypeId,
+        isIncluded: Boolean(s.isIncluded),
+        customAnnualAmount:
+          s.customAnnualAmount != null && s.customAnnualAmount !== ''
+            ? Number(s.customAnnualAmount)
+            : null,
+      })),
       customFields: this.mapCustomFields(studentData.customFields),
     };
 

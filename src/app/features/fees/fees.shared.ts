@@ -224,6 +224,7 @@ export function normalizeClassAmounts(raw: any) {
     frequencyLabel: String(pick(i, 'frequencyLabel', 'FrequencyLabel') ?? ''),
     amountBasisLabel: String(pick(i, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
     amount: Number(pick(i, 'amount', 'Amount') ?? 0),
+    isMandatory: Boolean(pick(i, 'isMandatory', 'IsMandatory') ?? true),
   }));
   return {
     classId: String(pick(raw, 'classId', 'ClassId') ?? ''),

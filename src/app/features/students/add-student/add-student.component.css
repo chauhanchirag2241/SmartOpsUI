@@ -68,8 +68,39 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 9px 0;
   border-bottom: 0.5px solid var(--border);
+}
+
+.fee-row-excluded .fee-name {
+  color: var(--muted);
+}
+
+.fee-head-check {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.fee-head-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--g600);
+  cursor: pointer;
+}
+
+.fee-optional-tag {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.fee-not-applied {
+  color: var(--danger, #c62828);
 }
 
 .fee-row:last-child {
@@ -85,6 +116,22 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--g600);
+}
+
+.fee-amount-input {
+  width: 110px;
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: right;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.fee-amount-input:focus {
+  outline: none;
+  border-color: var(--g600);
 }
 
 .fee-total-row {

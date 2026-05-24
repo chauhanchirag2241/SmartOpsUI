@@ -83,10 +83,40 @@
                   Showing fee structure assigned at admission — {{ assignedFeeStructureVersionLabel }}
                 </p>
               }
-              @for (row of feeStructureRows; track row.name) {
-                <div class="fee-row">
-                  <span class="fee-name">{{ row.name }}</span>
-                  <span class="fee-amt">{{ row.amount }}</span>
+              @for (row of feeStructureRows; track row.feeTypeId) {
+                <div class="fee-row" [class.fee-row-excluded]="!row.isIncluded">
+                  @if (mode === 'add' && !row.isMandatory) {
+                    <label class="fee-head-check" [attr.aria-label]="'Include ' + row.name">
+                      <input
+                        type="checkbox"
+                        [checked]="row.isIncluded"
+                        (change)="onFeeHeadToggle(row, $event)"
+                      />
+                    </label>
+                  }
+                  <span class="fee-name">
+                    {{ row.name }}
+                    @if (!row.isMandatory && mode === 'add') {
+                      <span class="fee-optional-tag">Optional</span>
+                    }
+                    @if (!row.isMandatory && mode !== 'add' && !row.isIncluded) {
+                      <span class="fee-optional-tag fee-not-applied">Not applied</span>
+                    }
+                  </span>
+                  <span class="fee-amt">
+                    @if (mode === 'add' && row.isIncluded && !row.isMandatory) {
+                      <input
+                        type="number"
+                        class="fee-amount-input"
+                        [value]="row.amountValue"
+                        min="0"
+                        step="1"
+                        (change)="onFeeHeadAmountChange(row, $event)"
+                      />
+                    } @else {
+                      {{ row.isIncluded ? row.amount : '—' }}
+                    }
+                  </span>
                 </div>
               }
               <div class="fee-total-row">
