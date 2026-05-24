@@ -36,11 +36,21 @@ export enum FeeStructureVersionStatus {
   Archived = 3,
 }
 
+export enum FeeAmountBasis {
+  AnnualTotal = 0,
+  PerInstallment = 1,
+}
+
 export const FEE_CATEGORY_OPTIONS = [
   { value: FeeCategory.Academic, label: 'Academic' },
   { value: FeeCategory.Development, label: 'Development' },
   { value: FeeCategory.Transport, label: 'Transport' },
   { value: FeeCategory.Other, label: 'Other' },
+];
+
+export const FEE_AMOUNT_BASIS_OPTIONS = [
+  { value: FeeAmountBasis.AnnualTotal, label: 'Annual total (split across periods)' },
+  { value: FeeAmountBasis.PerInstallment, label: 'Per installment (each period)' },
 ];
 
 export const FEE_FREQUENCY_OPTIONS = [
@@ -180,6 +190,7 @@ export function normalizeFeeType(raw: any) {
     name: String(pick(raw, 'name', 'Name') ?? ''),
     categoryLabel: String(pick(raw, 'categoryLabel', 'CategoryLabel') ?? ''),
     frequencyLabel: String(pick(raw, 'frequencyLabel', 'FrequencyLabel') ?? ''),
+    amountBasisLabel: String(pick(raw, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
     isMandatory: Boolean(pick(raw, 'isMandatory', 'IsMandatory')),
     isRefundable: Boolean(pick(raw, 'isRefundable', 'IsRefundable')),
     isActive: pick(raw, 'isActive', 'IsActive') !== false,
@@ -211,6 +222,7 @@ export function normalizeClassAmounts(raw: any) {
     feeTypeName: String(pick(i, 'feeTypeName', 'FeeTypeName') ?? ''),
     categoryLabel: String(pick(i, 'categoryLabel', 'CategoryLabel') ?? ''),
     frequencyLabel: String(pick(i, 'frequencyLabel', 'FrequencyLabel') ?? ''),
+    amountBasisLabel: String(pick(i, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
     amount: Number(pick(i, 'amount', 'Amount') ?? 0),
   }));
   return {
@@ -239,16 +251,43 @@ export function normalizeStudentListItem(raw: any) {
   };
 }
 
+export function normalizeInstallmentPreview(raw: any) {
+  return {
+    installmentId: String(pick(raw, 'installmentId', 'InstallmentId') ?? ''),
+    feeTypeId: String(pick(raw, 'feeTypeId', 'FeeTypeId') ?? ''),
+    feeTypeName: String(pick(raw, 'feeTypeName', 'FeeTypeName') ?? ''),
+    frequencyLabel: String(pick(raw, 'frequencyLabel', 'FrequencyLabel') ?? ''),
+    amountBasisLabel: String(pick(raw, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
+    periodIndex: Number(pick(raw, 'periodIndex', 'PeriodIndex') ?? 0),
+    periodLabel: String(pick(raw, 'periodLabel', 'PeriodLabel') ?? ''),
+    amount: Number(pick(raw, 'amount', 'Amount') ?? 0),
+  };
+}
+
 export function normalizeStudentDetail(raw: any) {
-  const feeHeads = asArray<any>(pick(raw, 'feeHeads', 'FeeHeads')).map((h) => ({
-    feeTypeId: String(pick(h, 'feeTypeId', 'FeeTypeId') ?? ''),
-    feeTypeName: String(pick(h, 'feeTypeName', 'FeeTypeName') ?? ''),
-    frequencyLabel: String(pick(h, 'frequencyLabel', 'FrequencyLabel') ?? ''),
-    totalAmount: Number(pick(h, 'totalAmount', 'TotalAmount') ?? 0),
-    paidAmount: Number(pick(h, 'paidAmount', 'PaidAmount') ?? 0),
-    dueAmount: Number(pick(h, 'dueAmount', 'DueAmount') ?? 0),
-    status: String(pick(h, 'status', 'Status') ?? ''),
-  }));
+  const feeHeads = asArray<any>(pick(raw, 'feeHeads', 'FeeHeads')).map((h) => {
+    const installments = asArray<any>(pick(h, 'installments', 'Installments')).map((i) => ({
+      installmentId: String(pick(i, 'installmentId', 'InstallmentId') ?? ''),
+      feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
+      periodLabel: String(pick(i, 'periodLabel', 'PeriodLabel') ?? ''),
+      totalAmount: Number(pick(i, 'totalAmount', 'TotalAmount') ?? 0),
+      paidAmount: Number(pick(i, 'paidAmount', 'PaidAmount') ?? 0),
+      dueAmount: Number(pick(i, 'dueAmount', 'DueAmount') ?? 0),
+      status: String(pick(i, 'status', 'Status') ?? ''),
+    }));
+    return {
+      feeTypeId: String(pick(h, 'feeTypeId', 'FeeTypeId') ?? ''),
+      feeTypeName: String(pick(h, 'feeTypeName', 'FeeTypeName') ?? ''),
+      frequencyLabel: String(pick(h, 'frequencyLabel', 'FrequencyLabel') ?? ''),
+      amountBasisLabel: String(pick(h, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
+      totalAmount: Number(pick(h, 'totalAmount', 'TotalAmount') ?? 0),
+      paidAmount: Number(pick(h, 'paidAmount', 'PaidAmount') ?? 0),
+      dueAmount: Number(pick(h, 'dueAmount', 'DueAmount') ?? 0),
+      status: String(pick(h, 'status', 'Status') ?? ''),
+      installments,
+      expanded: false,
+    };
+  });
   const payments = asArray<any>(pick(raw, 'payments', 'Payments')).map((p) => ({
     paymentId: String(pick(p, 'paymentId', 'PaymentId') ?? ''),
     paymentDate: String(pick(p, 'paymentDate', 'PaymentDate') ?? ''),

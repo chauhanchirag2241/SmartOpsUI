@@ -72,8 +72,8 @@
       <mat-icon>lock</mat-icon>
       <ng-container [ngSwitch]="amountData.versionStatusLabel">
         <span *ngSwitchCase="'Active'">
-          This class already has fee amounts on the <strong>Active</strong> structure. Use
-          <strong>Fee Structure → Create new version</strong> to change existing amounts.
+          This class already has configured fee amounts on the <strong>Active</strong> structure. Use
+          <strong>Fee Structure → Create new version</strong> to change them. New classes without amounts can still be set here.
         </span>
         <span *ngSwitchDefault>This version is archived and cannot be edited.</span>
       </ng-container>
@@ -92,6 +92,7 @@
           <th>Fee type</th>
           <th>Category</th>
           <th>Frequency</th>
+          <th>Amount basis</th>
           <th style="width: 130px; text-align: right">Amount (₹)</th>
         </tr>
       </thead>
@@ -100,6 +101,7 @@
           <td style="font-weight: 500">{{ item.feeTypeName }}</td>
           <td><span class="badge b-gray">{{ item.categoryLabel }}</span></td>
           <td><span class="badge b-gray">{{ item.frequencyLabel }}</span></td>
+          <td><span class="badge b-gray">{{ item.amountBasisLabel }}</span></td>
           <td style="text-align: right">
             <span *ngIf="!isEditing" class="amt-view">{{ formatInr(amountFor(item.feeTypeId)) }}</span>
             <input
@@ -113,11 +115,39 @@
           </td>
         </tr>
         <tr style="background: var(--input-bg)">
-          <td colspan="3" style="font-weight: 500; text-align: right; padding-right: 8px">Total annual fees</td>
+          <td colspan="4" style="font-weight: 500; text-align: right; padding-right: 8px">Total annual fees</td>
           <td style="text-align: right; font-weight: 500; font-size: 14px; color: var(--g600)">{{ formatInr(totalAmount) }}</td>
         </tr>
       </tbody>
     </table>
+    <div *ngIf="amountData.items.length" class="installment-preview-section">
+      <button type="button" class="btn-link-preview" (click)="toggleInstallmentPreview()">
+        <mat-icon>{{ showInstallmentPreview ? 'expand_less' : 'expand_more' }}</mat-icon>
+        {{ showInstallmentPreview ? 'Hide' : 'Preview' }} installment schedule
+      </button>
+      <table *ngIf="showInstallmentPreview" class="data-table installment-table">
+        <thead>
+          <tr>
+            <th>Fee type</th>
+            <th>Period</th>
+            <th style="text-align: right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loadingInstallments">
+            <td colspan="3" class="empty-panel">Loading...</td>
+          </tr>
+          <tr *ngFor="let row of installmentPreview">
+            <td>{{ row.feeTypeName }}</td>
+            <td>{{ row.periodLabel }}</td>
+            <td style="text-align: right">{{ formatInr(row.amount) }}</td>
+          </tr>
+          <tr *ngIf="!loadingInstallments && !installmentPreview.length">
+            <td colspan="3" class="empty-panel">Save amounts to generate installments.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div class="card-footer-actions">
       <button
         *ngIf="!isEditing && amountData.isEditable"

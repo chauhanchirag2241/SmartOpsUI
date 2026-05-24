@@ -1,167 +1,245 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { NgFor } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
+import { DashboardService } from '../../core/services/dashboard.service';
 import { PermissionService } from '../../core/services/permission.service';
-import { ScopeService } from '../../core/services/scope.service';
+import { DashboardWidgetCodes } from '../../core/constants/dashboard-widget-codes';
 import { MenuCodes } from '../../core/constants/menu-codes';
-import { IDashboardSummary } from '../../core/models/scope.model';
-
-interface DashboardStat {
-  label: string;
-  value: string;
-  icon: string;
-  trend: string;
-  trendDirection: 'up' | 'down';
-}
-
-interface AttendanceItem {
-  label: string;
-  value: string;
-  color: string;
-}
-
-interface EnrollmentItem {
-  month: string;
-  value: number;
-}
-
-interface ActivityItem {
-  initials: string;
-  name: string;
-  detail: string;
-  badge: string;
-  tone: 'good' | 'alert' | 'warn';
-}
-
-interface FeeItem {
-  className: string;
-  students: number;
-  collected: string;
-  total: string;
-  percent: number;
-  pending: number;
-}
-
-interface AlertItem {
-  icon: string;
-  title: string;
-  subtitle: string;
-  tone: 'danger' | 'warning' | 'success';
-}
+import type {
+  AttendanceDatePreset,
+  IDashboardResponse,
+  IDashboardWidgetLayoutItem,
+} from '../../core/models/dashboard.model';
 
 interface QuickAction {
   icon: string;
   label: string;
   route?: string;
+  menuCode?: string;
 }
+
+const HIDDEN_STORAGE_KEY = 'smartops.dashboard.hidden';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [MatCardModule, MatIconModule, NgFor, RouterLink],
+  imports: [MatIconModule, NgFor, NgIf, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly dashboardService = inject(DashboardService);
   private readonly permissionService = inject(PermissionService);
-  private readonly scopeService = inject(ScopeService);
 
-  readonly summary = signal<IDashboardSummary | null>(null);
-  readonly scopeLabel = computed(() => this.summary()?.scopeLabel ?? this.scopeService.scope?.scopeType ?? '');
+  readonly W = DashboardWidgetCodes;
+  readonly loading = signal(true);
+  readonly editing = signal(false);
+  readonly layout = signal<IDashboardWidgetLayoutItem[]>([]);
+  readonly data = signal<IDashboardResponse | null>(null);
+  readonly hiddenWidgets = signal<Set<string>>(new Set());
+  readonly scopeLabel = signal('');
+  readonly academicYearLabel = signal<string | undefined>(undefined);
+  readonly schoolName = signal<string | undefined>(undefined);
+  readonly attendancePreset = signal<AttendanceDatePreset>('today');
+  readonly attendanceCustomFrom = signal('');
+  readonly attendanceCustomTo = signal('');
+  readonly attendanceLoading = signal(false);
 
-  readonly stats = computed<DashboardStat[]>(() => {
-    const s = this.summary();
-    if (!s) {
-      return [
-        { label: 'Total students', value: '—', icon: 'groups', trend: '', trendDirection: 'up' },
-        { label: 'Teachers', value: '—', icon: 'co_present', trend: '', trendDirection: 'up' },
-        { label: 'Classes', value: '—', icon: 'class', trend: '', trendDirection: 'up' },
-        { label: 'Attendance today', value: '—', icon: 'how_to_reg', trend: '', trendDirection: 'up' },
-      ];
-    }
-    return [
-      { label: 'Total students', value: String(s.totalStudents), icon: 'groups', trend: s.scopeLabel, trendDirection: 'up' },
-      { label: 'Teachers', value: String(s.totalTeachers), icon: 'co_present', trend: '', trendDirection: 'up' },
-      { label: 'Classes', value: String(s.totalClasses), icon: 'class', trend: '', trendDirection: 'up' },
-      { label: 'Attendance today', value: String(s.attendanceMarkedToday), icon: 'how_to_reg', trend: '', trendDirection: 'up' },
-    ];
+  readonly showAttendanceFilter = computed(
+    () => this.has(this.W.AttendanceRate) || this.has(this.W.AttendanceDetail),
+  );
+
+  readonly attendanceFilterOptions: { value: AttendanceDatePreset; label: string }[] = [
+    { value: 'today', label: 'Today' },
+    { value: 'yesterday', label: 'Yesterday' },
+    { value: 'last7days', label: 'Last 7 days' },
+    { value: 'thismonth', label: 'This month' },
+    { value: 'lastmonth', label: 'Last month' },
+    { value: 'custom', label: 'Custom' },
+  ];
+
+  readonly visibleWidgets = computed(() => {
+    const hidden = this.hiddenWidgets();
+    return this.uniqueLayout().filter((w) => !hidden.has(w.code));
+  });
+
+  readonly customizeWidgets = computed(() => this.uniqueLayout());
+
+  private readonly uniqueLayout = computed(() => {
+    const seen = new Set<string>();
+    return this.layout().filter((w) => {
+      if (seen.has(w.code)) {
+        return false;
+      }
+      seen.add(w.code);
+      return true;
+    });
   });
 
   ngOnInit(): void {
-    this.scopeService.loadDashboardSummary().subscribe({
-      next: (data) => this.summary.set(data),
-      error: () => this.summary.set(null),
+    const today = new Date().toISOString().slice(0, 10);
+    this.attendanceCustomFrom.set(today);
+    this.attendanceCustomTo.set(today);
+    this.loadHiddenFromStorage();
+    this.dashboardService.getLayout().subscribe({
+      next: (layout) => {
+        this.layout.set(layout.widgets);
+        this.scopeLabel.set(layout.scopeLabel);
+        this.academicYearLabel.set(layout.academicYearLabel);
+        this.schoolName.set(layout.schoolName);
+        this.loadDashboard();
+      },
+      error: () => {
+        this.loading.set(false);
+      },
     });
   }
 
-  readonly attendance: AttendanceItem[] = [
-    { label: 'Present', value: '221', color: '#639922' },
-    { label: 'Absent', value: '18', color: '#e24b4a' },
-    { label: 'Leave', value: '9', color: '#ef9f27' },
-    { label: 'Holiday', value: '0', color: '#d7ddcf' },
+  has(code: string): boolean {
+    return this.visibleWidgets().some((w) => w.code === code);
+  }
+
+  toggleEdit(): void {
+    this.editing.update((v) => !v);
+  }
+
+  toggleWidgetVisibility(code: string): void {
+    const hidden = new Set(this.hiddenWidgets());
+    if (hidden.has(code)) {
+      hidden.delete(code);
+    } else {
+      hidden.add(code);
+    }
+    this.hiddenWidgets.set(hidden);
+    this.persistHidden(hidden);
+  }
+
+  isWidgetOn(code: string): boolean {
+    return !this.hiddenWidgets().has(code);
+  }
+
+  hideWidget(code: string): void {
+    const hidden = new Set(this.hiddenWidgets());
+    hidden.add(code);
+    this.hiddenWidgets.set(hidden);
+    this.persistHidden(hidden);
+  }
+
+  onAttendancePresetChange(value: string): void {
+    const preset = value as AttendanceDatePreset;
+    this.attendancePreset.set(preset);
+    if (preset !== 'custom') {
+      this.loadDashboard(true);
+    }
+  }
+
+  applyCustomAttendanceRange(): void {
+    if (!this.attendanceCustomFrom() || !this.attendanceCustomTo()) {
+      return;
+    }
+    this.loadDashboard(true);
+  }
+
+  attendanceStatLabel(): string {
+    const period = this.data()?.attendanceToday?.periodLabel;
+    return period ? `${period} attendance` : 'Attendance';
+  }
+
+  formatCurrency(amount: number): string {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    }
+    if (amount >= 1000) {
+      return `₹${(amount / 1000).toFixed(1)}K`;
+    }
+    return `₹${amount.toFixed(0)}`;
+  }
+
+  donutDash(present: number, total: number): string {
+    const circumference = 163;
+    if (total <= 0) {
+      return `0 ${circumference}`;
+    }
+    const filled = Math.round((present / total) * circumference);
+    return `${filled} ${circumference}`;
+  }
+
+  readonly quickActions: QuickAction[] = [
+    { icon: 'person_add', label: 'Add student', route: '/students', menuCode: MenuCodes.Students },
+    { icon: 'how_to_reg', label: 'Mark attendance', route: '/attendance', menuCode: MenuCodes.Attendance },
+    { icon: 'payments', label: 'Collect fees', route: '/fees-collection', menuCode: MenuCodes.FeesCollection },
+    { icon: 'edit_note', label: 'Add homework', route: '/homework', menuCode: MenuCodes.Homework },
   ];
 
-  readonly enrollments: EnrollmentItem[] = [
-    { month: 'Apr', value: 22 },
-    { month: 'May', value: 18 },
-    { month: 'Jun', value: 15 },
-    { month: 'Jul', value: 12 },
-    { month: 'Aug', value: 8 },
-    { month: 'Sep', value: 6 },
-    { month: 'Oct', value: 5 },
-    { month: 'Nov', value: 7 },
-    { month: 'Dec', value: 4 },
-    { month: 'Jan', value: 10 },
-    { month: 'Feb', value: 14 },
-    { month: 'Mar', value: 19 },
-  ];
-
-  readonly activities: ActivityItem[] = [
-    { initials: 'RP', name: 'Rahul Patel', detail: 'Admitted - Class 10A', badge: 'New', tone: 'good' },
-    { initials: 'KD', name: 'Kriti Dave', detail: 'Fee paid - Rs 12,000', badge: 'Paid', tone: 'good' },
-    { initials: 'AS', name: 'Arjun Shah', detail: 'Absent - no reason', badge: 'Alert', tone: 'alert' },
-    { initials: 'PM', name: 'Priya Modi', detail: 'TC issued - Class 9B', badge: 'TC', tone: 'warn' },
-    { initials: 'VJ', name: 'Vivek Joshi', detail: 'Fee overdue - 30 days', badge: 'Due', tone: 'alert' },
-  ];
-
-  readonly fees: FeeItem[] = [
-    { className: 'Class 10', students: 52, collected: 'Rs 62,400', total: 'Rs 90,000', percent: 69, pending: 16 },
-    { className: 'Class 9', students: 48, collected: 'Rs 55,200', total: 'Rs 72,000', percent: 77, pending: 11 },
-    { className: 'Class 8', students: 44, collected: 'Rs 48,000', total: 'Rs 66,000', percent: 73, pending: 12 },
-    { className: 'Class 7', students: 40, collected: 'Rs 44,000', total: 'Rs 60,000', percent: 73, pending: 10 },
-  ];
-
-  readonly alerts: AlertItem[] = [
-    { icon: 'payments', title: '32 fees overdue', subtitle: 'Action needed', tone: 'danger' },
-    { icon: 'person_off', title: '18 absent today', subtitle: 'No reason given', tone: 'warning' },
-    { icon: 'workspace_premium', title: 'Exam in 5 days', subtitle: 'Class 10 - final term', tone: 'success' },
-  ];
-
-  private readonly allQuickActions: QuickAction[] = [
-    { icon: 'person_add', label: 'Add student', route: '/students' },
-    { icon: 'how_to_reg', label: 'Mark attendance', route: '/attendance' },
-    { icon: 'payments', label: 'Collect fees' },
-    { icon: 'event_note', label: 'Exam schedule' },
-  ];
-
-  readonly quickActions = computed(() =>
-    this.allQuickActions.filter((action) => {
-      if (action.route === '/students') {
-        return this.permissionService.canView(MenuCodes.Students);
+  visibleQuickActions(): QuickAction[] {
+    return this.quickActions.filter((a) => {
+      if (!a.menuCode) {
+        return true;
       }
-      if (action.route === '/attendance') {
-        return this.permissionService.canView(MenuCodes.Attendance);
-      }
-      return true;
-    }),
-  );
+      return this.permissionService.canView(a.menuCode);
+    });
+  }
 
-  enrollmentHeight(value: number): number {
-    const max = Math.max(...this.enrollments.map((item) => item.value));
-    return Math.max(8, Math.round((value / max) * 76));
+  badgeClass(tone: string): string {
+    switch (tone) {
+      case 'alert':
+        return 'pill pr';
+      case 'warn':
+        return 'pill pa';
+      case 'danger':
+        return 'pill pr';
+      default:
+        return 'pill pg';
+    }
+  }
+
+  private loadDashboard(attendanceOnly = false): void {
+    if (attendanceOnly) {
+      this.attendanceLoading.set(true);
+    } else {
+      this.loading.set(true);
+    }
+
+    const preset = this.attendancePreset();
+    this.dashboardService
+      .getDashboard({
+        attendancePreset: preset,
+        attendanceFrom: preset === 'custom' ? this.attendanceCustomFrom() : undefined,
+        attendanceTo: preset === 'custom' ? this.attendanceCustomTo() : undefined,
+      })
+      .subscribe({
+        next: (response) => {
+          this.data.set(response);
+          this.loading.set(false);
+          this.attendanceLoading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+          this.attendanceLoading.set(false);
+        },
+      });
+  }
+
+  private loadHiddenFromStorage(): void {
+    try {
+      const raw = localStorage.getItem(HIDDEN_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as string[];
+        this.hiddenWidgets.set(new Set(parsed));
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private persistHidden(hidden: Set<string>): void {
+    try {
+      localStorage.setItem(HIDDEN_STORAGE_KEY, JSON.stringify([...hidden]));
+    } catch {
+      /* ignore */
+    }
   }
 }

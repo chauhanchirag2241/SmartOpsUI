@@ -12,6 +12,7 @@ import {
   formatInr,
   normalizeClassAmounts,
   normalizeClassSummary,
+  normalizeInstallmentPreview,
   normalizeDropdownItem,
   normalizeFeeStructureVersion,
   versionStatusBadgeClass,
@@ -45,6 +46,9 @@ export class ClassFeeAmountsComponent implements OnInit {
   saving = false;
   loading = false;
   loadingVersions = false;
+  installmentPreview: ReturnType<typeof normalizeInstallmentPreview>[] = [];
+  showInstallmentPreview = false;
+  loadingInstallments = false;
 
   ngOnInit(): void {
     this.academicYearService.getAcademicYearDropdown().subscribe({
@@ -130,7 +134,38 @@ export class ClassFeeAmountsComponent implements OnInit {
   selectClass(classId: string): void {
     this.selectedClassId = classId;
     this.isEditing = false;
+    this.showInstallmentPreview = false;
+    this.installmentPreview = [];
     this.loadAmounts();
+  }
+
+  toggleInstallmentPreview(): void {
+    this.showInstallmentPreview = !this.showInstallmentPreview;
+    if (this.showInstallmentPreview && !this.installmentPreview.length) {
+      this.loadInstallmentPreview();
+    }
+    this.refreshView();
+  }
+
+  loadInstallmentPreview(): void {
+    if (!this.selectedClassId || !this.academicYearId || !this.feeStructureVersionId) return;
+    this.loadingInstallments = true;
+    this.refreshView();
+    this.service
+      .getInstallmentPreview(this.selectedClassId, this.academicYearId, this.feeStructureVersionId)
+      .subscribe({
+        next: (list) => {
+          this.installmentPreview = asArray(list).map(normalizeInstallmentPreview);
+          this.loadingInstallments = false;
+          this.refreshView();
+        },
+        error: () => {
+          this.loadingInstallments = false;
+          this.installmentPreview = [];
+          this.toast('Failed to load installment preview', true);
+          this.refreshView();
+        },
+      });
   }
 
   startEdit(): void {
@@ -200,7 +235,10 @@ export class ClassFeeAmountsComponent implements OnInit {
           this.amountEditsSnapshot = { ...this.amountEdits };
           this.isEditing = false;
           this.saving = false;
+          this.showInstallmentPreview = false;
+          this.installmentPreview = [];
           this.loadClasses();
+          this.loadInstallmentPreview();
           this.toast('Amounts saved');
           this.refreshView();
         },

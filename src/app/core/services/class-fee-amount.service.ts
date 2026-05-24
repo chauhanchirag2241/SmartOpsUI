@@ -28,4 +28,14 @@ export class ClassFeeAmountService {
   saveClassAmounts(classId: string, body: unknown): Observable<any> {
     return this.api.put<any>(`fees/class-amounts/${classId}`, body);
   }
+
+  getInstallmentPreview(
+    classId: string,
+    academicYearId: string,
+    feeStructureVersionId?: string,
+  ): Observable<any[]> {
+    let params = new HttpParams().set('academicYearId', academicYearId);
+    if (feeStructureVersionId) params = params.set('feeStructureVersionId', feeStructureVersionId);
+    return this.api.get<any[]>(`fees/class-amounts/${classId}/installments`, params);
+  }
 }

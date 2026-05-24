@@ -106,10 +106,11 @@
       <div class="card-header">
         <div class="card-title"><mat-icon>list</mat-icon> Fee head-wise status</div>
       </div>
-      <table class="data-table">
+      <table class="data-table fee-head-installment-table">
         <thead>
           <tr>
-            <th>Fee type</th>
+            <th style="width: 28px"></th>
+            <th>Fee type / Period</th>
             <th style="text-align: right">Amount</th>
             <th style="text-align: right">Paid</th>
             <th style="text-align: right">Due</th>
@@ -117,18 +118,41 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let h of detail.feeHeads">
-            <td>
-              <div style="font-weight: 500">{{ h.feeTypeName }}</div>
-              <div style="font-size: 9px; color: var(--muted)">{{ h.frequencyLabel }}</div>
-            </td>
-            <td style="text-align: right">{{ formatInr(h.totalAmount) }}</td>
-            <td style="text-align: right; color: var(--g600)">{{ formatInr(h.paidAmount) }}</td>
-            <td style="text-align: right; color: #a32d2d; font-weight: 500">{{ formatInr(h.dueAmount) }}</td>
-            <td style="text-align: right">
-              <span class="badge" [ngClass]="h.status === 'Paid' ? 'b-green' : h.status === 'Partial' ? 'b-amber' : 'b-red'">{{ h.status }}</span>
-            </td>
-          </tr>
+          <ng-container *ngFor="let h of detail.feeHeads">
+            <tr class="fee-head-summary-row" (click)="toggleHeadExpand(h.feeTypeId)">
+              <td>
+                <mat-icon class="expand-icon" *ngIf="h.installments.length > 1">
+                  {{ isHeadExpanded(h.feeTypeId) ? 'expand_less' : 'chevron_right' }}
+                </mat-icon>
+              </td>
+              <td>
+                <div style="font-weight: 500">{{ h.feeTypeName }}</div>
+                <div style="font-size: 9px; color: var(--muted)">
+                  {{ h.frequencyLabel }} · {{ h.amountBasisLabel }}
+                </div>
+              </td>
+              <td style="text-align: right">{{ formatInr(h.totalAmount) }}</td>
+              <td style="text-align: right; color: var(--g600)">{{ formatInr(h.paidAmount) }}</td>
+              <td style="text-align: right; color: #a32d2d; font-weight: 500">{{ formatInr(h.dueAmount) }}</td>
+              <td style="text-align: right">
+                <span class="badge" [ngClass]="statusBadgeClass(h.status)">{{ h.status }}</span>
+              </td>
+            </tr>
+            <tr
+              *ngFor="let inst of h.installments"
+              class="installment-row"
+              [class.hidden-installment]="h.installments.length > 1 && !isHeadExpanded(h.feeTypeId)"
+            >
+              <td></td>
+              <td class="installment-label">{{ inst.periodLabel }}</td>
+              <td style="text-align: right">{{ formatInr(inst.totalAmount) }}</td>
+              <td style="text-align: right; color: var(--g600)">{{ formatInr(inst.paidAmount) }}</td>
+              <td style="text-align: right; color: #a32d2d">{{ formatInr(inst.dueAmount) }}</td>
+              <td style="text-align: right">
+                <span class="badge" [ngClass]="statusBadgeClass(inst.status)">{{ inst.status }}</span>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>
@@ -152,7 +176,7 @@
 </div>
 
 <div class="overlay" [class.show]="showCollectModal" (click)="closeCollectModal()">
-  <div class="modal" style="max-width: 440px" (click)="$event.stopPropagation()">
+  <div class="modal" style="max-width: 520px" (click)="$event.stopPropagation()">
     <div class="mh">
       <div class="mt"><mat-icon>payments</mat-icon> Collect fee — {{ detail?.studentName }}</div>
       <button type="button" class="mc-btn" [disabled]="collectingInProgress" (click)="closeCollectModal()">
@@ -181,7 +205,7 @@
       </div>
       <div class="field fee-alloc-field">
         <div class="fee-alloc-head">
-          <span class="fee-alloc-title">Apply to fee heads</span>
+          <span class="fee-alloc-title">Apply to installments</span>
           <span class="fee-alloc-meta" *ngIf="collectForm.allocations.length">
             {{ selectedAllocCount }} selected · {{ formatInr(selectedAllocDue) }} due
           </span>
@@ -189,7 +213,7 @@
         <div class="alloc-panel" *ngIf="collectForm.allocations.length; else noAllocHeads">
           <div class="alloc-table-head">
             <span></span>
-            <span>Fee head</span>
+            <span>Period</span>
             <span class="text-right">Due</span>
           </div>
           <div class="alloc-body">
@@ -208,13 +232,16 @@
                   (ngModelChange)="onAllocationCheckChange()"
                 />
               </span>
-              <span class="alloc-name" [title]="a.feeTypeName">{{ a.feeTypeName }}</span>
+              <span class="alloc-name" [title]="a.label">
+                <span class="alloc-head">{{ a.feeTypeName }}</span>
+                <span class="alloc-period">{{ a.label }}</span>
+              </span>
               <span class="alloc-due">{{ formatInr(a.amount) }}</span>
             </div>
           </div>
         </div>
         <ng-template #noAllocHeads>
-          <div class="alloc-empty">No pending fee heads for this student.</div>
+          <div class="alloc-empty">No pending installments for this student.</div>
         </ng-template>
       </div>
       <div class="field">

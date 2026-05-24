@@ -15,8 +15,10 @@ import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.u
 import {
   FEE_CATEGORY_OPTIONS,
   FEE_FREQUENCY_OPTIONS,
+  FeeAmountBasis,
   FeeCategory,
   FeeFrequency,
+  FEE_AMOUNT_BASIS_OPTIONS,
   FeeStructureVersionStatus,
   asArray,
   categoryBadgeClass,
@@ -70,10 +72,12 @@ export class FeeStructureComponent implements OnInit {
   createVersionForm = { academicYearId: '', effectiveDate: '', cloneFromVersionId: '' };
   categoryOptions = FEE_CATEGORY_OPTIONS;
   frequencyOptions = FEE_FREQUENCY_OPTIONS;
+  amountBasisOptions = FEE_AMOUNT_BASIS_OPTIONS;
   feeTypeForm = {
     name: '',
     category: FeeCategory.Academic,
     frequency: FeeFrequency.Quarterly,
+    amountBasis: FeeAmountBasis.AnnualTotal,
     isMandatory: true,
     isRefundable: false,
   };
@@ -375,6 +379,7 @@ export class FeeStructureComponent implements OnInit {
       name: '',
       category: FeeCategory.Academic,
       frequency: FeeFrequency.Quarterly,
+      amountBasis: FeeAmountBasis.AnnualTotal,
       isMandatory: true,
       isRefundable: false,
     };

@@ -19,6 +19,15 @@ import {
   studentInitials,
 } from '../fees.shared';
 
+type CollectAllocRow = {
+  installmentId: string;
+  feeTypeId: string;
+  label: string;
+  feeTypeName: string;
+  amount: number;
+  checked: boolean;
+};
+
 @Component({
   selector: 'app-fee-collection',
   standalone: true,
@@ -42,6 +51,7 @@ export class FeeCollectionComponent implements OnInit {
   searchQuery = '';
   selectedStudentId = '';
   detail: ReturnType<typeof normalizeStudentDetail> | null = null;
+  expandedHeadIds = new Set<string>();
   showCollectModal = false;
   collectingInProgress = false;
 
@@ -52,7 +62,7 @@ export class FeeCollectionComponent implements OnInit {
     transactionNo: '',
     paymentDate: new Date().toISOString().split('T')[0],
     remarks: '',
-    allocations: [] as { feeTypeId: string; feeTypeName: string; amount: number; checked: boolean }[],
+    allocations: [] as CollectAllocRow[],
   };
 
   ngOnInit(): void {
@@ -114,7 +124,20 @@ export class FeeCollectionComponent implements OnInit {
       .reduce((sum, a) => sum + (a.amount || 0), 0);
   }
 
-  toggleAllocation(row: { checked: boolean; amount: number }): void {
+  isHeadExpanded(feeTypeId: string): boolean {
+    return this.expandedHeadIds.has(feeTypeId);
+  }
+
+  toggleHeadExpand(feeTypeId: string): void {
+    if (this.expandedHeadIds.has(feeTypeId)) {
+      this.expandedHeadIds.delete(feeTypeId);
+    } else {
+      this.expandedHeadIds.add(feeTypeId);
+    }
+    this.refreshView();
+  }
+
+  toggleAllocation(row: CollectAllocRow): void {
     if (this.collectingInProgress || row.amount <= 0) return;
     row.checked = !row.checked;
     this.syncCollectAmountToSelection();
@@ -135,9 +158,15 @@ export class FeeCollectionComponent implements OnInit {
     this.closeCollectModal();
     this.collectingInProgress = false;
     this.selectedStudentId = id;
+    this.expandedHeadIds = new Set();
     this.service.getStudentDetail(id, this.academicYearId || undefined).subscribe({
       next: (d) => {
         this.detail = normalizeStudentDetail(d);
+        for (const h of this.detail.feeHeads) {
+          if (h.installments.length > 1) {
+            this.expandedHeadIds.add(h.feeTypeId);
+          }
+        }
         this.refreshView();
       },
       error: () => this.toast('Failed to load student fees', true),
@@ -148,24 +177,45 @@ export class FeeCollectionComponent implements OnInit {
     const detail = this.detail;
     if (!detail || detail.dueAmount <= 0 || this.collectingInProgress) return;
 
+    const allocations: CollectAllocRow[] = [];
+    for (const h of detail.feeHeads) {
+      for (const inst of h.installments) {
+        if (inst.dueAmount <= 0) continue;
+        allocations.push({
+          installmentId: inst.installmentId,
+          feeTypeId: inst.feeTypeId || h.feeTypeId,
+          label: inst.periodLabel || h.feeTypeName,
+          feeTypeName: h.feeTypeName,
+          amount: inst.dueAmount,
+          checked: this.isCurrentPeriod(inst.periodLabel),
+        });
+      }
+    }
+
+    if (!allocations.some((a) => a.checked)) {
+      for (const a of allocations) {
+        a.checked = true;
+      }
+    }
+
     this.collectForm = {
-      amount: detail.dueAmount,
+      amount: allocations.filter((a) => a.checked).reduce((s, a) => s + a.amount, 0) || detail.dueAmount,
       paymentMode: FeePaymentMode.Cash,
       transactionNo: '',
       paymentDate: new Date().toISOString().split('T')[0],
       remarks: '',
-      allocations: detail.feeHeads
-        .filter((h) => h.dueAmount > 0)
-        .map((h) => ({
-          feeTypeId: h.feeTypeId,
-          feeTypeName: h.feeTypeName,
-          amount: h.dueAmount,
-          checked: true,
-        })),
+      allocations,
     };
     this.syncCollectAmountToSelection();
     this.showCollectModal = true;
     this.refreshView();
+  }
+
+  private isCurrentPeriod(periodLabel: string): boolean {
+    const now = new Date();
+    const month = now.toLocaleString('en-US', { month: 'short' });
+    const year = now.getFullYear().toString();
+    return periodLabel.includes(month) && periodLabel.includes(year);
   }
 
   closeCollectModal(): void {
@@ -188,17 +238,21 @@ export class FeeCollectionComponent implements OnInit {
     }
 
     if (this.collectForm.amount > this.selectedAllocDue) {
-      this.toast(`Amount cannot exceed ${formatInr(this.selectedAllocDue)} on selected fee heads`, true);
+      this.toast(`Amount cannot exceed ${formatInr(this.selectedAllocDue)} on selected installments`, true);
       return;
     }
 
-    const selectedHeads = this.collectForm.allocations.filter((a) => a.checked && a.feeTypeId);
-    if (!selectedHeads.length) {
-      this.toast('Select at least one fee head', true);
+    const selected = this.collectForm.allocations.filter((a) => a.checked);
+    if (!selected.length) {
+      this.toast('Select at least one installment', true);
       return;
     }
 
-    const allocations = selectedHeads.map((a) => ({ feeTypeId: a.feeTypeId, amount: 0 }));
+    const allocations = selected.map((a) => ({
+      feeTypeId: a.feeTypeId,
+      installmentId: a.installmentId || null,
+      amount: 0,
+    }));
 
     const collectedAmount = this.collectForm.amount;
     this.collectingInProgress = true;
@@ -233,9 +287,9 @@ export class FeeCollectionComponent implements OnInit {
   }
 
   statusBadgeClass(status: string): string {
-    if (status === 'Fully paid') return 'b-green';
+    if (status === 'Fully paid' || status === 'Paid') return 'b-green';
     if (status === 'Partial') return 'b-amber';
-    if (status === 'Not paid') return 'b-red';
+    if (status === 'Not paid' || status === 'Unpaid') return 'b-red';
     return 'b-gray';
   }
 

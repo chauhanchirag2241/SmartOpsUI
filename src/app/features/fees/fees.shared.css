@@ -375,6 +375,30 @@
   border-bottom: 0.5px solid #bbf7d0;
 }
 .edit-hint mat-icon { font-size: 14px; width: 14px; height: 14px; }
+.field-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
+.btn-link-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--g600);
+  font-size: 11px;
+  cursor: pointer;
+}
+.installment-preview-section { border-top: 0.5px solid var(--border); }
+.installment-table { margin: 0 14px 12px; font-size: 11px; }
+.fee-head-installment-table .fee-head-summary-row { cursor: pointer; }
+.fee-head-installment-table .fee-head-summary-row:hover { background: var(--input-bg); }
+.fee-head-installment-table .expand-icon { font-size: 16px; width: 16px; height: 16px; color: var(--muted); }
+.fee-head-installment-table .installment-row td.installment-label { padding-left: 12px; color: var(--muted); font-size: 11px; }
+.fee-head-installment-table .installment-row { background: #fafafa; }
+.fee-head-installment-table .hidden-installment { display: none; }
+.alloc-name { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.alloc-head { font-weight: 500; font-size: 11px; }
+.alloc-period { font-size: 10px; color: var(--muted); }
 .paid-archived-hint {
   color: #a32d2d;
   background: #fcebeb;

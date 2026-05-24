@@ -1,141 +1,423 @@
-<section class="dashboard-container">
-  <div class="stats-grid">
-    <mat-card *ngFor="let stat of stats()" class="stat-card dashboard-card">
-      <mat-card-content>
-        <div class="stat-top">
-          <span class="stat-icon"><mat-icon>{{ stat.icon }}</mat-icon></span>
-          <span class="trend" [class.down]="stat.trendDirection === 'down'">
-            <mat-icon>{{ stat.trendDirection === 'up' ? 'trending_up' : 'trending_down' }}</mat-icon>
-            {{ stat.trend }}
-          </span>
-        </div>
-        <div class="stat-value">{{ stat.value }}</div>
-        <div class="stat-label">{{ stat.label }}</div>
-      </mat-card-content>
-    </mat-card>
-  </div>
+<section class="dashboard-page" [class.editing]="editing()">
+  <header class="dash-topbar">
+    <h1>Dashboard</h1>
+    @if (academicYearLabel()) {
+      <span class="chip"><mat-icon>calendar_today</mat-icon>{{ academicYearLabel() }}</span>
+    }
+    @if (schoolName()) {
+      <span class="chip"><mat-icon>business</mat-icon>{{ schoolName() }}</span>
+    }
+    @if (scopeLabel()) {
+      <span class="chip scope">{{ scopeLabel() }}</span>
+    }
+    <button type="button" class="dbtn" [class.active]="editing()" (click)="toggleEdit()">
+      <mat-icon>dashboard_customize</mat-icon>
+      {{ editing() ? 'Done' : 'Customize' }}
+    </button>
+  </header>
 
-  <div class="middle-grid">
-    <mat-card class="dashboard-card">
-      <mat-card-content>
-        <div class="card-head">
-          <h2><mat-icon>pie_chart</mat-icon>Today's attendance</h2>
-          <span>11 May 2026</span>
+  @if (editing()) {
+    <div class="edit-bar">
+      <div class="edit-bar-intro">
+        <mat-icon>tune</mat-icon>
+        <div class="edit-bar-titles">
+          <div class="edit-title">Customize dashboard</div>
+          <div class="edit-hint">Toggle modules on/off</div>
         </div>
-        <div class="donut-wrap">
-          <svg class="donut" viewBox="0 0 80 80" aria-label="89 percent present">
-            <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" stroke-width="10" />
-            <circle cx="40" cy="40" r="30" fill="none" stroke="#639922" stroke-width="10" stroke-dasharray="168 220" stroke-dashoffset="-55" stroke-linecap="round" />
-            <circle cx="40" cy="40" r="30" fill="none" stroke="#e24b4a" stroke-width="10" stroke-dasharray="22 220" stroke-dashoffset="-223" stroke-linecap="round" />
-            <circle cx="40" cy="40" r="30" fill="none" stroke="#ef9f27" stroke-width="10" stroke-dasharray="30 220" stroke-dashoffset="-245" stroke-linecap="round" />
-            <text x="40" y="36" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text)">89%</text>
-            <text x="40" y="49" text-anchor="middle" font-size="8" fill="var(--muted)">present</text>
-          </svg>
-          <div class="legend">
-            <div *ngFor="let item of attendance" class="legend-row">
-              <span class="legend-dot" [style.background]="item.color"></span>
-              {{ item.label }}
-              <strong>{{ item.value }}</strong>
-            </div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="dashboard-card">
-      <mat-card-content>
-        <div class="card-head">
-          <h2><mat-icon>bar_chart</mat-icon>Monthly enrollments</h2>
-          <span>2026-27</span>
-        </div>
-        <div class="bar-chart">
-          <div *ngFor="let item of enrollments" class="bar-col">
-            <span class="bar-value">{{ item.value }}</span>
-            <span class="bar" [style.height.px]="enrollmentHeight(item.value)"></span>
-            <span class="bar-label">{{ item.month }}</span>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="dashboard-card">
-      <mat-card-content>
-        <div class="card-head">
-          <h2><mat-icon>local_activity</mat-icon>Recent activity</h2>
-          <span>Today</span>
-        </div>
-        <div class="mini-list">
-          <div *ngFor="let item of activities" class="mini-item">
-            <span class="avatar">{{ item.initials }}</span>
-            <span class="mini-copy">
-              <strong>{{ item.name }}</strong>
-              <small>{{ item.detail }}</small>
-            </span>
-            <span class="badge" [class.alert]="item.tone === 'alert'" [class.warn]="item.tone === 'warn'">
-              {{ item.badge }}
-            </span>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <div class="bottom-grid">
-    <mat-card class="dashboard-card">
-      <mat-card-content>
-        <div class="card-head">
-          <h2><mat-icon>request_quote</mat-icon>Fees collection by class</h2>
-          <span>This month</span>
-        </div>
-        <div class="fee-list">
-          <div *ngFor="let item of fees" class="fee-item">
-            <div class="fee-top">
-              <span>{{ item.className }} <small>({{ item.students }} students)</small></span>
-              <strong>{{ item.collected }} / {{ item.total }}</strong>
-            </div>
-            <div class="fee-bar">
-              <span [style.width.%]="item.percent"></span>
-            </div>
-            <small>{{ item.percent }}% collected - {{ item.pending }} pending</small>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <div class="side-stack">
-      <mat-card class="dashboard-card">
-        <mat-card-content>
-          <div class="card-head">
-            <h2><mat-icon>notifications</mat-icon>Alerts</h2>
-            <span class="danger-text">4 active</span>
-          </div>
-          <div class="alerts">
-            <div *ngFor="let item of alerts" class="alert-row">
-              <span class="alert-icon" [class.warning]="item.tone === 'warning'" [class.success]="item.tone === 'success'">
-                <mat-icon>{{ item.icon }}</mat-icon>
-              </span>
-              <span>
-                <strong>{{ item.title }}</strong>
-                <small>{{ item.subtitle }}</small>
-              </span>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="dashboard-card">
-        <mat-card-content>
-          <div class="card-head compact">
-            <h2><mat-icon>bolt</mat-icon>Quick actions</h2>
-          </div>
-          <div class="quick-grid">
-            <button *ngFor="let item of quickActions()" type="button" [routerLink]="item.route">
-              <mat-icon>{{ item.icon }}</mat-icon>
-              {{ item.label }}
-            </button>
-          </div>
-        </mat-card-content>
-      </mat-card>
+      </div>
+      <div class="mod-grid">
+        @for (w of customizeWidgets(); track w.code) {
+          <button
+            type="button"
+            class="mod-chip"
+            [class.on]="isWidgetOn(w.code)"
+            (click)="toggleWidgetVisibility(w.code)"
+          >
+            {{ w.name }}
+          </button>
+        }
+      </div>
     </div>
-  </div>
+  }
+
+  @if (loading()) {
+    <p class="loading-hint">Loading dashboard…</p>
+  } @else {
+    @if (data(); as d) {
+      <div class="dash-content">
+        @if (has(W.StudentsStat) || has(W.TeachersStat) || has(W.ClassesStat) || has(W.SubjectsStat)) {
+          <div class="grid4">
+            @if (has(W.StudentsStat) && d.summary) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.StudentsStat)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon"><mat-icon>groups</mat-icon></div>
+                <div class="sc-val">{{ d.summary.totalStudents }}</div>
+                <div class="sc-lbl">Total students</div>
+              </article>
+            }
+            @if (has(W.TeachersStat) && d.summary) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.TeachersStat)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon bi"><mat-icon>co_present</mat-icon></div>
+                <div class="sc-val">{{ d.summary.totalTeachers }}</div>
+                <div class="sc-lbl">Total teachers</div>
+              </article>
+            }
+            @if (has(W.ClassesStat) && d.summary) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.ClassesStat)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon pi"><mat-icon>class</mat-icon></div>
+                <div class="sc-val">{{ d.summary.totalClasses }}</div>
+                <div class="sc-lbl">Classes / sections</div>
+              </article>
+            }
+            @if (has(W.SubjectsStat)) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.SubjectsStat)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon ai"><mat-icon>menu_book</mat-icon></div>
+                <div class="sc-val">{{ d.totalSubjects }}</div>
+                <div class="sc-lbl">Subjects offered</div>
+              </article>
+            }
+          </div>
+        }
+
+        @if (showAttendanceFilter()) {
+          <div class="attendance-filter-bar" [class.is-loading]="attendanceLoading()">
+            <div class="attendance-filter-label">
+              <mat-icon>date_range</mat-icon>
+              <span>Attendance period</span>
+            </div>
+            <select
+              class="attendance-preset-select"
+              [value]="attendancePreset()"
+              (change)="onAttendancePresetChange($any($event.target).value)"
+            >
+              @for (opt of attendanceFilterOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+            @if (attendancePreset() === 'custom') {
+              <label class="attendance-date-field">
+                <span>From</span>
+                <input
+                  type="date"
+                  [value]="attendanceCustomFrom()"
+                  (change)="attendanceCustomFrom.set($any($event.target).value)"
+                />
+              </label>
+              <label class="attendance-date-field">
+                <span>To</span>
+                <input
+                  type="date"
+                  [value]="attendanceCustomTo()"
+                  (change)="attendanceCustomTo.set($any($event.target).value)"
+                />
+              </label>
+              <button type="button" class="attendance-apply-btn" (click)="applyCustomAttendanceRange()">
+                Apply
+              </button>
+            }
+            @if (d.attendanceToday; as att) {
+              <span class="attendance-range-hint">{{ att.dateLabel }}</span>
+            }
+          </div>
+        }
+
+        @if (
+          has(W.FeesCollected) ||
+          has(W.FeesPending) ||
+          has(W.SalaryDisbursed) ||
+          has(W.AttendanceRate)
+        ) {
+          <div class="grid4">
+            @if (has(W.FeesCollected) && d.fees) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.FeesCollected)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon"><mat-icon>payments</mat-icon></div>
+                <div class="sc-val">{{ formatCurrency(d.fees.collectedAmount) }}</div>
+                <div class="sc-lbl">Fees collected</div>
+              </article>
+            }
+            @if (has(W.FeesPending) && d.fees) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.FeesPending)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon ri"><mat-icon>schedule</mat-icon></div>
+                <div class="sc-val">{{ formatCurrency(d.fees.pendingAmount) }}</div>
+                <div class="sc-lbl">Fees pending</div>
+              </article>
+            }
+            @if (has(W.SalaryDisbursed) && d.salary) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.SalaryDisbursed)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon bi"><mat-icon>account_balance_wallet</mat-icon></div>
+                <div class="sc-val">{{ formatCurrency(d.salary.disbursedAmount) }}</div>
+                <div class="sc-lbl">Salary disbursed</div>
+              </article>
+            }
+            @if (has(W.AttendanceRate) && d.attendanceToday) {
+              <article class="card stat-card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.AttendanceRate)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="sc-icon"><mat-icon>how_to_reg</mat-icon></div>
+                <div class="sc-val">{{ d.attendanceToday.presentPercent }}%</div>
+                <div class="sc-lbl">{{ attendanceStatLabel() }}</div>
+              </article>
+            }
+          </div>
+        }
+
+        @if (has(W.AttendanceDetail) || has(W.FeesByClass) || has(W.SalaryStatus)) {
+          <div class="grid3">
+            @if (has(W.AttendanceDetail) && d.attendanceToday; as att) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.AttendanceDetail)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>pie_chart</mat-icon>Attendance</h2>
+                  <span>{{ att.periodLabel || att.dateLabel }}</span>
+                </div>
+                <div class="donut-wrap">
+                  <svg width="72" height="72" viewBox="0 0 72 72" class="mini-donut" aria-hidden="true">
+                    <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border)" stroke-width="9" />
+                    <circle
+                      cx="36"
+                      cy="36"
+                      r="26"
+                      fill="none"
+                      stroke="#639922"
+                      stroke-width="9"
+                      [attr.stroke-dasharray]="donutDash(att.present, att.present + att.absent + att.leave + att.late)"
+                      stroke-dashoffset="-41"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  <div class="donut-legend">
+                    <div class="donut-pct">{{ att.presentPercent }}% <small>present</small></div>
+                    <div class="legend-row"><span class="dot g"></span>Present <strong>{{ att.present }}</strong></div>
+                    <div class="legend-row"><span class="dot r"></span>Absent <strong>{{ att.absent }}</strong></div>
+                    <div class="legend-row"><span class="dot a"></span>Leave <strong>{{ att.leave }}</strong></div>
+                  </div>
+                </div>
+              </article>
+            }
+            @if (has(W.FeesByClass) && d.fees) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.FeesByClass)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>payments</mat-icon>Fees by class</h2>
+                  <span>This month</span>
+                </div>
+                @for (row of d.fees.byClass; track row.className) {
+                  <div class="bar-row">
+                    <span class="bar-label">{{ row.className }}</span>
+                    <div class="bar-track"><div class="bar-fill" [style.width.%]="row.percentCollected"></div></div>
+                    <span class="bar-pct">{{ row.percentCollected }}%</span>
+                  </div>
+                }
+              </article>
+            }
+            @if (has(W.SalaryStatus) && d.salary; as sal) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.SalaryStatus)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>account_balance_wallet</mat-icon>Salary status</h2>
+                  <span>{{ sal.periodLabel }}</span>
+                </div>
+                @for (cat of sal.categories; track cat.label) {
+                  <div class="salary-row">
+                    <div>
+                      <div class="salary-label">{{ cat.label }}</div>
+                      <div class="salary-sub">{{ cat.subLabel }}</div>
+                    </div>
+                    <div class="salary-amt" [class.pending]="!cat.isPaid">{{ formatCurrency(cat.amount) }}</div>
+                  </div>
+                }
+                <div class="salary-summary">
+                  <div class="salary-box ok"><div class="n">{{ sal.paidCount }}</div><div class="l">Paid</div></div>
+                  <div class="salary-box warn"><div class="n">{{ sal.pendingCount }}</div><div class="l">Pending</div></div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+
+        @if (has(W.RecentStudents) || has(W.TeachersList) || has(W.HomeworkDue)) {
+          <div class="grid3">
+            @if (has(W.RecentStudents) && d.recentStudents) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.RecentStudents)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>groups</mat-icon>Recent students</h2>
+                  <a routerLink="/students" class="link">View all</a>
+                </div>
+                @for (s of d.recentStudents; track s.id) {
+                  <div class="mini-li">
+                    <span class="mla">{{ s.initials }}</span>
+                    <div class="mini-body">
+                      <strong>{{ s.name }}</strong>
+                      <small>{{ s.detail }}</small>
+                    </div>
+                    <span [class]="badgeClass(s.badgeTone)">{{ s.badge }}</span>
+                  </div>
+                }
+              </article>
+            }
+            @if (has(W.TeachersList) && d.teachers) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.TeachersList)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>co_present</mat-icon>Teachers</h2>
+                  <a routerLink="/teachers" class="link">View all</a>
+                </div>
+                @for (t of d.teachers; track t.name) {
+                  <div class="mini-li">
+                    <span class="mla bl">{{ t.initials }}</span>
+                    <div class="mini-body">
+                      <strong>{{ t.name }}</strong>
+                      <small>{{ t.detail }}</small>
+                    </div>
+                    <span [class]="badgeClass(t.statusTone)">{{ t.status }}</span>
+                  </div>
+                }
+              </article>
+            }
+            @if (has(W.HomeworkDue) && d.homeworkDue) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.HomeworkDue)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>edit_note</mat-icon>Homework due</h2>
+                  <span>Next 3 days</span>
+                </div>
+                @for (h of d.homeworkDue; track h.title) {
+                  <div class="hw-item">
+                    <div>
+                      <strong>{{ h.title }}</strong>
+                      <div class="hw-sub">{{ h.subtitle }}</div>
+                    </div>
+                    <span [class]="badgeClass(h.dueTone)">{{ h.dueLabel }}</span>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @if (has(W.ClassesOverview) || has(W.AlertsActions)) {
+          <div class="grid2">
+            @if (has(W.ClassesOverview) && d.classesOverview) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.ClassesOverview)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                <div class="ch">
+                  <h2><mat-icon>class</mat-icon>Classes & subjects overview</h2>
+                </div>
+                <div class="class-grid">
+                  @for (c of d.classesOverview; track c.className + c.sectionLabel) {
+                    <div class="class-tile">
+                      <div class="class-n">{{ c.className }}</div>
+                      <div class="class-s">{{ c.sectionLabel }}</div>
+                      <div class="class-st">{{ c.studentCount }} students</div>
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+            @if (has(W.AlertsActions)) {
+              <article class="card">
+                @if (editing()) {
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.AlertsActions)" aria-label="Remove">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+                @if (d.alerts?.items?.length) {
+                  <div class="ch">
+                    <h2><mat-icon>notifications</mat-icon>Alerts</h2>
+                  </div>
+                  @for (a of d.alerts!.items; track a.title) {
+                    <div class="alert-item">
+                      <span class="al-icon" [class]="a.tone"><mat-icon>{{ a.icon }}</mat-icon></span>
+                      <div>
+                        <strong>{{ a.title }}</strong>
+                        <small>{{ a.subtitle }}</small>
+                      </div>
+                    </div>
+                  }
+                }
+                <div class="qa-section">
+                  <h2><mat-icon>bolt</mat-icon>Quick actions</h2>
+                  <div class="qa-grid">
+                    @for (qa of visibleQuickActions(); track qa.label) {
+                      @if (qa.route) {
+                        <a class="qa" [routerLink]="qa.route">
+                          <mat-icon>{{ qa.icon }}</mat-icon>{{ qa.label }}
+                        </a>
+                      }
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
 </section>
