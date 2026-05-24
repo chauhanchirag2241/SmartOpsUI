@@ -77,16 +77,12 @@
           </div>
           <div class="sal-amounts" *ngIf="detail.employeeSalaryId">
             <div class="sa">
-              <div class="sa-val">{{ formatInr(detail.basicSalary) }}</div>
-              <div class="sa-label">Basic</div>
-            </div>
-            <div class="sa">
-              <div class="sa-val">{{ formatInr(detail.grossSalary) }}</div>
-              <div class="sa-label">Gross</div>
+              <div class="sa-val" style="color: var(--g600)">{{ formatInr(detail.grossSalary) }}</div>
+              <div class="sa-label">Total earning</div>
             </div>
             <div class="sa">
               <div class="sa-val" style="color: #a32d2d">{{ formatInr(detail.totalDeductions) }}</div>
-              <div class="sa-label">Deductions</div>
+              <div class="sa-label">Total deduction</div>
             </div>
             <div class="sa">
               <div class="sa-val" style="color: var(--g600)">{{ formatInr(detail.netSalary) }}</div>

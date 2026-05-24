@@ -66,11 +66,11 @@
 }
 .sal-amounts {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 @media (max-width: 700px) {
-  .sal-amounts { grid-template-columns: repeat(2, 1fr); }
+  .sal-amounts { grid-template-columns: 1fr; }
 }
 .sa {
   background: var(--input-bg);

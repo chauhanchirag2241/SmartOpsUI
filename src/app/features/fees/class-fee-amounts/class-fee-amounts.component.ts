@@ -86,10 +86,11 @@ export class ClassFeeAmountsComponent implements OnInit {
     this.feeStructureService.getVersions(this.academicYearId).subscribe({
       next: (list) => {
         this.versions = asArray(list).map(normalizeFeeStructureVersion);
-        const active = this.versions.find((v) => v.statusLabel === 'Active');
         const draft = this.versions.find((v) => v.statusLabel === 'Draft');
+        const published = this.versions.find((v) => v.statusLabel === 'Published');
+        const active = this.versions.find((v) => v.statusLabel === 'Active');
         this.feeStructureVersionId =
-          draft?.id || active?.id || this.versions[0]?.id || '';
+          draft?.id || published?.id || active?.id || this.versions[0]?.id || '';
         this.loadingVersions = false;
         this.loadClasses();
         this.refreshView();

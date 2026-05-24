@@ -23,7 +23,9 @@
   <span *ngIf="selectedVersion" class="version-badge badge" [ngClass]="versionStatusClass(selectedVersion.statusLabel)">
     {{ selectedVersion.statusLabel }}
   </span>
-  <span class="filter-hint">Click class to set amounts · Only draft structures are editable</span>
+  <span class="filter-hint">
+    Draft &amp; Published: edit any class · Active: only classes without saved amounts (e.g. new classes)
+  </span>
 </div>
 
 <div class="split-layout">
@@ -68,7 +70,21 @@
     </div>
     <p *ngIf="!amountData.isEditable" class="lock-hint">
       <mat-icon>lock</mat-icon>
-      This fee structure is not editable. Select a <strong>Draft</strong> version to change amounts.
+      <ng-container [ngSwitch]="amountData.versionStatusLabel">
+        <span *ngSwitchCase="'Active'">
+          This class already has fee amounts on the <strong>Active</strong> structure. Use
+          <strong>Fee Structure → Create new version</strong> to change existing amounts.
+        </span>
+        <span *ngSwitchDefault>This version is archived and cannot be edited.</span>
+      </ng-container>
+    </p>
+    <p *ngIf="amountData.isEditable && amountData.versionStatusLabel === 'Published'" class="edit-hint">
+      <mat-icon>info</mat-icon>
+      Published structure — set amounts for each class before activating.
+    </p>
+    <p *ngIf="amountData.isEditable && amountData.versionStatusLabel === 'Active'" class="edit-hint">
+      <mat-icon>info</mat-icon>
+      New class — set fee amounts below. Existing classes on this active structure are locked.
     </p>
     <table class="data-table">
       <thead>
