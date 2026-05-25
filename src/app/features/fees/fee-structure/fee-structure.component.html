@@ -22,10 +22,6 @@
       <div><div class="sv">{{ stats.classesConfigured }}</div><div class="sl">Classes configured</div></div>
     </div>
     <div class="sc">
-      <div class="si si-a"><mat-icon>calendar_month</mat-icon></div>
-      <div><div class="sv">{{ stats.paymentCycleLabel }}</div><div class="sl">Payment cycle</div></div>
-    </div>
-    <div class="sc">
       <div class="si si-r"><mat-icon>currency_rupee</mat-icon></div>
       <div><div class="sv">₹{{ stats.lateFeePerDay }}</div><div class="sl">Late fee/day</div></div>
     </div>
@@ -75,11 +71,11 @@
     <table class="data-table" *ngIf="!loadingTypes">
       <thead>
         <tr>
-          <th>Fee type</th>
+          <th>Fee head</th>
           <th>Category</th>
-          <th>Frequency</th>
-          <th>Amount basis</th>
+          <th>Collection type</th>
           <th>Mandatory</th>
+          <th>Student-wise amount</th>
           <th>Refundable</th>
           <th style="width: 70px" *ngIf="!selectedVersion.isLocked">Actions</th>
         </tr>
@@ -94,9 +90,9 @@
             <span *ngIf="f.hasStudentPayments" class="paid-hint">Fees collected</span>
           </td>
           <td><span class="badge" [ngClass]="catClass(f.categoryLabel)">{{ f.categoryLabel }}</span></td>
-          <td><span class="badge" [ngClass]="freqClass(f.frequencyLabel)">{{ f.frequencyLabel }}</span></td>
-          <td><span class="badge b-gray">{{ f.amountBasisLabel }}</span></td>
+          <td><span class="badge" [ngClass]="collectionClass(f.collectionTypeLabel)">{{ f.collectionTypeLabel }}</span></td>
           <td><span class="badge" [ngClass]="f.isMandatory ? 'b-green' : 'b-gray'">{{ f.isMandatory ? 'Yes' : 'No' }}</span></td>
+          <td><span class="badge" [ngClass]="f.studentWiseDifferentAmount ? 'b-amber' : 'b-gray'">{{ f.studentWiseDifferentAmount ? 'Yes' : 'No' }}</span></td>
           <td><span class="badge" [ngClass]="f.isRefundable ? 'b-amber' : 'b-gray'">{{ f.isRefundable ? 'Yes' : 'No' }}</span></td>
           <td *ngIf="!selectedVersion.isLocked">
             <button type="button" class="act-btn del" title="Delete" (click)="deleteFeeType(f)">
@@ -154,7 +150,7 @@
       </div>
       <div class="mb">
         <div class="field">
-          <label>Fee type name <span class="req">*</span></label>
+          <label>Fee head name <span class="req">*</span></label>
           <input [(ngModel)]="feeTypeForm.name" placeholder="e.g. Tuition fee" />
         </div>
         <div class="grid2">
@@ -165,18 +161,11 @@
             </select>
           </div>
           <div class="field">
-            <label>Frequency</label>
-            <select [(ngModel)]="feeTypeForm.frequency">
-              <option *ngFor="let o of frequencyOptions" [ngValue]="o.value">{{ o.label }}</option>
+            <label>Collection type</label>
+            <select [(ngModel)]="feeTypeForm.collectionType">
+              <option *ngFor="let o of collectionTypeOptions" [ngValue]="o.value">{{ o.label }}</option>
             </select>
           </div>
-        </div>
-        <div class="field">
-          <label>Amount basis</label>
-          <select [(ngModel)]="feeTypeForm.amountBasis">
-            <option *ngFor="let o of amountBasisOptions" [ngValue]="o.value">{{ o.label }}</option>
-          </select>
-          <div class="field-hint">Monthly + Annual total splits the class amount across months.</div>
         </div>
         <div class="grid2">
           <div class="field row-toggle">
@@ -188,14 +177,26 @@
             </label>
           </div>
           <div class="field row-toggle">
-            <label>Refundable</label>
+            <label>Student-wise different amount</label>
             <label class="toggle">
-              <input type="checkbox" [(ngModel)]="feeTypeForm.isRefundable" />
+              <input type="checkbox" [(ngModel)]="feeTypeForm.studentWiseDifferentAmount" />
               <div class="toggle-track"></div>
               <div class="toggle-thumb"></div>
             </label>
           </div>
         </div>
+        <div class="field row-toggle">
+          <label>Refundable</label>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="feeTypeForm.isRefundable" />
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <p class="field-hint">
+          Mandatory heads are always applied at admission. Non-mandatory heads can be added or removed.
+          Student-wise amount allows changing the fee for that head per student during admission.
+        </p>
       </div>
       <div class="mf">
         <button type="button" class="btn-cancel" (click)="showFeeTypeModal = false">Cancel</button>

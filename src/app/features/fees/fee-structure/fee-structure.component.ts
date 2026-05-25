@@ -14,16 +14,14 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import {
   FEE_CATEGORY_OPTIONS,
-  FEE_FREQUENCY_OPTIONS,
-  FeeAmountBasis,
+  FEE_COLLECTION_TYPE_OPTIONS,
   FeeCategory,
-  FeeFrequency,
-  FEE_AMOUNT_BASIS_OPTIONS,
+  FeeCollectionType,
   FeeStructureVersionStatus,
   asArray,
   categoryBadgeClass,
+  collectionTypeBadgeClass,
   extractApiError,
-  frequencyBadgeClass,
   normalizeDropdownItem,
   normalizeFeeStats,
   normalizeFeeStructureVersion,
@@ -61,7 +59,7 @@ export class FeeStructureComponent implements OnInit {
   currentStatusFilter = 'All';
   loading = false;
 
-  stats = { feeTypeCount: 0, classesConfigured: 0, paymentCycleLabel: '—', lateFeePerDay: 0 };
+  stats = { feeTypeCount: 0, classesConfigured: 0, lateFeePerDay: 0 };
 
   selectedVersion: ReturnType<typeof normalizeFeeStructureVersion> | null = null;
   feeTypes: ReturnType<typeof normalizeFeeType>[] = [];
@@ -71,15 +69,14 @@ export class FeeStructureComponent implements OnInit {
   showFeeTypeModal = false;
   createVersionForm = { academicYearId: '', effectiveDate: '', cloneFromVersionId: '' };
   categoryOptions = FEE_CATEGORY_OPTIONS;
-  frequencyOptions = FEE_FREQUENCY_OPTIONS;
-  amountBasisOptions = FEE_AMOUNT_BASIS_OPTIONS;
+  collectionTypeOptions = FEE_COLLECTION_TYPE_OPTIONS;
   feeTypeForm = {
     name: '',
     category: FeeCategory.Academic,
-    frequency: FeeFrequency.Quarterly,
-    amountBasis: FeeAmountBasis.AnnualTotal,
+    collectionType: FeeCollectionType.SemesterWise,
     isMandatory: true,
     isRefundable: false,
+    studentWiseDifferentAmount: false,
   };
 
   private readonly baseTableConfig: DataTableConfig = {
@@ -378,10 +375,10 @@ export class FeeStructureComponent implements OnInit {
     this.feeTypeForm = {
       name: '',
       category: FeeCategory.Academic,
-      frequency: FeeFrequency.Quarterly,
-      amountBasis: FeeAmountBasis.AnnualTotal,
+      collectionType: FeeCollectionType.SemesterWise,
       isMandatory: true,
       isRefundable: false,
+      studentWiseDifferentAmount: false,
     };
     this.showFeeTypeModal = true;
     this.refreshView();
@@ -389,7 +386,7 @@ export class FeeStructureComponent implements OnInit {
 
   saveFeeType(): void {
     if (!this.selectedVersion || !this.feeTypeForm.name.trim()) {
-      this.toast('Fee type name is required', true);
+      this.toast('Fee head name is required', true);
       return;
     }
     this.service.createFeeType(this.selectedVersion.id, this.feeTypeForm).subscribe({
@@ -417,7 +414,7 @@ export class FeeStructureComponent implements OnInit {
   }
 
   catClass = categoryBadgeClass;
-  freqClass = frequencyBadgeClass;
+  collectionClass = collectionTypeBadgeClass;
   statusClass = versionStatusBadgeClass;
 
   private refreshView(): void {

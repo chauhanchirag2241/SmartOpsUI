@@ -169,7 +169,7 @@ export class FeeCollectionComponent implements OnInit {
         }
         this.refreshView();
       },
-      error: () => this.toast('Failed to load student fees', true),
+      error: (e) => this.toast(extractApiError(e, 'Failed to load student fees'), true),
     });
   }
 
@@ -289,7 +289,8 @@ export class FeeCollectionComponent implements OnInit {
   statusBadgeClass(status: string): string {
     if (status === 'Fully paid' || status === 'Paid') return 'b-green';
     if (status === 'Partial') return 'b-amber';
-    if (status === 'Not paid' || status === 'Unpaid') return 'b-red';
+    if (status === 'Overdue') return 'b-red';
+    if (status === 'Pending' || status === 'Not paid' || status === 'Unpaid') return 'b-amber';
     return 'b-gray';
   }
 

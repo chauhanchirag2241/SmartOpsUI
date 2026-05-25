@@ -61,4 +61,12 @@ export class AcademicYearService {
   deleteAcademicYear(id: string): Observable<any> {
     return this.api.delete(`academicYears/${id}`);
   }
+
+  getSemesters(academicYearId: string): Observable<any[]> {
+    return this.api.get<any[]>(`academicYears/${academicYearId}/semesters`);
+  }
+
+  saveSemesters(academicYearId: string, semesters: unknown[]): Observable<void> {
+    return this.api.put(`academicYears/${academicYearId}/semesters`, { semesters });
+  }
 }

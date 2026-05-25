@@ -9,6 +9,7 @@ import { AcademicYearService } from '../../../core/services/academic-year.servic
 import {
   asArray,
   extractApiError,
+  FeeCollectionType,
   formatInr,
   normalizeClassAmounts,
   normalizeClassSummary,
@@ -17,6 +18,12 @@ import {
   normalizeFeeStructureVersion,
   versionStatusBadgeClass,
 } from '../fees.shared';
+
+type AmountEdits = {
+  amount: number;
+  semester1Amount: number;
+  semester2Amount: number;
+};
 
 @Component({
   selector: 'app-class-fee-amounts',
@@ -33,6 +40,8 @@ export class ClassFeeAmountsComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
 
+  readonly FeeCollectionType = FeeCollectionType;
+
   academicYears: ReturnType<typeof normalizeDropdownItem>[] = [];
   versions: ReturnType<typeof normalizeFeeStructureVersion>[] = [];
   academicYearId = '';
@@ -40,9 +49,7 @@ export class ClassFeeAmountsComponent implements OnInit {
   classes: ReturnType<typeof normalizeClassSummary>[] = [];
   selectedClassId = '';
   amountData: ReturnType<typeof normalizeClassAmounts> | null = null;
-  amountEdits: Record<string, number> = {};
-  private amountEditsSnapshot: Record<string, number> = {};
-  isEditing = false;
+  amountEdits: Record<string, AmountEdits> = {};
   saving = false;
   loading = false;
   loadingVersions = false;
@@ -68,18 +75,29 @@ export class ClassFeeAmountsComponent implements OnInit {
     });
   }
 
+  /** Draft/Published: always edit all classes. Active: only classes without saved amounts. */
+  get canEditAmounts(): boolean {
+    if (!this.amountData) return false;
+    const status = this.amountData.versionStatusLabel;
+    if (status === 'Draft' || status === 'Published') return true;
+    return this.amountData.isEditable;
+  }
+
+  get isDraftOrPublished(): boolean {
+    const s = this.amountData?.versionStatusLabel;
+    return s === 'Draft' || s === 'Published';
+  }
+
   onYearChange(): void {
     this.selectedClassId = '';
     this.amountData = null;
     this.feeStructureVersionId = '';
-    this.isEditing = false;
     this.loadVersions();
   }
 
   onVersionChange(): void {
     this.selectedClassId = '';
     this.amountData = null;
-    this.isEditing = false;
     this.loadClasses();
   }
 
@@ -114,13 +132,17 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   loadClasses(): void {
     if (!this.academicYearId || !this.feeStructureVersionId) return;
+    const keepSelection = this.selectedClassId;
     this.service.getClassSummaries(this.academicYearId, this.feeStructureVersionId).subscribe({
       next: (list) => {
         this.classes = asArray(list).map(normalizeClassSummary);
-        if (!this.selectedClassId && this.classes.length) {
+        if (keepSelection && this.classes.some((c) => c.classId === keepSelection)) {
+          this.loadAmounts(keepSelection);
+        } else if (this.classes.length) {
           this.selectClass(this.classes[0].classId);
-        } else if (this.selectedClassId) {
-          this.loadAmounts();
+        } else {
+          this.selectedClassId = '';
+          this.amountData = null;
         }
         this.refreshView();
       },
@@ -133,10 +155,9 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   selectClass(classId: string): void {
     this.selectedClassId = classId;
-    this.isEditing = false;
     this.showInstallmentPreview = false;
     this.installmentPreview = [];
-    this.loadAmounts();
+    this.loadAmounts(classId);
   }
 
   toggleInstallmentPreview(): void {
@@ -168,90 +189,118 @@ export class ClassFeeAmountsComponent implements OnInit {
       });
   }
 
-  startEdit(): void {
-    if (!this.amountData?.isEditable || this.loading) return;
-    this.amountEditsSnapshot = { ...this.amountEdits };
-    this.isEditing = true;
-    this.refreshView();
-  }
-
-  cancelEdit(): void {
-    this.amountEdits = { ...this.amountEditsSnapshot };
-    this.isEditing = false;
-    this.refreshView();
-  }
-
-  loadAmounts(): void {
-    if (!this.selectedClassId || !this.academicYearId || !this.feeStructureVersionId) return;
+  loadAmounts(classId: string = this.selectedClassId): void {
+    if (!classId || !this.academicYearId || !this.feeStructureVersionId) return;
     this.loading = true;
     this.refreshView();
 
-    this.service
-      .getClassAmounts(this.selectedClassId, this.academicYearId, this.feeStructureVersionId)
-      .subscribe({
-        next: (data) => {
-          this.amountData = normalizeClassAmounts(data);
-          this.amountEdits = {};
-          this.amountData.items.forEach((i) => {
-            this.amountEdits[i.feeTypeId] = i.amount ?? 0;
-          });
-          this.amountEditsSnapshot = { ...this.amountEdits };
-          this.isEditing = false;
-          this.loading = false;
-          this.refreshView();
-        },
-        error: () => {
-          this.loading = false;
-          this.toast('Failed to load amounts', true);
-          this.refreshView();
-        },
-      });
+    this.service.getClassAmounts(classId, this.academicYearId, this.feeStructureVersionId).subscribe({
+      next: (data) => {
+        if (classId !== this.selectedClassId) return;
+        this.amountData = normalizeClassAmounts(data);
+        this.amountEdits = {};
+        this.amountData.items.forEach((i) => {
+          this.amountEdits[i.feeTypeId] = {
+            amount: i.amount ?? 0,
+            semester1Amount: i.semester1Amount ?? 0,
+            semester2Amount: i.semester2Amount ?? 0,
+          };
+        });
+        this.loading = false;
+        this.refreshView();
+      },
+      error: () => {
+        if (classId !== this.selectedClassId) return;
+        this.loading = false;
+        this.toast('Failed to load amounts', true);
+        this.refreshView();
+      },
+    });
+  }
+
+  get hasSemesterWiseHeads(): boolean {
+    return this.amountData?.items.some((i) => this.isSemesterWise(i.collectionType)) ?? false;
   }
 
   get totalAmount(): number {
-    return Object.values(this.amountEdits).reduce((a, b) => a + (Number(b) || 0), 0);
+    if (!this.amountData) return 0;
+    return this.amountData.items.reduce((sum, item) => sum + this.annualTotalFor(item.feeTypeId, item.collectionType), 0);
+  }
+
+  amountEditFor(feeTypeId: string): AmountEdits {
+    if (!this.amountEdits[feeTypeId]) {
+      this.amountEdits[feeTypeId] = { amount: 0, semester1Amount: 0, semester2Amount: 0 };
+    }
+    return this.amountEdits[feeTypeId];
+  }
+
+  isSemesterWise(collectionType: number): boolean {
+    return collectionType === FeeCollectionType.SemesterWise;
+  }
+
+  isOneTime(collectionType: number): boolean {
+    return collectionType === FeeCollectionType.OneTime;
+  }
+
+  annualTotalFor(feeTypeId: string, collectionType: number): number {
+    const edits = this.amountEdits[feeTypeId];
+    if (!edits) return 0;
+    if (collectionType === FeeCollectionType.SemesterWise) {
+      return (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
+    }
+    return Number(edits.amount) || 0;
+  }
+
+  onSemesterAmountChange(feeTypeId: string): void {
+    const edits = this.amountEdits[feeTypeId];
+    if (edits) {
+      edits.amount = (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
+    }
+    this.refreshView();
   }
 
   saveAmounts(): void {
-    if (!this.selectedClassId || !this.isEditing || this.saving || !this.amountData?.isEditable) return;
-    const amounts = Object.entries(this.amountEdits).map(([feeTypeId, amount]) => ({
+    if (!this.selectedClassId || !this.canEditAmounts || this.saving || this.loading) return;
+    const amounts = Object.entries(this.amountEdits).map(([feeTypeId, edits]) => ({
       feeTypeId,
-      amount: Number(amount) || 0,
+      amount: Number(edits.amount) || 0,
+      semester1Amount: Number(edits.semester1Amount) || 0,
+      semester2Amount: Number(edits.semester2Amount) || 0,
     }));
     this.saving = true;
     this.refreshView();
+    const classId = this.selectedClassId;
     this.service
-      .saveClassAmounts(this.selectedClassId, {
+      .saveClassAmounts(classId, {
         academicYearId: this.academicYearId,
         feeStructureVersionId: this.feeStructureVersionId,
         amounts,
       })
       .subscribe({
         next: (data) => {
+          if (classId !== this.selectedClassId) return;
           this.amountData = normalizeClassAmounts(data);
           this.amountData.items.forEach((i) => {
-            this.amountEdits[i.feeTypeId] = i.amount ?? 0;
+            this.amountEdits[i.feeTypeId] = {
+              amount: i.amount ?? 0,
+              semester1Amount: i.semester1Amount ?? 0,
+              semester2Amount: i.semester2Amount ?? 0,
+            };
           });
-          this.amountEditsSnapshot = { ...this.amountEdits };
-          this.isEditing = false;
           this.saving = false;
           this.showInstallmentPreview = false;
           this.installmentPreview = [];
           this.loadClasses();
-          this.loadInstallmentPreview();
           this.toast('Amounts saved');
           this.refreshView();
         },
         error: (e) => {
+          if (classId !== this.selectedClassId) return;
           this.saving = false;
           this.toast(extractApiError(e, 'Save failed'), true);
           this.refreshView();
         },
       });
-  }
-
-  amountFor(feeTypeId: string): number {
-    return Number(this.amountEdits[feeTypeId]) || 0;
   }
 
   formatInr = formatInr;

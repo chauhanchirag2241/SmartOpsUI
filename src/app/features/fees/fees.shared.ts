@@ -5,19 +5,9 @@ export enum FeeCategory {
   Other = 3,
 }
 
-export enum FeeFrequency {
-  Annual = 0,
-  SemiAnnual = 1,
-  Quarterly = 2,
-  Monthly = 3,
-  OneTime = 4,
-}
-
-export enum FeePaymentCycle {
-  Annual = 0,
-  SemiAnnual = 1,
-  Quarterly = 2,
-  Monthly = 3,
+export enum FeeCollectionType {
+  SemesterWise = 0,
+  OneTime = 1,
 }
 
 export enum FeePaymentMode {
@@ -36,11 +26,6 @@ export enum FeeStructureVersionStatus {
   Archived = 3,
 }
 
-export enum FeeAmountBasis {
-  AnnualTotal = 0,
-  PerInstallment = 1,
-}
-
 export const FEE_CATEGORY_OPTIONS = [
   { value: FeeCategory.Academic, label: 'Academic' },
   { value: FeeCategory.Development, label: 'Development' },
@@ -48,18 +33,43 @@ export const FEE_CATEGORY_OPTIONS = [
   { value: FeeCategory.Other, label: 'Other' },
 ];
 
-export const FEE_AMOUNT_BASIS_OPTIONS = [
-  { value: FeeAmountBasis.AnnualTotal, label: 'Annual total (split across periods)' },
-  { value: FeeAmountBasis.PerInstallment, label: 'Per installment (each period)' },
+export const FEE_COLLECTION_TYPE_OPTIONS = [
+  { value: FeeCollectionType.SemesterWise, label: 'Semester wise' },
+  { value: FeeCollectionType.OneTime, label: 'One time' },
 ];
 
-export const FEE_FREQUENCY_OPTIONS = [
-  { value: FeeFrequency.Annual, label: 'Annual' },
-  { value: FeeFrequency.SemiAnnual, label: 'Semi-annual' },
-  { value: FeeFrequency.Quarterly, label: 'Quarterly' },
-  { value: FeeFrequency.Monthly, label: 'Monthly' },
-  { value: FeeFrequency.OneTime, label: 'One-time' },
-];
+/** API uses JsonStringEnumConverter — collection type may arrive as number or string. */
+/** Draft/Published: always editable per class until activate. Active: only new classes. */
+export function resolveClassAmountsEditable(raw: unknown, versionStatusLabel: string): boolean {
+  const status = versionStatusLabel.trim();
+  if (status === 'Draft' || status === 'Published') {
+    return true;
+  }
+  if (status === 'Active') {
+    if (raw === true || raw === 1) return true;
+    if (raw === false || raw === 0) return false;
+    return Boolean(raw);
+  }
+  return false;
+}
+
+export function resolveCollectionType(raw: unknown, label?: string): FeeCollectionType {
+  if (typeof raw === 'number' && !Number.isNaN(raw)) {
+    return raw === FeeCollectionType.OneTime ? FeeCollectionType.OneTime : FeeCollectionType.SemesterWise;
+  }
+  if (typeof raw === 'string') {
+    const s = raw.replace(/\s+/g, '').toLowerCase();
+    if (s === 'onetime' || s === 'one_time' || s.includes('one')) {
+      return FeeCollectionType.OneTime;
+    }
+    return FeeCollectionType.SemesterWise;
+  }
+  const l = (label ?? '').toLowerCase();
+  if (l.includes('one time') || l.includes('one-time') || l === 'onetime') {
+    return FeeCollectionType.OneTime;
+  }
+  return FeeCollectionType.SemesterWise;
+}
 
 export const FEE_PAYMENT_MODE_OPTIONS = [
   { value: FeePaymentMode.Cash, label: 'Cash' },
@@ -79,15 +89,12 @@ export function categoryBadgeClass(cat: string): string {
   return m[cat] ?? 'b-gray';
 }
 
-export function frequencyBadgeClass(freq: string): string {
+export function collectionTypeBadgeClass(type: string): string {
   const m: Record<string, string> = {
-    Annual: 'b-purple',
-    'Semi-annual': 'b-blue',
-    Quarterly: 'b-green',
-    Monthly: 'b-amber',
-    'One-time': 'b-gray',
+    'Semester wise': 'b-blue',
+    'One time': 'b-gray',
   };
-  return m[freq] ?? 'b-gray';
+  return m[type] ?? 'b-gray';
 }
 
 export function formatInr(n: number): string {
@@ -184,15 +191,26 @@ export function normalizeFeeStructureVersion(raw: any) {
 }
 
 export function normalizeFeeType(raw: any) {
+  const collectionTypeLabel = String(
+    pick(raw, 'collectionTypeLabel', 'CollectionTypeLabel') ??
+      pick(raw, 'frequencyLabel', 'FrequencyLabel') ??
+      '',
+  );
   return {
     id: String(pick(raw, 'id', 'Id') ?? ''),
     feeStructureVersionId: String(pick(raw, 'feeStructureVersionId', 'FeeStructureVersionId') ?? ''),
     name: String(pick(raw, 'name', 'Name') ?? ''),
     categoryLabel: String(pick(raw, 'categoryLabel', 'CategoryLabel') ?? ''),
-    frequencyLabel: String(pick(raw, 'frequencyLabel', 'FrequencyLabel') ?? ''),
-    amountBasisLabel: String(pick(raw, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
+    collectionType: resolveCollectionType(
+      pick(raw, 'collectionType', 'CollectionType') ?? pick(raw, 'frequency', 'Frequency'),
+      collectionTypeLabel,
+    ),
+    collectionTypeLabel,
     isMandatory: Boolean(pick(raw, 'isMandatory', 'IsMandatory')),
     isRefundable: Boolean(pick(raw, 'isRefundable', 'IsRefundable')),
+    studentWiseDifferentAmount: Boolean(
+      pick(raw, 'studentWiseDifferentAmount', 'StudentWiseDifferentAmount'),
+    ),
     isActive: pick(raw, 'isActive', 'IsActive') !== false,
     hasStudentPayments: Boolean(pick(raw, 'hasStudentPayments', 'HasStudentPayments')),
   };
@@ -202,7 +220,6 @@ export function normalizeFeeStats(raw: any) {
   return {
     feeTypeCount: Number(pick(raw, 'feeTypeCount', 'FeeTypeCount') ?? 0),
     classesConfigured: Number(pick(raw, 'classesConfigured', 'ClassesConfigured') ?? 0),
-    paymentCycleLabel: String(pick(raw, 'paymentCycleLabel', 'PaymentCycleLabel') ?? '—'),
     lateFeePerDay: Number(pick(raw, 'lateFeePerDay', 'LateFeePerDay') ?? 0),
   };
 }
@@ -217,15 +234,34 @@ export function normalizeClassSummary(raw: any) {
 }
 
 export function normalizeClassAmounts(raw: any) {
-  const items = asArray<any>(pick(raw, 'items', 'Items')).map((i) => ({
-    feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
-    feeTypeName: String(pick(i, 'feeTypeName', 'FeeTypeName') ?? ''),
-    categoryLabel: String(pick(i, 'categoryLabel', 'CategoryLabel') ?? ''),
-    frequencyLabel: String(pick(i, 'frequencyLabel', 'FrequencyLabel') ?? ''),
-    amountBasisLabel: String(pick(i, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
-    amount: Number(pick(i, 'amount', 'Amount') ?? 0),
-    isMandatory: Boolean(pick(i, 'isMandatory', 'IsMandatory') ?? true),
-  }));
+  const items = asArray<any>(pick(raw, 'items', 'Items')).map((i) => {
+    const collectionTypeLabel = String(
+      pick(i, 'collectionTypeLabel', 'CollectionTypeLabel') ??
+        pick(i, 'frequencyLabel', 'FrequencyLabel') ??
+        '',
+    );
+    const collectionType = resolveCollectionType(
+      pick(i, 'collectionType', 'CollectionType') ?? pick(i, 'frequency', 'Frequency'),
+      collectionTypeLabel,
+    );
+    const semester1 = Number(pick(i, 'semester1Amount', 'Semester1Amount') ?? 0);
+    const semester2 = Number(pick(i, 'semester2Amount', 'Semester2Amount') ?? 0);
+    const amount = Number(pick(i, 'amount', 'Amount') ?? 0);
+    const annualTotal = Number(pick(i, 'annualTotal', 'AnnualTotal') ?? (collectionType === FeeCollectionType.SemesterWise ? semester1 + semester2 : amount));
+    return {
+      feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
+      feeTypeName: String(pick(i, 'feeTypeName', 'FeeTypeName') ?? ''),
+      categoryLabel: String(pick(i, 'categoryLabel', 'CategoryLabel') ?? ''),
+      collectionType,
+      collectionTypeLabel,
+      amount,
+      semester1Amount: semester1,
+      semester2Amount: semester2,
+      annualTotal,
+      isMandatory: Boolean(pick(i, 'isMandatory', 'IsMandatory') ?? true),
+      studentWiseDifferentAmount: Boolean(pick(i, 'studentWiseDifferentAmount', 'StudentWiseDifferentAmount')),
+    };
+  });
   return {
     classId: String(pick(raw, 'classId', 'ClassId') ?? ''),
     className: String(pick(raw, 'className', 'ClassName') ?? ''),
@@ -233,7 +269,10 @@ export function normalizeClassAmounts(raw: any) {
     feeStructureVersionId: String(pick(raw, 'feeStructureVersionId', 'FeeStructureVersionId') ?? ''),
     versionNumber: Number(pick(raw, 'versionNumber', 'VersionNumber') ?? 0),
     versionStatusLabel: String(pick(raw, 'versionStatusLabel', 'VersionStatusLabel') ?? ''),
-    isEditable: Boolean(pick(raw, 'isEditable', 'IsEditable')),
+    isEditable: resolveClassAmountsEditable(
+      pick(raw, 'isEditable', 'IsEditable'),
+      String(pick(raw, 'versionStatusLabel', 'VersionStatusLabel') ?? ''),
+    ),
     totalAmount: Number(pick(raw, 'totalAmount', 'TotalAmount') ?? 0),
     items,
   };
@@ -257,8 +296,11 @@ export function normalizeInstallmentPreview(raw: any) {
     installmentId: String(pick(raw, 'installmentId', 'InstallmentId') ?? ''),
     feeTypeId: String(pick(raw, 'feeTypeId', 'FeeTypeId') ?? ''),
     feeTypeName: String(pick(raw, 'feeTypeName', 'FeeTypeName') ?? ''),
-    frequencyLabel: String(pick(raw, 'frequencyLabel', 'FrequencyLabel') ?? ''),
-    amountBasisLabel: String(pick(raw, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
+    collectionTypeLabel: String(
+      pick(raw, 'collectionTypeLabel', 'CollectionTypeLabel') ??
+        pick(raw, 'frequencyLabel', 'FrequencyLabel') ??
+        '',
+    ),
     periodIndex: Number(pick(raw, 'periodIndex', 'PeriodIndex') ?? 0),
     periodLabel: String(pick(raw, 'periodLabel', 'PeriodLabel') ?? ''),
     amount: Number(pick(raw, 'amount', 'Amount') ?? 0),
@@ -270,6 +312,7 @@ export function normalizeStudentDetail(raw: any) {
     const installments = asArray<any>(pick(h, 'installments', 'Installments')).map((i) => ({
       installmentId: String(pick(i, 'installmentId', 'InstallmentId') ?? ''),
       feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
+      periodIndex: Number(pick(i, 'periodIndex', 'PeriodIndex') ?? 0),
       periodLabel: String(pick(i, 'periodLabel', 'PeriodLabel') ?? ''),
       totalAmount: Number(pick(i, 'totalAmount', 'TotalAmount') ?? 0),
       paidAmount: Number(pick(i, 'paidAmount', 'PaidAmount') ?? 0),
@@ -279,8 +322,11 @@ export function normalizeStudentDetail(raw: any) {
     return {
       feeTypeId: String(pick(h, 'feeTypeId', 'FeeTypeId') ?? ''),
       feeTypeName: String(pick(h, 'feeTypeName', 'FeeTypeName') ?? ''),
-      frequencyLabel: String(pick(h, 'frequencyLabel', 'FrequencyLabel') ?? ''),
-      amountBasisLabel: String(pick(h, 'amountBasisLabel', 'AmountBasisLabel') ?? ''),
+      collectionTypeLabel: String(
+        pick(h, 'collectionTypeLabel', 'CollectionTypeLabel') ??
+          pick(h, 'frequencyLabel', 'FrequencyLabel') ??
+          '',
+      ),
       totalAmount: Number(pick(h, 'totalAmount', 'TotalAmount') ?? 0),
       paidAmount: Number(pick(h, 'paidAmount', 'PaidAmount') ?? 0),
       dueAmount: Number(pick(h, 'dueAmount', 'DueAmount') ?? 0),
@@ -289,6 +335,16 @@ export function normalizeStudentDetail(raw: any) {
       expanded: false,
     };
   });
+  const semesterStatuses = asArray<any>(pick(raw, 'semesterStatuses', 'SemesterStatuses')).map((s) => ({
+    semesterIndex: Number(pick(s, 'semesterIndex', 'SemesterIndex') ?? 0),
+    semesterName: String(pick(s, 'semesterName', 'SemesterName') ?? ''),
+    startDate: String(pick(s, 'startDate', 'StartDate') ?? ''),
+    endDate: String(pick(s, 'endDate', 'EndDate') ?? ''),
+    totalAmount: Number(pick(s, 'totalAmount', 'TotalAmount') ?? 0),
+    paidAmount: Number(pick(s, 'paidAmount', 'PaidAmount') ?? 0),
+    dueAmount: Number(pick(s, 'dueAmount', 'DueAmount') ?? 0),
+    status: String(pick(s, 'status', 'Status') ?? ''),
+  }));
   const payments = asArray<any>(pick(raw, 'payments', 'Payments')).map((p) => ({
     paymentId: String(pick(p, 'paymentId', 'PaymentId') ?? ''),
     paymentDate: String(pick(p, 'paymentDate', 'PaymentDate') ?? ''),
@@ -309,6 +365,7 @@ export function normalizeStudentDetail(raw: any) {
     paymentProgressPercent: Number(pick(raw, 'paymentProgressPercent', 'PaymentProgressPercent') ?? 0),
     paymentStatus: String(pick(raw, 'paymentStatus', 'PaymentStatus') ?? ''),
     feeHeads,
+    semesterStatuses,
     payments,
   };
 }

@@ -104,7 +104,7 @@
                     }
                   </span>
                   <span class="fee-amt">
-                    @if (mode === 'add' && row.isIncluded && !row.isMandatory) {
+                    @if (canEditFeeHeadAmount(row)) {
                       <input
                         type="number"
                         class="fee-amount-input"

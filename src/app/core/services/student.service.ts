@@ -93,9 +93,7 @@ export class StudentService {
           discountType: studentData.discountType,
           discountValue: (studentData.discountValue && !isNaN(studentData.discountValue)) ? Number(studentData.discountValue) : null,
           isPercentage: studentData.discountUnit === '%',
-          discountRemarks: studentData.discountRemarks,
-          paymentMode: studentData.paymentMode,
-          firstDueDate: this.toDateOnlyString(studentData.firstDueDate)
+          discountRemarks: studentData.discountRemarks
         }
       ],
       feeHeadSelections: (studentData.feeHeadSelections ?? []).map((s: any) => ({
@@ -118,6 +116,7 @@ export class StudentService {
   }
 
   updateStudent(id: string, studentData: any): Observable<any> {
+    const academic = studentData.academics?.[0];
     const payload = {
       id: id,
       admissionNo: studentData.admissionNo,
@@ -151,10 +150,15 @@ export class StudentService {
       ],
       academics: [
         {
+          id: studentData.academicRecordId ?? academic?.id ?? undefined,
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
           academicYearId: studentData.academicYearId,
           classId: studentData.classId,
-          rollNumber: studentData.rollNumber
+          rollNumber: studentData.rollNumber,
+          feeStructureVersionId:
+            studentData.feeStructureVersionId ??
+            academic?.feeStructureVersionId ??
+            undefined,
         }
       ],
       previousSchools: studentData.prevSchool ? [
@@ -170,9 +174,7 @@ export class StudentService {
           discountType: studentData.discountType,
           discountValue: (studentData.discountValue && !isNaN(studentData.discountValue)) ? Number(studentData.discountValue) : null,
           isPercentage: studentData.discountUnit === '%',
-          discountRemarks: studentData.discountRemarks,
-          paymentMode: studentData.paymentMode,
-          firstDueDate: this.toDateOnlyString(studentData.firstDueDate)
+          discountRemarks: studentData.discountRemarks
         }
       ],
       customFields: this.mapCustomFields(studentData.customFields),

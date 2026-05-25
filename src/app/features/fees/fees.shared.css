@@ -307,15 +307,90 @@
   font-size: 9px; font-weight: 600; color: var(--badge-text); flex-shrink: 0;
 }
 .amt-input {
-  background: var(--card); border: 0.5px solid var(--border); border-radius: 6px;
-  padding: 4px 8px; font-size: 12px; width: 100px; text-align: right; outline: none;
+  box-sizing: border-box;
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  width: 100%;
+  max-width: 100%;
+  text-align: right;
+  outline: none;
+  color: var(--text);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.amt-input::-webkit-outer-spin-button,
+.amt-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.amt-input:focus {
+  border-color: var(--g400);
 }
 .amt-view {
-  display: inline-block;
-  min-width: 72px;
+  display: block;
+  width: 100%;
   font-size: 12px;
   font-weight: 500;
   color: var(--text);
+  text-align: right;
+}
+.col-amounts {
+  width: 300px;
+  min-width: 300px;
+  text-align: right;
+  vertical-align: middle;
+}
+.amount-subhead-row th {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 4px 10px 6px !important;
+  border-bottom: none !important;
+  background: var(--input-bg);
+}
+.semester-amount-grid {
+  display: grid;
+  grid-template-columns: 88px 88px 96px;
+  gap: 8px;
+  align-items: center;
+  justify-content: end;
+  margin-left: auto;
+  width: 280px;
+}
+.semester-amount-head {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.semester-amount-head span,
+.semester-amount-grid .amt-annual {
+  text-align: right;
+}
+.amt-annual {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--g600);
+  text-align: right;
+  white-space: nowrap;
+}
+.onetime-amount-wrap {
+  display: grid;
+  grid-template-columns: 88px 88px 96px;
+  gap: 8px;
+  width: 280px;
+  margin-left: auto;
+}
+.onetime-amount-wrap .amt-input,
+.onetime-amount-wrap .amt-view {
+  grid-column: 1;
+  width: 88px;
+  max-width: 88px;
 }
 .card-header-actions {
   display: flex;
@@ -459,4 +534,30 @@
 .paid-full { color: var(--g600); }
 .empty-panel { text-align: center; padding: 32px; color: var(--muted); }
 .empty-panel mat-icon { font-size: 28px; width: 28px; height: 28px; display: block; margin: 0 auto 6px; }
+
+.semester-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 12px 16px 16px;
+}
+.semester-status-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--input-bg);
+}
+.semester-status-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+.semester-status-dates {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+.semester-status-amt {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
 

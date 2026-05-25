@@ -102,6 +102,20 @@
       </div>
     </div>
 
+    <div class="card" *ngIf="detail.semesterStatuses?.length">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>calendar_month</mat-icon> Semester-wise status</div>
+      </div>
+      <div class="semester-status-grid">
+        <div *ngFor="let s of detail.semesterStatuses" class="semester-status-card">
+          <div class="semester-status-name">{{ s.semesterName }}</div>
+          <div class="semester-status-dates">{{ s.startDate }} — {{ s.endDate }}</div>
+          <div class="semester-status-amt">{{ formatInr(s.paidAmount) }} / {{ formatInr(s.totalAmount) }}</div>
+          <span class="badge" [ngClass]="statusBadgeClass(s.status)">{{ s.status }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header">
         <div class="card-title"><mat-icon>list</mat-icon> Fee head-wise status</div>
@@ -128,7 +142,7 @@
               <td>
                 <div style="font-weight: 500">{{ h.feeTypeName }}</div>
                 <div style="font-size: 9px; color: var(--muted)">
-                  {{ h.frequencyLabel }} · {{ h.amountBasisLabel }}
+                  {{ h.collectionTypeLabel }}
                 </div>
               </td>
               <td style="text-align: right">{{ formatInr(h.totalAmount) }}</td>

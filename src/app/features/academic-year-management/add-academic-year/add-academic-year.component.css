@@ -1,1 +1,40 @@
-/* Wizard styles: src/style.css */
+.semester-card {
+  margin-top: 12px;
+}
+
+.semester-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 16px 12px;
+}
+
+.semester-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 16px 16px;
+}
+
+.semester-table th,
+.semester-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.semester-table input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.btn-link-skip {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 8px;
+}

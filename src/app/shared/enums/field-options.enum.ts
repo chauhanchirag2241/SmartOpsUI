@@ -42,12 +42,6 @@ export enum BloodGroup {
   ABNeg = 'AB-',
 }
 
-export enum PaymentMode {
-  OneTime = 'one-time',
-  Quarterly = 'quarterly',
-  Monthly = 'monthly',
-}
-
 export enum SubjectType {
   Theory = 'Theory',
   Practical = 'Practical',

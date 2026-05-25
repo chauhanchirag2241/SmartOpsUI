@@ -44,7 +44,6 @@ import {
   enumToOptions,
   Gender,
   BloodGroup,
-  PaymentMode,
 } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
@@ -60,6 +59,7 @@ type FeeStructureRow = {
   defaultAmountValue: number;
   isMandatory: boolean;
   isIncluded: boolean;
+  studentWiseDifferentAmount: boolean;
 };
 
 type DocumentChecklistItem = {
@@ -428,25 +428,6 @@ export class AddStudentComponent implements OnInit {
       label: 'Discount remarks',
       placeholder: 'Reason for discount',
     },
-    paymentMode: {
-      type: 'select',
-      controlName: 'paymentMode',
-      label: 'Payment mode',
-      options: enumToOptions(PaymentMode, (value) =>
-        value === PaymentMode.OneTime ? 'One-time' : value.charAt(0).toUpperCase() + value.slice(1),
-      ),
-      validations: [
-        { name: 'required', message: 'Payment mode is required', validator: Validators.required },
-      ],
-    },
-    firstDueDate: {
-      type: 'datepicker',
-      controlName: 'firstDueDate',
-      label: 'First due date',
-      validations: [
-        { name: 'required', message: 'First due date is required', validator: Validators.required },
-      ],
-    },
 
     remarks: {
       type: 'textarea',
@@ -533,12 +514,6 @@ export class AddStudentComponent implements OnInit {
           layout: 'grid3',
           fields: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'],
         },
-        {
-          title: 'Payment schedule',
-          icon: 'event',
-          layout: 'grid2',
-          fields: ['paymentMode', 'firstDueDate'],
-        },
       ],
     },
     {
@@ -560,6 +535,7 @@ export class AddStudentComponent implements OnInit {
   hasActiveFeeStructure = false;
   /** Version locked at student admission — used in edit/view (not latest published). */
   private assignedFeeStructureVersionId = '';
+  private academicRecordId = '';
   assignedFeeStructureVersionLabel = '';
   private feeStructureTotal = 0;
   /** Saved selections when editing/viewing an existing student. */
@@ -599,14 +575,7 @@ export class AddStudentComponent implements OnInit {
       'motherOcc',
     ],
     1: ['admissionDate', 'academicYear', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
-    2: [
-      'discountType',
-      'discountUnit',
-      'discountValue',
-      'discountRemarks',
-      'paymentMode',
-      'firstDueDate',
-    ],
+    2: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'],
     3: ['remarks', 'customFields'],
   };
 
@@ -636,13 +605,9 @@ export class AddStudentComponent implements OnInit {
       ],
     },
     {
-      title: 'Fee & Payment',
+      title: 'Fee & Discount',
       icon: 'payments',
-      items: [
-        { label: 'Payment Mode', key: 'paymentMode' },
-        { label: 'First Due Date', key: 'firstDueDate' },
-        { label: 'Discount Type', key: 'discountType', emptyText: 'None' },
-      ],
+      items: [{ label: 'Discount Type', key: 'discountType', emptyText: 'None' }],
     },
     {
       title: 'Additional Info',
@@ -703,8 +668,6 @@ export class AddStudentComponent implements OnInit {
       discountUnit: [null],
       discountValue: [null],
       discountRemarks: [''],
-      paymentMode: ['', Validators.required],
-      firstDueDate: ['', Validators.required],
 
       remarks: [''],
       status: ['Active'],
@@ -905,28 +868,36 @@ export class AddStudentComponent implements OnInit {
       feeTypeId: string;
       feeTypeName: string;
       amount: number;
+      annualTotal?: number;
       isMandatory: boolean;
+      studentWiseDifferentAmount?: boolean;
     }>,
   ): FeeStructureRow[] {
     return items.map((item) => {
       const savedIncluded = this.savedFeeHeadIncluded.get(item.feeTypeId);
       const isIncluded = savedIncluded ?? true;
       const savedAmount = this.savedFeeHeadAmounts.get(item.feeTypeId);
-      const amountValue = savedAmount ?? item.amount;
+      const defaultAmount = item.annualTotal ?? item.amount;
+      const amountValue = savedAmount ?? defaultAmount;
       return {
         feeTypeId: item.feeTypeId,
         name: item.feeTypeName,
         amount: formatInr(amountValue),
         amountValue,
-        defaultAmountValue: item.amount,
+        defaultAmountValue: defaultAmount,
         isMandatory: item.isMandatory,
         isIncluded: item.isMandatory ? true : isIncluded,
+        studentWiseDifferentAmount: Boolean(item.studentWiseDifferentAmount),
       };
     });
   }
 
+  canEditFeeHeadAmount(row: FeeStructureRow): boolean {
+    return this.mode === 'add' && row.isIncluded && row.studentWiseDifferentAmount;
+  }
+
   onFeeHeadAmountChange(row: FeeStructureRow, event: Event): void {
-    if (!row.isIncluded || row.isMandatory || this.mode !== 'add') {
+    if (!this.canEditFeeHeadAmount(row)) {
       return;
     }
     const raw = (event.target as HTMLInputElement).value.replace(/[^\d.]/g, '');
@@ -1087,8 +1058,6 @@ export class AddStudentComponent implements OnInit {
       discountValue: feeConfig?.discountValue,
       discountUnit: feeConfig?.isPercentage ? '%' : 'amount',
       discountRemarks: feeConfig?.discountRemarks,
-      paymentMode: feeConfig?.paymentMode,
-      firstDueDate: this.toLocalDate(feeConfig?.firstDueDate),
 
       remarks: data.remarks,
       status: data.status,
@@ -1100,6 +1069,7 @@ export class AddStudentComponent implements OnInit {
       ),
     });
 
+    this.academicRecordId = String(academic?.id ?? academic?.Id ?? '');
     this.assignedFeeStructureVersionId = String(
       academic?.feeStructureVersionId ?? academic?.FeeStructureVersionId ?? '',
     );
@@ -1233,12 +1203,16 @@ export class AddStudentComponent implements OnInit {
 
     const payload = {
       ...rawValue,
+      academicRecordId: this.academicRecordId || undefined,
+      feeStructureVersionId: this.assignedFeeStructureVersionId || undefined,
       academics: [
         {
+          id: this.academicRecordId || undefined,
           admissionDate: rawValue.admissionDate,
           academicYearId: rawValue.academicYearId,
           classId: rawValue.classId,
           rollNumber: rawValue.rollNumber,
+          feeStructureVersionId: this.assignedFeeStructureVersionId || undefined,
         },
       ],
       feeHeadSelections:

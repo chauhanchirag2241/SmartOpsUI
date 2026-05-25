@@ -25,18 +25,71 @@
   }
 </form>
 
+@if (showSemesters) {
+  <div class="card semester-card">
+    <div class="card-title">
+      <mat-icon>date_range</mat-icon> Semesters
+    </div>
+    <p class="semester-hint">Configure semester dates for semester-wise fee collection and overdue tracking.</p>
+    <table class="semester-table">
+      <thead>
+        <tr>
+          <th>Semester</th>
+          <th>Name</th>
+          <th>Start date</th>
+          <th>End date</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (sem of semesters; track sem.semesterIndex) {
+          <tr>
+            <td>Semester {{ sem.semesterIndex }}</td>
+            <td>
+              <input type="text" [(ngModel)]="sem.name" [disabled]="mode === 'view'" />
+            </td>
+            <td>
+              <input type="date" [(ngModel)]="sem.startDate" [disabled]="mode === 'view'" />
+            </td>
+            <td>
+              <input type="date" [(ngModel)]="sem.endDate" [disabled]="mode === 'view'" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
 <div class="footer-actions">
   <app-action-button type="back" style="visibility: hidden;"></app-action-button>
 
-  <div class="footer-hint">Set academic year title and date range</div>
+  <div class="footer-hint">
+    @if (showSemesters) {
+      Save semester dates for fee collection
+    } @else {
+      Set academic year title and date range
+    }
+  </div>
 
   @if (mode !== 'view') {
-    <app-action-button
-      type="save"
-      [label]="isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Year' : 'Confirm & Add')"
-      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
-      [disabled]="isSaving"
-      (action)="saveYear()">
-    </app-action-button>
+    @if (!showSemesters) {
+      <app-action-button
+        type="save"
+        [label]="isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Year' : 'Confirm & Add')"
+        [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+        [disabled]="isSaving"
+        (action)="saveYear()">
+      </app-action-button>
+    } @else {
+      <app-action-button
+        type="save"
+        label="Save semesters"
+        icon="check_circle"
+        (action)="saveSemesters()">
+      </app-action-button>
+      @if (mode === 'add') {
+        <button type="button" class="btn-link-skip" (click)="finishWithoutSemesters()">Skip for now</button>
+      }
+    }
   }
 </div>
