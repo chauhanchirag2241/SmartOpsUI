@@ -50,10 +50,6 @@ export class FeeStructureService {
     return this.api.delete<void>(`fees/structure/types/${typeId}`);
   }
 
-  getStats(): Observable<any> {
-    return this.api.get<any>('fees/structure/stats');
-  }
-
   getSettings(): Observable<any> {
     return this.api.get<any>('fees/structure/settings');
   }

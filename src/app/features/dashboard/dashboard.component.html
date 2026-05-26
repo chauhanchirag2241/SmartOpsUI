@@ -98,79 +98,8 @@
           </div>
         }
 
-        @if (showAttendanceFilter()) {
-          <div class="attendance-filter-bar" [class.is-loading]="attendanceLoading()">
-            <div class="attendance-filter-label">
-              <mat-icon>date_range</mat-icon>
-              <span>Attendance period</span>
-            </div>
-            <select
-              class="attendance-preset-select"
-              [value]="attendancePreset()"
-              (change)="onAttendancePresetChange($any($event.target).value)"
-            >
-              @for (opt of attendanceFilterOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-            @if (attendancePreset() === 'custom') {
-              <label class="attendance-date-field">
-                <span>From</span>
-                <input
-                  type="date"
-                  [value]="attendanceCustomFrom()"
-                  (change)="attendanceCustomFrom.set($any($event.target).value)"
-                />
-              </label>
-              <label class="attendance-date-field">
-                <span>To</span>
-                <input
-                  type="date"
-                  [value]="attendanceCustomTo()"
-                  (change)="attendanceCustomTo.set($any($event.target).value)"
-                />
-              </label>
-              <button type="button" class="attendance-apply-btn" (click)="applyCustomAttendanceRange()">
-                Apply
-              </button>
-            }
-            @if (d.attendanceToday; as att) {
-              <span class="attendance-range-hint">{{ att.dateLabel }}</span>
-            }
-          </div>
-        }
-
-        @if (
-          has(W.FeesCollected) ||
-          has(W.FeesPending) ||
-          has(W.SalaryDisbursed) ||
-          has(W.AttendanceRate)
-        ) {
+        @if (has(W.SalaryDisbursed) || has(W.AttendanceRate)) {
           <div class="grid4">
-            @if (has(W.FeesCollected) && d.fees) {
-              <article class="card stat-card">
-                @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.FeesCollected)" aria-label="Remove">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-                <div class="sc-icon"><mat-icon>payments</mat-icon></div>
-                <div class="sc-val">{{ formatCurrency(d.fees.collectedAmount) }}</div>
-                <div class="sc-lbl">Fees collected</div>
-              </article>
-            }
-            @if (has(W.FeesPending) && d.fees) {
-              <article class="card stat-card">
-                @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.FeesPending)" aria-label="Remove">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-                <div class="sc-icon ri"><mat-icon>schedule</mat-icon></div>
-                <div class="sc-val">{{ formatCurrency(d.fees.pendingAmount) }}</div>
-                <div class="sc-lbl">Fees pending</div>
-              </article>
-            }
             @if (has(W.SalaryDisbursed) && d.salary) {
               <article class="card stat-card">
                 @if (editing()) {
@@ -198,8 +127,8 @@
           </div>
         }
 
-        @if (has(W.AttendanceDetail) || has(W.FeesByClass) || has(W.SalaryStatus)) {
-          <div class="grid3">
+        @if (has(W.AttendanceDetail) || has(W.SalaryStatus)) {
+          <div class="grid2">
             @if (has(W.AttendanceDetail) && d.attendanceToday; as att) {
               <article class="card">
                 @if (editing()) {
@@ -209,50 +138,34 @@
                 }
                 <div class="ch">
                   <h2><mat-icon>pie_chart</mat-icon>Attendance</h2>
-                  <span>{{ att.periodLabel || att.dateLabel }}</span>
+                  <span>{{ att.dateLabel }}</span>
                 </div>
                 <div class="donut-wrap">
                   <svg width="72" height="72" viewBox="0 0 72 72" class="mini-donut" aria-hidden="true">
-                    <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border)" stroke-width="9" />
-                    <circle
-                      cx="36"
-                      cy="36"
-                      r="26"
-                      fill="none"
-                      stroke="#639922"
-                      stroke-width="9"
-                      [attr.stroke-dasharray]="donutDash(att.present, att.present + att.absent + att.leave + att.late)"
-                      stroke-dashoffset="-41"
-                      stroke-linecap="round"
-                    />
+                    @if (!donutSegments(att).length) {
+                      <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border)" stroke-width="9" />
+                    }
+                    @for (seg of donutSegments(att); track seg.color + seg.offset) {
+                      <circle
+                        cx="36"
+                        cy="36"
+                        r="26"
+                        fill="none"
+                        [attr.stroke]="seg.color"
+                        stroke-width="9"
+                        [attr.stroke-dasharray]="seg.dash"
+                        [attr.stroke-dashoffset]="seg.offset"
+                        stroke-linecap="butt"
+                      />
+                    }
                   </svg>
                   <div class="donut-legend">
-                    <div class="donut-pct">{{ att.presentPercent }}% <small>present</small></div>
                     <div class="legend-row"><span class="dot g"></span>Present <strong>{{ att.present }}</strong></div>
-                    <div class="legend-row"><span class="dot r"></span>Absent <strong>{{ att.absent }}</strong></div>
+                    <div class="legend-row"><span class="dot lt"></span>Late <strong>{{ att.late }}</strong></div>
                     <div class="legend-row"><span class="dot a"></span>Leave <strong>{{ att.leave }}</strong></div>
+                    <div class="legend-row"><span class="dot r"></span>Absent <strong>{{ att.absent }}</strong></div>
                   </div>
                 </div>
-              </article>
-            }
-            @if (has(W.FeesByClass) && d.fees) {
-              <article class="card">
-                @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.FeesByClass)" aria-label="Remove">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-                <div class="ch">
-                  <h2><mat-icon>payments</mat-icon>Fees by class</h2>
-                  <span>This month</span>
-                </div>
-                @for (row of d.fees.byClass; track row.className) {
-                  <div class="bar-row">
-                    <span class="bar-label">{{ row.className }}</span>
-                    <div class="bar-track"><div class="bar-fill" [style.width.%]="row.percentCollected"></div></div>
-                    <span class="bar-pct">{{ row.percentCollected }}%</span>
-                  </div>
-                }
               </article>
             }
             @if (has(W.SalaryStatus) && d.salary; as sal) {
@@ -357,65 +270,104 @@
           </div>
         }
 
-        @if (has(W.ClassesOverview) || has(W.AlertsActions)) {
-          <div class="grid2">
-            @if (has(W.ClassesOverview) && d.classesOverview) {
-              <article class="card">
-                @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.ClassesOverview)" aria-label="Remove">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-                <div class="ch">
-                  <h2><mat-icon>class</mat-icon>Classes & subjects overview</h2>
-                </div>
-                <div class="class-grid">
-                  @for (c of d.classesOverview; track c.className + c.sectionLabel) {
-                    <div class="class-tile">
-                      <div class="class-n">{{ c.className }}</div>
-                      <div class="class-s">{{ c.sectionLabel }}</div>
-                      <div class="class-st">{{ c.studentCount }} students</div>
-                    </div>
-                  }
-                </div>
-              </article>
+        @if (has(W.ClassesOverview) && d.classesOverview) {
+          <article class="card class-overview-card">
+            @if (editing()) {
+              <button type="button" class="rm-btn" (click)="hideWidget(W.ClassesOverview)" aria-label="Remove">
+                <mat-icon>close</mat-icon>
+              </button>
             }
-            @if (has(W.AlertsActions)) {
-              <article class="card">
-                @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.AlertsActions)" aria-label="Remove">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-                @if (d.alerts?.items?.length) {
-                  <div class="ch">
-                    <h2><mat-icon>notifications</mat-icon>Alerts</h2>
-                  </div>
-                  @for (a of d.alerts!.items; track a.title) {
-                    <div class="alert-item">
-                      <span class="al-icon" [class]="a.tone"><mat-icon>{{ a.icon }}</mat-icon></span>
-                      <div>
-                        <strong>{{ a.title }}</strong>
-                        <small>{{ a.subtitle }}</small>
-                      </div>
-                    </div>
+            <div class="ch">
+              <h2><mat-icon>class</mat-icon>Classes overview</h2>
+              @if (d.schoolFeesCollectedTotal != null || d.schoolFeesDueTotal != null) {
+                <span class="class-overview-fees">
+                  @if (d.schoolFeesCollectedTotal != null) {
+                    Collected {{ formatCurrency(d.schoolFeesCollectedTotal) }}
                   }
-                }
-                <div class="qa-section">
-                  <h2><mat-icon>bolt</mat-icon>Quick actions</h2>
-                  <div class="qa-grid">
-                    @for (qa of visibleQuickActions(); track qa.label) {
-                      @if (qa.route) {
-                        <a class="qa" [routerLink]="qa.route">
-                          <mat-icon>{{ qa.icon }}</mat-icon>{{ qa.label }}
-                        </a>
-                      }
-                    }
+                  @if (d.schoolFeesDueTotal != null) {
+                    · Due {{ formatCurrency(d.schoolFeesDueTotal) }}
+                  }
+                </span>
+              }
+            </div>
+            <div class="class-overview-table-wrap">
+              <table class="class-overview-table">
+                <thead>
+                  <tr>
+                    <th>Class</th>
+                    <th class="num">Students</th>
+                    <th class="num">Present</th>
+                    <th class="num">Late</th>
+                    <th class="num">Absent</th>
+                    <th class="num">On leave</th>
+                    <th class="num">Fee today</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of d.classesOverview; track c.displayName) {
+                    <tr>
+                      <td class="class-name-cell">{{ c.displayName }}</td>
+                      <td class="num">{{ c.studentCount }}</td>
+                      <td class="num">{{ c.present }}</td>
+                      <td class="num">{{ c.late }}</td>
+                      <td class="num">{{ c.absent }}</td>
+                      <td class="num">{{ c.onLeave }}</td>
+                      <td class="num">{{ formatCurrency(c.feeCollectedToday) }}</td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  @if (classesOverviewTotals(); as tot) {
+                    <tr class="total-row">
+                      <td><strong>Total</strong></td>
+                      <td class="num"><strong>{{ tot.studentCount }}</strong></td>
+                      <td class="num"><strong>{{ tot.present }}</strong></td>
+                      <td class="num"><strong>{{ tot.late }}</strong></td>
+                      <td class="num"><strong>{{ tot.absent }}</strong></td>
+                      <td class="num"><strong>{{ tot.onLeave }}</strong></td>
+                      <td class="num"><strong>{{ formatCurrency(tot.feeCollectedToday) }}</strong></td>
+                    </tr>
+                  }
+                </tfoot>
+              </table>
+            </div>
+          </article>
+        }
+
+        @if (has(W.AlertsActions)) {
+          <article class="card">
+            @if (editing()) {
+              <button type="button" class="rm-btn" (click)="hideWidget(W.AlertsActions)" aria-label="Remove">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+            @if (d.alerts?.items?.length) {
+              <div class="ch">
+                <h2><mat-icon>notifications</mat-icon>Alerts</h2>
+              </div>
+              @for (a of d.alerts!.items; track a.title) {
+                <div class="alert-item">
+                  <span class="al-icon" [class]="a.tone"><mat-icon>{{ a.icon }}</mat-icon></span>
+                  <div>
+                    <strong>{{ a.title }}</strong>
+                    <small>{{ a.subtitle }}</small>
                   </div>
                 </div>
-              </article>
+              }
             }
-          </div>
+            <div class="qa-section">
+              <h2><mat-icon>bolt</mat-icon>Quick actions</h2>
+              <div class="qa-grid">
+                @for (qa of visibleQuickActions(); track qa.label) {
+                  @if (qa.route) {
+                    <a class="qa" [routerLink]="qa.route">
+                      <mat-icon>{{ qa.icon }}</mat-icon>{{ qa.label }}
+                    </a>
+                  }
+                }
+              </div>
+            </div>
+          </article>
         }
       </div>
     }

@@ -1,3 +1,4 @@
+
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -178,17 +179,17 @@ export class StudentsComponent implements OnInit {
           { min: 0, color: '#E24B4A' },
         ],
       },
-      {
-        key: 'fees',
-        label: 'Fees Status',
-        cellType: 'badge',
-        badgeMap: {
-          Paid: { cssClass: 'b-green', icon: 'check_circle' },
-          Partial: { cssClass: 'b-amber', icon: 'schedule' },
-          Overdue: { cssClass: 'b-red', icon: 'error' },
-          Pending: { cssClass: 'b-amber', icon: 'schedule' },
-        },
-      },
+      // {
+      //   key: 'fees',
+      //   label: 'Fees Status',
+      //   cellType: 'badge',
+      //   badgeMap: {
+      //     Paid: { cssClass: 'b-green', icon: 'check_circle' },
+      //     Partial: { cssClass: 'b-amber', icon: 'schedule' },
+      //     Overdue: { cssClass: 'b-red', icon: 'error' },
+      //     Pending: { cssClass: 'b-amber', icon: 'schedule' },
+      //   },
+      // },
       {
         key: 'isActive',
         label: 'Status',
@@ -200,6 +201,7 @@ export class StudentsComponent implements OnInit {
       },
     ],
 
+    filtersInPanel: true,
     filters: [
       { label: 'All', icon: 'list', value: StudentFilter.All.toString() },
       {
@@ -212,11 +214,11 @@ export class StudentsComponent implements OnInit {
         icon: 'cancel',
         value: StudentFilter.Inactive.toString(),
       },
-      {
-        label: 'Fee overdue',
-        icon: 'warning',
-        value: StudentFilter.FeeOverdue.toString(),
-      },
+      // {
+      //   label: 'Fee overdue',
+      //   icon: 'warning',
+      //   value: StudentFilter.FeeOverdue.toString(),
+      // },
     ],
 
     actions: [

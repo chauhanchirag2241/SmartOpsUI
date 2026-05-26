@@ -125,6 +125,7 @@ export class AcademicYearManagementComponent implements OnInit {
       { key: 'endDate', label: 'End Date', sortable: true, cellType: 'date' },
       { key: 'status', label: 'Status', cellType: 'badge', badgeMap: { Active: { cssClass: 'b-green', label: 'Active' }, Inactive: { cssClass: 'b-red', label: 'Inactive' } } },
     ],
+    filtersInPanel: true,
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Active', icon: 'check_circle', value: 'Active' },

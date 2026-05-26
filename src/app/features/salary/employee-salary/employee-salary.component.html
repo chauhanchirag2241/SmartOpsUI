@@ -1,26 +1,30 @@
-<div class="fees-page salary-page">
-  <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Salary Management — Employee Salary</div>
-      <div class="page-sub">Assign published structure and per-teacher component amounts</div>
-    </div>
-  </div>
+<div class="fees-page salary-page list-page-shell">
+  <app-list-page-header
+    title="Salary Management — Employee Salary"
+    subtitle="Assign published structure and per-teacher component amounts"
+  />
 
-  <div class="filters-row">
-    <div class="sl-search-wrap" style="min-width: 180px">
-      <mat-icon>search</mat-icon>
-      <input class="sl-search" [(ngModel)]="search" (ngModelChange)="loadEmployees()" placeholder="Search employee..." />
+  <app-page-toolbar
+    searchPlaceholder="Search employee..."
+    [searchValue]="search"
+    [filterPanelActive]="toolbarFilterActive"
+    (searchSubmitted)="onToolbarSearchSubmit($event)"
+    (advancedFiltersCleared)="onToolbarFiltersCleared()"
+  >
+    <div toolbarFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="emp-sal-dept-filter">Department</label>
+      <select id="emp-sal-dept-filter" class="sel-filter sel-filter-lg" [(ngModel)]="departmentFilter" (ngModelChange)="loadEmployees()">
+        <option value="All">All departments</option>
+        <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+      </select>
+      <label class="table-filter-section-label" for="emp-sal-desig-filter">Designation</label>
+      <select id="emp-sal-desig-filter" class="sel-filter sel-filter-lg" [(ngModel)]="designationFilter" (ngModelChange)="loadEmployees()">
+        <option value="All">All designations</option>
+        <option *ngFor="let d of designations" [value]="d">{{ d }}</option>
+      </select>
     </div>
-    <select class="sel-filter" [(ngModel)]="departmentFilter" (ngModelChange)="loadEmployees()">
-      <option value="All">All departments</option>
-      <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
-    </select>
-    <select class="sel-filter" [(ngModel)]="designationFilter" (ngModelChange)="loadEmployees()">
-      <option value="All">All designations</option>
-      <option *ngFor="let d of designations" [value]="d">{{ d }}</option>
-    </select>
-    <span class="filter-hint">{{ employees.length }} employees</span>
-  </div>
+    <span toolbarRight class="filter-hint">{{ employees.length }} employees</span>
+  </app-page-toolbar>
 
   <div class="emp-layout">
     <div class="side-list">

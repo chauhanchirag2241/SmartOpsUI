@@ -1,0 +1,75 @@
+<div class="table-wrap page-toolbar-wrap">
+  <div class="toolbar">
+    @if (showSearch) {
+      <div class="search-wrap">
+        <input
+          type="text"
+          [id]="searchInputId || null"
+          [placeholder]="searchPlaceholder"
+          [(ngModel)]="searchDraft"
+          [disabled]="searchDisabled"
+          (keydown.enter)="submitSearch()"
+        />
+        <button
+          type="button"
+          class="search-icon-btn"
+          aria-label="Search"
+          [disabled]="searchDisabled"
+          (click)="submitSearch()"
+        >
+          <mat-icon>search</mat-icon>
+        </button>
+      </div>
+    }
+
+    <ng-content select="[toolbarInline]" />
+
+    <div class="toolbar-right">
+      @if (showExport) {
+        <button type="button" class="icon-btn" (click)="onExport()">
+          <mat-icon>download</mat-icon>
+          Export
+        </button>
+      }
+
+      @if (showFilter) {
+        <div class="filter-drop">
+          <button
+            type="button"
+            class="icon-btn"
+            [class.filter-btn-active]="filterPanelActive"
+            (click)="toggleFilterMenu($event)"
+          >
+            <mat-icon>filter_list</mat-icon>
+            Filter
+          </button>
+          <div
+            class="table-filter-menu"
+            [class.show]="showFilterMenu"
+            (mousedown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="table-filter-menu-head">
+              <span class="table-filter-menu-title">Filters</span>
+              <div class="table-filter-menu-actions">
+                <button type="button" class="table-filter-clear" (click)="clearFilters()">Clear all</button>
+                <button
+                  type="button"
+                  class="table-filter-close"
+                  aria-label="Close filters"
+                  (click)="closeFilterMenu($event)"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+            <ng-content select="[toolbarFilters]" />
+          </div>
+        </div>
+      }
+
+      <ng-content select="[toolbarRight]" />
+    </div>
+  </div>
+  <ng-content />
+</div>

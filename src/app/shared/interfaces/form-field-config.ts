@@ -17,7 +17,7 @@ export interface FormFieldConfig {
   controlName: string;
   inputType?: 'text' | 'email' | 'tel' | 'number' | 'password' | 'time';
   /** Special input formatting: aadhaar, pan, name-only, or alphanumeric text. */
-  inputFormat?: 'aadhaar' | 'pan' | 'name' | 'alphanumeric' | 'discount';
+  inputFormat?: 'aadhaar' | 'pan' | 'name' | 'alphanumeric';
   placeholder?: string;
   options?: SelectOption[];
   validations?: ValidationConfig[];
@@ -31,4 +31,6 @@ export interface FormFieldConfig {
   accept?: string;
   /** Mode for file upload (avatar or document) */
   fileMode?: 'avatar' | 'document';
+  /** Latest selectable date for datepicker; use 'today' to disallow future dates. */
+  maxDate?: Date | 'today';
 }

@@ -143,6 +143,8 @@ export interface DataTableConfig {
   showSearch?: boolean;
   /** Whether to show the export button (default: true) */
   showExport?: boolean;
+  /** When true, status chips and projected filters appear in the toolbar Filter panel */
+  filtersInPanel?: boolean;
   /** Whether to show column visibility toggle (default: true) */
   showColumnToggle?: boolean;
   /** Label for footer info text, e.g. 'students', 'records' */

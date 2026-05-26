@@ -17,11 +17,11 @@
           [disabled]="config.disabled ?? false"
           [appDigitsOnly]="usesDigitsOnly()"
           [appLettersOnly]="isNameField()"
-          [maxDigits]="isAadhaarField() ? 12 : isDiscountField() ? discountMaxDigits : (config.inputType === 'tel' ? 10 : 0)"
+          [maxDigits]="isAadhaarField() ? 12 : (config.inputType === 'tel' ? 10 : 0)"
           [attr.maxlength]="inputMaxLength"
-          (input)="isAadhaarField() ? onAadhaarInput($event, config.controlName) : isPanField() ? onPanInput($event, config.controlName) : isNameField() ? onNameInput($event, config.controlName) : isAlphanumericField() ? onAlphanumericInput($event, config.controlName) : isDiscountField() ? onDiscountInput($event, config.controlName) : null"
-          (blur)="isNameField() ? onNameBlur(config.controlName) : isAlphanumericField() ? onAlphanumericBlur(config.controlName) : null"
+          (input)="onFieldInput($event)"
           (click)="config.inputType === 'time' ? openTimePicker($event) : null"
+          (blur)="onFieldBlur()"
         />
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>
@@ -43,6 +43,7 @@
           [formControlName]="config.controlName"
           [placeholder]="getPlaceholder()"
           [disabled]="config.disabled ?? false"
+          [max]="datepickerMax"
         />
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
@@ -166,7 +167,7 @@
         @for (option of config.options ?? []; track optionTrack($index, option)) {
           <div
             class="badge-opt"
-            [class.sel-active]="group.get(config.controlName)?.value === option.value"
+            [class.active]="group.get(config.controlName)?.value === option.value"
             [class.disabled]="config.disabled"
             (click)="setControlValue(config.controlName, option.value)"
           >

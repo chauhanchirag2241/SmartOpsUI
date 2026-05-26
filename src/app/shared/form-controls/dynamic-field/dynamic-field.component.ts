@@ -15,9 +15,9 @@ import type { FormFieldConfig, SelectOption } from '../../interfaces/form-field-
 import {
   formatAadhaarDisplay,
   sanitizeAlphanumericInput,
-  sanitizeDiscountValueInput,
   sanitizeNameInput,
   stripAadhaarDigits,
+  syncShiftTimeValidity,
   trimNameValue,
 } from '../../utils/form-validators.util';
 
@@ -67,6 +67,19 @@ export class DynamicFieldComponent {
 
   get isRequired(): boolean {
     return !!this.config.validations?.some((v) => v.name === 'required');
+  }
+
+  get datepickerMax(): Date | null {
+    const max = this.config.maxDate;
+    if (!max) {
+      return null;
+    }
+    if (max === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
+    }
+    return max;
   }
 
   getError(): string {
@@ -155,29 +168,6 @@ export class DynamicFieldComponent {
     return null;
   }
 
-  get discountMaxDigits(): number {
-    const unit = this.group.get('discountUnit')?.value;
-    if (unit === '%') {
-      return 3;
-    }
-    if (unit === 'amount') {
-      return 5;
-    }
-    return 5;
-  }
-
-  onDiscountInput(event: Event, controlName: string): void {
-    const input = event.target as HTMLInputElement;
-    const unit = this.group.get('discountUnit')?.value;
-    const sanitized = sanitizeDiscountValueInput(input.value, unit);
-    const control = this.group.get(controlName);
-    control?.setValue(sanitized === '' ? null : sanitized, { emitEvent: true });
-    if (input.value !== sanitized) {
-      input.value = sanitized;
-    }
-    control?.updateValueAndValidity();
-  }
-
   onAlphanumericInput(event: Event, controlName: string): void {
     const input = event.target as HTMLInputElement;
     const maxLen = this.config.maxLength ?? 255;
@@ -252,6 +242,54 @@ export class DynamicFieldComponent {
     }
   }
 
+  onFieldInput(event: Event): void {
+    if (this.config.inputType === 'time') {
+      this.onTimeInput();
+      return;
+    }
+    if (this.isAadhaarField()) {
+      this.onAadhaarInput(event, this.config.controlName);
+    } else if (this.isPanField()) {
+      this.onPanInput(event, this.config.controlName);
+    } else if (this.isNameField()) {
+      this.onNameInput(event, this.config.controlName);
+    } else if (this.isAlphanumericField()) {
+      this.onAlphanumericInput(event, this.config.controlName);
+    }
+  }
+
+  onFieldBlur(): void {
+    if (this.config.inputType === 'time') {
+      this.onTimeBlur();
+      return;
+    }
+    if (this.isNameField()) {
+      this.onNameBlur(this.config.controlName);
+    } else if (this.isAlphanumericField()) {
+      this.onAlphanumericBlur(this.config.controlName);
+    }
+  }
+
+  private onTimeInput(): void {
+    if (this.isShiftTimeField()) {
+      syncShiftTimeValidity(this.group);
+    }
+  }
+
+  private onTimeBlur(): void {
+    const control = this.group.get(this.config.controlName);
+    control?.markAsTouched();
+    if (this.isShiftTimeField()) {
+      syncShiftTimeValidity(this.group);
+    }
+  }
+
+  private isShiftTimeField(): boolean {
+    return (
+      this.config.controlName === 'shiftStartTime' || this.config.controlName === 'shiftEndTime'
+    );
+  }
+
   isNameField(): boolean {
     return this.config.inputFormat === 'name';
   }
@@ -260,11 +298,7 @@ export class DynamicFieldComponent {
     return this.config.inputFormat === 'alphanumeric';
   }
 
-  isDiscountField(): boolean {
-    return this.config.inputFormat === 'discount';
-  }
-
   usesDigitsOnly(): boolean {
-    return this.config.inputType === 'tel' || this.isAadhaarField() || this.isDiscountField();
+    return this.config.inputType === 'tel' || this.isAadhaarField();
   }
 }

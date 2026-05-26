@@ -6,12 +6,16 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
 import { FeeStructureService } from '../../../core/services/fee-structure.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
+import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
 import {
   asArray,
   extractApiError,
   FeeCollectionType,
   formatInr,
+  isDiscountCategory,
   normalizeClassAmounts,
+  signedFeeAmount,
   normalizeClassSummary,
   normalizeInstallmentPreview,
   normalizeDropdownItem,
@@ -28,7 +32,7 @@ type AmountEdits = {
 @Component({
   selector: 'app-class-fee-amounts',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
   templateUrl: './class-fee-amounts.component.html',
   styleUrl: '../fees.shared.css',
 })
@@ -56,6 +60,7 @@ export class ClassFeeAmountsComponent implements OnInit {
   installmentPreview: ReturnType<typeof normalizeInstallmentPreview>[] = [];
   showInstallmentPreview = false;
   loadingInstallments = false;
+  private initialAcademicYearId = '';
 
   ngOnInit(): void {
     this.academicYearService.getAcademicYearDropdown().subscribe({
@@ -64,6 +69,7 @@ export class ClassFeeAmountsComponent implements OnInit {
         const first = this.academicYears[0];
         if (first?.id) {
           this.academicYearId = first.id;
+          this.initialAcademicYearId = first.id;
           this.loadVersions();
         }
         this.refreshView();
@@ -86,6 +92,16 @@ export class ClassFeeAmountsComponent implements OnInit {
   get isDraftOrPublished(): boolean {
     const s = this.amountData?.versionStatusLabel;
     return s === 'Draft' || s === 'Published';
+  }
+
+  get toolbarFilterActive(): boolean {
+    return !!this.initialAcademicYearId && this.academicYearId !== this.initialAcademicYearId;
+  }
+
+  onToolbarFiltersCleared(): void {
+    if (!this.initialAcademicYearId) return;
+    this.academicYearId = this.initialAcademicYearId;
+    this.onYearChange();
   }
 
   onYearChange(): void {
@@ -207,6 +223,7 @@ export class ClassFeeAmountsComponent implements OnInit {
           };
         });
         this.loading = false;
+        this.syncClassSummaryTotal(classId);
         this.refreshView();
       },
       error: () => {
@@ -224,7 +241,16 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   get totalAmount(): number {
     if (!this.amountData) return 0;
-    return this.amountData.items.reduce((sum, item) => sum + this.annualTotalFor(item.feeTypeId, item.collectionType), 0);
+    return this.amountData.items.reduce(
+      (sum, item) =>
+        sum +
+        signedFeeAmount(
+          item.category,
+          this.annualTotalFor(item.feeTypeId, item.collectionType),
+          item.categoryLabel,
+        ),
+      0,
+    );
   }
 
   amountEditFor(feeTypeId: string): AmountEdits {
@@ -245,10 +271,23 @@ export class ClassFeeAmountsComponent implements OnInit {
   annualTotalFor(feeTypeId: string, collectionType: number): number {
     const edits = this.amountEdits[feeTypeId];
     if (!edits) return 0;
+    const item = this.amountData?.items.find((i) => i.feeTypeId === feeTypeId);
+    let annual = 0;
     if (collectionType === FeeCollectionType.SemesterWise) {
-      return (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
+      annual = (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
+    } else {
+      annual = Number(edits.amount) || 0;
     }
-    return Number(edits.amount) || 0;
+    return item ? signedFeeAmount(item.category, annual, item.categoryLabel) : annual;
+  }
+
+  isDiscountItem(item: { category: number; categoryLabel: string }): boolean {
+    return isDiscountCategory(item.category, item.categoryLabel);
+  }
+
+  onOneTimeAmountChange(): void {
+    this.syncClassSummaryTotal(this.selectedClassId);
+    this.refreshView();
   }
 
   onSemesterAmountChange(feeTypeId: string): void {
@@ -256,7 +295,23 @@ export class ClassFeeAmountsComponent implements OnInit {
     if (edits) {
       edits.amount = (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
     }
+    this.syncClassSummaryTotal(this.selectedClassId);
     this.refreshView();
+  }
+
+  classListTotal(classId: string, apiTotal: number): number {
+    if (classId === this.selectedClassId && this.amountData) {
+      return this.totalAmount;
+    }
+    return apiTotal;
+  }
+
+  private syncClassSummaryTotal(classId: string): void {
+    const idx = this.classes.findIndex((c) => c.classId === classId);
+    if (idx < 0 || !this.amountData) {
+      return;
+    }
+    this.classes[idx] = { ...this.classes[idx], totalAmount: this.totalAmount };
   }
 
   saveAmounts(): void {

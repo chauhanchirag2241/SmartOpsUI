@@ -37,29 +37,36 @@
     </div>
   </div>
 
-  <div class="filter-bar">
-    <div class="sel-wrap">
-      <select [(ngModel)]="classFilter" (ngModelChange)="loadList()">
+  <app-page-toolbar
+    searchPlaceholder="Search homework..."
+    [searchValue]="searchQuery"
+    [filterPanelActive]="toolbarFilterActive"
+    (searchSubmitted)="onToolbarSearchSubmit($event)"
+    (advancedFiltersCleared)="onToolbarFiltersCleared()"
+  >
+    <div toolbarFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="hw-class-filter">Class</label>
+      <select id="hw-class-filter" class="sel-filter sel-filter-lg" [(ngModel)]="classFilter" (ngModelChange)="loadList()">
         <option value="">All classes</option>
         <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
       </select>
-    </div>
-    <div class="sel-wrap">
-      <select [(ngModel)]="subjectFilter" (ngModelChange)="loadList()">
+      <label class="table-filter-section-label" for="hw-subject-filter">Subject</label>
+      <select id="hw-subject-filter" class="sel-filter sel-filter-lg" [(ngModel)]="subjectFilter" (ngModelChange)="loadList()">
         <option value="">All subjects</option>
         <option *ngFor="let s of subjects" [value]="s.id">{{ s.subjectName || s.name }}</option>
       </select>
+      <div class="table-filter-section">
+        <span class="table-filter-section-label">Status</span>
+        <div class="table-filter-chips">
+          <button type="button" class="filter-chip" [class.active]="chipFilter === 'all'" (click)="setChip('all')">All</button>
+          <button type="button" class="filter-chip" [class.active]="chipFilter === 'active'" (click)="setChip('active')">Active</button>
+          <button type="button" class="filter-chip" [class.active]="chipFilter === 'today'" (click)="setChip('today')">Due today</button>
+          <button type="button" class="filter-chip" [class.active]="chipFilter === 'overdue'" (click)="setChip('overdue')">Overdue</button>
+          <button type="button" class="filter-chip" [class.active]="chipFilter === 'done'" (click)="setChip('done')">Completed</button>
+        </div>
+      </div>
     </div>
-    <button type="button" class="fchip" [class.active]="chipFilter === 'all'" (click)="setChip('all')">All</button>
-    <button type="button" class="fchip" [class.active]="chipFilter === 'active'" (click)="setChip('active')">Active</button>
-    <button type="button" class="fchip" [class.active]="chipFilter === 'today'" (click)="setChip('today')">Due today</button>
-    <button type="button" class="fchip" [class.active]="chipFilter === 'overdue'" (click)="setChip('overdue')">Overdue</button>
-    <button type="button" class="fchip" [class.active]="chipFilter === 'done'" (click)="setChip('done')">Completed</button>
-    <div class="search-wrap">
-      <mat-icon>search</mat-icon>
-      <input type="text" placeholder="Search homework..." [(ngModel)]="searchQuery" (ngModelChange)="loadList()" />
-    </div>
-  </div>
+  </app-page-toolbar>
 
   <div *ngIf="!items.length" class="empty">
     <mat-icon>menu_book</mat-icon>

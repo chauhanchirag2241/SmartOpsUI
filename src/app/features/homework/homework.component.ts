@@ -13,6 +13,8 @@ import {
   HomeworkSubmissionType,
   CreateHomeworkRequest,
 } from '../../core/services/homework.service';
+import { ListPageHeaderComponent } from '../../shared/components/list-page-header/list-page-header.component';
+import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
 import {
   HomeworkListItem,
   asHomeworkArray,
@@ -24,7 +26,14 @@ import {
 @Component({
   selector: 'app-homework',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    ListPageHeaderComponent,
+    PageToolbarComponent,
+  ],
   templateUrl: './homework.component.html',
   styleUrl: './homework.component.css',
 })
@@ -65,7 +74,7 @@ export class HomeworkComponent implements OnInit {
   }
 
   private emptyForm(): CreateHomeworkRequest {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.localDateString();
     const due = new Date();
     due.setDate(due.getDate() + 2);
     return {
@@ -74,7 +83,7 @@ export class HomeworkComponent implements OnInit {
       title: '',
       description: '',
       assignDate: today,
-      dueDate: due.toISOString().split('T')[0],
+      dueDate: this.localDateString(due),
       priority: HomeworkPriority.Normal,
       marks: null,
       submissionType: HomeworkSubmissionType.Physical,
@@ -156,6 +165,23 @@ export class HomeworkComponent implements OnInit {
       });
   }
 
+  get toolbarFilterActive(): boolean {
+    return !!this.classFilter || !!this.subjectFilter || this.chipFilter !== 'all';
+  }
+
+  onToolbarFiltersCleared(): void {
+    this.classFilter = '';
+    this.subjectFilter = '';
+    this.chipFilter = 'all';
+    this.searchQuery = '';
+    this.loadList();
+  }
+
+  onToolbarSearchSubmit(q: string): void {
+    this.searchQuery = q;
+    this.loadList();
+  }
+
   setChip(filter: string): void {
     this.chipFilter = filter;
     this.loadList();
@@ -165,6 +191,14 @@ export class HomeworkComponent implements OnInit {
   setView(mode: 'grid' | 'list'): void {
     this.viewMode = mode;
     this.refreshView();
+  }
+
+  /** Browser local calendar date (YYYY-MM-DD), not UTC from toISOString(). */
+  private localDateString(date = new Date()): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   openCreate(): void {

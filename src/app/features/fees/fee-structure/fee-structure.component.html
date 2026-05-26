@@ -1,42 +1,29 @@
 <div class="fees-page fee-structure-page">
-  <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Fees Management — Fee Structure</div>
-      <div class="page-sub">Academic year wise versions · Draft → Publish → Activate</div>
-    </div>
-    <div class="topbar-filters">
-      <select class="sel-filter" [(ngModel)]="academicYearFilter" (ngModelChange)="onAcademicYearFilterChange()">
-        <option value="">All academic years</option>
-        <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="stats">
-    <div class="sc">
-      <div class="si si-b"><mat-icon>list</mat-icon></div>
-      <div><div class="sv">{{ stats.feeTypeCount }}</div><div class="sl">Active fee heads</div></div>
-    </div>
-    <div class="sc">
-      <div class="si si-g"><mat-icon>school</mat-icon></div>
-      <div><div class="sv">{{ stats.classesConfigured }}</div><div class="sl">Classes configured</div></div>
-    </div>
-    <div class="sc">
-      <div class="si si-r"><mat-icon>currency_rupee</mat-icon></div>
-      <div><div class="sv">₹{{ stats.lateFeePerDay }}</div><div class="sl">Late fee/day</div></div>
-    </div>
-  </div>
-
   <app-smart-data-table
     *ngIf="!loading"
     [config]="tableConfig"
     [data]="versions"
     [rowClassFn]="versionRowClass"
     [initialFilterValue]="currentStatusFilter"
+    [filterPanelActive]="tableFilterPanelActive"
     (filterChanged)="onFilterChanged($event)"
+    (advancedFiltersCleared)="onTableFiltersCleared()"
     (actionClicked)="onActionClicked($event)"
     (addButtonClicked)="onAddButtonClicked()"
-  />
+  >
+    <div tableFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="fee-structure-year-filter">Academic year</label>
+      <select
+        id="fee-structure-year-filter"
+        class="sel-filter sel-filter-lg"
+        [(ngModel)]="academicYearFilter"
+        (ngModelChange)="onAcademicYearFilterChange()"
+      >
+        <option value="">All academic years</option>
+        <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
+      </select>
+    </div>
+  </app-smart-data-table>
   <div *ngIf="loading" class="empty-panel">Loading fee structures...</div>
 
   <div *ngIf="selectedVersion" class="card manage-panel">

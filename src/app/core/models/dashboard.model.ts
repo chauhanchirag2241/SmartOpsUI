@@ -19,8 +19,9 @@ export interface IDashboardResponse {
   visibleWidgets: string[];
   summary?: IDashboardSummary;
   attendanceToday?: IAttendanceToday;
-  fees?: IFeesDashboard;
   salary?: ISalaryDashboard;
+  schoolFeesCollectedTotal?: number;
+  schoolFeesDueTotal?: number;
   recentStudents?: IRecentStudent[];
   teachers?: IDashboardTeacher[];
   homeworkDue?: IHomeworkDue[];
@@ -38,20 +39,6 @@ export interface IDashboardSummary {
   scopeLabel: string;
 }
 
-export type AttendanceDatePreset =
-  | 'today'
-  | 'yesterday'
-  | 'last7days'
-  | 'thismonth'
-  | 'lastmonth'
-  | 'custom';
-
-export interface IDashboardQuery {
-  attendancePreset?: AttendanceDatePreset;
-  attendanceFrom?: string;
-  attendanceTo?: string;
-}
-
 export interface IAttendanceToday {
   present: number;
   absent: number;
@@ -60,21 +47,6 @@ export interface IAttendanceToday {
   presentPercent: number;
   dateLabel: string;
   periodLabel: string;
-  filterPreset: string;
-  fromDate: string;
-  toDate: string;
-}
-
-export interface IFeesDashboard {
-  collectedAmount: number;
-  pendingAmount: number;
-  overdueCount: number;
-  byClass: IFeesByClass[];
-}
-
-export interface IFeesByClass {
-  className: string;
-  percentCollected: number;
 }
 
 export interface ISalaryDashboard {
@@ -118,9 +90,13 @@ export interface IHomeworkDue {
 }
 
 export interface IClassOverview {
-  className: string;
-  sectionLabel: string;
+  displayName: string;
   studentCount: number;
+  present: number;
+  late: number;
+  absent: number;
+  onLeave: number;
+  feeCollectedToday: number;
 }
 
 export interface IDashboardAlerts {

@@ -58,8 +58,6 @@ export class SalaryStructureComponent implements OnInit {
   currentStatusFilter = 'All';
   loading = false;
 
-  stats = { versionCount: 0, activeComponents: 0, publishedCount: 0, draftCount: 0 };
-
   selectedVersion: ReturnType<typeof normalizeSalaryStructureVersion> | null = null;
   components: ReturnType<typeof normalizeSalaryVersionComponent>[] = [];
   loadingComponents = false;
@@ -84,8 +82,8 @@ export class SalaryStructureComponent implements OnInit {
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
-      title: 'Salary structure versions',
-      subtitle: 'Academic year wise salary components — draft, publish and activate',
+      title: 'Salary Management — Salary Structure',
+      subtitle: 'Academic year wise versions · Draft → Publish → Activate',
       showAddButton: true,
       addButtonText: 'New structure',
       addButtonIcon: 'add',
@@ -108,6 +106,7 @@ export class SalaryStructureComponent implements OnInit {
       { key: 'effectiveDate', label: 'Effective date', sortable: true, cellType: 'date' },
       { key: 'componentCount', label: 'Components', sortable: true, align: 'right', width: '100px' },
     ],
+    filtersInPanel: true,
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Draft', icon: 'edit_note', value: 'Draft' },
@@ -148,13 +147,26 @@ export class SalaryStructureComponent implements OnInit {
     });
   }
 
+  get tableFilterPanelActive(): boolean {
+    return !!this.academicYearFilter || this.currentStatusFilter !== 'All';
+  }
+
   onAcademicYearFilterChange(): void {
     this.closeManagePanel();
     this.loadVersions();
   }
 
+  onTableFiltersCleared(): void {
+    this.academicYearFilter = '';
+    this.currentStatusFilter = 'All';
+    this.closeManagePanel();
+    this.loadVersions();
+  }
+
   loadVersions(): void {
-    this.loading = true;
+    if (!this.versions.length) {
+      this.loading = true;
+    }
     this.refreshView();
     const status = this.currentStatusFilter === 'All' ? undefined : this.currentStatusFilter.toLowerCase();
     this.service.getVersions(this.academicYearFilter || undefined, status).subscribe({
@@ -163,7 +175,6 @@ export class SalaryStructureComponent implements OnInit {
           const n = normalizeSalaryStructureVersion(v);
           return { ...n, effectiveDate: n.effectiveDate || null } as Record<string, unknown>;
         });
-        this.updateStats();
         this.loading = false;
         this.refreshView();
       },
@@ -174,15 +185,6 @@ export class SalaryStructureComponent implements OnInit {
         this.refreshView();
       },
     });
-  }
-
-  private updateStats(): void {
-    const normalized = this.versions.map((v) => normalizeSalaryStructureVersion(v));
-    this.stats.versionCount = normalized.length;
-    this.stats.draftCount = normalized.filter((v) => v.statusLabel === 'Draft').length;
-    this.stats.publishedCount = normalized.filter((v) => v.statusLabel === 'Published').length;
-    const active = normalized.find((v) => v.statusLabel === 'Active');
-    this.stats.activeComponents = active?.componentCount ?? 0;
   }
 
   versionRowClass = (row: Record<string, unknown>): string => {

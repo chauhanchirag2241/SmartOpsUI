@@ -1,38 +1,54 @@
-<div class="fees-page">
-<div class="topbar">
-  <div class="page-info">
-    <div class="page-title">Fees Management — Student Collection</div>
-    <div class="page-sub">Collect and track fees for individual students</div>
-  </div>
-</div>
+<div class="fees-page list-page-shell">
+<app-list-page-header
+  title="Fees Management — Student Collection"
+  subtitle="Collect and track fees for individual students"
+/>
 
-<div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center">
-  <select class="sel-filter" [(ngModel)]="classFilter" (ngModelChange)="loadStudents()">
-    <option value="">All classes</option>
-    <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
-  </select>
-  <select class="sel-filter" [(ngModel)]="statusFilter" (ngModelChange)="loadStudents()">
-    <option value="">All status</option>
-    <option value="paid">Fully paid</option>
-    <option value="partial">Partial</option>
-    <option value="unpaid">Overdue</option>
-  </select>
-  <span style="font-size: 11px; color: var(--muted); margin-left: auto">{{ students.length }} students</span>
-</div>
+<app-page-toolbar
+  searchPlaceholder="Search by student name or roll no..."
+  [searchValue]="searchQuery"
+  [searchDisabled]="!classFilter"
+  [filterPanelActive]="toolbarFilterActive"
+  (searchSubmitted)="onToolbarSearchSubmit($event)"
+  (advancedFiltersCleared)="onToolbarFiltersCleared()"
+>
+  <div toolbarFilters class="st-table-filters">
+    <label class="table-filter-section-label" for="fee-class-filter">Class</label>
+    <select
+      id="fee-class-filter"
+      class="sel-filter sel-filter-lg"
+      [(ngModel)]="classFilter"
+      (ngModelChange)="onClassFilterChange()"
+    >
+      <option value="">Select class</option>
+      <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
+    </select>
+    <label class="table-filter-section-label" for="fee-status-filter">Fee status</label>
+    <select
+      id="fee-status-filter"
+      class="sel-filter sel-filter-lg"
+      [(ngModel)]="statusFilter"
+      (ngModelChange)="onListFiltersChange()"
+      [disabled]="!classFilter"
+    >
+      <option value="">All status</option>
+      <option value="paid">Fully paid</option>
+      <option value="partial">Partial</option>
+      <option value="unpaid">Overdue</option>
+    </select>
+  </div>
+  <span toolbarRight class="fee-filter-count">{{ classFilter ? students.length + ' students' : 'Select a class' }}</span>
+</app-page-toolbar>
 
 <div class="split-layout">
   <div class="side-list">
-    <div class="sl-header" style="display: flex; gap: 6px">
-      <div class="sl-search-wrap" style="flex: 1">
-        <mat-icon>search</mat-icon>
-        <input
-          type="text"
-          class="sl-search"
-          placeholder="Search student..."
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="loadStudents()"
-        />
-      </div>
+    <div *ngIf="!classFilter" class="sl-empty-hint">
+      <mat-icon>class</mat-icon>
+      Select a class to view students
+    </div>
+    <div *ngIf="classFilter && !students.length" class="sl-empty-hint">
+      <mat-icon>person_off</mat-icon>
+      No students in this class
     </div>
     <div
       *ngFor="let s of students"
@@ -145,7 +161,9 @@
                   {{ h.collectionTypeLabel }}
                 </div>
               </td>
-              <td style="text-align: right">{{ formatInr(h.totalAmount) }}</td>
+              <td style="text-align: right" [class.fee-amt-discount]="h.totalAmount < 0">
+                {{ formatInr(h.totalAmount) }}
+              </td>
               <td style="text-align: right; color: var(--g600)">{{ formatInr(h.paidAmount) }}</td>
               <td style="text-align: right; color: #a32d2d; font-weight: 500">{{ formatInr(h.dueAmount) }}</td>
               <td style="text-align: right">
@@ -221,7 +239,7 @@
         <div class="fee-alloc-head">
           <span class="fee-alloc-title">Apply to installments</span>
           <span class="fee-alloc-meta" *ngIf="collectForm.allocations.length">
-            {{ selectedAllocCount }} selected · {{ formatInr(selectedAllocDue) }} due
+            {{ selectedAllocCount }} selected · {{ formatInr(cappedCollectAmount) }} due
           </span>
         </div>
         <div class="alloc-panel" *ngIf="collectForm.allocations.length; else noAllocHeads">

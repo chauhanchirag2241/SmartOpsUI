@@ -1,32 +1,49 @@
-<div class="fees-page">
-<div class="topbar">
-  <div class="page-info">
-    <div class="page-title">Fees Management — Class-wise Amounts</div>
-    <div class="page-sub">Set fee amounts per class for each fee head</div>
-  </div>
-</div>
+<div class="fees-page list-page-shell">
+<app-list-page-header
+  title="Fees Management — Class-wise Amounts"
+  subtitle="Set fee amounts per class for each fee head"
+/>
 
-<div class="filters-row">
-  <select class="sel-filter" [(ngModel)]="academicYearId" (ngModelChange)="onYearChange()">
-    <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-  </select>
-  <select
-    class="sel-filter"
-    [(ngModel)]="feeStructureVersionId"
-    (ngModelChange)="onVersionChange()"
-    [disabled]="loadingVersions || !versions.length"
+<app-page-toolbar
+  [showSearch]="false"
+  [filterPanelActive]="toolbarFilterActive"
+  (advancedFiltersCleared)="onToolbarFiltersCleared()"
+>
+  <div toolbarFilters class="st-table-filters">
+    <label class="table-filter-section-label" for="cfa-academic-year">Academic year</label>
+    <select
+      id="cfa-academic-year"
+      class="sel-filter sel-filter-lg"
+      [(ngModel)]="academicYearId"
+      (ngModelChange)="onYearChange()"
+    >
+      <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
+    </select>
+    <label class="table-filter-section-label" for="cfa-version">Fee structure</label>
+    <select
+      id="cfa-version"
+      class="sel-filter sel-filter-lg"
+      [(ngModel)]="feeStructureVersionId"
+      (ngModelChange)="onVersionChange()"
+      [disabled]="loadingVersions || !versions.length"
+    >
+      <option *ngFor="let v of versions" [value]="v.id">
+        {{ v.versionLabel }} — {{ v.statusLabel }}
+      </option>
+    </select>
+    <p class="fee-filter-hint fee-filter-hint-panel">
+      Draft &amp; Published: edit any class · Active: only classes without saved amounts (e.g. new classes)
+    </p>
+  </div>
+  <span
+    toolbarRight
+    *ngIf="selectedVersion"
+    class="version-badge badge class-amounts-version-badge"
+    [ngClass]="versionStatusClass(selectedVersion.statusLabel)"
   >
-    <option *ngFor="let v of versions" [value]="v.id">
-      {{ v.versionLabel }} — {{ v.statusLabel }}
-    </option>
-  </select>
-  <span *ngIf="selectedVersion" class="version-badge badge" [ngClass]="versionStatusClass(selectedVersion.statusLabel)">
     {{ selectedVersion.statusLabel }}
   </span>
-  <span class="filter-hint">
-    Draft &amp; Published: edit any class · Active: only classes without saved amounts (e.g. new classes)
-  </span>
-</div>
+</app-page-toolbar>
 
 <div class="split-layout">
   <div class="side-list">
@@ -45,7 +62,7 @@
         <div style="font-size: 10px; color: var(--muted)">{{ c.studentCount }} students</div>
       </div>
       <div style="font-size: 11px; font-weight: 500" [style.color]="c.totalAmount ? 'var(--g600)' : 'var(--muted)'">
-        {{ c.totalAmount ? formatInr(c.totalAmount) : '—' }}
+        {{ classListTotal(c.classId, c.totalAmount) ? formatInr(classListTotal(c.classId, c.totalAmount)) : '—' }}
       </div>
     </div>
   </div>
@@ -105,9 +122,11 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of amountData.items">
+        <tr *ngFor="let item of amountData.items" [class.discount-fee-row]="isDiscountItem(item)">
           <td style="font-weight: 500">{{ item.feeTypeName }}</td>
-          <td><span class="badge b-gray">{{ item.categoryLabel }}</span></td>
+          <td>
+            <span class="badge" [ngClass]="isDiscountItem(item) ? 'b-discount' : 'b-gray'">{{ item.categoryLabel }}</span>
+          </td>
           <td><span class="badge b-gray">{{ item.collectionTypeLabel }}</span></td>
           <td class="col-amounts">
             <ng-container *ngIf="!canEditAmounts">
@@ -150,6 +169,7 @@
                   step="1"
                   inputmode="numeric"
                   [(ngModel)]="amountEditFor(item.feeTypeId).amount"
+                  (ngModelChange)="onOneTimeAmountChange()"
                   placeholder="0"
                 />
               </div>

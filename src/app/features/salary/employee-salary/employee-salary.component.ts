@@ -7,6 +7,8 @@ import { EmployeeSalaryService } from '../../../core/services/employee-salary.se
 import { SalaryStructureService } from '../../../core/services/salary-structure.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
+import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
+import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
 import {
   asArray,
   extractApiError,
@@ -22,7 +24,7 @@ import {
 @Component({
   selector: 'app-employee-salary',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
   templateUrl: './employee-salary.component.html',
   styleUrl: '../salary.shared.css',
 })
@@ -68,6 +70,21 @@ export class EmployeeSalaryComponent implements OnInit {
   ngOnInit(): void {
     this.assignForm.effectiveDate = new Date().toISOString().split('T')[0];
     this.loadAssignableVersions();
+    this.loadEmployees();
+  }
+
+  get toolbarFilterActive(): boolean {
+    return this.departmentFilter !== 'All' || this.designationFilter !== 'All';
+  }
+
+  onToolbarFiltersCleared(): void {
+    this.departmentFilter = 'All';
+    this.designationFilter = 'All';
+    this.loadEmployees();
+  }
+
+  onToolbarSearchSubmit(q: string): void {
+    this.search = q;
     this.loadEmployees();
   }
 

@@ -504,18 +504,42 @@ export function describeShiftTimeError(start: unknown, end: unknown): string | n
   return null;
 }
 
-export function shiftTimesValidator(): ValidatorFn {
+/** Shift start: only errors that belong on the start field (missing start, invalid range). */
+export function shiftStartTimeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const group = control.parent;
     if (!group) {
       return null;
     }
-    const message = describeShiftTimeError(
-      group.get('shiftStartTime')?.value,
-      group.get('shiftEndTime')?.value,
-    );
-    return message ? { shiftTime: { message } satisfies ValidationErrorDetail } : null;
+    const message = describeShiftTimeError(control.value, group.get('shiftEndTime')?.value);
+    if (!message || message === 'Select shift end time') {
+      return null;
+    }
+    return { shiftTime: { message } satisfies ValidationErrorDetail };
   };
+}
+
+/** Shift end: missing end and “end after start” errors show on the end field only. */
+export function shiftEndTimeValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const group = control.parent;
+    if (!group) {
+      return null;
+    }
+    const message = describeShiftTimeError(group.get('shiftStartTime')?.value, control.value);
+    if (!message || message === 'Select shift start time') {
+      return null;
+    }
+    return { shiftTime: { message } satisfies ValidationErrorDetail };
+  };
+}
+
+/** Re-validate both shift controls when either value changes. */
+export function syncShiftTimeValidity(scheduleGroup: {
+  get(name: string): AbstractControl | null;
+}): void {
+  scheduleGroup.get('shiftStartTime')?.updateValueAndValidity({ emitEvent: false });
+  scheduleGroup.get('shiftEndTime')?.updateValueAndValidity({ emitEvent: false });
 }
 
 /** Normalize HTML time input / API value to HH:mm. */
@@ -566,6 +590,55 @@ export function formatShiftRangeDisplay(start: unknown, end: unknown): string {
     return `${formatTimeDisplay(startNorm)} – ${formatTimeDisplay(endNorm)}`;
   }
   return formatTimeDisplay(startNorm ?? endNorm);
+}
+
+/** Rejects calendar dates after today (for date of birth, etc.). */
+export function noFutureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const raw = control.value;
+    if (raw == null || raw === '') {
+      return null;
+    }
+
+    const date = raw instanceof Date ? raw : new Date(raw);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    const valueDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const today = new Date();
+    const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    if (valueDay.getTime() > todayDay.getTime()) {
+      return {
+        noFutureDate: {
+          message: 'Date cannot be in the future',
+        },
+      };
+    }
+
+    return null;
+  };
+}
+
+export function dateOfBirthValidationConfig(required = true): {
+  validations: { name: string; validator: ValidatorFn; message: string }[];
+} {
+  const validations = [
+    {
+      name: 'noFutureDate',
+      validator: noFutureDateValidator(),
+      message: 'Date of birth cannot be in the future',
+    },
+  ];
+  if (required) {
+    validations.unshift({
+      name: 'required',
+      validator: Validators.required,
+      message: 'DOB is required',
+    });
+  }
+  return { validations };
 }
 
 /** Discount and similar numeric fields: minimum 0, no negatives. */
@@ -655,90 +728,3 @@ export function panValidationConfig(required = false): {
   return { validations };
 }
 
-export function sanitizeDiscountValueInput(value: string, unit: string | null | undefined): string {
-  if (unit === '%') {
-    const digits = value.replace(/\D/g, '').slice(0, 3);
-    if (!digits) {
-      return '';
-    }
-    const num = Math.min(100, parseInt(digits, 10));
-    return String(num);
-  }
-  if (unit === 'amount') {
-    return value.replace(/\D/g, '').slice(0, 5);
-  }
-  return value.replace(/\D/g, '');
-}
-
-export function discountValueValidator(
-  getUnit: () => string | null | undefined,
-): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const raw = control.value;
-    if (raw == null || raw === '') {
-      return null;
-    }
-
-    const unit = getUnit();
-    if (!unit) {
-      return {
-        discountValue: { message: 'Select discount unit before entering a value' } satisfies ValidationErrorDetail,
-      };
-    }
-
-    const text = String(raw).trim();
-    if (!/^\d+$/.test(text)) {
-      return {
-        discountValue: { message: 'Enter a whole number only' } satisfies ValidationErrorDetail,
-      };
-    }
-
-    const num = Number(text);
-    if (num < 0) {
-      return {
-        discountValue: { message: 'Discount cannot be negative' } satisfies ValidationErrorDetail,
-      };
-    }
-
-    if (unit === '%') {
-      if (num > 100) {
-        return {
-          discountValue: { message: 'Percentage discount cannot exceed 100' } satisfies ValidationErrorDetail,
-        };
-      }
-      return null;
-    }
-
-    if (unit === 'amount') {
-      if (text.length > 5) {
-        return {
-          discountValue: { message: 'Amount cannot exceed 5 digits (max 99999)' } satisfies ValidationErrorDetail,
-        };
-      }
-      if (num > 99999) {
-        return {
-          discountValue: { message: 'Amount cannot exceed 99999' } satisfies ValidationErrorDetail,
-        };
-      }
-      return null;
-    }
-
-    return null;
-  };
-}
-
-export function discountValidationConfig(
-  getUnit: () => string | null | undefined,
-): {
-  validations: { name: string; validator: ValidatorFn; message: string }[];
-} {
-  return {
-    validations: [
-      {
-        name: 'discountValue',
-        validator: discountValueValidator(getUnit),
-        message: 'Enter a valid discount value',
-      },
-    ],
-  };
-}

@@ -1,22 +1,27 @@
 @if (config.header) {
-  <header class="page-header">
-    <div class="header-info">
-      <h1>{{ config.header.title }}</h1>
-      @if (config.header.subtitle) {
-        <span>{{ config.header.subtitle }}</span>
+  <header class="page-header" [class.page-header-actions-only]="!config.header.title?.trim()">
+    @if (config.header.title?.trim()) {
+      <div class="header-info">
+        <h1>{{ config.header.title }}</h1>
+        @if (config.header.subtitle) {
+          <span>{{ config.header.subtitle }}</span>
+        }
+      </div>
+    }
+    <div class="page-header-actions">
+      <ng-content select="[headerActions]" />
+      @if (config.header.showAddButton) {
+        <button
+          type="button"
+          [class]="config.header.addButtonClass ?? 'btn-primary'"
+          id="add-button"
+          (click)="onAddButtonClick()"
+        >
+          <mat-icon>{{ config.header.addButtonIcon ?? 'add' }}</mat-icon>
+          {{ config.header.addButtonText ?? 'Add' }}
+        </button>
       }
     </div>
-    @if (config.header.showAddButton) {
-      <button
-        type="button"
-        [class]="config.header.addButtonClass ?? 'btn-primary'"
-        id="add-button"
-        (click)="onAddButtonClick()"
-      >
-        <mat-icon>{{ config.header.addButtonIcon ?? 'add' }}</mat-icon>
-        {{ config.header.addButtonText ?? 'Add' }}
-      </button>
-    }
   </header>
 }
 
@@ -24,18 +29,21 @@
   <div class="toolbar">
     @if (config.showSearch !== false) {
       <div class="search-wrap">
-        <mat-icon class="search-icon">search</mat-icon>
         <input
           type="text"
           [placeholder]="config.searchPlaceholder ?? 'Search...'"
           [(ngModel)]="searchQuery"
           (input)="onSearchInput()"
+          (keydown.enter)="onSearchSubmit()"
           id="smart-table-search"
         />
+        <button type="button" class="search-icon-btn" aria-label="Search" (click)="onSearchSubmit()">
+          <mat-icon>search</mat-icon>
+        </button>
       </div>
     }
 
-    @if (config.filters?.length) {
+    @if (config.filters?.length && !config.filtersInPanel) {
       @for (filter of config.filters; track filter.value) {
         <button
           type="button"
@@ -76,6 +84,60 @@
           <mat-icon>download</mat-icon>
           Export
         </button>
+      }
+
+      @if (config.filtersInPanel) {
+        <div class="filter-drop">
+          <button
+            type="button"
+            class="icon-btn"
+            [class.filter-btn-active]="filterPanelActive"
+            (click)="toggleFilterMenu($event)"
+          >
+            <mat-icon>filter_list</mat-icon>
+            Filter
+          </button>
+          <div
+            class="table-filter-menu"
+            [class.show]="showFilterMenu"
+            (mousedown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="table-filter-menu-head">
+              <span class="table-filter-menu-title">Filters</span>
+              <div class="table-filter-menu-actions">
+                <button type="button" class="table-filter-clear" (click)="clearAdvancedFilters()">Clear all</button>
+                <button
+                  type="button"
+                  class="table-filter-close"
+                  aria-label="Close filters"
+                  (click)="closeFilterMenu($event)"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+            <ng-content select="[tableFilters]"></ng-content>
+            @if (config.filters?.length) {
+              <div class="table-filter-section">
+                <span class="table-filter-section-label">Status</span>
+                <div class="table-filter-chips">
+                  @for (filter of config.filters; track filter.value) {
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      [class.active]="activeFilter?.value === filter.value"
+                      (click)="setFilter(filter)"
+                    >
+                      <mat-icon>{{ filter.icon }}</mat-icon>
+                      {{ filter.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
       }
     </div>
   </div>

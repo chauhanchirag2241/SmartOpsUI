@@ -6,6 +6,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PayrollService } from '../../../core/services/payroll.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table/smart-data-table.component';
+import type { DataTableAction, DataTableBulkAction, DataTableConfig } from '../../../shared/components/smart-data-table';
 import {
   extractApiError,
   formatInr,
@@ -18,7 +20,7 @@ import {
 @Component({
   selector: 'app-payroll',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, SmartDataTableComponent],
   templateUrl: './payroll.component.html',
   styleUrl: '../salary.shared.css',
 })
@@ -35,7 +37,6 @@ export class PayrollComponent implements OnInit {
 
   payroll: ReturnType<typeof normalizePayrollRun> | null = null;
   loading = false;
-  selectedEntryIds = new Set<string>();
 
   showProcessModal = false;
   showPayslipModal = false;
@@ -45,17 +46,92 @@ export class PayrollComponent implements OnInit {
   formatInr = formatInr;
   payrollStatusBadgeClass = payrollStatusBadgeClass;
 
+  private readonly baseTableConfig: DataTableConfig = {
+    header: {
+      title: 'Salary Management — Payroll',
+      subtitle: 'Process monthly payroll and view payslips',
+      showAddButton: false,
+      addButtonText: 'Process payroll',
+      addButtonIcon: 'play_arrow',
+      addButtonClass: 'btn-primary',
+    },
+    columns: [
+      { key: 'employeeName', label: 'Employee', sortable: true },
+      { key: 'department', label: 'Department', sortable: true },
+      { key: 'basicDisplay', label: 'Basic', sortable: true, align: 'right', width: '100px' },
+      { key: 'hraDisplay', label: 'HRA', sortable: true, align: 'right', width: '90px' },
+      { key: 'allowancesDisplay', label: 'Allowances', sortable: true, align: 'right', width: '100px' },
+      { key: 'grossDisplay', label: 'Gross', sortable: true, align: 'right', width: '100px' },
+      { key: 'deductionsDisplay', label: 'Deductions', sortable: true, align: 'right', width: '100px' },
+      { key: 'netDisplay', label: 'Net salary', sortable: true, align: 'right', width: '110px' },
+      {
+        key: 'statusLabel',
+        label: 'Status',
+        cellType: 'badge',
+        badgeMap: {
+          Draft: { cssClass: 'b-amber', label: 'Draft' },
+          Processed: { cssClass: 'b-blue', label: 'Processed' },
+          Paid: { cssClass: 'b-green', label: 'Paid' },
+        },
+      },
+    ],
+    filtersInPanel: true,
+    actions: [{ label: 'Payslip', icon: 'receipt', iconColor: '#639922' }],
+    searchPlaceholder: 'Search employee...',
+    searchKeys: ['employeeName', 'department'],
+    itemLabel: 'entries',
+    defaultPageSize: 10,
+  };
+
   ngOnInit(): void {
     this.loadPayroll();
+  }
+
+  get tableConfig(): DataTableConfig {
+    const bulkActions: DataTableBulkAction[] | undefined =
+      this.canMarkPaid() && (this.payroll?.entries.length ?? 0) > 0
+        ? [{ label: 'Mark paid', icon: 'check_circle' }]
+        : undefined;
+    return {
+      ...this.baseTableConfig,
+      header: {
+        ...this.baseTableConfig.header!,
+        showAddButton: this.canProcess(),
+      },
+      bulkActions,
+    };
+  }
+
+  get tableRows(): Record<string, unknown>[] {
+    if (!this.payroll) return [];
+    return this.payroll.entries.map((e) => ({
+      ...e,
+      basicDisplay: formatInr(e.basicSalary),
+      hraDisplay: formatInr(e.hraAmount),
+      allowancesDisplay: formatInr(e.allowances),
+      grossDisplay: formatInr(e.grossSalary),
+      deductionsDisplay: formatInr(e.totalDeductions),
+      netDisplay: formatInr(e.netSalary),
+    }));
   }
 
   get monthLabel(): string {
     return this.monthOptions.find((m) => m.value === this.payMonth)?.label ?? '';
   }
 
+  get tableFilterPanelActive(): boolean {
+    const now = new Date();
+    return this.payMonth !== now.getMonth() + 1 || this.payYear !== now.getFullYear();
+  }
+
+  get yearOptions(): number[] {
+    return [this.payYear - 1, this.payYear, this.payYear + 1];
+  }
+
   loadPayroll(): void {
-    this.loading = true;
-    this.selectedEntryIds.clear();
+    if (!this.payroll) {
+      this.loading = true;
+    }
     this.refresh();
     this.service.getPayroll(this.payYear, this.payMonth).subscribe({
       next: (raw) => {
@@ -70,6 +146,13 @@ export class PayrollComponent implements OnInit {
         this.refresh();
       },
     });
+  }
+
+  onTableFiltersCleared(): void {
+    const now = new Date();
+    this.payMonth = now.getMonth() + 1;
+    this.payYear = now.getFullYear();
+    this.loadPayroll();
   }
 
   openProcessModal(): void {
@@ -99,28 +182,9 @@ export class PayrollComponent implements OnInit {
       });
   }
 
-  toggleSelectAll(checked: boolean): void {
-    if (!this.payroll) return;
-    this.selectedEntryIds.clear();
-    if (checked) {
-      this.payroll.entries.forEach((e) => this.selectedEntryIds.add(e.id));
-    }
-    this.refresh();
-  }
-
-  toggleEntry(id: string, checked: boolean): void {
-    if (checked) this.selectedEntryIds.add(id);
-    else this.selectedEntryIds.delete(id);
-    this.refresh();
-  }
-
-  isAllSelected(): boolean {
-    return !!this.payroll?.entries.length && this.selectedEntryIds.size === this.payroll.entries.length;
-  }
-
-  markSelectedPaid(): void {
-    if (!this.payroll?.id || !this.permissionService.canEdit(MenuCodes.SalaryPayroll)) return;
-    const ids = [...this.selectedEntryIds];
+  onBulkActionClicked(event: { action: DataTableBulkAction; selectedRows: Record<string, unknown>[] }): void {
+    if (event.action.label !== 'Mark paid' || !this.payroll?.id) return;
+    const ids = event.selectedRows.map((r) => String(r['id'] ?? '')).filter(Boolean);
     this.service.markPaid(this.payroll.id, ids.length ? ids : undefined).subscribe({
       next: () => {
         this.toast('Marked as paid');
@@ -128,6 +192,12 @@ export class PayrollComponent implements OnInit {
       },
       error: (e) => this.toast(extractApiError(e, 'Update failed'), true),
     });
+  }
+
+  onActionClicked(event: { action: DataTableAction; row: Record<string, unknown> }): void {
+    if (event.action.label === 'Payslip') {
+      this.openPayslip(String(event.row['id'] ?? ''));
+    }
   }
 
   openPayslip(entryId: string): void {
@@ -149,8 +219,8 @@ export class PayrollComponent implements OnInit {
     return this.permissionService.canEdit(MenuCodes.SalaryPayroll);
   }
 
-  exportPlaceholder(type: string): void {
-    this.toast(`${type} export will be available in a future update`);
+  onExportClicked(): void {
+    this.toast('Export will be available in a future update');
   }
 
   payslipRows(): { earning: string; earningAmt: number; deduction: string; deductionAmt: number }[] {

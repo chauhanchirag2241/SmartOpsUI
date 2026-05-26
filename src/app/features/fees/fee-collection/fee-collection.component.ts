@@ -6,6 +6,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FeeCollectionService } from '../../../core/services/fee-collection.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
+import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
 import {
   FEE_PAYMENT_MODE_OPTIONS,
   FeePaymentMode,
@@ -31,7 +33,7 @@ type CollectAllocRow = {
 @Component({
   selector: 'app-fee-collection',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
   templateUrl: './fee-collection.component.html',
   styleUrl: '../fees.shared.css',
 })
@@ -82,17 +84,60 @@ export class FeeCollectionComponent implements OnInit {
         const first = list[0];
         if (first?.id) {
           this.academicYearId = first.id;
-          this.loadStudents();
         }
         this.refreshView();
       },
     });
   }
 
+  get toolbarFilterActive(): boolean {
+    return !!this.classFilter || !!this.statusFilter;
+  }
+
+  onToolbarFiltersCleared(): void {
+    this.classFilter = '';
+    this.statusFilter = '';
+    this.searchQuery = '';
+    this.onClassFilterChange();
+  }
+
+  onToolbarSearchSubmit(q: string): void {
+    this.searchQuery = q;
+    if (this.classFilter) {
+      this.loadStudents();
+    }
+  }
+
+  onClassFilterChange(): void {
+    this.selectedStudentId = '';
+    this.detail = null;
+    this.closeCollectModal();
+    if (!this.classFilter) {
+      this.students = [];
+      this.searchQuery = '';
+      this.refreshView();
+      return;
+    }
+    this.loadStudents();
+  }
+
+  onListFiltersChange(): void {
+    if (!this.classFilter) {
+      return;
+    }
+    this.loadStudents();
+  }
+
   loadStudents(): void {
+    if (!this.classFilter) {
+      this.students = [];
+      this.refreshView();
+      return;
+    }
+
     this.service
       .getStudents(
-        this.classFilter || undefined,
+        this.classFilter,
         this.academicYearId || undefined,
         this.searchQuery || undefined,
         this.statusFilter || undefined,
@@ -124,6 +169,16 @@ export class FeeCollectionComponent implements OnInit {
       .reduce((sum, a) => sum + (a.amount || 0), 0);
   }
 
+  /** Net collectable amount after discount — never above student due balance. */
+  get cappedCollectAmount(): number {
+    const raw = this.selectedAllocDue;
+    const netDue = this.detail?.dueAmount ?? raw;
+    if (raw <= 0) {
+      return netDue;
+    }
+    return Math.min(raw, netDue);
+  }
+
   isHeadExpanded(feeTypeId: string): boolean {
     return this.expandedHeadIds.has(feeTypeId);
   }
@@ -148,8 +203,8 @@ export class FeeCollectionComponent implements OnInit {
   }
 
   private syncCollectAmountToSelection(): void {
-    const max = this.selectedAllocDue;
-    if (max > 0 && this.collectForm.amount > max) {
+    const max = this.cappedCollectAmount;
+    if (max > 0) {
       this.collectForm.amount = max;
     }
   }
@@ -199,7 +254,7 @@ export class FeeCollectionComponent implements OnInit {
     }
 
     this.collectForm = {
-      amount: allocations.filter((a) => a.checked).reduce((s, a) => s + a.amount, 0) || detail.dueAmount,
+      amount: detail.dueAmount,
       paymentMode: FeePaymentMode.Cash,
       transactionNo: '',
       paymentDate: new Date().toISOString().split('T')[0],
@@ -237,8 +292,8 @@ export class FeeCollectionComponent implements OnInit {
       return;
     }
 
-    if (this.collectForm.amount > this.selectedAllocDue) {
-      this.toast(`Amount cannot exceed ${formatInr(this.selectedAllocDue)} on selected installments`, true);
+    if (this.collectForm.amount > this.cappedCollectAmount) {
+      this.toast(`Amount cannot exceed ${formatInr(this.cappedCollectAmount)} on selected installments`, true);
       return;
     }
 

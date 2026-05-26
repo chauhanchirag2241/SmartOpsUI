@@ -103,13 +103,29 @@
   margin-bottom: 10px;
 }
 .pr-status-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
 }
+.pr-status-row .pr-stat {
+  flex: 1;
+  min-width: 140px;
+}
+.pr-payroll-meta {
+  align-items: center;
+  display: flex;
+  flex-basis: 100%;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 0 4px 4px;
+}
+.pr-period-label {
+  color: var(--muted);
+  font-size: 11px;
+}
 @media (max-width: 900px) {
-  .pr-status-row { grid-template-columns: repeat(2, 1fr); }
+  .pr-status-row .pr-stat { min-width: calc(50% - 8px); }
 }
 .pr-stat {
   background: var(--card);

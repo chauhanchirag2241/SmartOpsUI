@@ -1,46 +1,29 @@
 <div class="fees-page fee-structure-page">
-  <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Salary Management — Salary Structure</div>
-      <div class="page-sub">Academic year wise versions · Draft → Publish → Activate</div>
-    </div>
-    <div class="topbar-filters">
-      <select class="sel-filter" [(ngModel)]="academicYearFilter" (ngModelChange)="onAcademicYearFilterChange()">
-        <option value="">All academic years</option>
-        <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="stats">
-    <div class="sc">
-      <div class="si si-b"><mat-icon>layers</mat-icon></div>
-      <div><div class="sv">{{ stats.versionCount }}</div><div class="sl">Structure versions</div></div>
-    </div>
-    <div class="sc">
-      <div class="si si-g"><mat-icon>tune</mat-icon></div>
-      <div><div class="sv">{{ stats.activeComponents }}</div><div class="sl">Active structure components</div></div>
-    </div>
-    <div class="sc">
-      <div class="si si-a"><mat-icon>publish</mat-icon></div>
-      <div><div class="sv">{{ stats.publishedCount }}</div><div class="sl">Published</div></div>
-    </div>
-    <div class="sc">
-      <div class="si si-r"><mat-icon>edit_note</mat-icon></div>
-      <div><div class="sv">{{ stats.draftCount }}</div><div class="sl">Drafts</div></div>
-    </div>
-  </div>
-
   <app-smart-data-table
     *ngIf="!loading"
     [config]="tableConfig"
     [data]="versions"
     [rowClassFn]="versionRowClass"
     [initialFilterValue]="currentStatusFilter"
+    [filterPanelActive]="tableFilterPanelActive"
     (filterChanged)="onFilterChanged($event)"
+    (advancedFiltersCleared)="onTableFiltersCleared()"
     (actionClicked)="onActionClicked($event)"
     (addButtonClicked)="onAddButtonClicked()"
-  />
+  >
+    <div tableFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="salary-structure-year-filter">Academic year</label>
+      <select
+        id="salary-structure-year-filter"
+        class="sel-filter sel-filter-lg"
+        [(ngModel)]="academicYearFilter"
+        (ngModelChange)="onAcademicYearFilterChange()"
+      >
+        <option value="">All academic years</option>
+        <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
+      </select>
+    </div>
+  </app-smart-data-table>
   <div *ngIf="loading" class="empty-panel">Loading salary structures...</div>
 
   <div *ngIf="selectedVersion" class="card manage-panel">

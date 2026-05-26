@@ -1,10 +1,8 @@
-<div class="mapping-page">
-  <div class="topbar">
-    <div>
-      <div class="page-title">Class — Subject — Teacher Mapping</div>
-      <div class="page-sub">Map subjects to classes and assign teachers in one place</div>
-    </div>
-  </div>
+<div class="mapping-page list-page-shell">
+  <app-list-page-header
+    title="Class — Subject — Teacher Mapping"
+    subtitle="Map subjects to classes and assign teachers in one place"
+  />
 
   @if (loading) {
     <div class="loading-state">
@@ -14,31 +12,40 @@
   } @else if (errorMessage) {
     <div class="loading-state error">{{ errorMessage }}</div>
   } @else {
-    <div class="filter-bar">
-      <div class="sel-wrap">
-        <select [(ngModel)]="selectedAcademicYearId" (ngModelChange)="onAcademicYearChange()" aria-label="Academic year">
+    <app-page-toolbar [showSearch]="false" [filterPanelActive]="toolbarFilterActive" (advancedFiltersCleared)="onToolbarFiltersCleared()">
+      <div toolbarFilters class="st-table-filters">
+        <label class="table-filter-section-label" for="mapping-year-filter">Academic year</label>
+        <select
+          id="mapping-year-filter"
+          class="sel-filter sel-filter-lg"
+          [(ngModel)]="selectedAcademicYearId"
+          (ngModelChange)="onAcademicYearChange()"
+        >
           @for (year of academicYears; track year.id) {
             <option [value]="year.id">{{ year.name }}</option>
           }
         </select>
+        <div class="table-filter-section">
+          <span class="table-filter-section-label">Class status</span>
+          <div class="table-filter-chips">
+            <button type="button" class="filter-chip" [class.active]="classFilter === 'all'" (click)="setClassFilter('all')">
+              All classes
+            </button>
+            <button type="button" class="filter-chip" [class.active]="classFilter === 'mapped'" (click)="setClassFilter('mapped')">
+              <mat-icon>check_circle</mat-icon>
+              Mapped
+            </button>
+            <button type="button" class="filter-chip" [class.active]="classFilter === 'unmapped'" (click)="setClassFilter('unmapped')">
+              <mat-icon>error_outline</mat-icon>
+              Unmapped
+            </button>
+          </div>
+        </div>
       </div>
-
-      <button type="button" class="filter-chip" [class.active]="classFilter === 'all'" (click)="setClassFilter('all')">
-        All classes
-      </button>
-      <button type="button" class="filter-chip" [class.active]="classFilter === 'mapped'" (click)="setClassFilter('mapped')">
-        <mat-icon>check_circle</mat-icon>
-        Mapped
-      </button>
-      <button type="button" class="filter-chip" [class.active]="classFilter === 'unmapped'" (click)="setClassFilter('unmapped')">
-        <mat-icon>error_outline</mat-icon>
-        Unmapped
-      </button>
-
-      <div class="total-info">
+      <span toolbarRight class="total-info">
         {{ filteredClasses.length }} classes · {{ subjects.length }} subjects · {{ teachers.length }} teachers
-      </div>
-    </div>
+      </span>
+    </app-page-toolbar>
 
     <div class="layout">
       <aside class="class-list" aria-label="Classes">

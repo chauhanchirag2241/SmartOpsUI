@@ -88,14 +88,6 @@ export class StudentService {
           tcNumber: studentData.tcNo
         }
       ] : [],
-      feeConfigs: [
-        {
-          discountType: studentData.discountType,
-          discountValue: (studentData.discountValue && !isNaN(studentData.discountValue)) ? Number(studentData.discountValue) : null,
-          isPercentage: studentData.discountUnit === '%',
-          discountRemarks: studentData.discountRemarks
-        }
-      ],
       feeHeadSelections: (studentData.feeHeadSelections ?? []).map((s: any) => ({
         feeTypeId: s.feeTypeId,
         isIncluded: Boolean(s.isIncluded),
@@ -169,14 +161,6 @@ export class StudentService {
           tcNumber: studentData.tcNo
         }
       ] : [],
-      feeConfigs: [
-        {
-          discountType: studentData.discountType,
-          discountValue: (studentData.discountValue && !isNaN(studentData.discountValue)) ? Number(studentData.discountValue) : null,
-          isPercentage: studentData.discountUnit === '%',
-          discountRemarks: studentData.discountRemarks
-        }
-      ],
       customFields: this.mapCustomFields(studentData.customFields),
     };
     return this.api.put(`students/${id}`, payload);

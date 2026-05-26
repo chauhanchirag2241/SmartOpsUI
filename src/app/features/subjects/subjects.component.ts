@@ -94,6 +94,7 @@ export class SubjectsComponent implements OnInit {
         },
       },
     ],
+    filtersInPanel: true,
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Active', icon: 'check_circle', value: 'Active' },

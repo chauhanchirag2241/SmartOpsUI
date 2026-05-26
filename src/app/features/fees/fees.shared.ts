@@ -3,6 +3,7 @@ export enum FeeCategory {
   Development = 1,
   Transport = 2,
   Other = 3,
+  Discount = 4,
 }
 
 export enum FeeCollectionType {
@@ -31,6 +32,7 @@ export const FEE_CATEGORY_OPTIONS = [
   { value: FeeCategory.Development, label: 'Development' },
   { value: FeeCategory.Transport, label: 'Transport' },
   { value: FeeCategory.Other, label: 'Other' },
+  { value: FeeCategory.Discount, label: 'Discount' },
 ];
 
 export const FEE_COLLECTION_TYPE_OPTIONS = [
@@ -85,6 +87,7 @@ export function categoryBadgeClass(cat: string): string {
     Development: 'b-green',
     Transport: 'b-amber',
     Other: 'b-gray',
+    Discount: 'b-discount',
   };
   return m[cat] ?? 'b-gray';
 }
@@ -98,7 +101,64 @@ export function collectionTypeBadgeClass(type: string): string {
 }
 
 export function formatInr(n: number): string {
-  return '₹' + (n ?? 0).toLocaleString('en-IN');
+  const value = n ?? 0;
+  if (value < 0) {
+    return `−₹${Math.abs(value).toLocaleString('en-IN')}`;
+  }
+  return `₹${value.toLocaleString('en-IN')}`;
+}
+
+/** Resolve fee category from API number, enum string, or label. */
+export function resolveFeeCategory(raw: unknown, categoryLabel?: string): FeeCategory {
+  if (typeof raw === 'number' && !Number.isNaN(raw) && raw >= FeeCategory.Academic && raw <= FeeCategory.Discount) {
+    return raw as FeeCategory;
+  }
+  const rawText = String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+  if (rawText === 'discount') {
+    return FeeCategory.Discount;
+  }
+  if (rawText === 'transport') {
+    return FeeCategory.Transport;
+  }
+  if (rawText === 'development') {
+    return FeeCategory.Development;
+  }
+  if (rawText === 'other') {
+    return FeeCategory.Other;
+  }
+  if (rawText === 'academic') {
+    return FeeCategory.Academic;
+  }
+  const label = String(categoryLabel ?? '')
+    .trim()
+    .toLowerCase();
+  if (label === 'discount') {
+    return FeeCategory.Discount;
+  }
+  if (label === 'transport') {
+    return FeeCategory.Transport;
+  }
+  if (label === 'development') {
+    return FeeCategory.Development;
+  }
+  if (label === 'other') {
+    return FeeCategory.Other;
+  }
+  return FeeCategory.Academic;
+}
+
+export function isDiscountCategory(category: unknown, categoryLabel?: string): boolean {
+  return resolveFeeCategory(category, categoryLabel) === FeeCategory.Discount;
+}
+
+export function signedFeeAmount(category: unknown, amount: number, categoryLabel?: string): number {
+  if (!amount) {
+    return 0;
+  }
+  return isDiscountCategory(category, categoryLabel) ? -Math.abs(amount) : Math.abs(amount);
 }
 
 /** Read API error text from HttpErrorResponse (string body, { error }, or validation details). */
@@ -216,14 +276,6 @@ export function normalizeFeeType(raw: any) {
   };
 }
 
-export function normalizeFeeStats(raw: any) {
-  return {
-    feeTypeCount: Number(pick(raw, 'feeTypeCount', 'FeeTypeCount') ?? 0),
-    classesConfigured: Number(pick(raw, 'classesConfigured', 'ClassesConfigured') ?? 0),
-    lateFeePerDay: Number(pick(raw, 'lateFeePerDay', 'LateFeePerDay') ?? 0),
-  };
-}
-
 export function normalizeClassSummary(raw: any) {
   return {
     classId: String(pick(raw, 'classId', 'ClassId') ?? ''),
@@ -247,11 +299,17 @@ export function normalizeClassAmounts(raw: any) {
     const semester1 = Number(pick(i, 'semester1Amount', 'Semester1Amount') ?? 0);
     const semester2 = Number(pick(i, 'semester2Amount', 'Semester2Amount') ?? 0);
     const amount = Number(pick(i, 'amount', 'Amount') ?? 0);
-    const annualTotal = Number(pick(i, 'annualTotal', 'AnnualTotal') ?? (collectionType === FeeCollectionType.SemesterWise ? semester1 + semester2 : amount));
+    const categoryLabel = String(pick(i, 'categoryLabel', 'CategoryLabel') ?? '');
+    const category = resolveFeeCategory(pick(i, 'category', 'Category'), categoryLabel);
+    const annualTotal = Number(
+      pick(i, 'annualTotal', 'AnnualTotal') ??
+        (collectionType === FeeCollectionType.SemesterWise ? semester1 + semester2 : amount),
+    );
     return {
       feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
       feeTypeName: String(pick(i, 'feeTypeName', 'FeeTypeName') ?? ''),
-      categoryLabel: String(pick(i, 'categoryLabel', 'CategoryLabel') ?? ''),
+      category,
+      categoryLabel: categoryLabel || FEE_CATEGORY_OPTIONS.find((o) => o.value === category)?.label || '',
       collectionType,
       collectionTypeLabel,
       amount,
@@ -262,6 +320,10 @@ export function normalizeClassAmounts(raw: any) {
       studentWiseDifferentAmount: Boolean(pick(i, 'studentWiseDifferentAmount', 'StudentWiseDifferentAmount')),
     };
   });
+  const totalAmount = items.reduce(
+    (sum, item) => sum + signedFeeAmount(item.category, item.annualTotal, item.categoryLabel),
+    0,
+  );
   return {
     classId: String(pick(raw, 'classId', 'ClassId') ?? ''),
     className: String(pick(raw, 'className', 'ClassName') ?? ''),
@@ -273,7 +335,7 @@ export function normalizeClassAmounts(raw: any) {
       pick(raw, 'isEditable', 'IsEditable'),
       String(pick(raw, 'versionStatusLabel', 'VersionStatusLabel') ?? ''),
     ),
-    totalAmount: Number(pick(raw, 'totalAmount', 'TotalAmount') ?? 0),
+    totalAmount,
     items,
   };
 }

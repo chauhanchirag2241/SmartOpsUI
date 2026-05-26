@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
@@ -8,7 +8,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { DashboardWidgetCodes } from '../../core/constants/dashboard-widget-codes';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import type {
-  AttendanceDatePreset,
+  IAttendanceToday,
   IDashboardResponse,
   IDashboardWidgetLayoutItem,
 } from '../../core/models/dashboard.model';
@@ -20,12 +20,21 @@ interface QuickAction {
   menuCode?: string;
 }
 
+export interface DonutSegment {
+  color: string;
+  dash: string;
+  offset: number;
+}
+
 const HIDDEN_STORAGE_KEY = 'smartops.dashboard.hidden';
+/** 2π × radius 26 — full ring length for dash math */
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * 26;
+const DONUT_START_OFFSET = -DONUT_CIRCUMFERENCE * 0.25;
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [MatIconModule, NgFor, NgIf, RouterLink],
+  imports: [CommonModule, MatIconModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -43,23 +52,6 @@ export class DashboardComponent implements OnInit {
   readonly scopeLabel = signal('');
   readonly academicYearLabel = signal<string | undefined>(undefined);
   readonly schoolName = signal<string | undefined>(undefined);
-  readonly attendancePreset = signal<AttendanceDatePreset>('today');
-  readonly attendanceCustomFrom = signal('');
-  readonly attendanceCustomTo = signal('');
-  readonly attendanceLoading = signal(false);
-
-  readonly showAttendanceFilter = computed(
-    () => this.has(this.W.AttendanceRate) || this.has(this.W.AttendanceDetail),
-  );
-
-  readonly attendanceFilterOptions: { value: AttendanceDatePreset; label: string }[] = [
-    { value: 'today', label: 'Today' },
-    { value: 'yesterday', label: 'Yesterday' },
-    { value: 'last7days', label: 'Last 7 days' },
-    { value: 'thismonth', label: 'This month' },
-    { value: 'lastmonth', label: 'Last month' },
-    { value: 'custom', label: 'Custom' },
-  ];
 
   readonly visibleWidgets = computed(() => {
     const hidden = this.hiddenWidgets();
@@ -67,6 +59,18 @@ export class DashboardComponent implements OnInit {
   });
 
   readonly customizeWidgets = computed(() => this.uniqueLayout());
+
+  readonly classesOverviewTotals = computed(() => {
+    const rows = this.data()?.classesOverview ?? [];
+    return {
+      studentCount: rows.reduce((s, r) => s + r.studentCount, 0),
+      present: rows.reduce((s, r) => s + r.present, 0),
+      late: rows.reduce((s, r) => s + r.late, 0),
+      absent: rows.reduce((s, r) => s + r.absent, 0),
+      onLeave: rows.reduce((s, r) => s + r.onLeave, 0),
+      feeCollectedToday: rows.reduce((s, r) => s + r.feeCollectedToday, 0),
+    };
+  });
 
   private readonly uniqueLayout = computed(() => {
     const seen = new Set<string>();
@@ -80,9 +84,6 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const today = new Date().toISOString().slice(0, 10);
-    this.attendanceCustomFrom.set(today);
-    this.attendanceCustomTo.set(today);
     this.loadHiddenFromStorage();
     this.dashboardService.getLayout().subscribe({
       next: (layout) => {
@@ -128,24 +129,8 @@ export class DashboardComponent implements OnInit {
     this.persistHidden(hidden);
   }
 
-  onAttendancePresetChange(value: string): void {
-    const preset = value as AttendanceDatePreset;
-    this.attendancePreset.set(preset);
-    if (preset !== 'custom') {
-      this.loadDashboard(true);
-    }
-  }
-
-  applyCustomAttendanceRange(): void {
-    if (!this.attendanceCustomFrom() || !this.attendanceCustomTo()) {
-      return;
-    }
-    this.loadDashboard(true);
-  }
-
   attendanceStatLabel(): string {
-    const period = this.data()?.attendanceToday?.periodLabel;
-    return period ? `${period} attendance` : 'Attendance';
+    return "Today's attendance · Present + Late";
   }
 
   formatCurrency(amount: number): string {
@@ -155,16 +140,41 @@ export class DashboardComponent implements OnInit {
     if (amount >= 1000) {
       return `₹${(amount / 1000).toFixed(1)}K`;
     }
-    return `₹${amount.toFixed(0)}`;
+    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
   }
 
-  donutDash(present: number, total: number): string {
-    const circumference = 163;
+  donutSegments(att: IAttendanceToday): DonutSegment[] {
+    const total = att.present + att.absent + att.leave + att.late;
     if (total <= 0) {
-      return `0 ${circumference}`;
+      return [];
     }
-    const filled = Math.round((present / total) * circumference);
-    return `${filled} ${circumference}`;
+
+    const parts: { n: number; color: string }[] = [
+      { n: att.present, color: '#639922' },
+      { n: att.late, color: '#6366F1' },
+      { n: att.leave, color: '#EF9F27' },
+      { n: att.absent, color: '#e24b4a' },
+    ];
+
+    const active = parts.filter((p) => p.n > 0);
+    const circ = DONUT_CIRCUMFERENCE;
+    let offset = DONUT_START_OFFSET;
+    let drawn = 0;
+    const segments: DonutSegment[] = [];
+
+    for (let i = 0; i < active.length; i++) {
+      const part = active[i];
+      const isLast = i === active.length - 1;
+      const len = isLast ? circ - drawn : (part.n / total) * circ;
+      drawn += len;
+      segments.push({
+        color: part.color,
+        dash: `${len} ${circ - len}`,
+        offset,
+      });
+      offset -= len;
+    }
+    return segments;
   }
 
   readonly quickActions: QuickAction[] = [
@@ -196,31 +206,17 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  private loadDashboard(attendanceOnly = false): void {
-    if (attendanceOnly) {
-      this.attendanceLoading.set(true);
-    } else {
-      this.loading.set(true);
-    }
-
-    const preset = this.attendancePreset();
-    this.dashboardService
-      .getDashboard({
-        attendancePreset: preset,
-        attendanceFrom: preset === 'custom' ? this.attendanceCustomFrom() : undefined,
-        attendanceTo: preset === 'custom' ? this.attendanceCustomTo() : undefined,
-      })
-      .subscribe({
-        next: (response) => {
-          this.data.set(response);
-          this.loading.set(false);
-          this.attendanceLoading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.attendanceLoading.set(false);
-        },
-      });
+  private loadDashboard(): void {
+    this.loading.set(true);
+    this.dashboardService.getDashboard().subscribe({
+      next: (response) => {
+        this.data.set(response);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
+    });
   }
 
   private loadHiddenFromStorage(): void {

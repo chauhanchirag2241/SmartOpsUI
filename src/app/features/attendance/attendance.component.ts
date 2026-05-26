@@ -9,6 +9,7 @@ import { AttendanceService } from '../../core/services/attendance.service';
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
+import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
 
 interface Student {
   id: string;
@@ -28,7 +29,7 @@ interface AttendanceNote {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, AvatarComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, AvatarComponent, PageToolbarComponent],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css'
 })
@@ -46,8 +47,9 @@ export class AttendanceComponent implements OnInit {
   classes: any[] = [];
   
   selectedClassId = '';
-  selectedDate = new Date().toISOString().split('T')[0];
+  selectedDate = this.localDateString();
   searchQuery = '';
+  appliedSearchQuery = '';
   
   curFilter = 'all';
   viewMode: 'grid' | 'list' = 'grid';
@@ -182,9 +184,31 @@ export class AttendanceComponent implements OnInit {
       .toLowerCase();
   }
 
+  get toolbarFilterActive(): boolean {
+    const today = this.localDateString();
+    const firstClassId = this.classes[0]?.id;
+    return this.selectedDate !== today || (!!firstClassId && this.selectedClassId !== firstClassId);
+  }
+
+  onToolbarFiltersCleared(): void {
+    this.selectedDate = this.localDateString();
+    this.appliedSearchQuery = '';
+    if (this.classes.length) {
+      this.selectedClassId = this.classes[0].id;
+      this.loadStudents();
+    }
+    this.cdr.markForCheck();
+  }
+
+  onToolbarSearchSubmit(q: string): void {
+    this.appliedSearchQuery = q;
+    this.cdr.markForCheck();
+  }
+
   get visibleStudents(): Student[] {
+    const q = this.appliedSearchQuery.trim().toLowerCase();
     return this.students.filter(s => {
-      const mq = !this.searchQuery || s.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || s.roll.includes(this.searchQuery);
+      const mq = !q || s.name.toLowerCase().includes(q) || s.roll.toLowerCase().includes(q);
       const mf = this.curFilter === 'all' || this.status[s.id] === this.curFilter || (this.curFilter === 'unmarked' && this.status[s.id] === '');
       return mq && mf;
     });
@@ -513,5 +537,13 @@ export class AttendanceComponent implements OnInit {
       return numA - numB;
     }
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }
+
+  /** Browser local calendar date (YYYY-MM-DD), not UTC from toISOString(). */
+  private localDateString(date = new Date()): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 }

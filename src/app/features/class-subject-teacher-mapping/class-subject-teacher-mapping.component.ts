@@ -13,6 +13,8 @@ import {
 } from '../../core/services/mapping.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { MenuCodes } from '../../core/constants/menu-codes';
+import { ListPageHeaderComponent } from '../../shared/components/list-page-header/list-page-header.component';
+import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
 
 type ClassFilter = 'all' | 'mapped' | 'unmapped';
 
@@ -21,7 +23,7 @@ const SUBJECT_TAG_CLASSES = ['st-blue', 'st-purple', 'st-green', 'st-amber', 'st
 @Component({
   selector: 'app-class-subject-teacher-mapping',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
   templateUrl: './class-subject-teacher-mapping.component.html',
   styleUrl: './class-subject-teacher-mapping.component.css',
 })
@@ -123,6 +125,14 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
           this.snackBar.open(this.errorMessage, 'Close', { duration: 4000, panelClass: 'snack-error' });
         },
       });
+  }
+
+  get toolbarFilterActive(): boolean {
+    return this.classFilter !== 'all';
+  }
+
+  onToolbarFiltersCleared(): void {
+    this.setClassFilter('all');
   }
 
   onAcademicYearChange(): void {

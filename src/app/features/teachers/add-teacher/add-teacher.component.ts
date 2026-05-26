@@ -34,6 +34,8 @@ import {
   aadhaarValidator,
   formatAadhaarDisplay,
   nameValidationConfig,
+  dateOfBirthValidationConfig,
+  noFutureDateValidator,
   nameValidator,
   panValidationConfig,
   panValidator,
@@ -48,7 +50,9 @@ import {
   formatShiftRangeDisplay,
   normalizeTimeValue,
   optionalPositiveIntValidator,
-  shiftTimesValidator,
+  shiftEndTimeValidator,
+  shiftStartTimeValidator,
+  syncShiftTimeValidity,
 } from '../../../shared/utils/form-validators.util';
 import { validateFormControls } from '../../../shared/utils/form-validation.util';
 
@@ -129,9 +133,8 @@ export class AddTeacherComponent implements OnInit {
       controlName: 'dob',
       label: 'Date of birth',
       className: 'col-3',
-      validations: [
-        { name: 'required', message: 'DOB is required', validator: Validators.required },
-      ],
+      maxDate: 'today',
+      validations: dateOfBirthValidationConfig().validations,
     },
     gender: {
       type: 'badges',
@@ -612,7 +615,7 @@ export class AddTeacherComponent implements OnInit {
         photo: [null],
         firstName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
         lastName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
-        dob: ['', Validators.required],
+        dob: ['', [Validators.required, noFutureDateValidator()]],
         bloodGroup: [''],
         gender: ['Male', Validators.required],
         aadhaarNumber: ['', aadhaarValidator()],
@@ -643,8 +646,8 @@ export class AddTeacherComponent implements OnInit {
       }),
       schedule: this.fb.group({
         classId: [''],
-        shiftStartTime: [null, shiftTimesValidator()],
-        shiftEndTime: [null, shiftTimesValidator()],
+        shiftStartTime: [null, shiftStartTimeValidator()],
+        shiftEndTime: [null, shiftEndTimeValidator()],
         weeklyPeriods: [null, optionalPositiveIntValidator(99)],
         maxPeriodsPerDay: [null, optionalPositiveIntValidator(12)],
         role: ['Teacher', Validators.required],
@@ -662,6 +665,7 @@ export class AddTeacherComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.wireShiftTimeValidation();
     if (this.mode === 'add') {
       this.generateEmployeeId();
       this.setupUsernameGeneration();
@@ -670,6 +674,14 @@ export class AddTeacherComponent implements OnInit {
     if (this.mode !== 'add' && this.teacherId) {
       this.loadTeacherData();
     }
+  }
+
+  private wireShiftTimeValidation(): void {
+    const start = this.scheduleGroup.get('shiftStartTime');
+    const end = this.scheduleGroup.get('shiftEndTime');
+    const sync = () => syncShiftTimeValidity(this.scheduleGroup);
+    start?.valueChanges.subscribe(sync);
+    end?.valueChanges.subscribe(sync);
   }
 
   private setupUsernameGeneration(): void {
@@ -794,6 +806,7 @@ export class AddTeacherComponent implements OnInit {
           },
         });
         this.setQualificationsFromApi(data.qualifications);
+        syncShiftTimeValidity(this.scheduleGroup);
         if (this.mode === 'view') {
           this.teacherForm.disable();
         }
@@ -986,8 +999,7 @@ export class AddTeacherComponent implements OnInit {
   }
 
   onShiftTimeChange(): void {
-    this.scheduleGroup.get('shiftStartTime')?.updateValueAndValidity();
-    this.scheduleGroup.get('shiftEndTime')?.updateValueAndValidity();
+    syncShiftTimeValidity(this.scheduleGroup);
   }
 
   onShiftTimeBlur(): void {

@@ -23,7 +23,6 @@ import {
   collectionTypeBadgeClass,
   extractApiError,
   normalizeDropdownItem,
-  normalizeFeeStats,
   normalizeFeeStructureVersion,
   normalizeFeeType,
   versionStatusBadgeClass,
@@ -59,8 +58,6 @@ export class FeeStructureComponent implements OnInit {
   currentStatusFilter = 'All';
   loading = false;
 
-  stats = { feeTypeCount: 0, classesConfigured: 0, lateFeePerDay: 0 };
-
   selectedVersion: ReturnType<typeof normalizeFeeStructureVersion> | null = null;
   feeTypes: ReturnType<typeof normalizeFeeType>[] = [];
   loadingTypes = false;
@@ -81,8 +78,8 @@ export class FeeStructureComponent implements OnInit {
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
-      title: 'Fee structure versions',
-      subtitle: 'Academic year wise fee structures with draft, publish and activate workflow',
+      title: 'Fees Management — Fee Structure',
+      subtitle: 'Academic year wise versions · Draft → Publish → Activate',
       showAddButton: true,
       addButtonText: 'New structure',
       addButtonIcon: 'add',
@@ -105,6 +102,7 @@ export class FeeStructureComponent implements OnInit {
       { key: 'effectiveDate', label: 'Effective date', sortable: true, cellType: 'date' },
       { key: 'feeTypeCount', label: 'Fee heads', sortable: true, align: 'right', width: '90px' },
     ],
+    filtersInPanel: true,
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Draft', icon: 'edit_note', value: 'Draft' },
@@ -133,7 +131,6 @@ export class FeeStructureComponent implements OnInit {
       MenuCodes.FeesStructure,
     );
     this.loadAcademicYears();
-    this.loadStats();
   }
 
   loadAcademicYears(): void {
@@ -146,13 +143,26 @@ export class FeeStructureComponent implements OnInit {
     });
   }
 
+  get tableFilterPanelActive(): boolean {
+    return !!this.academicYearFilter || this.currentStatusFilter !== 'All';
+  }
+
   onAcademicYearFilterChange(): void {
     this.closeManagePanel();
     this.loadVersions();
   }
 
+  onTableFiltersCleared(): void {
+    this.academicYearFilter = '';
+    this.currentStatusFilter = 'All';
+    this.closeManagePanel();
+    this.loadVersions();
+  }
+
   loadVersions(): void {
-    this.loading = true;
+    if (!this.versions.length) {
+      this.loading = true;
+    }
     this.refreshView();
     const status = this.currentStatusFilter === 'All' ? undefined : this.currentStatusFilter.toLowerCase();
     this.service.getVersions(this.academicYearFilter || undefined, status).subscribe({
@@ -171,15 +181,6 @@ export class FeeStructureComponent implements OnInit {
         this.loading = false;
         this.versions = [];
         this.toast('Failed to load fee structures', true);
-        this.refreshView();
-      },
-    });
-  }
-
-  loadStats(): void {
-    this.service.getStats().subscribe({
-      next: (s) => {
-        this.stats = normalizeFeeStats(s);
         this.refreshView();
       },
     });
@@ -304,7 +305,6 @@ export class FeeStructureComponent implements OnInit {
     this.service.activateVersion(id).subscribe({
       next: () => {
         this.loadVersions();
-        this.loadStats();
         if (this.selectedVersion?.id === id) this.openManagePanel(id);
         this.toast('Activated');
       },

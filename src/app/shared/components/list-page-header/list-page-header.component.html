@@ -1,0 +1,17 @@
+<header class="page-header">
+  <div class="header-info">
+    <h1>{{ title }}</h1>
+    @if (subtitle) {
+      <span>{{ subtitle }}</span>
+    }
+  </div>
+  <div class="page-header-actions">
+    <ng-content select="[headerActions]" />
+    @if (showPrimary && primaryLabel) {
+      <button type="button" class="btn-primary" (click)="primaryClick.emit()">
+        <mat-icon>{{ primaryIcon }}</mat-icon>
+        {{ primaryLabel }}
+      </button>
+    }
+  </div>
+</header>

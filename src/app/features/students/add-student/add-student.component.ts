@@ -12,11 +12,10 @@ import { DynamicArrayFieldComponent } from '../../../shared/form-controls/dynami
 import {
   aadhaarValidationConfig,
   aadhaarValidator,
-  discountValidationConfig,
-  discountValueValidator,
-  sanitizeDiscountValueInput,
   formatAadhaarDisplay,
   nameValidationConfig,
+  dateOfBirthValidationConfig,
+  noFutureDateValidator,
   alphanumericValidator,
   alphanumericValidationConfig,
   maxLengthValidator,
@@ -49,7 +48,14 @@ import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
-import { formatInr, normalizeClassAmounts } from '../../fees/fees.shared';
+import {
+  formatInr,
+  isDiscountCategory,
+  normalizeClassAmounts,
+  resolveFeeCategory,
+  signedFeeAmount,
+  FeeCategory,
+} from '../../fees/fees.shared';
 
 type FeeStructureRow = {
   feeTypeId: string;
@@ -60,6 +66,9 @@ type FeeStructureRow = {
   isMandatory: boolean;
   isIncluded: boolean;
   studentWiseDifferentAmount: boolean;
+  category: number;
+  categoryLabel: string;
+  isDiscount: boolean;
 };
 
 type DocumentChecklistItem = {
@@ -180,9 +189,8 @@ export class AddStudentComponent implements OnInit {
       type: 'datepicker',
       controlName: 'dob',
       label: 'Date of birth',
-      validations: [
-        { name: 'required', message: 'DOB is required', validator: Validators.required },
-      ],
+      maxDate: 'today',
+      validations: dateOfBirthValidationConfig().validations,
     },
     gender: {
       type: 'badges',
@@ -390,45 +398,6 @@ export class AddStudentComponent implements OnInit {
       validations: alphanumericValidationConfig(TC_NUMBER_MAX_LENGTH).validations,
     },
 
-    discountType: {
-      type: 'select',
-      controlName: 'discountType',
-      label: 'Discount type',
-      placeholder: SELECT_PLACEHOLDER,
-      options: [
-        { label: 'Merit scholarship', value: 'merit' },
-        { label: 'Staff ward', value: 'staff' },
-        { label: 'Sibling discount', value: 'sibling' },
-        { label: 'RTE', value: 'rte' },
-        { label: 'Custom', value: 'custom' },
-      ],
-    },
-    discountUnit: {
-      type: 'select',
-      controlName: 'discountUnit',
-      label: 'Discount unit',
-      placeholder: SELECT_PLACEHOLDER,
-      options: [
-        { label: '%', value: '%' },
-        { label: 'Rs', value: 'amount' },
-      ],
-    },
-    discountValue: {
-      type: 'input',
-      inputType: 'tel',
-      inputFormat: 'discount',
-      controlName: 'discountValue',
-      label: 'Discount value',
-      placeholder: 'Enter value',
-      validations: discountValidationConfig(() => null).validations,
-    },
-    discountRemarks: {
-      type: 'input',
-      controlName: 'discountRemarks',
-      label: 'Discount remarks',
-      placeholder: 'Reason for discount',
-    },
-
     remarks: {
       type: 'textarea',
       controlName: 'remarks',
@@ -508,12 +477,6 @@ export class AddStudentComponent implements OnInit {
           layout: 'fee-structure',
           fields: [],
         },
-        {
-          title: 'Discount / Concession',
-          icon: 'local_offer',
-          layout: 'grid3',
-          fields: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'],
-        },
       ],
     },
     {
@@ -542,7 +505,7 @@ export class AddStudentComponent implements OnInit {
   private savedFeeHeadIncluded = new Map<string, boolean>();
   private savedFeeHeadAmounts = new Map<string, number>();
 
-  readonly feeTotalLabel = 'Total fees';
+  readonly feeTotalLabel = 'Net total';
 
   readonly documentChecklist: ReadonlyArray<DocumentChecklistItem> = [
     { icon: 'badge', name: 'Aadhaar card', sub: '', uploaded: false },
@@ -575,7 +538,7 @@ export class AddStudentComponent implements OnInit {
       'motherOcc',
     ],
     1: ['admissionDate', 'academicYear', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
-    2: ['discountType', 'discountUnit', 'discountValue', 'discountRemarks'],
+    2: [],
     3: ['remarks', 'customFields'],
   };
 
@@ -605,9 +568,9 @@ export class AddStudentComponent implements OnInit {
       ],
     },
     {
-      title: 'Fee & Discount',
+      title: 'Fees',
       icon: 'payments',
-      items: [{ label: 'Discount Type', key: 'discountType', emptyText: 'None' }],
+      items: [{ label: 'Net annual fees', key: 'feeTotalAmount', emptyText: '—' }],
     },
     {
       title: 'Additional Info',
@@ -638,7 +601,7 @@ export class AddStudentComponent implements OnInit {
       firstName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
       middleName: ['', nameValidator(PERSON_NAME_MAX_LENGTH)],
       lastName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
-      dob: ['', Validators.required],
+      dob: ['', [Validators.required, noFutureDateValidator()]],
       gender: ['Male', Validators.required],
       bloodGroup: [null],
       cast: ['', nameValidator()],
@@ -664,18 +627,12 @@ export class AddStudentComponent implements OnInit {
       percentage: [''],
       tcNo: ['', alphanumericValidator(TC_NUMBER_MAX_LENGTH)],
 
-      discountType: [null],
-      discountUnit: [null],
-      discountValue: [null],
-      discountRemarks: [''],
-
       remarks: [''],
       status: ['Active'],
     });
   }
 
   ngOnInit() {
-    this.setupDiscountValueValidation();
     this.loadAcademicYears();
     this.loadClasses();
     if (this.studentId && this.mode !== 'add') {
@@ -695,31 +652,6 @@ export class AddStudentComponent implements OnInit {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
-  }
-
-  private setupDiscountValueValidation(): void {
-    const unitControl = this.studentForm.get('discountUnit');
-    const valueControl = this.studentForm.get('discountValue');
-    if (!unitControl || !valueControl) {
-      return;
-    }
-
-    const applyValidators = () => {
-      valueControl.setValidators([discountValueValidator(() => unitControl.value)]);
-      valueControl.updateValueAndValidity({ emitEvent: false });
-    };
-
-    applyValidators();
-
-    unitControl.valueChanges.subscribe((unit) => {
-      const sanitized = sanitizeDiscountValueInput(String(valueControl.value ?? ''), unit);
-      const next = sanitized === '' ? null : sanitized;
-      if (valueControl.value !== next) {
-        valueControl.setValue(next);
-      }
-      applyValidators();
-      valueControl.updateValueAndValidity();
-    });
   }
 
   private setupAutoGeneration() {
@@ -762,6 +694,11 @@ export class AddStudentComponent implements OnInit {
 
   get feeTotalAmount(): string {
     return formatInr(this.feeStructureTotal);
+  }
+
+  /** True when add mode shows optional fee heads with include checkboxes. */
+  get feeStructureShowCheckboxColumn(): boolean {
+    return this.mode === 'add' && this.feeStructureRows.some((row) => !row.isMandatory);
   }
 
   get feeStructureEmptyHint(): string {
@@ -867,6 +804,8 @@ export class AddStudentComponent implements OnInit {
     items: Array<{
       feeTypeId: string;
       feeTypeName: string;
+      category?: number;
+      categoryLabel?: string;
       amount: number;
       annualTotal?: number;
       isMandatory: boolean;
@@ -879,17 +818,29 @@ export class AddStudentComponent implements OnInit {
       const savedAmount = this.savedFeeHeadAmounts.get(item.feeTypeId);
       const defaultAmount = item.annualTotal ?? item.amount;
       const amountValue = savedAmount ?? defaultAmount;
+      const category = resolveFeeCategory(item.category, item.categoryLabel);
+      const isDiscount = category === FeeCategory.Discount;
       return {
         feeTypeId: item.feeTypeId,
         name: item.feeTypeName,
-        amount: formatInr(amountValue),
+        amount: this.formatFeeRowAmount(amountValue, isDiscount),
         amountValue,
         defaultAmountValue: defaultAmount,
         isMandatory: item.isMandatory,
         isIncluded: item.isMandatory ? true : isIncluded,
         studentWiseDifferentAmount: Boolean(item.studentWiseDifferentAmount),
+        category,
+        categoryLabel: item.categoryLabel ?? '',
+        isDiscount,
       };
     });
+  }
+
+  formatFeeRowAmount(amountValue: number, isDiscount: boolean): string {
+    if (!amountValue) {
+      return formatInr(0);
+    }
+    return isDiscount ? formatInr(-Math.abs(amountValue)) : formatInr(amountValue);
   }
 
   canEditFeeHeadAmount(row: FeeStructureRow): boolean {
@@ -903,7 +854,7 @@ export class AddStudentComponent implements OnInit {
     const raw = (event.target as HTMLInputElement).value.replace(/[^\d.]/g, '');
     const parsed = Number(raw);
     row.amountValue = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    row.amount = formatInr(row.amountValue);
+    row.amount = this.formatFeeRowAmount(row.amountValue, row.isDiscount);
     this.recalculateFeeStructureTotal();
     this.cdr.detectChanges();
   }
@@ -921,7 +872,10 @@ export class AddStudentComponent implements OnInit {
   private recalculateFeeStructureTotal(): void {
     this.feeStructureTotal = this.feeStructureRows
       .filter((row) => row.isIncluded)
-      .reduce((sum, row) => sum + row.amountValue, 0);
+      .reduce(
+        (sum, row) => sum + signedFeeAmount(row.category, row.amountValue, row.categoryLabel),
+        0,
+      );
   }
 
   private generateAdmissionNo(academicYearId: string) {
@@ -1019,8 +973,6 @@ export class AddStudentComponent implements OnInit {
     const mother = data.parents?.find((p: any) => p.relationType === 'Mother');
     const academic = data.academics?.[0];
     const prevSchool = data.previousSchools?.[0];
-    const feeConfig = data.feeConfigs?.[0];
-
     this.studentForm.patchValue({
       admissionNo: data.admissionNo,
       firstName: data.firstName,
@@ -1053,11 +1005,6 @@ export class AddStudentComponent implements OnInit {
       prevClass: prevSchool?.lastClassPassed,
       percentage: prevSchool?.percentageOrCgpa,
       tcNo: prevSchool?.tcNumber,
-
-      discountType: feeConfig?.discountType,
-      discountValue: feeConfig?.discountValue,
-      discountUnit: feeConfig?.isPercentage ? '%' : 'amount',
-      discountRemarks: feeConfig?.discountRemarks,
 
       remarks: data.remarks,
       status: data.status,
@@ -1222,7 +1169,7 @@ export class AddStudentComponent implements OnInit {
               isIncluded: row.isIncluded,
               customAnnualAmount:
                 row.isIncluded && row.amountValue !== row.defaultAmountValue
-                  ? row.amountValue
+                  ? Math.abs(row.amountValue)
                   : null,
             }))
           : [],
@@ -1282,6 +1229,9 @@ export class AddStudentComponent implements OnInit {
     }
     if (!item.key) {
       return '-';
+    }
+    if (item.key === 'feeTotalAmount') {
+      return this.feeStructureRows.length ? this.feeTotalAmount : item.emptyText ?? '—';
     }
     const raw = this.studentForm.get(item.key)?.value;
     if (item.key === 'customFields' && Array.isArray(raw)) {

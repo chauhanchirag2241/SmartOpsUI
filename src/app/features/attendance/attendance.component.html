@@ -39,20 +39,34 @@
     Attendance submitted on <strong>{{ submittedInfo.date }}</strong> &middot; <span>{{ submittedInfo.by }}</span>
   </div>
 
-  <!-- Filters -->
-  <div class="filters">
-    <div class="sel-wrap">
-      <select [ngModel]="selectedClassId" (ngModelChange)="onClassChanged($event)">
+  <app-page-toolbar
+    searchInputId="search-inp"
+    searchPlaceholder="Search name or roll no..."
+    [searchValue]="appliedSearchQuery"
+    [filterPanelActive]="toolbarFilterActive"
+    (searchSubmitted)="onToolbarSearchSubmit($event)"
+    (advancedFiltersCleared)="onToolbarFiltersCleared()"
+  >
+    <div toolbarFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="att-class-filter">Class</label>
+      <select
+        id="att-class-filter"
+        class="sel-filter sel-filter-lg"
+        [ngModel]="selectedClassId"
+        (ngModelChange)="onClassChanged($event)"
+      >
         <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
       </select>
-      <i class="ti ti-chevron-down arr"></i>
+      <label class="table-filter-section-label" for="att-date-filter">Date</label>
+      <input
+        id="att-date-filter"
+        type="date"
+        class="sel-filter sel-filter-lg att-date-filter"
+        [ngModel]="selectedDate"
+        (ngModelChange)="onDateChanged($event)"
+      />
     </div>
-    <input type="date" class="date-input" [ngModel]="selectedDate" (ngModelChange)="onDateChanged($event)">
-    <div class="search-wrap">
-      <mat-icon>search</mat-icon>
-      <input type="text" id="search-inp" placeholder="Search name or roll…" [(ngModel)]="searchQuery">
-    </div>
-  </div>
+  </app-page-toolbar>
 
   <!-- Summary Cards -->
   <div class="summary">

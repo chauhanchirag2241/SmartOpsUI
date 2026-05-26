@@ -25,6 +25,7 @@ import {
   DataTableFilter,
 } from '../../interfaces/data-table.interface';
 import { AvatarColorService } from '../../services/avatar-color.service';
+import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filter-panel.util';
 
 @Component({
   selector: 'app-smart-data-table',
@@ -75,6 +76,12 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   /** Emits when a filter chip is clicked */
   @Output() filterChanged = new EventEmitter<DataTableFilter | null>();
 
+  /** Emits when user clears filters from the toolbar panel */
+  @Output() advancedFiltersCleared = new EventEmitter<void>();
+
+  /** Highlights the Filter toolbar button when parent has active panel filters */
+  @Input() filterPanelActive = false;
+
   /** Emits when page or search changes in server-side mode */
   @Output() pageChange = new EventEmitter<{
     pageIndex: number;
@@ -113,6 +120,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   // Column visibility
   columnVisibility: Record<string, boolean> = {};
   showColMenu = false;
+  showFilterMenu = false;
+  private suppressFilterOutsideClose = false;
 
   // Context menu
   ctxMenuVisible = false;
@@ -233,6 +242,14 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   // ========================
 
   onSearchInput(): void {
+    if (this.serverSide) {
+      return;
+    }
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  onSearchSubmit(): void {
     this.currentPage = 1;
     if (this.serverSide) {
       this.emitPageChange();
@@ -422,9 +439,36 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   // COLUMN VISIBILITY
   // ========================
 
+  toggleFilterMenu(event: Event): void {
+    event.stopPropagation();
+    this.showFilterMenu = !this.showFilterMenu;
+    if (this.showFilterMenu) {
+      this.showColMenu = false;
+    }
+  }
+
+  closeFilterMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showFilterMenu = false;
+  }
+
+  clearAdvancedFilters(): void {
+    const first = this.config.filters?.[0];
+    if (first) {
+      this.setFilter(first);
+    } else {
+      this.activeFilter = null;
+      this.filterChanged.emit(null);
+    }
+    this.advancedFiltersCleared.emit();
+  }
+
   toggleColMenu(event: Event): void {
     event.stopPropagation();
     this.showColMenu = !this.showColMenu;
+    if (this.showColMenu) {
+      this.showFilterMenu = false;
+    }
   }
 
   toggleColumnVisibility(key: string, visible: boolean): void {
@@ -547,14 +591,25 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   // GLOBAL CLICK HANDLER
   // ========================
 
+  @HostListener('document:pointerdown', ['$event'])
+  onDocumentPointerDown(event: PointerEvent): void {
+    if (isNativeSelectInteraction(event.target)) {
+      this.suppressFilterOutsideClose = true;
+      window.setTimeout(() => (this.suppressFilterOutsideClose = false), 250);
+    }
+  }
+
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
+  onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.ctx-menu') && !target.closest('.dot-btn')) {
       this.ctxMenuVisible = false;
     }
     if (!target.closest('.col-drop')) {
       this.showColMenu = false;
+    }
+    if (this.showFilterMenu && !this.suppressFilterOutsideClose && !isInsideFilterDrop(event)) {
+      this.showFilterMenu = false;
     }
   }
 }
