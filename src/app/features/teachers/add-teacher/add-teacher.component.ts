@@ -13,7 +13,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TeacherService } from '../../../core/services/teacher.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification.service';
 import {
   FileUploadComponent,
   SelectedUploadFile,
@@ -608,7 +608,7 @@ export class AddTeacherComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private teacherService: TeacherService,
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
   ) {
     this.teacherForm = this.fb.group({
       personal: this.fb.group({

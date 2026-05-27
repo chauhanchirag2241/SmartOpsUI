@@ -8,6 +8,4 @@ import { LoaderComponent } from './shared/components/loader/loader.component';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
-  loading = false;
-}
+export class App {}

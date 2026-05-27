@@ -49,9 +49,7 @@ export class DashboardComponent implements OnInit {
   readonly layout = signal<IDashboardWidgetLayoutItem[]>([]);
   readonly data = signal<IDashboardResponse | null>(null);
   readonly hiddenWidgets = signal<Set<string>>(new Set());
-  readonly scopeLabel = signal('');
   readonly academicYearLabel = signal<string | undefined>(undefined);
-  readonly schoolName = signal<string | undefined>(undefined);
 
   readonly visibleWidgets = computed(() => {
     const hidden = this.hiddenWidgets();
@@ -88,9 +86,7 @@ export class DashboardComponent implements OnInit {
     this.dashboardService.getLayout().subscribe({
       next: (layout) => {
         this.layout.set(layout.widgets);
-        this.scopeLabel.set(layout.scopeLabel);
         this.academicYearLabel.set(layout.academicYearLabel);
-        this.schoolName.set(layout.schoolName);
         this.loadDashboard();
       },
       error: () => {

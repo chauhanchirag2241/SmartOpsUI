@@ -1,0 +1,25 @@
+<div class="smart-toast" [class]="'smart-toast--' + data.type" role="status" aria-live="polite">
+  <div class="smart-toast__icon" aria-hidden="true">
+    <mat-icon>{{ icon }}</mat-icon>
+  </div>
+
+  <div class="smart-toast__body">
+    <div class="smart-toast__title">{{ data.title }}</div>
+    @if (data.message) {
+      <div class="smart-toast__msg">{{ data.message }}</div>
+    }
+    @if (data.action) {
+      <button type="button" class="smart-toast__action" (click)="onAction()">
+        {{ data.action.label }}
+      </button>
+    }
+  </div>
+
+  <button type="button" class="smart-toast__close" (click)="dismiss()" aria-label="Close notification">
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <div class="smart-toast__progress" aria-hidden="true">
+    <div class="smart-toast__progress-bar" [style.animation-duration.ms]="data.duration"></div>
+  </div>
+</div>

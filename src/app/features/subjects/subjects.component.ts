@@ -1,7 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { AddSubjectComponent } from './add-subject/add-subject.component';
@@ -114,7 +115,7 @@ export class SubjectsComponent implements OnInit {
   };
 
   constructor(
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
     private subjectService: SubjectService,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog

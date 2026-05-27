@@ -2,7 +2,8 @@ import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification.service';
 import { EmployeeSalaryService } from '../../../core/services/employee-salary.service';
 import { SalaryStructureService } from '../../../core/services/salary-structure.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
@@ -32,7 +33,7 @@ export class EmployeeSalaryComponent implements OnInit {
   private readonly service = inject(EmployeeSalaryService);
   private readonly structureService = inject(SalaryStructureService);
   private readonly permissionService = inject(PermissionService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
 

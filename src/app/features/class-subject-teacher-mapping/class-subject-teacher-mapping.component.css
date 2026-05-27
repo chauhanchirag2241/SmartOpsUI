@@ -1,3 +1,13 @@
+.mapping-error-banner {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0.5px solid #f09595;
+  background: #fcebeb;
+  color: #a32d2d;
+  font-size: 13px;
+}
+
 .filter-bar {
   display: flex;
   align-items: center;

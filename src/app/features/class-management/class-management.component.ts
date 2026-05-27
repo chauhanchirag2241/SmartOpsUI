@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog } from '@angular/material/dialog';
 
 import { AddClassComponent } from './add-class/add-class.component';
@@ -29,7 +29,7 @@ export class ClassManagementComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
 
   constructor(
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog,
   ) {}

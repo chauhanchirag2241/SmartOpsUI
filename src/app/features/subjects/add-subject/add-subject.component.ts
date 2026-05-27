@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification.service';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
@@ -76,7 +76,7 @@ export class AddSubjectComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
     private subjectService: SubjectService,
     private cdr: ChangeDetectorRef
   ) {

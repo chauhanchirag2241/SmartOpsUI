@@ -14,28 +14,53 @@ body {
   margin: 0;
 }
 
-.snack-success {
-  --mdc-snackbar-container-color: var(--success-color, #2e7d32);
-  --mat-snack-bar-button-color: #fff;
-  --mdc-snackbar-supporting-text-color: #fff;
+/* SmartOps custom toast (NotificationService) */
+.mat-mdc-snack-bar-container.smartops-toast-panel {
+  margin: 16px !important;
+  max-width: 440px !important;
+  min-width: 280px !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  --mdc-snackbar-container-color: transparent;
+  --mdc-snackbar-container-shape: 10px;
 }
 
-.snack-error {
-  --mdc-snackbar-container-color: var(--danger-color, #c62828);
-  --mat-snack-bar-button-color: #fff;
-  --mdc-snackbar-supporting-text-color: #fff;
+.mat-mdc-snack-bar-container.smartops-toast-panel .mdc-snackbar__surface,
+.mat-mdc-snack-bar-container.smartops-toast-panel .mat-mdc-snack-bar-label {
+  padding: 0 !important;
+  min-width: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
 }
 
-.snack-info {
-  --mdc-snackbar-container-color: #1565c0;
-  --mat-snack-bar-button-color: #fff;
-  --mdc-snackbar-supporting-text-color: #fff;
+.mat-mdc-snack-bar-container.smartops-toast-panel .mat-mdc-snack-bar-actions {
+  display: none !important;
 }
 
-.snack-warning {
-  --mdc-snackbar-container-color: #ef6c00;
-  --mat-snack-bar-button-color: #fff;
-  --mdc-snackbar-supporting-text-color: #fff;
+/* Legacy plain MatSnackBar (panelClass) — palette aligned with toast design */
+.mat-mdc-snack-bar-container.snack-success {
+  --mdc-snackbar-container-color: #eaf3de;
+  --mat-snack-bar-button-color: #3b6d11;
+  --mdc-snackbar-supporting-text-color: #27500a;
+}
+
+.mat-mdc-snack-bar-container.snack-error {
+  --mdc-snackbar-container-color: #fcebeb;
+  --mat-snack-bar-button-color: #a32d2d;
+  --mdc-snackbar-supporting-text-color: #791f1f;
+}
+
+.mat-mdc-snack-bar-container.snack-info {
+  --mdc-snackbar-container-color: #e6f1fb;
+  --mat-snack-bar-button-color: #185fa5;
+  --mdc-snackbar-supporting-text-color: #0c447c;
+}
+
+.mat-mdc-snack-bar-container.snack-warning {
+  --mdc-snackbar-container-color: #faeeda;
+  --mat-snack-bar-button-color: #854f0b;
+  --mdc-snackbar-supporting-text-color: #633806;
 }
 
 /* Theme scrollbars (WebKit) */

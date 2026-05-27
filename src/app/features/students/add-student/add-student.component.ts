@@ -28,7 +28,7 @@ import {
   validateFormControls,
 } from '../../../shared/utils/form-validation.util';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification.service';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
@@ -588,7 +588,7 @@ export class AddStudentComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
     private studentService: StudentService,
     private classService: ClassService,
     private academicYearService: AcademicYearService,

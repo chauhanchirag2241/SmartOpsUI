@@ -4,7 +4,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { ClassService } from '../../core/services/class.service';
 import { SubjectService } from '../../core/services/subject.service';
 import {
@@ -41,7 +42,7 @@ export class HomeworkComponent implements OnInit {
   private classService = inject(ClassService);
   private subjectService = inject(SubjectService);
   private homeworkService = inject(HomeworkService);
-  private snackBar = inject(MatSnackBar);
+  private snackBar = inject(NotificationService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
@@ -53,7 +54,6 @@ export class HomeworkComponent implements OnInit {
   items: HomeworkListItem[] = [];
   classes: any[] = [];
   subjects: any[] = [];
-  listLoading = true;
 
   stats = { totalAssigned: 0, dueToday: 0, totalSubmissions: 0, overdue: 0 };
 
@@ -116,7 +116,6 @@ export class HomeworkComponent implements OnInit {
   }
 
   loadList(): void {
-    this.listLoading = true;
     this.homeworkService
       .getList(
         this.classFilter || undefined,
@@ -152,12 +151,10 @@ export class HomeworkComponent implements OnInit {
             this.items = [];
             this.snackBar.open('Invalid homework list response', 'Close', { duration: 3000 });
           } finally {
-            this.listLoading = false;
             this.refreshView();
           }
         },
         error: () => {
-          this.listLoading = false;
           this.items = [];
           this.snackBar.open('Failed to load homework', 'Close', { duration: 3000 });
           this.refreshView();

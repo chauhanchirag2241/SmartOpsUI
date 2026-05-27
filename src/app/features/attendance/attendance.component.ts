@@ -2,7 +2,8 @@ import { Component, OnInit, HostListener, ChangeDetectorRef, inject } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { ClassService } from '../../core/services/class.service';
 import { StudentService } from '../../core/services/student.service';
 import { AttendanceService } from '../../core/services/attendance.service';
@@ -37,7 +38,7 @@ export class AttendanceComponent implements OnInit {
   private classService = inject(ClassService);
   private studentService = inject(StudentService);
   private attendanceService = inject(AttendanceService);
-  private snackBar = inject(MatSnackBar);
+  private snackBar = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
 
   students: Student[] = [];

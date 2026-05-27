@@ -1,0 +1,10 @@
+@if (loader.loading()) {
+  <div class="smartops-loader-overlay" role="status" aria-live="polite" aria-busy="true">
+    <div class="smartops-loader-ring">
+      <div class="smartops-loader-icon">
+        <mat-icon aria-hidden="true">school</mat-icon>
+      </div>
+    </div>
+    <p class="smartops-loader-text">{{ loader.message() }}</p>
+  </div>
+}

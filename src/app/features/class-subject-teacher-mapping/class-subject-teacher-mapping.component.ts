@@ -2,7 +2,8 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { finalize, forkJoin } from 'rxjs';
 
 import {
@@ -29,7 +30,7 @@ const SUBJECT_TAG_CLASSES = ['st-blue', 'st-purple', 'st-green', 'st-amber', 'st
 })
 export class ClassSubjectTeacherMappingComponent implements OnInit {
   private readonly mappingService = inject(MappingService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly permissionService = inject(PermissionService);
 
@@ -37,7 +38,6 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
     return this.permissionService.canEdit(MenuCodes.ClassMappings);
   }
 
-  loading = true;
   savingId: string | null = null;
   deletingId: string | null = null;
   errorMessage = '';
@@ -93,17 +93,10 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
   }
 
   loadLookups(academicYearId?: string): void {
-    this.loading = true;
     this.errorMessage = '';
     this.cdr.markForCheck();
 
-    this.mappingService
-      .getLookups(academicYearId)
-      .pipe(finalize(() => {
-        this.loading = false;
-        this.cdr.markForCheck();
-      }))
-      .subscribe({
+    this.mappingService.getLookups(academicYearId).subscribe({
         next: (data) => {
           this.academicYears = data.academicYears ?? [];
           this.subjects = data.subjects ?? [];

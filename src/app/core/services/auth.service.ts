@@ -17,6 +17,7 @@ export class AuthService {
   private readonly tokenKey = 'erp_token';
   private readonly userKey = 'erp_user';
   private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
+  private sessionExpireInProgress = false;
 
   readonly currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
 
@@ -81,6 +82,25 @@ export class AuthService {
     this.storage.clear();
     this.currentUserSubject.next(null);
     void this.router.navigate(['/auth/login']);
+  }
+
+  /** Clear session and go to login (e.g. expired or invalid token). */
+  expireSession(): void {
+    if (this.sessionExpireInProgress) {
+      return;
+    }
+    this.sessionExpireInProgress = true;
+    this.permissionService.clear();
+    this.clearSessionStorage();
+    this.currentUserSubject.next(null);
+    void this.router
+      .navigate(['/auth/login'], {
+        queryParams: { sessionExpired: '1' },
+        replaceUrl: true,
+      })
+      .finally(() => {
+        this.sessionExpireInProgress = false;
+      });
   }
 
   getToken(): string | null {

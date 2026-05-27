@@ -1,7 +1,8 @@
 
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { AddStudentComponent } from './add-student/add-student.component';
@@ -37,7 +38,7 @@ export class StudentsComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
 
   constructor(
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
     private studentService: StudentService,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog,

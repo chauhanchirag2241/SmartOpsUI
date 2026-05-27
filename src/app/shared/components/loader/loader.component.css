@@ -1,0 +1,72 @@
+.smartops-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: color-mix(in srgb, var(--bg-page, #f5f7f2) 92%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.smartops-loader-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--g100, #c0dd97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: smartopsRingGrow 2s ease-in-out infinite;
+}
+
+@keyframes smartopsRingGrow {
+  0%,
+  100% {
+    border-color: var(--g100, #c0dd97);
+    transform: scale(1);
+  }
+
+  50% {
+    border-color: var(--g400, #639922);
+    transform: scale(1.08);
+  }
+}
+
+.smartops-loader-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--g400, #639922);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.smartops-loader-icon mat-icon {
+  color: #fff;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.smartops-loader-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  animation: smartopsMsgFade 0.4s ease;
+}
+
+@keyframes smartopsMsgFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

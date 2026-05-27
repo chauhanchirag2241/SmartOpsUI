@@ -1,4 +1,4 @@
-<div class="hw-detail-page" *ngIf="!loading && detail">
+<div class="hw-detail-page" *ngIf="detail">
   <div class="topbar">
     <div class="page-info">
       <div class="page-title">{{ detail.title }}</div>
@@ -174,12 +174,7 @@
   </div>
 </div>
 
-<div class="hw-detail-page loading-state" *ngIf="loading">
-  <mat-icon class="spinning">sync</mat-icon>
-  <span>Loading homework...</span>
-</div>
-
-<div class="hw-detail-page error-state" *ngIf="!loading && loadError">
+<div class="hw-detail-page error-state" *ngIf="loadError && !detail">
   <mat-icon>error_outline</mat-icon>
   <p>{{ loadError }}</p>
   <button type="button" class="back-btn" (click)="goBack()">Back to homework</button>

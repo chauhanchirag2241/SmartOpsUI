@@ -4,15 +4,11 @@
     subtitle="Map subjects to classes and assign teachers in one place"
   />
 
-  @if (loading) {
-    <div class="loading-state">
-      <mat-icon class="spinning">hourglass_empty</mat-icon>
-      Loading mappings…
-    </div>
-  } @else if (errorMessage) {
-    <div class="loading-state error">{{ errorMessage }}</div>
-  } @else {
-    <app-page-toolbar [showSearch]="false" [filterPanelActive]="toolbarFilterActive" (advancedFiltersCleared)="onToolbarFiltersCleared()">
+  @if (errorMessage) {
+    <div class="mapping-error-banner">{{ errorMessage }}</div>
+  }
+
+  <app-page-toolbar [showSearch]="false" [filterPanelActive]="toolbarFilterActive" (advancedFiltersCleared)="onToolbarFiltersCleared()">
       <div toolbarFilters class="st-table-filters">
         <label class="table-filter-section-label" for="mapping-year-filter">Academic year</label>
         <select
@@ -248,5 +244,4 @@
         }
       </section>
     </div>
-  }
 </div>

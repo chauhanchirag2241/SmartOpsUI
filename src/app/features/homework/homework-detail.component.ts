@@ -4,9 +4,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../core/services/notification.service';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
-import { EMPTY, switchMap, catchError, finalize, timeout } from 'rxjs';
+import { EMPTY, switchMap, catchError, timeout } from 'rxjs';
 import {
   HomeworkService,
   HomeworkSubmissionStatus,
@@ -33,7 +34,7 @@ export class HomeworkDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private homeworkService = inject(HomeworkService);
-  private snackBar = inject(MatSnackBar);
+  private snackBar = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
 
@@ -41,7 +42,6 @@ export class HomeworkDetailComponent implements OnInit {
 
   homeworkId = '';
   detail: any = null;
-  loading = false;
   loadError = '';
   isSubmitting = false;
 
@@ -67,7 +67,6 @@ export class HomeworkDetailComponent implements OnInit {
           }
           this.homeworkId = id;
           this.pageIndex = 1;
-          this.loading = true;
           this.loadError = '';
           this.detail = null;
           return this.homeworkService.getById(id).pipe(
@@ -80,7 +79,7 @@ export class HomeworkDetailComponent implements OnInit {
                     ? 'Request timed out. Check API is running.'
                     : 'Failed to load homework';
               this.snackBar.open(this.loadError, 'Close', { duration: 4000 });
-              this.endLoading();
+              this.cdr.detectChanges();
               return EMPTY;
             }),
           );
@@ -88,7 +87,6 @@ export class HomeworkDetailComponent implements OnInit {
       )
       .subscribe({
         next: (d) => this.applyDetailResponse(d),
-        error: () => this.endLoading(),
       });
   }
 
@@ -121,13 +119,8 @@ export class HomeworkDetailComponent implements OnInit {
       this.loadError = 'Could not display homework data';
       this.detail = null;
     } finally {
-      this.endLoading();
+      this.cdr.detectChanges();
     }
-  }
-
-  private endLoading(): void {
-    this.loading = false;
-    this.cdr.detectChanges();
   }
 
   retryLoad(): void {
@@ -138,20 +131,18 @@ export class HomeworkDetailComponent implements OnInit {
 
   loadDetail(): void {
     if (!this.homeworkId || !GUID_REGEX.test(this.homeworkId)) return;
-    this.loading = true;
     this.loadError = '';
+    this.detail = null;
     this.homeworkService
       .getById(this.homeworkId)
-      .pipe(
-        timeout(30000),
-      )
+      .pipe(timeout(30000))
       .subscribe({
         next: (d) => this.applyDetailResponse(d),
         error: (err) => {
           this.loadError =
             typeof err?.error === 'string' ? err.error : 'Failed to load homework';
           this.snackBar.open(this.loadError, 'Close', { duration: 4000 });
-          this.endLoading();
+          this.cdr.detectChanges();
         },
       });
   }

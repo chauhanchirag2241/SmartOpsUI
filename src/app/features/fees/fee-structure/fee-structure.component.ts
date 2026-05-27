@@ -2,7 +2,8 @@ import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FeeStructureService } from '../../../core/services/fee-structure.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
@@ -46,7 +47,7 @@ export class FeeStructureComponent implements OnInit {
   private readonly service = inject(FeeStructureService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly permissionService = inject(PermissionService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly snackBar = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);

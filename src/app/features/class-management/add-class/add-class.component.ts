@@ -2,7 +2,8 @@ import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { NotificationService } from '../../../core/services/notification.service';
 import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
@@ -132,7 +133,7 @@ export class AddClassComponent implements OnInit {
     private fb: FormBuilder,
     private classService: ClassService,
     private ayService: AcademicYearService,
-    private snackBar: MatSnackBar,
+    private snackBar: NotificationService,
     private cdr: ChangeDetectorRef
   ) {
     this.classForm = this.fb.group({

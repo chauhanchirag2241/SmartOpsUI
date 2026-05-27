@@ -7,8 +7,11 @@ export const authGuard: CanActivateFn = (route) => {
   const router = inject(Router);
 
   if (!auth.isLoggedIn) {
+    const hadStoredToken = !!auth.getToken();
     auth.ensureValidSessionOrClear();
-    return router.createUrlTree(['/auth/login']);
+    return router.createUrlTree(['/auth/login'], {
+      queryParams: hadStoredToken ? { sessionExpired: '1' } : undefined,
+    });
   }
 
   const requiredRoles = (route.data['roles'] as string[] | undefined) ?? [];

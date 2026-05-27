@@ -9,6 +9,7 @@ import { authInitializer } from './core/initializers/auth.initializer';
 import { tenantInitializer } from './core/initializers/tenant.initializer';
 import { authErrorInterceptor } from './core/interceptors/auth-error.interceptor';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
+import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { tenantInterceptor } from './core/interceptors/tenant.interceptor';
 import { DD_MM_YYYY_DATE_FORMATS, DdMmYyyyDateAdapter } from './shared/date/dd-mm-yyyy-date-adapter';
 
@@ -16,11 +17,13 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimations(),
-    provideHttpClient(withInterceptors([tenantInterceptor, authTokenInterceptor, authErrorInterceptor])),
+    provideHttpClient(
+      withInterceptors([loadingInterceptor, tenantInterceptor, authTokenInterceptor, authErrorInterceptor]),
+    ),
     provideRouter(routes),
     { provide: APP_INITIALIZER, useFactory: tenantInitializer, multi: true },
     { provide: APP_INITIALIZER, useFactory: authInitializer, multi: true },
     { provide: DateAdapter, useClass: DdMmYyyyDateAdapter },
     { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_DATE_FORMATS },
-  ]
+  ],
 };
