@@ -132,19 +132,18 @@ export class AcademicYearManagementComponent implements OnInit {
       { label: 'Inactive', icon: 'cancel', value: 'Inactive' },
     ],
     actions: [
-      { label: 'View details', icon: 'visibility', iconColor: '#639922', permission: 'academicyear.read' },
-      { label: 'Edit year', icon: 'edit', iconColor: '#1E40AF', permission: 'admin.full' },
+      { label: 'View details', icon: 'visibility', iconColor: '#639922' },
+      { label: 'Edit year', icon: 'edit', iconColor: '#1E40AF' },
       {
         label: 'Delete year',
         icon: 'delete',
         danger: true,
         separatorBefore: true,
-        permission: 'admin.full',
       },
     ],
     bulkActions: [
-      { label: 'Export', icon: 'download', permission: 'academicyear.read' },
-      { label: 'Delete', icon: 'delete', danger: true, permission: 'admin.full' },
+      { label: 'Export', icon: 'download' },
+      { label: 'Delete', icon: 'delete', danger: true },
     ],
     searchPlaceholder: 'Search by title...',
     searchKeys: ['title'],

@@ -81,9 +81,7 @@ export interface DataTableAction {
   danger?: boolean;
   /** Whether to show a separator before this item */
   separatorBefore?: boolean;
-  /** If set, action is hidden unless user has this permission */
-  permission?: string;
-}
+  }
 
 /**
  * A single bulk action shown when rows are selected.
@@ -95,9 +93,7 @@ export interface DataTableBulkAction {
   icon: string;
   /** Whether this is a danger/destructive action */
   danger?: boolean;
-  /** If set, bulk action is hidden unless user has this permission */
-  permission?: string;
-}
+  }
 
 /**
  * Header configuration for the data table.

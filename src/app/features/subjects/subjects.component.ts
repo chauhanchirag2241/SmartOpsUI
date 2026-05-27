@@ -104,9 +104,9 @@ export class SubjectsComponent implements OnInit {
       { label: 'Elective', icon: 'category', value: 'Elective' },
     ],
     actions: [
-      { label: 'View details', icon: 'visibility', iconColor: '#639922', permission: 'subject.read' },
-      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF', permission: 'admin.full' },
-      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true, permission: 'admin.full' },
+      { label: 'View details', icon: 'visibility', iconColor: '#639922' },
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
     searchPlaceholder: 'Search by name or code...',
     searchKeys: ['subjectName', 'subjectCode'],
