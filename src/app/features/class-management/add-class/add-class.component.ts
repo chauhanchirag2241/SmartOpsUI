@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
-import { finalize } from 'rxjs';
+import { EMPTY, finalize, switchMap } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
@@ -12,6 +12,11 @@ import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
+import {
+  streamGroupDuplicateKey,
+  streamGroupFromApiInt,
+  formatStreamGroupDisplay,
+} from '../../../shared/utils/stream-group.util';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 
@@ -68,7 +73,7 @@ export class AddClassComponent implements OnInit {
       controlName: 'streamGroup',
       label: 'Stream / group',
       placeholder: SELECT_PLACEHOLDER,
-      options: enumToOptions(StreamGroup, (value) => (value === StreamGroup.None ? 'None (primary)' : value)),
+      options: enumToOptions(StreamGroup),
     },
     academicYear: {
       type: 'select',
@@ -185,7 +190,7 @@ export class AddClassComponent implements OnInit {
         this.classForm.patchValue({
           className: res.className,
           section: AddClassComponent.intToEnum(Section, res.section),
-          streamGroup: AddClassComponent.intToEnum(StreamGroup, res.streamGroup),
+          streamGroup: streamGroupFromApiInt(res.streamGroup),
           academicYear: res.academicYearId,
           studentCapacity: res.capacity,
           roomNumber: res.roomNumber,
@@ -227,14 +232,26 @@ export class AddClassComponent implements OnInit {
 
     this.isSaving = true;
     const payloadRaw = this.classForm.getRawValue();
-
-    const request$ =
-      this.mode === 'edit' && this.classId
-        ? this.classService.updateClass(this.classId, payloadRaw)
-        : this.classService.createClass(payloadRaw);
-
-    request$
+    this.classService
+      .getClasses(1, 2000, '', null, null, 'All')
       .pipe(
+        switchMap((res: any) => {
+          const items = (res?.items || []) as any[];
+          const duplicate = items.find((row) => this.isDuplicateCombination(row, payloadRaw));
+          if (duplicate) {
+            const streamLabel = this.getStreamLabel(payloadRaw.streamGroup);
+            this.snackBar.open(
+              `Duplicate class not allowed: ${payloadRaw.className} - ${payloadRaw.section} - ${streamLabel}`,
+              'Close',
+              { duration: 3500, panelClass: 'snack-error' },
+            );
+            return EMPTY;
+          }
+
+          return this.mode === 'edit' && this.classId
+            ? this.classService.updateClass(this.classId, payloadRaw)
+            : this.classService.createClass(payloadRaw);
+        }),
         finalize(() => {
           this.isSaving = false;
           this.cdr.detectChanges();
@@ -252,5 +269,26 @@ export class AddClassComponent implements OnInit {
         error: () =>
           this.snackBar.open('Failed to save class', 'Close', { duration: 3000, panelClass: 'snack-error' }),
       });
+  }
+
+  private isDuplicateCombination(row: any, payload: any): boolean {
+    const rowId = String(row?.id ?? '');
+    if (this.mode === 'edit' && this.classId && rowId === String(this.classId)) {
+      return false;
+    }
+
+    const rowClass = String(row?.className ?? '').trim().toLowerCase();
+    const rowSection = String(row?.section ?? '').trim().toLowerCase();
+    const rowStream = streamGroupDuplicateKey(row?.streamGroup);
+
+    const formClass = String(payload?.className ?? '').trim().toLowerCase();
+    const formSection = String(payload?.section ?? '').trim().toLowerCase();
+    const formStream = streamGroupDuplicateKey(payload?.streamGroup);
+
+    return rowClass === formClass && rowSection === formSection && rowStream === formStream;
+  }
+
+  private getStreamLabel(value: unknown): string {
+    return formatStreamGroupDisplay(value);
   }
 }

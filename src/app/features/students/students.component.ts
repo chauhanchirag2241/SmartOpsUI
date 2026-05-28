@@ -7,6 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { AddStudentComponent } from './add-student/add-student.component';
 import { StudentService } from '../../core/services/student.service';
+import { ClassService } from '../../core/services/class.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
@@ -36,6 +37,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 })
 export class StudentsComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
+  private readonly classService = inject(ClassService);
 
   constructor(
     private snackBar: NotificationService,
@@ -50,25 +52,75 @@ export class StudentsComponent implements OnInit {
   totalStudents = 0;
   currentFilter: StudentFilter = StudentFilter.Active;
 
+  classOptions: { id: string; name: string }[] = [];
+  readonly selectedClassIds = new Set<string>();
+  classFilterDropdownOpen = false;
+
+  private listState = {
+    pageIndex: 1,
+    pageSize: 10,
+    searchQuery: '',
+    sortColumn: null as string | null,
+    sortDirection: null as string | null,
+  };
+
+  get classFilterPanelActive(): boolean {
+    return this.selectedClassIds.size > 0;
+  }
+
+  get classFilterSummary(): string {
+    const count = this.selectedClassIds.size;
+    if (!count) {
+      return 'All classes';
+    }
+    if (count === 1) {
+      const id = Array.from(this.selectedClassIds)[0];
+      return this.classOptions.find((c) => c.id === id)?.name ?? '1 class selected';
+    }
+    return `${count} classes selected`;
+  }
+
   ngOnInit(): void {
     this.tableConfig = applyModuleTablePermissions(
       this.baseTableConfig,
       this.permissionService,
       MenuCodes.Students,
     );
+    this.loadClassOptions();
     this.loadStudents();
   }
 
+  private loadClassOptions(): void {
+    this.classService.getClassDropdown().subscribe({
+      next: (items) => {
+        this.classOptions = (items || []).map((item: { id: string; name: string }) => ({
+          id: String(item.id),
+          name: String(item.name ?? ''),
+        }));
+        this.cdr.detectChanges();
+      },
+      error: () =>
+        this.snackBar.open('Failed to load class list', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        }),
+    });
+  }
+
   loadStudents(
-    pageIndex = 1,
-    pageSize = 10,
-    searchQuery = '',
-    sortColumn: string | null = null,
-    sortDirection: string | null = null,
+    pageIndex = this.listState.pageIndex,
+    pageSize = this.listState.pageSize,
+    searchQuery = this.listState.searchQuery,
+    sortColumn: string | null = this.listState.sortColumn,
+    sortDirection: string | null = this.listState.sortDirection,
     filter: StudentFilter = this.currentFilter,
   ): void {
+    this.listState = { pageIndex, pageSize, searchQuery, sortColumn, sortDirection };
+
+    const classIds = this.selectedClassIds.size ? Array.from(this.selectedClassIds) : null;
+
     this.studentService
-      .getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
+      .getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter, classIds)
       .subscribe({
         next: (res: any) => {
           // The backend now returns PagedResult format { items, totalCount, ... }
@@ -131,7 +183,47 @@ export class StudentsComponent implements OnInit {
     } else {
       this.currentFilter = StudentFilter.All;
     }
-    // The pageChange event will handle the API call with the updated filter value
+    this.loadStudents(1, this.listState.pageSize, this.listState.searchQuery);
+  }
+
+  onAdvancedFiltersCleared(): void {
+    this.clearClassFilter(false);
+  }
+
+  toggleClassFilterDropdown(event: Event): void {
+    event.stopPropagation();
+    this.classFilterDropdownOpen = !this.classFilterDropdownOpen;
+  }
+
+  isClassSelected(classId: string): boolean {
+    return this.selectedClassIds.has(classId);
+  }
+
+  toggleClassSelection(classId: string, checked: boolean): void {
+    if (checked) {
+      this.selectedClassIds.add(classId);
+    } else {
+      this.selectedClassIds.delete(classId);
+    }
+    this.reloadWithClassFilter();
+  }
+
+  clearClassFilter(reload = true): void {
+    this.selectedClassIds.clear();
+    this.classFilterDropdownOpen = false;
+    if (reload) {
+      this.reloadWithClassFilter();
+    }
+  }
+
+  private reloadWithClassFilter(): void {
+    this.loadStudents(
+      1,
+      this.listState.pageSize,
+      this.listState.searchQuery,
+      this.listState.sortColumn,
+      this.listState.sortDirection,
+    );
   }
 
   // ════════════════════════════════════════

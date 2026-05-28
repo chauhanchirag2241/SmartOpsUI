@@ -26,6 +26,7 @@ import {
 } from '../../interfaces/data-table.interface';
 import { AvatarColorService } from '../../services/avatar-color.service';
 import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filter-panel.util';
+import { naturalTextCompare } from '../../utils/natural-sort.util';
 
 @Component({
   selector: 'app-smart-data-table',
@@ -311,9 +312,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
         if (typeof av === 'number' && typeof bv === 'number') {
           return dir === 'asc' ? av - bv : bv - av;
         }
-        return dir === 'asc'
-          ? String(av ?? '').localeCompare(String(bv ?? ''))
-          : String(bv ?? '').localeCompare(String(av ?? ''));
+        const compared = naturalTextCompare(av, bv);
+        return dir === 'asc' ? compared : -compared;
       });
     }
 

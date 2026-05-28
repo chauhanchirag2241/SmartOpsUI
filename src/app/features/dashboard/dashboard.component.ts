@@ -7,8 +7,10 @@ import { DashboardService } from '../../core/services/dashboard.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { DashboardWidgetCodes } from '../../core/constants/dashboard-widget-codes';
 import { MenuCodes } from '../../core/constants/menu-codes';
+import { naturalTextCompare } from '../../shared/utils/natural-sort.util';
 import type {
   IAttendanceToday,
+  IClassOverview,
   IDashboardResponse,
   IDashboardWidgetLayoutItem,
 } from '../../core/models/dashboard.model';
@@ -25,6 +27,15 @@ export interface DonutSegment {
   dash: string;
   offset: number;
 }
+
+type ClassOverviewSortKey =
+  | 'displayName'
+  | 'studentCount'
+  | 'present'
+  | 'late'
+  | 'absent'
+  | 'onLeave'
+  | 'feeCollectedToday';
 
 const HIDDEN_STORAGE_KEY = 'smartops.dashboard.hidden';
 /** 2π × radius 26 — full ring length for dash math */
@@ -50,6 +61,15 @@ export class DashboardComponent implements OnInit {
   readonly data = signal<IDashboardResponse | null>(null);
   readonly hiddenWidgets = signal<Set<string>>(new Set());
   readonly academicYearLabel = signal<string | undefined>(undefined);
+  readonly classOverviewFilterOpen = signal(false);
+  readonly classOverviewDropdownOpen = signal(false);
+  readonly classOverviewPage = signal(1);
+  readonly selectedClassOverviewNames = signal<Set<string>>(new Set());
+  readonly classOverviewSort = signal<{ key: ClassOverviewSortKey; direction: 'asc' | 'desc' }>({
+    key: 'displayName',
+    direction: 'asc',
+  });
+  readonly classOverviewPageSize = 5;
 
   readonly visibleWidgets = computed(() => {
     const hidden = this.hiddenWidgets();
@@ -68,6 +88,24 @@ export class DashboardComponent implements OnInit {
       onLeave: rows.reduce((s, r) => s + r.onLeave, 0),
       feeCollectedToday: rows.reduce((s, r) => s + r.feeCollectedToday, 0),
     };
+  });
+
+  readonly filteredClassesOverviewRows = computed(() => {
+    const rows = this.data()?.classesOverview ?? [];
+    const selected = this.selectedClassOverviewNames();
+    const filtered = !selected.size ? rows : rows.filter((row) => selected.has(row.displayName));
+    return this.sortClassOverviewRows(filtered);
+  });
+
+  readonly classOverviewTotalPages = computed(() => {
+    const count = this.filteredClassesOverviewRows().length;
+    return Math.max(1, Math.ceil(count / this.classOverviewPageSize));
+  });
+
+  readonly pagedClassesOverviewRows = computed(() => {
+    const rows = this.filteredClassesOverviewRows();
+    const start = (this.classOverviewPage() - 1) * this.classOverviewPageSize;
+    return rows.slice(start, start + this.classOverviewPageSize);
   });
 
   private readonly uniqueLayout = computed(() => {
@@ -123,6 +161,108 @@ export class DashboardComponent implements OnInit {
     hidden.add(code);
     this.hiddenWidgets.set(hidden);
     this.persistHidden(hidden);
+  }
+
+  toggleClassOverviewFilter(): void {
+    const next = !this.classOverviewFilterOpen();
+    this.classOverviewFilterOpen.set(next);
+    if (!next) {
+      this.classOverviewDropdownOpen.set(false);
+    }
+  }
+
+  closeClassOverviewFilter(): void {
+    this.classOverviewFilterOpen.set(false);
+    this.classOverviewDropdownOpen.set(false);
+  }
+
+  toggleClassOverviewDropdown(): void {
+    this.classOverviewDropdownOpen.update((v) => !v);
+  }
+
+  closeClassOverviewDropdown(): void {
+    this.classOverviewDropdownOpen.set(false);
+  }
+
+  isClassOverviewSelected(className: string): boolean {
+    return this.selectedClassOverviewNames().has(className);
+  }
+
+  toggleClassOverviewSelection(className: string, checked: boolean): void {
+    const next = new Set(this.selectedClassOverviewNames());
+    if (checked) {
+      next.add(className);
+    } else {
+      next.delete(className);
+    }
+    this.selectedClassOverviewNames.set(next);
+    this.classOverviewPage.set(1);
+    this.ensureClassOverviewPageInRange();
+  }
+
+  clearClassOverviewSelection(): void {
+    this.selectedClassOverviewNames.set(new Set());
+    this.classOverviewPage.set(1);
+    this.ensureClassOverviewPageInRange();
+  }
+
+  sortClassOverviewBy(key: ClassOverviewSortKey): void {
+    const current = this.classOverviewSort();
+    if (current.key === key) {
+      this.classOverviewSort.set({
+        key,
+        direction: current.direction === 'asc' ? 'desc' : 'asc',
+      });
+    } else {
+      this.classOverviewSort.set({ key, direction: 'asc' });
+    }
+    this.classOverviewPage.set(1);
+    this.ensureClassOverviewPageInRange();
+  }
+
+  classOverviewSortIcon(key: ClassOverviewSortKey): string {
+    const sort = this.classOverviewSort();
+    if (sort.key !== key) {
+      return 'unfold_more';
+    }
+    return sort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  classOverviewSelectionSummary(): string {
+    const selected = this.selectedClassOverviewNames();
+    const rows = this.data()?.classesOverview ?? [];
+    if (!selected.size) {
+      return 'All classes';
+    }
+    const selectedNames = rows.map((r) => r.displayName).filter((name) => selected.has(name));
+    if (!selectedNames.length) {
+      return 'All classes';
+    }
+    if (selectedNames.length === 1) {
+      return selectedNames[0];
+    }
+    return `${selectedNames[0]} + ${selectedNames.length - 1} more`;
+  }
+
+  setClassOverviewPage(page: number): void {
+    const bounded = Math.max(1, Math.min(this.classOverviewTotalPages(), page));
+    this.classOverviewPage.set(bounded);
+  }
+
+  classOverviewPageStart(): number {
+    const total = this.filteredClassesOverviewRows().length;
+    if (!total) {
+      return 0;
+    }
+    return (this.classOverviewPage() - 1) * this.classOverviewPageSize + 1;
+  }
+
+  classOverviewPageEnd(): number {
+    const total = this.filteredClassesOverviewRows().length;
+    if (!total) {
+      return 0;
+    }
+    return Math.min(this.classOverviewPage() * this.classOverviewPageSize, total);
   }
 
   attendanceStatLabel(): string {
@@ -207,6 +347,7 @@ export class DashboardComponent implements OnInit {
     this.dashboardService.getDashboard().subscribe({
       next: (response) => {
         this.data.set(response);
+        this.syncClassOverviewState();
         this.loading.set(false);
       },
       error: () => {
@@ -233,5 +374,37 @@ export class DashboardComponent implements OnInit {
     } catch {
       /* ignore */
     }
+  }
+
+  private ensureClassOverviewPageInRange(): void {
+    const totalPages = this.classOverviewTotalPages();
+    if (this.classOverviewPage() > totalPages) {
+      this.classOverviewPage.set(totalPages);
+    }
+  }
+
+  private syncClassOverviewState(): void {
+    const availableNames = new Set((this.data()?.classesOverview ?? []).map((r) => r.displayName));
+    const current = this.selectedClassOverviewNames();
+    if (!current.size) {
+      this.ensureClassOverviewPageInRange();
+      return;
+    }
+    const next = new Set([...current].filter((name) => availableNames.has(name)));
+    if (next.size !== current.size) {
+      this.selectedClassOverviewNames.set(next);
+    }
+    this.ensureClassOverviewPageInRange();
+  }
+
+  private sortClassOverviewRows(rows: IClassOverview[]): IClassOverview[] {
+    const { key, direction } = this.classOverviewSort();
+    const dir = direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (key === 'displayName') {
+        return naturalTextCompare(a.displayName, b.displayName) * dir;
+      }
+      return ((a[key] as number) - (b[key] as number)) * dir;
+    });
   }
 }

@@ -16,6 +16,8 @@ import type {
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
+import { naturalTextCompare } from '../../shared/utils/natural-sort.util';
+import { formatStreamGroupDisplay } from '../../shared/utils/stream-group.util';
 
 @Component({
   selector: 'app-class-management',
@@ -41,6 +43,7 @@ export class ClassManagementComponent implements OnInit {
   currentFilter = 'Active';
 
   classes: Record<string, unknown>[] = [];
+  private allClasses: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
     this.classConfig = applyModuleTablePermissions(
@@ -60,11 +63,18 @@ export class ClassManagementComponent implements OnInit {
     filter = this.currentFilter,
   ): void {
     this.classService
-      .getClasses(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
+      .getClasses(1, 1000, searchQuery, sortColumn, sortDirection, filter)
       .subscribe({
         next: (res: any) => {
-          this.classes = res?.items || [];
-          this.totalClasses = res?.totalCount || 0;
+          const rawItems = (res?.items || []) as Record<string, unknown>[];
+          this.allClasses = rawItems.map((row) => ({
+            ...row,
+            streamGroup: formatStreamGroupDisplay(row['streamGroup']),
+          }));
+          const sorted = this.applyClassSorting(this.allClasses, sortColumn, sortDirection);
+          this.totalClasses = sorted.length;
+          const start = Math.max(0, (pageIndex - 1) * pageSize);
+          this.classes = sorted.slice(start, start + pageSize);
           this.cdr.detectChanges();
         },
         error: (err: any) => {
@@ -75,6 +85,40 @@ export class ClassManagementComponent implements OnInit {
           });
         },
       });
+  }
+
+  private applyClassSorting(
+    rows: Record<string, unknown>[],
+    sortColumn: string | null,
+    sortDirection: string | null,
+  ): Record<string, unknown>[] {
+    const dir = sortDirection === 'desc' ? -1 : 1;
+    const sorted = [...rows];
+    if (!sortColumn) {
+      return sorted;
+    }
+
+    sorted.sort((a, b) => {
+      if (sortColumn === 'className') {
+        const classCmp = naturalTextCompare(a['className'], b['className']);
+        if (classCmp !== 0) return classCmp * dir;
+        return naturalTextCompare(a['section'], b['section']) * dir;
+      }
+      if (sortColumn === 'section') {
+        const secCmp = naturalTextCompare(a['section'], b['section']);
+        if (secCmp !== 0) return secCmp * dir;
+        return naturalTextCompare(a['className'], b['className']) * dir;
+      }
+
+      const av = a[sortColumn];
+      const bv = b[sortColumn];
+      if (typeof av === 'number' && typeof bv === 'number') {
+        return (av - bv) * dir;
+      }
+      return naturalTextCompare(av, bv) * dir;
+    });
+
+    return sorted;
   }
 
   openAddForm(): void {

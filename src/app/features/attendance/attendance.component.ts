@@ -117,7 +117,8 @@ export class AttendanceComponent implements OnInit {
     this.clearClassStudents();
     this.cdr.detectChanges();
 
-    this.studentService.getStudents(1, 100, '', null, null, StudentFilter.Active, this.selectedClassId).subscribe({
+    const classIds = this.selectedClassId ? [this.selectedClassId] : null;
+    this.studentService.getStudents(1, 100, '', null, null, StudentFilter.Active, classIds).subscribe({
       next: (res: any) => {
         const classStudents = this.filterStudentsBySelectedClass(res?.items || []);
 

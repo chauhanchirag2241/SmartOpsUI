@@ -1,1 +1,75 @@
-/* Page layout: src/style.css */
+.student-class-multiselect {
+  position: relative;
+}
+
+.student-class-select-btn {
+  align-items: center;
+  background: var(--card);
+  border: 0.5px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 500;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 9px 12px;
+  width: 100%;
+}
+
+.student-class-select-btn mat-icon {
+  color: var(--text-secondary);
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+}
+
+.student-class-options {
+  background: var(--card);
+  border: 0.5px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  left: 0;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  z-index: 40;
+}
+
+.student-class-option {
+  align-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.student-class-option:hover {
+  background: var(--surface-2, #f9fafb);
+}
+
+.student-class-filter-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.student-class-filter-clear {
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 0;
+}

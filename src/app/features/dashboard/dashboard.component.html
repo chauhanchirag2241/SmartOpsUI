@@ -273,32 +273,109 @@
             }
             <div class="ch">
               <h2><mat-icon>class</mat-icon>Classes overview</h2>
-              @if (d.schoolFeesCollectedTotal != null || d.schoolFeesDueTotal != null) {
-                <span class="class-overview-fees">
-                  @if (d.schoolFeesCollectedTotal != null) {
-                    Collected {{ formatCurrency(d.schoolFeesCollectedTotal) }}
+              <div class="class-overview-filter-wrap">
+                <button type="button" class="class-filter-btn" (click)="toggleClassOverviewFilter()">
+                  <mat-icon>filter_list</mat-icon>
+                  Filter classes
+                  @if (selectedClassOverviewNames().size) {
+                    <span class="filter-count">{{ selectedClassOverviewNames().size }}</span>
                   }
-                  @if (d.schoolFeesDueTotal != null) {
-                    · Due {{ formatCurrency(d.schoolFeesDueTotal) }}
-                  }
-                </span>
-              }
+                </button>
+                @if (classOverviewFilterOpen()) {
+                  <button
+                    type="button"
+                    class="class-filter-overlay"
+                    aria-label="Close filters"
+                    (click)="closeClassOverviewFilter()"
+                  ></button>
+                  <div class="class-filter-popover">
+                    <div class="class-filter-popover-head">
+                      <strong>Filters</strong>
+                      <button type="button" class="class-filter-close" (click)="closeClassOverviewFilter()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                    <div class="class-filter-section">
+                      <div class="class-filter-section-label">Classes</div>
+                      <div class="class-filter-multiselect">
+                        <button type="button" class="class-filter-select-btn" (click)="toggleClassOverviewDropdown()">
+                          <span>{{ classOverviewSelectionSummary() }}</span>
+                          <mat-icon>{{ classOverviewDropdownOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        </button>
+                        @if (classOverviewDropdownOpen()) {
+                          <div class="class-filter-options">
+                            @for (c of d.classesOverview; track c.displayName) {
+                              <label class="class-filter-option-item">
+                                <input
+                                  type="checkbox"
+                                  [checked]="isClassOverviewSelected(c.displayName)"
+                                  (change)="toggleClassOverviewSelection(c.displayName, $any($event.target).checked)"
+                                />
+                                <span>{{ c.displayName }}</span>
+                              </label>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                    <div class="class-filter-footer">
+                      <button type="button" class="class-filter-clear" (click)="clearClassOverviewSelection()">Clear</button>
+                      <button type="button" class="class-filter-done" (click)="closeClassOverviewFilter()">Close</button>
+                    </div>
+                  </div>
+                }
+              </div>
             </div>
             <div class="class-overview-table-wrap">
               <table class="class-overview-table">
                 <thead>
                   <tr>
-                    <th>Class</th>
-                    <th class="num">Students</th>
-                    <th class="num">Present</th>
-                    <th class="num">Late</th>
-                    <th class="num">Absent</th>
-                    <th class="num">On leave</th>
-                    <th class="num">Fee today</th>
+                    <th>
+                      <button type="button" class="th-sort" (click)="sortClassOverviewBy('displayName')">
+                        Class
+                        <mat-icon>{{ classOverviewSortIcon('displayName') }}</mat-icon>
+                      </button>
+                    </th>
+                    <th class="num">
+                      <button type="button" class="th-sort num" (click)="sortClassOverviewBy('studentCount')">
+                        Students
+                        <mat-icon>{{ classOverviewSortIcon('studentCount') }}</mat-icon>
+                      </button>
+                    </th>
+                    <th class="num">
+                      <button type="button" class="th-sort num" (click)="sortClassOverviewBy('present')">
+                        Present
+                        <mat-icon>{{ classOverviewSortIcon('present') }}</mat-icon>
+                      </button>
+                    </th>
+                    <th class="num">
+                      <button type="button" class="th-sort num" (click)="sortClassOverviewBy('late')">
+                        Late
+                        <mat-icon>{{ classOverviewSortIcon('late') }}</mat-icon>
+                      </button>
+                    </th>
+                    <th class="num">
+                      <button type="button" class="th-sort num" (click)="sortClassOverviewBy('absent')">
+                        Absent
+                        <mat-icon>{{ classOverviewSortIcon('absent') }}</mat-icon>
+                      </button>
+                    </th>
+                    <th class="num">
+                      <button type="button" class="th-sort num" (click)="sortClassOverviewBy('onLeave')">
+                        On leave
+                        <mat-icon>{{ classOverviewSortIcon('onLeave') }}</mat-icon>
+                      </button>
+                    </th>
+                    <th class="num">
+                      <button type="button" class="th-sort num" (click)="sortClassOverviewBy('feeCollectedToday')">
+                        Fee today
+                        <mat-icon>{{ classOverviewSortIcon('feeCollectedToday') }}</mat-icon>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (c of d.classesOverview; track c.displayName) {
+                  @for (c of pagedClassesOverviewRows(); track c.displayName) {
                     <tr>
                       <td class="class-name-cell">{{ c.displayName }}</td>
                       <td class="num">{{ c.studentCount }}</td>
@@ -307,6 +384,10 @@
                       <td class="num">{{ c.absent }}</td>
                       <td class="num">{{ c.onLeave }}</td>
                       <td class="num">{{ formatCurrency(c.feeCollectedToday) }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="7" class="class-overview-empty">No classes found for selected filter.</td>
                     </tr>
                   }
                 </tbody>
@@ -324,6 +405,31 @@
                   }
                 </tfoot>
               </table>
+            </div>
+            <div class="pagination-bar class-overview-pagination">
+              <div class="page-info-text">
+                Showing {{ classOverviewPageStart() }}-{{ classOverviewPageEnd() }} of {{ filteredClassesOverviewRows().length }}
+                classes
+              </div>
+              <div class="page-controls">
+                <button
+                  type="button"
+                  class="page-btn"
+                  [disabled]="classOverviewPage() <= 1"
+                  (click)="setClassOverviewPage(classOverviewPage() - 1)"
+                >
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+                <span class="page-num">Page {{ classOverviewPage() }} / {{ classOverviewTotalPages() }}</span>
+                <button
+                  type="button"
+                  class="page-btn"
+                  [disabled]="classOverviewPage() >= classOverviewTotalPages()"
+                  (click)="setClassOverviewPage(classOverviewPage() + 1)"
+                >
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
             </div>
           </article>
         }

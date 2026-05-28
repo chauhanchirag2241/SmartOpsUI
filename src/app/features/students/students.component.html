@@ -7,13 +7,51 @@
       [totalRecords]="totalStudents"
       [rowClassFn]="studentRowClass"
       [initialFilterValue]="currentFilter.toString()"
+      [filterPanelActive]="classFilterPanelActive"
       (pageChange)="onPageChange($event)"
       (filterChanged)="onFilterChanged($event)"
+      (advancedFiltersCleared)="onAdvancedFiltersCleared()"
       (actionClicked)="onActionClicked($event)"
       (exportClicked)="onExportClicked()"
       (bulkActionClicked)="onBulkActionClicked($event)"
       (addButtonClicked)="onAddButtonClicked()"
-    />
+    >
+      <div tableFilters class="st-table-filters">
+        <div class="table-filter-section">
+          <span class="table-filter-section-label">Class</span>
+          <div class="student-class-multiselect">
+            <button type="button" class="student-class-select-btn" (click)="toggleClassFilterDropdown($event)">
+              <span>{{ classFilterSummary }}</span>
+              <mat-icon>{{ classFilterDropdownOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+            @if (classFilterDropdownOpen) {
+              <div class="student-class-options">
+                @for (cls of classOptions; track cls.id) {
+                  <label class="student-class-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isClassSelected(cls.id)"
+                      (change)="toggleClassSelection(cls.id, $any($event.target).checked)"
+                    />
+                    <span>{{ cls.name }}</span>
+                  </label>
+                }
+                @if (!classOptions.length) {
+                  <span class="student-class-option">No classes available</span>
+                }
+              </div>
+            }
+          </div>
+          @if (selectedClassIds.size) {
+            <div class="student-class-filter-actions">
+              <button type="button" class="student-class-filter-clear" (click)="clearClassFilter()">
+                Clear classes
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </app-smart-data-table>
   } @else {
     <app-add-student
       [mode]="formMode"

@@ -3,7 +3,8 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { ClassFilter } from '../../shared/enums/table-filters.enum';
-import { Section, StreamGroup, Shift, Medium } from '../../shared/enums/field-options.enum';
+import { Section, Shift, Medium } from '../../shared/enums/field-options.enum';
+import { streamGroupToApiInt } from '../../shared/utils/stream-group.util';
 
 /**
  * Maps a frontend string enum value to the backend 1-based integer.
@@ -71,7 +72,7 @@ export class ClassService {
     const payload = {
       className: classData.className,
       section: enumToInt(Section, classData.section, true),
-      streamGroup: enumToInt(StreamGroup, classData.streamGroup),
+      streamGroup: streamGroupToApiInt(classData.streamGroup),
       academicYearId: classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
@@ -92,7 +93,7 @@ export class ClassService {
       id,
       className: classData.className,
       section: enumToInt(Section, classData.section, true),
-      streamGroup: enumToInt(StreamGroup, classData.streamGroup),
+      streamGroup: streamGroupToApiInt(classData.streamGroup),
       academicYearId: classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,

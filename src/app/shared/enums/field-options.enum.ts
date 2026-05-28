@@ -6,7 +6,7 @@ export enum Section {
 }
 
 export enum StreamGroup {
-  None = 'None',
+  Primary = 'Primary',
   Science = 'Science',
   Commerce = 'Commerce',
   Arts = 'Arts',
