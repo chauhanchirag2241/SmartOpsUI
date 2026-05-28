@@ -20,8 +20,6 @@ export interface IDashboardResponse {
   summary?: IDashboardSummary;
   attendanceToday?: IAttendanceToday;
   salary?: ISalaryDashboard;
-  schoolFeesCollectedTotal?: number;
-  schoolFeesDueTotal?: number;
   recentStudents?: IRecentStudent[];
   teachers?: IDashboardTeacher[];
   homeworkDue?: IHomeworkDue[];

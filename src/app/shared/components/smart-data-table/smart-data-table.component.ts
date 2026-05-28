@@ -123,6 +123,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   showColMenu = false;
   showFilterMenu = false;
   private suppressFilterOutsideClose = false;
+  private _pageSizeInitialized = false;
 
   // Context menu
   ctxMenuVisible = false;
@@ -226,7 +227,10 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     });
 
     // Init page size
-    this.pageSize = this.config.defaultPageSize ?? this.config.pageSizeOptions?.[0] ?? 10;
+    if (!this._pageSizeInitialized) {
+      this.pageSize = this.config.defaultPageSize ?? this.config.pageSizeOptions?.[0] ?? 10;
+      this._pageSizeInitialized = true;
+    }
 
     // Init default active filter
     if (this.config.filters?.length && !this.activeFilter) {
@@ -423,8 +427,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     }
   }
 
-  onPageSizeChange(size: number): void {
-    this.pageSize = size;
+  onPageSizeChange(size: any): void {
+    this.pageSize = Number(size);
     this.currentPage = 1;
     this.clearSelection();
     if (this.serverSide) {
