@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -29,6 +30,7 @@ import { formatStreamGroupDisplay } from '../../shared/utils/stream-group.util';
 export class ClassManagementComponent implements OnInit {
   private readonly classService = inject(ClassService);
   private readonly permissionService = inject(PermissionService);
+  private readonly router = inject(Router);
 
   constructor(
     private snackBar: NotificationService,
@@ -201,6 +203,7 @@ export class ClassManagementComponent implements OnInit {
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
       { label: 'Edit class', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Show history', icon: 'history', iconColor: '#639922' },
       {
         label: 'Delete class',
         icon: 'delete',
@@ -240,6 +243,9 @@ export class ClassManagementComponent implements OnInit {
       this.formMode = 'edit';
       this.selectedClassId = id;
       this.showAddForm = true;
+    } else if (event.action.label === 'Show history') {
+      if (!this.permissionService.canView(MenuCodes.Classes)) return;
+      this.router.navigate(['/classes', id, 'history']);
     } else if (event.action.label === 'Delete class') {
       if (!this.permissionService.canDelete(MenuCodes.Classes)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {

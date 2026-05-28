@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -35,6 +36,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 })
 export class SubjectsComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
+  private readonly router = inject(Router);
 
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
@@ -106,6 +108,7 @@ export class SubjectsComponent implements OnInit {
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
       { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Show history', icon: 'history', iconColor: '#639922' },
       { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
     searchPlaceholder: 'Search by name or code...',
@@ -195,6 +198,9 @@ export class SubjectsComponent implements OnInit {
       this.formMode = 'edit';
       this.selectedSubjectId = id;
       this.showAddForm = true;
+    } else if (event.action.label === 'Show history') {
+      if (!this.permissionService.canView(MenuCodes.Subjects)) return;
+      this.router.navigate(['/subjects', id, 'history']);
     } else if (event.action.label === 'Delete') {
       if (!this.permissionService.canDelete(MenuCodes.Subjects)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {

@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
@@ -29,6 +30,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 })
 export class TeachersComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
+  private readonly router = inject(Router);
 
   constructor(
     private snackBar: NotificationService,
@@ -151,6 +153,7 @@ export class TeachersComponent implements OnInit {
     actions: [
       { label: 'View profile', icon: 'visibility', iconColor: '#639922' },
       { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Show history', icon: 'history', iconColor: '#639922' },
       {
         label: 'Delete teacher',
         icon: 'delete',
@@ -186,6 +189,9 @@ export class TeachersComponent implements OnInit {
       this.formMode = 'edit';
       this.selectedTeacherId = id;
       this.showAddForm = true;
+    } else if (event.action.label === 'Show history') {
+      if (!this.permissionService.canView(MenuCodes.Teachers)) return;
+      this.router.navigate(['/teachers', id, 'history']);
     } else if (event.action.label === 'Delete teacher') {
       if (!this.permissionService.canDelete(MenuCodes.Teachers)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {

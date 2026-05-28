@@ -10,7 +10,7 @@
 <div class="progress-bar">
   <div class="progress-fill" [style.width.%]="progressWidthPercent"></div>
 </div>
-<div class="step-hint">{{ tabs[currentTab].hint }}</div>
+<div class="step-hint">{{ currentTabHint }}</div>
 
 <div class="tabs" role="tablist">
   @for (tab of tabs; track tab.label; let i = $index) {

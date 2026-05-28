@@ -1,0 +1,26 @@
+<section class="entity-history-page">
+  <div class="topbar">
+    <div class="page-info">
+      <div class="page-title">Change history</div>
+      @if (!loadingHeader && recordTitle) {
+        <div class="page-sub">
+          {{ recordTitle }}
+          @if (recordSubtitle) {
+            <span> · {{ recordSubtitle }}</span>
+          }
+        </div>
+      }
+    </div>
+    <app-action-button type="back" class="topbar-back" (action)="goBack()"></app-action-button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>history</mat-icon>
+      Field changes
+    </div>
+    @if (entityId) {
+      <app-audit-history [entityId]="entityId" [entityType]="entityType"></app-audit-history>
+    }
+  </div>
+</section>

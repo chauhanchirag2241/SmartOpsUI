@@ -1,0 +1,91 @@
+<div class="audit-wrap">
+
+  @if (loading) {
+    <div class="audit-loading">
+      <div class="audit-spinner"></div>
+      <span>Loading history…</span>
+    </div>
+  }
+
+  @if (error && !loading) {
+    <div class="audit-empty">
+      <mat-icon>error_outline</mat-icon>
+      <p>Failed to load history. Please try again.</p>
+      <button type="button" class="audit-retry" (click)="load()">Retry</button>
+    </div>
+  }
+
+  @if (!loading && !error && logs.length === 0) {
+    <div class="audit-empty">
+      <mat-icon class="audit-empty-icon">history</mat-icon>
+      <p>No change history found.</p>
+    </div>
+  }
+
+  @if (!loading && !error && logs.length > 0) {
+    <div class="audit-list">
+      @for (log of logs; track trackLog($index, log)) {
+        <div class="audit-entry" [class.expanded]="isExpanded(log.id)">
+          <div class="audit-header" (click)="toggleRow(log.id)" role="button" [attr.aria-expanded]="isExpanded(log.id)">
+            <div class="audit-avatar" [ngClass]="actionClass(log.action)">
+              {{ getInitials(log.changedByName) }}
+            </div>
+            <div class="audit-meta">
+              <span class="audit-user">{{ log.changedByName || 'System' }}</span>
+              <span class="audit-badge" [ngClass]="actionClass(log.action)">
+                <mat-icon class="audit-badge-icon">{{ actionIcon(log.action) }}</mat-icon>
+                {{ log.action }}
+              </span>
+              @if (log.action === 'Updated' && log.changes.length > 0) {
+                <span class="audit-field-count">{{ log.changes.length }} field{{ log.changes.length !== 1 ? 's' : '' }} changed</span>
+              }
+            </div>
+            <div class="audit-time">
+              <span class="audit-relative" [title]="log.changedOn | date:'dd MMM yyyy, HH:mm'">
+                {{ relativeTime(log.changedOn) }}
+              </span>
+              <span class="audit-absolute">{{ log.changedOn | date:'dd MMM yyyy, HH:mm' }}</span>
+            </div>
+            <mat-icon class="audit-chevron" [class.rotated]="isExpanded(log.id)">expand_more</mat-icon>
+          </div>
+
+          @if (isExpanded(log.id) && log.changes.length > 0) {
+            <div class="audit-changes">
+              <table class="audit-table">
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Old Value</th>
+                    <th>New Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (change of log.changes; track trackChange($index, change)) {
+                    <tr>
+                      <td class="field-name">{{ formatFieldName(change.field) }}</td>
+                      <td class="old-val">{{ formatValue(change.oldValue) }}</td>
+                      <td class="new-val">{{ formatValue(change.newValue) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="audit-pagination">
+        <button type="button" class="pg-btn" [disabled]="pageIndex === 1" (click)="goToPage(pageIndex - 1)">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="pg-info">Page {{ pageIndex }} of {{ totalPages }}</span>
+        <button type="button" class="pg-btn" [disabled]="pageIndex === totalPages" (click)="goToPage(pageIndex + 1)">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    }
+  }
+
+</div>

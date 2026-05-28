@@ -27,6 +27,42 @@ export const routes: Routes = [
           import('./features/students/students.component').then((m) => m.StudentsComponent),
       },
       {
+        path: 'students/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Students, permission: 'view', entityKind: 'student' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'teachers/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Teachers, permission: 'view', entityKind: 'teacher' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'classes/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Classes, permission: 'view', entityKind: 'class' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'subjects/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Subjects, permission: 'view', entityKind: 'subject' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
         path: 'teachers',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Teachers, permission: 'view' },

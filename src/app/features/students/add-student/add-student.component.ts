@@ -111,7 +111,6 @@ type ReviewSection = {
 export class AddStudentComponent implements OnInit {
   @Input() mode: 'add' | 'edit' | 'view' = 'add';
   @Input() studentId?: string;
-
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
@@ -142,6 +141,10 @@ export class AddStudentComponent implements OnInit {
     'Upload required documents',
     'Review all details before submitting',
   ];
+
+  get currentTabHint(): string {
+    return this.tabs[this.currentTab]?.hint ?? '';
+  }
 
   readonly configs: Record<string, FormFieldConfig> = {
     photo: {
@@ -1048,7 +1051,7 @@ export class AddStudentComponent implements OnInit {
   // TAB NAVIGATION
   // ════════════════════════════════════════
   goTab(index: number) {
-    if (index > this.currentTab && !this.validateTab(this.currentTab)) {
+    if (this.mode !== 'view' && index > this.currentTab && !this.validateTab(this.currentTab)) {
       return;
     }
     this.currentTab = index;
@@ -1082,6 +1085,10 @@ export class AddStudentComponent implements OnInit {
   }
 
   private validateTab(tab: number): boolean {
+    if (this.mode === 'view') {
+      return true;
+    }
+
     const keys = this.tabFieldKeys[tab] ?? [];
     const controlNames = controlNamesFromFieldKeys(keys, this.configs);
     if (tab === 3) {

@@ -1,5 +1,6 @@
 
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
@@ -38,6 +39,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 export class StudentsComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
   private readonly classService = inject(ClassService);
+  private readonly router = inject(Router);
 
   constructor(
     private snackBar: NotificationService,
@@ -149,6 +151,22 @@ export class StudentsComponent implements OnInit {
 
   closeAddForm(): void {
     this.showAddForm = false;
+  }
+
+  private openStudentView(id: string): void {
+    if (!this.permissionService.canView(MenuCodes.Students)) {
+      return;
+    }
+    this.formMode = 'view';
+    this.selectedStudentId = id;
+    this.showAddForm = true;
+  }
+
+  private openStudentHistory(id: string): void {
+    if (!this.permissionService.canView(MenuCodes.Students)) {
+      return;
+    }
+    this.router.navigate(['/students', id, 'history']);
   }
 
   onStudentSaved(): void {
@@ -327,6 +345,11 @@ export class StudentsComponent implements OnInit {
         icon: 'how_to_reg',
         iconColor: '#639922',
       },
+      {
+        label: 'Show history',
+        icon: 'history',
+        iconColor: '#639922',
+      },
       { label: 'Download TC', icon: 'download', iconColor: '#6b7280' },
       {
         label: 'Delete student',
@@ -370,10 +393,9 @@ export class StudentsComponent implements OnInit {
     const id = event.row['id'] as string;
 
     if (event.action.label === 'View profile') {
-      if (!this.permissionService.canView(MenuCodes.Students)) return;
-      this.formMode = 'view';
-      this.selectedStudentId = id;
-      this.showAddForm = true;
+      this.openStudentView(id);
+    } else if (event.action.label === 'Show history') {
+      this.openStudentHistory(id);
     } else if (event.action.label === 'Edit details') {
       if (!this.permissionService.canEdit(MenuCodes.Students)) return;
       this.formMode = 'edit';
