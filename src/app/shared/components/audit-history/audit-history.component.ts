@@ -6,6 +6,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { AuditLogItem, AuditLogPagedResponse, FieldChange } from '../../../core/models/audit-history.model';
 import { AuditHistoryEntityType, AuditService } from '../../../core/services/audit.service';
+import { formatAuditFieldValue } from '../../utils/audit-field-format.util';
 
 export type { AuditHistoryEntityType };
 
@@ -121,9 +122,8 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
-  formatValue(val: string | null): string {
-    if (val === null || val === undefined || val === '') return '—';
-    return val;
+  formatValue(field: string, val: string | null): string {
+    return formatAuditFieldValue(this.entityType, field, val);
   }
 
   relativeTime(dateStr: string): string {

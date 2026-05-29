@@ -250,12 +250,7 @@ export class HomeworkComponent implements OnInit {
         this.closeCreate();
         this.loadList();
         this.loadStats();
-        const newId = res?.id ?? res?.Id;
-        if (newId) {
-          this.router.navigate(['/homework', newId]);
-        } else {
-          this.refreshView();
-        }
+        this.refreshView();
       },
       error: (err) =>
         this.snackBar.open(err?.error || 'Save failed', 'Close', {

@@ -63,8 +63,8 @@
                   @for (change of log.changes; track trackChange($index, change)) {
                     <tr>
                       <td class="field-name">{{ formatFieldName(change.field) }}</td>
-                      <td class="old-val">{{ formatValue(change.oldValue) }}</td>
-                      <td class="new-val">{{ formatValue(change.newValue) }}</td>
+                      <td class="old-val">{{ formatValue(change.field, change.oldValue) }}</td>
+                      <td class="new-val">{{ formatValue(change.field, change.newValue) }}</td>
                     </tr>
                   }
                 </tbody>

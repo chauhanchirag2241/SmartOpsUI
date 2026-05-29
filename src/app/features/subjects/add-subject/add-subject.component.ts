@@ -17,6 +17,7 @@ import {
   SubjectCategory,
 } from '../../../shared/enums/field-options.enum';
 import { SubjectService } from '../../../core/services/subject.service';
+import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
 
 @Component({
   selector: 'app-add-subject',
@@ -33,6 +34,8 @@ export class AddSubjectComponent implements OnInit {
 
   subjectForm: FormGroup;
   isSaving = false;
+  /** Loaded record used to preserve fields not shown on the simplified edit form. */
+  private existingSnapshot: Record<string, unknown> | null = null;
 
   readonly configs: Record<string, FormFieldConfig> = {
     subjectName: {
@@ -107,6 +110,7 @@ export class AddSubjectComponent implements OnInit {
   loadSubjectData(id: string) {
     this.subjectService.getSubject(id).subscribe({
       next: (data: any) => {
+        this.existingSnapshot = data ?? null;
         this.subjectForm.patchValue({
           subjectName: data?.subjectName,
           subjectCode: data?.subjectCode,
@@ -138,49 +142,62 @@ export class AddSubjectComponent implements OnInit {
   }
 
   private buildSubjectApiPayload(raw: Record<string, unknown>): Record<string, unknown> {
+    const snap = this.existingSnapshot;
     return {
       subjectName: String(raw['subjectName'] ?? '').trim(),
       subjectCode: String(raw['subjectCode'] ?? '').trim(),
       subjectType: raw['subjectType'] ?? null,
       subjectCategory: raw['subjectCategory'] ?? null,
       medium: raw['medium'] ?? null,
-      assignedClasses: [],
-      periodsPerWeek: 1,
-      periodDuration: '45',
-      teachingDays: [],
-      maxTheory: 80,
-      maxPractical: 20,
-      passingMarks: 33,
-      gradeSystem: 'marks',
-      syllabusTextbook: null,
-      curriculum: null,
-      description: null,
-      isActive: raw['isActive'] ?? true,
+      assignedClasses: this.parseJsonStringArray(snap?.['assignedClasses'] ?? snap?.['AssignedClasses']),
+      periodsPerWeek: Number(snap?.['periodsPerWeek'] ?? snap?.['PeriodsPerWeek'] ?? 1) || 1,
+      periodDuration: String(snap?.['periodDuration'] ?? snap?.['PeriodDuration'] ?? '45'),
+      teachingDays: this.parseJsonStringArray(snap?.['teachingDays'] ?? snap?.['TeachingDays']),
+      maxTheory: Number(snap?.['maxTheory'] ?? snap?.['MaxTheory'] ?? 80) || 80,
+      maxPractical: Number(snap?.['maxPractical'] ?? snap?.['MaxPractical'] ?? 20) || 20,
+      passingMarks: Number(snap?.['passingMarks'] ?? snap?.['PassingMarks'] ?? 33) || 33,
+      gradeSystem: this.normalizeGradeSystem(snap?.['gradeSystem'] ?? snap?.['GradeSystem']),
+      syllabusTextbook: snap?.['syllabusTextbook'] ?? snap?.['SyllabusTextbook'] ?? null,
+      curriculum: this.normalizeCurriculum(snap?.['curriculum'] ?? snap?.['Curriculum']),
+      description: snap?.['description'] ?? snap?.['Description'] ?? null,
+      isActive: raw['isActive'] ?? snap?.['isActive'] ?? snap?.['IsActive'] ?? true,
     };
   }
 
-  private resolveSaveError(err: unknown): string {
-    const body = (err as { error?: unknown })?.error;
-    if (typeof body === 'string' && body.trim()) {
-      return body;
+  private parseJsonStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.map((v) => String(v));
     }
-    if (body && typeof body === 'object') {
-      const record = body as Record<string, unknown>;
-      if (record['errors'] && typeof record['errors'] === 'object') {
-        const messages = Object.values(record['errors'] as Record<string, unknown>)
-          .flatMap((v) => (Array.isArray(v) ? v : [v]))
-          .map((m) => String(m))
-          .filter(Boolean);
-        if (messages.length) {
-          return messages.join(' ');
-        }
-      }
-      const message = record['message'] ?? record['title'];
-      if (typeof message === 'string' && message.trim()) {
-        return message;
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
+      } catch {
+        return [];
       }
     }
-    return 'Failed to save subject. Please check the form and try again.';
+    return [];
+  }
+
+  private normalizeGradeSystem(value: unknown): string {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    if (typeof value === 'number') {
+      return value === 2 ? 'grade' : 'marks';
+    }
+    return 'marks';
+  }
+
+  private normalizeCurriculum(value: unknown): string | null {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    if (typeof value === 'number') {
+      const map: Record<number, string> = { 1: 'CBSE', 2: 'GSEB', 3: 'ICSE' };
+      return map[value] ?? 'CBSE';
+    }
+    return null;
   }
 
   saveSubject() {
@@ -217,7 +234,11 @@ export class AddSubjectComponent implements OnInit {
           this.saved.emit();
         },
         error: (err) => {
-          this.snackBar.open(this.resolveSaveError(err), 'Close', { duration: 5000, panelClass: 'snack-error' });
+          this.snackBar.open(
+            getUserFacingApiError(err, 'Failed to save subject. Please try again.'),
+            'Close',
+            { duration: 5000, panelClass: 'snack-error' },
+          );
         },
       });
   }
