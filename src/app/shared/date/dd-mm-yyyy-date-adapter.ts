@@ -43,7 +43,11 @@ export class DdMmYyyyDateAdapter extends NativeDateAdapter {
   }
 
   private shouldUseDateOnlyFormat(displayFormat: object): boolean {
-    if (String(displayFormat) === DD_MM_YYYY_DATE_FORMATS.display.dateInput) {
+    const formatName = String(displayFormat);
+    if (
+      formatName === DD_MM_YYYY_DATE_FORMATS.display.dateInput ||
+      formatName === DD_MM_YYYY_DATE_FORMATS.display.monthYearLabel
+    ) {
       return true;
     }
 

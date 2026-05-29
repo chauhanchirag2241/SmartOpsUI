@@ -43,11 +43,7 @@ export class AcademicYearManagementComponent implements OnInit {
   academicYears: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
-    this.ayConfig = applyModuleTablePermissions(
-      this.baseAyConfig,
-      this.permissionService,
-      MenuCodes.AcademicYears,
-    );
+    this.ayConfig = this.buildAyConfig();
     this.loadAcademicYears();
   }
 
@@ -133,7 +129,7 @@ export class AcademicYearManagementComponent implements OnInit {
     ],
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit year', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
       {
         label: 'Delete year',
         icon: 'delete',
@@ -141,6 +137,7 @@ export class AcademicYearManagementComponent implements OnInit {
         separatorBefore: true,
       },
     ],
+    actionVisibleFn: (action, row) => this.isAcademicYearActionVisible(action, row),
     bulkActions: [
       { label: 'Export', icon: 'download' },
       { label: 'Delete', icon: 'delete', danger: true },
@@ -156,6 +153,26 @@ export class AcademicYearManagementComponent implements OnInit {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
 
+  private isAcademicYearActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+    if (row['isActive'] !== false) {
+      return true;
+    }
+
+    return action.label === 'View details';
+  }
+
+  private buildAyConfig(): DataTableConfig {
+    const permittedConfig = applyModuleTablePermissions(
+      this.baseAyConfig,
+      this.permissionService,
+      MenuCodes.AcademicYears,
+    );
+    return {
+      ...permittedConfig,
+      columns: permittedConfig.columns.filter((col) => col.key !== 'status'),
+    };
+  }
+
   onActionClicked(event: {
     action: DataTableAction;
     row: Record<string, unknown>;
@@ -168,7 +185,7 @@ export class AcademicYearManagementComponent implements OnInit {
       this.formMode = 'view';
       this.selectedYearId = id;
       this.showAddForm = true;
-    } else if (event.action.label === 'Edit year') {
+    } else if (event.action.label === 'Edit details') {
       if (!this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
       this.formMode = 'edit';
       this.selectedYearId = id;

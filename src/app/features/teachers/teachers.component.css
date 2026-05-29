@@ -1,8 +1,1 @@
-:host ::ng-deep .row-inactive {
-  opacity: 0.6;
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.dark :host ::ng-deep .row-inactive {
-  background-color: rgba(255, 255, 255, 0.02);
-}
+/* Inactive table rows are styled by the shared smart-data-table styles. */

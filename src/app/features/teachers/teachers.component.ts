@@ -47,7 +47,7 @@ export class TeachersComponent implements OnInit {
   teachers: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
-    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.permissionService, MenuCodes.Teachers);
+    this.tableConfig = this.buildTableConfig();
     this.loadTeachers();
   }
 
@@ -161,6 +161,7 @@ export class TeachersComponent implements OnInit {
         separatorBefore: true,
       },
     ],
+    actionVisibleFn: (action, row) => this.isTeacherActionVisible(action, row),
     bulkActions: [
       { label: 'Send notice', icon: 'mail' },
       { label: 'Export', icon: 'download' },
@@ -176,6 +177,26 @@ export class TeachersComponent implements OnInit {
   teacherRowClass = (row: Record<string, unknown>): string => {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
+
+  private isTeacherActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+    if (row['isActive'] !== false) {
+      return true;
+    }
+
+    return action.label === 'View profile' || action.label === 'Show history';
+  }
+
+  private buildTableConfig(): DataTableConfig {
+    const permittedConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.Teachers,
+    );
+    return {
+      ...permittedConfig,
+      columns: permittedConfig.columns.filter((col) => col.key !== 'isActive'),
+    };
+  }
 
   onActionClicked(event: any): void {
     const id = event.row['id'] as string;

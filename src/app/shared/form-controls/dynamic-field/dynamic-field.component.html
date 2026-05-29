@@ -43,6 +43,7 @@
           [formControlName]="config.controlName"
           [placeholder]="getPlaceholder()"
           [disabled]="config.disabled ?? false"
+          [min]="datepickerMin"
           [max]="datepickerMax"
         />
         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>

@@ -5,6 +5,7 @@ import {
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { AuditLogItem, AuditLogPagedResponse, FieldChange } from '../../../core/models/audit-history.model';
+import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AuditHistoryEntityType, AuditService } from '../../../core/services/audit.service';
 import { formatAuditFieldValue } from '../../utils/audit-field-format.util';
 
@@ -29,13 +30,16 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
   loading = false;
   error = false;
   expandedRows = new Set<string>();
+  private academicYearLookup: Record<string, string> = {};
 
   constructor(
     private auditService: AuditService,
+    private academicYearService: AcademicYearService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.loadAcademicYearLookup();
     this.load();
   }
 
@@ -111,6 +115,10 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
   }
 
   formatFieldName(field: string): string {
+    if (this.normalizeFieldName(field) === 'academicyearid') {
+      return 'Academic Year';
+    }
+
     // Convert PascalCase to readable: "FirstName" → "First Name"
     return field.replace(/([A-Z])/g, ' $1').trim();
   }
@@ -123,7 +131,8 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
   }
 
   formatValue(field: string, val: string | null): string {
-    return formatAuditFieldValue(this.entityType, field, val);
+    const lookup = this.normalizeFieldName(field) === 'academicyearid' ? this.academicYearLookup : {};
+    return formatAuditFieldValue(this.entityType, field, val, lookup);
   }
 
   relativeTime(dateStr: string): string {
@@ -143,5 +152,29 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
 
   trackChange(_: number, change: FieldChange): string {
     return change.field;
+  }
+
+  private loadAcademicYearLookup(): void {
+    this.academicYearService.getAcademicYears(1, 1000, '', null, null, 'All').subscribe({
+      next: (res: any) => {
+        const rows = (res?.items ?? []) as Record<string, unknown>[];
+        this.academicYearLookup = rows.reduce<Record<string, string>>((acc, row) => {
+          const id = String(row['id'] ?? '').toLowerCase();
+          const title = String(row['title'] ?? '').trim();
+          if (id && title) {
+            acc[id] = title;
+          }
+          return acc;
+        }, {});
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.academicYearLookup = {};
+      },
+    });
+  }
+
+  private normalizeFieldName(field: string): string {
+    return field.replace(/\s/g, '').toLowerCase();
   }
 }

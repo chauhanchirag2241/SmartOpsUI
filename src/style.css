@@ -1641,18 +1641,22 @@ tr.selected td {
   background: var(--badge-bg);
 }
 
-.row-inactive,
 tr.row-inactive td {
-  opacity: 0.6;
-}
-
-tr.row-inactive td {
-  background: #fff5f5;
-  color: #c53030;
+  background: #fee2e2;
+  color: var(--text-primary);
 }
 
 tr.row-inactive:hover td {
-  background: #fff0f0;
+  background: #fecaca;
+}
+
+.dark tr.row-inactive td {
+  background: rgba(127, 29, 29, 0.14);
+  color: var(--text);
+}
+
+.dark tr.row-inactive:hover td {
+  background: rgba(127, 29, 29, 0.2);
 }
 
 .th-check {

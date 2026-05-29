@@ -107,10 +107,11 @@ export class SubjectsComponent implements OnInit {
     ],
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
       { label: 'Show history', icon: 'history', iconColor: '#639922' },
       { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
+    actionVisibleFn: (action, row) => this.isSubjectActionVisible(action, row),
     searchPlaceholder: 'Search by name or code...',
     searchKeys: ['subjectName', 'subjectCode'],
     itemLabel: 'subjects',
@@ -125,7 +126,7 @@ export class SubjectsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.tableConfig = applyModuleTablePermissions(this.baseTableConfig, this.permissionService, MenuCodes.Subjects);
+    this.tableConfig = this.buildTableConfig();
     this.loadSubjects();
   }
 
@@ -193,7 +194,7 @@ export class SubjectsComponent implements OnInit {
       this.formMode = 'view';
       this.selectedSubjectId = id;
       this.showAddForm = true;
-    } else if (event.action.label === 'Edit') {
+    } else if (event.action.label === 'Edit details') {
       if (!this.permissionService.canEdit(MenuCodes.Subjects)) return;
       this.formMode = 'edit';
       this.selectedSubjectId = id;
@@ -233,4 +234,24 @@ export class SubjectsComponent implements OnInit {
   subjectRowClass = (row: Record<string, unknown>): string => {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
+
+  private isSubjectActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+    if (row['isActive'] !== false) {
+      return true;
+    }
+
+    return action.label === 'View details' || action.label === 'Show history';
+  }
+
+  private buildTableConfig(): DataTableConfig {
+    const permittedConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.Subjects,
+    );
+    return {
+      ...permittedConfig,
+      columns: permittedConfig.columns.filter((col) => col.key !== 'isActive'),
+    };
+  }
 }

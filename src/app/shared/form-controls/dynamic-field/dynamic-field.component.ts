@@ -82,6 +82,19 @@ export class DynamicFieldComponent {
     return max;
   }
 
+  get datepickerMin(): Date | null {
+    const min = this.config.minDate;
+    if (!min) {
+      return null;
+    }
+    if (min === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
+    }
+    return min;
+  }
+
   getError(): string {
     const control = this.group.get(this.config.controlName);
     if (!control?.errors) {

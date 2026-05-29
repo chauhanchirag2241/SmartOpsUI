@@ -33,4 +33,6 @@ export interface FormFieldConfig {
   fileMode?: 'avatar' | 'document';
   /** Latest selectable date for datepicker; use 'today' to disallow future dates. */
   maxDate?: Date | 'today';
+  /** Earliest selectable date for datepicker. */
+  minDate?: Date | 'today';
 }

@@ -83,11 +83,7 @@ export class StudentsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.tableConfig = applyModuleTablePermissions(
-      this.baseTableConfig,
-      this.permissionService,
-      MenuCodes.Students,
-    );
+    this.tableConfig = this.buildTableConfig();
     this.loadClassOptions();
     this.loadStudents();
   }
@@ -182,9 +178,10 @@ export class StudentsComponent implements OnInit {
     sortDirection: string | null;
     currentFilter: string | null;
   }): void {
-    const filterValue = event.currentFilter
-      ? (event.currentFilter as unknown as StudentFilter)
-      : this.currentFilter;
+    const filterValue =
+      event.currentFilter !== null && event.currentFilter !== undefined
+        ? (Number(event.currentFilter) as StudentFilter)
+        : this.currentFilter;
     this.loadStudents(
       event.pageIndex,
       event.pageSize,
@@ -197,7 +194,7 @@ export class StudentsComponent implements OnInit {
 
   onFilterChanged(filter: DataTableFilter | null): void {
     if (filter) {
-      this.currentFilter = filter.value as unknown as StudentFilter;
+      this.currentFilter = Number(filter.value) as StudentFilter;
     } else {
       this.currentFilter = StudentFilter.All;
     }
@@ -339,18 +336,11 @@ export class StudentsComponent implements OnInit {
         iconColor: '#639922',
       },
       { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Collect fees', icon: 'payments', iconColor: '#854F0B' },
-      {
-        label: 'View attendance',
-        icon: 'how_to_reg',
-        iconColor: '#639922',
-      },
       {
         label: 'Show history',
         icon: 'history',
         iconColor: '#639922',
       },
-      { label: 'Download TC', icon: 'download', iconColor: '#6b7280' },
       {
         label: 'Delete student',
         icon: 'delete',
@@ -358,6 +348,7 @@ export class StudentsComponent implements OnInit {
         separatorBefore: true,
       },
     ],
+    actionVisibleFn: (action, row) => this.isStudentActionVisible(action, row),
 
     bulkActions: [
       { label: 'Send notice', icon: 'mail' },
@@ -376,6 +367,26 @@ export class StudentsComponent implements OnInit {
   studentRowClass = (row: Record<string, unknown>): string => {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
+
+  private isStudentActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+    if (row['isActive'] !== false) {
+      return true;
+    }
+
+    return action.label === 'View profile' || action.label === 'Show history';
+  }
+
+  private buildTableConfig(): DataTableConfig {
+    const permittedConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.Students,
+    );
+    return {
+      ...permittedConfig,
+      columns: permittedConfig.columns.filter((col) => col.key !== 'isActive'),
+    };
+  }
 
   // ════════════════════════════════════════
   // DEMO DATA

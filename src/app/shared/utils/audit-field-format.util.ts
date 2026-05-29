@@ -15,13 +15,20 @@ export function formatAuditFieldValue(
   entityType: AuditHistoryEntityType,
   field: string,
   value: string | null | undefined,
+  lookupLabels: Record<string, string> = {},
 ): string {
   if (value === null || value === undefined || value === '') {
     return '—';
   }
 
   const normalizedField = field.replace(/\s/g, '').toLowerCase();
-  const mapped = mapFieldValue(entityType, normalizedField, value.trim());
+  const trimmedValue = value.trim();
+  const lookupValue = lookupLabels[trimmedValue.toLowerCase()];
+  if (lookupValue) {
+    return lookupValue;
+  }
+
+  const mapped = mapFieldValue(entityType, normalizedField, trimmedValue);
   return mapped ?? value;
 }
 

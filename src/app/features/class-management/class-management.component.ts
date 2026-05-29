@@ -48,11 +48,7 @@ export class ClassManagementComponent implements OnInit {
   private allClasses: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
-    this.classConfig = applyModuleTablePermissions(
-      this.baseClassConfig,
-      this.permissionService,
-      MenuCodes.Classes,
-    );
+    this.classConfig = this.buildClassConfig();
     this.loadClasses();
   }
 
@@ -71,6 +67,7 @@ export class ClassManagementComponent implements OnInit {
           const rawItems = (res?.items || []) as Record<string, unknown>[];
           this.allClasses = rawItems.map((row) => ({
             ...row,
+            capacity: Number(row['capacity']) === 0 ? null : row['capacity'],
             streamGroup: formatStreamGroupDisplay(row['streamGroup']),
           }));
           const sorted = this.applyClassSorting(this.allClasses, sortColumn, sortDirection);
@@ -202,7 +199,7 @@ export class ClassManagementComponent implements OnInit {
     ],
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit class', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
       { label: 'Show history', icon: 'history', iconColor: '#639922' },
       {
         label: 'Delete class',
@@ -211,6 +208,7 @@ export class ClassManagementComponent implements OnInit {
         separatorBefore: true,
       },
     ],
+    actionVisibleFn: (action, row) => this.isClassActionVisible(action, row),
     bulkActions: [
       { label: 'Export', icon: 'download' },
       { label: 'Delete', icon: 'delete', danger: true },
@@ -226,6 +224,26 @@ export class ClassManagementComponent implements OnInit {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
 
+  private isClassActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+    if (row['isActive'] !== false) {
+      return true;
+    }
+
+    return action.label === 'View details' || action.label === 'Show history';
+  }
+
+  private buildClassConfig(): DataTableConfig {
+    const permittedConfig = applyModuleTablePermissions(
+      this.baseClassConfig,
+      this.permissionService,
+      MenuCodes.Classes,
+    );
+    return {
+      ...permittedConfig,
+      columns: permittedConfig.columns.filter((col) => col.key !== 'status'),
+    };
+  }
+
   onActionClicked(event: {
     action: DataTableAction;
     row: Record<string, unknown>;
@@ -238,7 +256,7 @@ export class ClassManagementComponent implements OnInit {
       this.formMode = 'view';
       this.selectedClassId = id;
       this.showAddForm = true;
-    } else if (event.action.label === 'Edit class') {
+    } else if (event.action.label === 'Edit details') {
       if (!this.permissionService.canEdit(MenuCodes.Classes)) return;
       this.formMode = 'edit';
       this.selectedClassId = id;

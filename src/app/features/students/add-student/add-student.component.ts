@@ -158,8 +158,15 @@ export class AddStudentComponent implements OnInit {
       type: 'input',
       controlName: 'admissionNo',
       label: 'Admission number',
-      placeholder: 'Auto generated admission number',
-      disabled: true,
+      placeholder: 'Enter admission number',
+      validations: [
+        { name: 'required', message: 'Admission number is required', validator: Validators.required },
+        {
+          name: 'pattern',
+          message: 'Use letters, numbers, hyphen (-), and underscore (_) only',
+          validator: Validators.pattern('^[A-Za-z0-9_-]+$'),
+        },
+      ],
     },
     firstName: {
       type: 'input',
@@ -177,7 +184,7 @@ export class AddStudentComponent implements OnInit {
       placeholder: 'Middle Name',
       inputFormat: 'name',
       maxLength: PERSON_NAME_MAX_LENGTH,
-      validations: nameValidationConfig(false, PERSON_NAME_MAX_LENGTH).validations,
+      validations: nameValidationConfig(true, PERSON_NAME_MAX_LENGTH).validations,
     },
     lastName: {
       type: 'input',
@@ -238,7 +245,6 @@ export class AddStudentComponent implements OnInit {
       label: 'Mobile number',
       placeholder: '10-digit number',
       validations: [
-        { name: 'required', message: 'Mobile is required', validator: Validators.required },
         {
           name: 'pattern',
           message: 'Invalid mobile',
@@ -338,6 +344,8 @@ export class AddStudentComponent implements OnInit {
       type: 'datepicker',
       controlName: 'admissionDate',
       label: 'Admission date',
+      minDate: new Date(new Date().getFullYear() - 1, 0, 1),
+      maxDate: new Date(new Date().getFullYear() + 1, 11, 31),
       validations: [
         { name: 'required', message: 'Admission date is required', validator: Validators.required },
       ],
@@ -499,6 +507,7 @@ export class AddStudentComponent implements OnInit {
   feeStructureRows: FeeStructureRow[] = [];
   feeStructureLoading = false;
   hasActiveFeeStructure = false;
+  feeStructureBlockMessage = '';
   /** Version locked at student admission — used in edit/view (not latest published). */
   private assignedFeeStructureVersionId = '';
   private academicRecordId = '';
@@ -540,7 +549,7 @@ export class AddStudentComponent implements OnInit {
       'motherMobile',
       'motherOcc',
     ],
-    1: ['admissionDate', 'academicYear', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
+    1: ['admissionDate', 'academicYear', 'admissionNo', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
     2: [],
     3: ['remarks', 'customFields'],
   };
@@ -567,6 +576,7 @@ export class AddStudentComponent implements OnInit {
       items: [
         { label: 'Academic Year', key: 'academicYearId' },
         { label: 'Class', key: 'classId' },
+        { label: 'Admission No.', key: 'admissionNo' },
         { label: 'Admission Date', key: 'admissionDate' },
       ],
     },
@@ -600,16 +610,16 @@ export class AddStudentComponent implements OnInit {
   ) {
     this.studentForm = this.fb.group({
       photo: [null],
-      admissionNo: [{ value: '', disabled: true }],
+      admissionNo: ['', [Validators.required, Validators.pattern('^[A-Za-z0-9_-]+$')]],
       firstName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
-      middleName: ['', nameValidator(PERSON_NAME_MAX_LENGTH)],
+      middleName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
       lastName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
       dob: ['', [Validators.required, noFutureDateValidator()]],
       gender: ['Male', Validators.required],
       bloodGroup: [null],
       cast: ['', nameValidator()],
       category: [null],
-      mobile: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
+      mobile: ['', Validators.pattern('^[0-9]{10}$')],
       email: ['', Validators.email],
       aadhaar: ['', aadhaarValidator()],
       address: ['', Validators.required],
@@ -636,6 +646,10 @@ export class AddStudentComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (this.mode === 'edit') {
+      this.lockAdmissionNumber();
+    }
+
     this.loadAcademicYears();
     this.loadClasses();
     if (this.studentId && this.mode !== 'add') {
@@ -643,7 +657,7 @@ export class AddStudentComponent implements OnInit {
     }
 
     if (this.mode === 'add') {
-      this.setupAutoGeneration();
+      this.setupAcademicSelectionHandlers();
       this.studentForm.patchValue({
         gender: 'Male',
         admissionDate: this.today(),
@@ -657,20 +671,23 @@ export class AddStudentComponent implements OnInit {
     return d;
   }
 
-  private setupAutoGeneration() {
-    // Admission No generation
+  private lockAdmissionNumber(): void {
+    this.configs['admissionNo'].disabled = true;
+    this.studentForm.get('admissionNo')?.disable({ emitEvent: false });
+  }
+
+  private setupAcademicSelectionHandlers() {
     this.studentForm.get('academicYearId')?.valueChanges.subscribe((yearId) => {
       if (yearId) {
-        this.generateAdmissionNo(yearId);
         const classId = this.studentForm.get('classId')?.value;
         if (classId) {
           this.generateRollNumber(yearId, classId);
           this.loadFeeStructure(classId, yearId);
         } else {
-          this.clearFeeStructure();
+          this.clearFeeStructure(true);
         }
       } else {
-        this.clearFeeStructure();
+        this.clearFeeStructure(true);
       }
     });
 
@@ -680,7 +697,7 @@ export class AddStudentComponent implements OnInit {
         this.generateRollNumber(yearId, classId);
         this.loadFeeStructure(classId, yearId);
       } else {
-        this.clearFeeStructure();
+        this.clearFeeStructure(true);
       }
     });
   }
@@ -710,6 +727,9 @@ export class AddStudentComponent implements OnInit {
     if (!classId || !yearId) {
       return 'Select academic year and class to view fee structure';
     }
+    if (this.feeStructureBlockMessage) {
+      return this.feeStructureBlockMessage;
+    }
     return 'No published fee structure for this academic year. Publish fees in Fee Structure before admitting students.';
   }
 
@@ -725,6 +745,7 @@ export class AddStudentComponent implements OnInit {
 
     this.feeStructureLoading = true;
     this.hasActiveFeeStructure = false;
+    this.feeStructureBlockMessage = '';
     this.feeStructureRows = [];
     this.feeStructureTotal = 0;
     this.cdr.detectChanges();
@@ -733,6 +754,7 @@ export class AddStudentComponent implements OnInit {
       next: (data) => {
         const normalized = normalizeClassAmounts(data);
         if (!this.isAdmissionFeeStructureReady(normalized.versionStatusLabel) || !normalized.items.length) {
+          this.feeStructureBlockMessage = 'Set class-wise fee amounts for this class before admitting students.';
           this.clearFeeStructure();
           this.cdr.detectChanges();
           return;
@@ -743,7 +765,11 @@ export class AddStudentComponent implements OnInit {
         this.feeStructureLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        this.feeStructureBlockMessage =
+          err?.error?.message ||
+          err?.error ||
+          'Set class-wise fee amounts for this class before admitting students.';
         this.clearFeeStructure();
         this.feeStructureLoading = false;
         this.cdr.detectChanges();
@@ -793,11 +819,14 @@ export class AddStudentComponent implements OnInit {
     return rows.filter((row) => row.isIncluded);
   }
 
-  private clearFeeStructure(): void {
+  private clearFeeStructure(resetBlockMessage = false): void {
     this.feeStructureRows = [];
     this.feeStructureTotal = 0;
     this.feeStructureLoading = false;
     this.hasActiveFeeStructure = false;
+    if (resetBlockMessage) {
+      this.feeStructureBlockMessage = '';
+    }
     if (this.mode === 'add') {
       this.assignedFeeStructureVersionLabel = '';
     }
@@ -879,17 +908,6 @@ export class AddStudentComponent implements OnInit {
         (sum, row) => sum + signedFeeAmount(row.category, row.amountValue, row.categoryLabel),
         0,
       );
-  }
-
-  private generateAdmissionNo(academicYearId: string) {
-    this.studentService.getNextAdmissionNo(academicYearId).subscribe({
-      next: (res) => {
-        this.studentForm.patchValue({ admissionNo: res.admissionNo });
-        this.cdr.detectChanges();
-      },
-      error: () =>
-        this.snackBar.open('Error generating admission number', 'Close', { duration: 3000 }),
-    });
   }
 
   private generateRollNumber(academicYearId: string, classId: string) {
@@ -1111,13 +1129,13 @@ export class AddStudentComponent implements OnInit {
     if (classId && yearId) {
       this.loadFeeStructure(classId, yearId);
     } else {
-      this.clearFeeStructure();
+      this.clearFeeStructure(true);
     }
   }
 
   get feesTabFooterHint(): string {
     if (this.mode === 'add' && this.currentTab === 2 && !this.hasActiveFeeStructure && !this.feeStructureLoading) {
-      return 'Publish fee structure before continuing';
+      return this.feeStructureBlockMessage || 'Publish fee structure before continuing';
     }
     return this.footerHints[this.currentTab] ?? '';
   }
@@ -1143,7 +1161,7 @@ export class AddStudentComponent implements OnInit {
 
     if (this.mode === 'add' && !this.hasActiveFeeStructure) {
       this.snackBar.open(
-        'Cannot add student without a published fee structure. Publish fees first.',
+        this.feeStructureBlockMessage || 'Cannot add student without a published fee structure. Publish fees first.',
         'Close',
         { duration: 4000, panelClass: 'snack-error' },
       );
