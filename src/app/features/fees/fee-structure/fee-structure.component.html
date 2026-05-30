@@ -36,7 +36,7 @@
       <div class="card-header-actions">
         <button type="button" class="btn-cancel" (click)="closeManagePanel()">Close</button>
         <button
-          *ngIf="!selectedVersion.isLocked"
+          *ngIf="canManageVersions && !selectedVersion.isLocked"
           type="button"
           class="btn-primary"
           (click)="openAddFeeType()"
@@ -64,7 +64,7 @@
           <th>Mandatory</th>
           <th>Student-wise amount</th>
           <th>Refundable</th>
-          <th style="width: 70px" *ngIf="!selectedVersion.isLocked">Actions</th>
+          <th style="width: 70px" *ngIf="canManageVersions && !selectedVersion.isLocked">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -81,7 +81,7 @@
           <td><span class="badge" [ngClass]="f.isMandatory ? 'b-green' : 'b-gray'">{{ f.isMandatory ? 'Yes' : 'No' }}</span></td>
           <td><span class="badge" [ngClass]="f.studentWiseDifferentAmount ? 'b-amber' : 'b-gray'">{{ f.studentWiseDifferentAmount ? 'Yes' : 'No' }}</span></td>
           <td><span class="badge" [ngClass]="f.isRefundable ? 'b-amber' : 'b-gray'">{{ f.isRefundable ? 'Yes' : 'No' }}</span></td>
-          <td *ngIf="!selectedVersion.isLocked">
+          <td *ngIf="canManageVersions && !selectedVersion.isLocked">
             <button type="button" class="act-btn del" title="Delete" (click)="deleteFeeType(f)">
               <mat-icon>delete</mat-icon>
             </button>

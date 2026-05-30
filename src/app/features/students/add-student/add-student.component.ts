@@ -925,7 +925,7 @@ export class AddStudentComponent implements OnInit {
   }
 
   loadAcademicYears() {
-    this.academicYearService.getAcademicYearDropdown().subscribe({
+    this.academicYearService.getAcademicYearDropdown('switcher').subscribe({
       next: (years) => {
         this.academicYears = years || [];
         this.configs['academicYear'].options = this.academicYears.map((year: any) => ({

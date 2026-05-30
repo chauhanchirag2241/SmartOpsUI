@@ -8,6 +8,7 @@ import { EmployeeSalaryService } from '../../../core/services/employee-salary.se
 import { SalaryStructureService } from '../../../core/services/salary-structure.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
 import {
@@ -33,6 +34,7 @@ export class EmployeeSalaryComponent implements OnInit {
   private readonly service = inject(EmployeeSalaryService);
   private readonly structureService = inject(SalaryStructureService);
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
@@ -241,7 +243,7 @@ export class EmployeeSalaryComponent implements OnInit {
   }
 
   canEdit(): boolean {
-    return this.permissionService.canEdit(MenuCodes.SalaryEmployees);
+    return !this.ayContext.isReadOnlyScope() && this.permissionService.canEdit(MenuCodes.SalaryEmployees);
   }
 
   private toast(msg: string, isError = false): void {

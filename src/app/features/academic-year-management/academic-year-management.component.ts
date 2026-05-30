@@ -15,7 +15,9 @@ import type {
 } from '../../shared/components/smart-data-table';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
+import { switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-academic-year-management',
@@ -27,6 +29,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 export class AcademicYearManagementComponent implements OnInit {
   private readonly ayService = inject(AcademicYearService);
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
 
   constructor(
     private snackBar: NotificationService,
@@ -69,7 +72,7 @@ export class AcademicYearManagementComponent implements OnInit {
   }
 
   openAddForm(): void {
-    if (!this.permissionService.canAdd(MenuCodes.AcademicYears)) return;
+    if (this.ayContext.isReadOnlyScope() || !this.permissionService.canAdd(MenuCodes.AcademicYears)) return;
     this.formMode = 'add';
     this.selectedYearId = undefined;
     this.showAddForm = true;
@@ -185,7 +188,7 @@ export class AcademicYearManagementComponent implements OnInit {
       this.baseAyConfig,
       this.permissionService,
       MenuCodes.AcademicYears,
-      false,
+      this.ayContext.isReadOnlyScope(),
     );
   }
 
@@ -202,23 +205,13 @@ export class AcademicYearManagementComponent implements OnInit {
       this.selectedYearId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit details') {
-      if (!this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
+      if (this.ayContext.isReadOnlyScope() || !this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
       this.formMode = 'edit';
       this.selectedYearId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Set as current') {
-      if (!this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
-      this.ayService.setCurrentAcademicYear(id).subscribe({
-        next: () => {
-          this.snackBar.open('Current academic year updated', 'Close', { duration: 3000, panelClass: 'snack-success' });
-          this.loadAcademicYears();
-        },
-        error: (err: { error?: string }) =>
-          this.snackBar.open(err?.error ?? 'Failed to set current year', 'Close', {
-            duration: 3000,
-            panelClass: 'snack-error',
-          }),
-      });
+      if (this.ayContext.isReadOnlyScope() || !this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
+      this.confirmSetCurrentAcademicYear(event.row, id);
     } else if (event.action.label === 'Delete year') {
       if (!this.permissionService.canDelete(MenuCodes.AcademicYears)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
@@ -246,6 +239,57 @@ export class AcademicYearManagementComponent implements OnInit {
         }
       });
     }
+  }
+
+  private confirmSetCurrentAcademicYear(row: Record<string, unknown>, id: string): void {
+    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+      data: {
+        title: 'Change current academic year?',
+        description:
+          'Are you sure you want to change the current academic year? The selected year will become the active school year in the header.',
+        recordName: String(row['title'] ?? ''),
+        recordMeta: `${row['startDate'] ?? ''} to ${row['endDate'] ?? ''}`,
+        initials: 'AY',
+        warningMessage:
+          'All other academic years will be treated as past (archived). In those years you can view records only — add, edit, and delete will not be available until you switch back to the current year.',
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'No',
+        variant: 'primary',
+        headerIcon: 'calendar_month',
+      },
+      panelClass: 'erp-dialog',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (!confirmed) {
+        return;
+      }
+
+      this.ayService.setCurrentAcademicYear(id).subscribe({
+        next: () => {
+          this.ayContext
+            .initialize()
+            .pipe(switchMap(() => this.ayContext.loadDropdown()))
+            .subscribe({
+            next: () => {
+              this.ayContext.setSelectedYearId(id);
+              this.snackBar.open('Current academic year updated', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-success',
+              });
+              this.loadAcademicYears();
+            },
+            error: () => this.loadAcademicYears(),
+          });
+        },
+        error: (err: { error?: string }) =>
+          this.snackBar.open(err?.error ?? 'Failed to set current year', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          }),
+      });
+    });
   }
 
   onExportClicked(): void {

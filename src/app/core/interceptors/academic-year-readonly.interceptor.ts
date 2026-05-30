@@ -15,7 +15,7 @@ export const academicYearReadOnlyInterceptor: HttpInterceptorFn = (req, next) =>
           const msg =
             typeof body === 'object' && body && 'message' in body && typeof body.message === 'string'
               ? body.message
-              : 'Changes are only allowed for the current academic year.';
+              : 'Changes are not allowed for past academic years.';
           snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'snack-warning' });
         }
       }

@@ -14,19 +14,37 @@
 
   @if (ayContext.canSwitchYear() && ayContext.dropdownYears().length > 0) {
     <div class="header-year-picker">
-      <mat-icon class="header-year-picker-icon">calendar_month</mat-icon>
-      <select
-        class="header-year-select"
-        [ngModel]="selectedYearId"
-        (ngModelChange)="onYearChange($event)"
+      <button
+        type="button"
+        class="header-year-trigger"
+        (click)="toggleYearMenu($event)"
+        [attr.aria-expanded]="yearMenuOpen"
+        aria-haspopup="listbox"
         aria-label="Academic year"
       >
-        @for (year of ayContext.dropdownYears(); track year.id) {
-          <option [value]="year.id">
-            {{ year.name }}{{ year.isCurrent ? ' (current)' : '' }}
-          </option>
-        }
-      </select>
+        <mat-icon class="header-year-trigger-icon">calendar_month</mat-icon>
+        <span class="header-year-trigger-label">{{ selectedYearLabel }}</span>
+        <mat-icon class="header-year-trigger-chevron">{{ yearMenuOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
+      @if (yearMenuOpen) {
+        <div class="header-year-menu" role="listbox" aria-label="Academic years">
+          @for (year of ayContext.dropdownYears(); track year.id) {
+            <button
+              type="button"
+              class="header-year-option"
+              role="option"
+              [class.is-selected]="year.id === selectedYearId"
+              [attr.aria-selected]="year.id === selectedYearId"
+              (click)="pickYear(year.id, $event)"
+            >
+              <span>{{ year.name }}</span>
+              @if (year.isCurrent) {
+                <span class="header-year-option-tag">current</span>
+              }
+            </button>
+          }
+        </div>
+      }
     </div>
   } @else if (academicYearLabel) {
     <span class="header-chip"><mat-icon>calendar_month</mat-icon>{{ academicYearLabel }}</span>

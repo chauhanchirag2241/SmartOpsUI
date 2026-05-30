@@ -90,6 +90,7 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   /** Draft/Published: always edit all classes. Active: only classes without saved amounts. */
   get canEditAmounts(): boolean {
+    if (this.ayContext.isReadOnlyScope()) return false;
     if (!this.amountData) return false;
     const status = this.amountData.versionStatusLabel;
     if (status === 'Draft' || status === 'Published') return true;

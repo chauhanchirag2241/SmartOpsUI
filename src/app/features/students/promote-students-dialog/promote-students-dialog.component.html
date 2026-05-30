@@ -59,6 +59,36 @@
         Auto-assign roll numbers in target class
       </label>
 
+      @if (loadingPendingFees) {
+        <span class="field-note">Checking pending fees…</span>
+      } @else if (pendingFees.length && targetYearId) {
+        <div class="promote-fee-transfer">
+          <div class="promote-fee-transfer-title">
+            <mat-icon>info</mat-icon>
+            Pending fees will transfer to {{ targetYearLabel }}
+          </div>
+          <p class="promote-fee-transfer-msg">
+            These students have unpaid fees in the source year. On promote, the pending balance will be added to
+            {{ targetYearLabel }} fee collection (total fees + due), including a
+            <strong>Previous year pending</strong> line.
+          </p>
+          <ul class="promote-pending-fee-list">
+            @for (p of pendingFees; track p.studentId) {
+              <li>
+                <span class="promote-pending-name">{{ p.studentName }}</span>
+                <span class="promote-pending-amt">Due {{ formatInr(p.pendingAmount) }}</span>
+                <span class="promote-pending-meta muted">
+                  Total {{ formatInr(p.totalFees) }} · Paid {{ formatInr(p.paidAmount) }}
+                </span>
+              </li>
+            }
+          </ul>
+          <div class="promote-pending-total">
+            Total pending to transfer: <strong>{{ formatInr(totalPendingToTransfer) }}</strong>
+          </div>
+        </div>
+      }
+
       @if (resultErrors.length) {
         <div class="promote-errors">
           <div class="promote-errors-title">Could not promote:</div>

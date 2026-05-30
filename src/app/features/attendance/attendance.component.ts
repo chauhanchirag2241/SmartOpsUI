@@ -11,6 +11,7 @@ import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 
 interface Student {
   id: string;
@@ -40,6 +41,11 @@ export class AttendanceComponent implements OnInit {
   private attendanceService = inject(AttendanceService);
   private snackBar = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
+  readonly ayContext = inject(AcademicYearContextService);
+
+  get canEditAttendance(): boolean {
+    return !this.ayContext.isReadOnlyScope();
+  }
 
   students: Student[] = [];
   status: AttendanceStatusMap = {};
@@ -217,6 +223,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   setStatus(id: string, st: string, event?: Event) {
+    if (!this.canEditAttendance) return;
     if (event) event.stopPropagation();
     const prev = this.status[id];
     if (prev === st) {
@@ -230,6 +237,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   cardClick(id: string) {
+    if (!this.canEditAttendance) return;
     const cycles: { [key: string]: string } = { '': 'present', 'present': 'absent', 'absent': 'leave', 'leave': 'late', 'late': '' };
     const prev = this.status[id];
     this.status[id] = cycles[prev];
@@ -238,6 +246,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   markAll(st: string) {
+    if (!this.canEditAttendance) return;
     const vis = this.visibleStudents;
     const snap = vis.map(s => ({ id: s.id, was: this.status[s.id] }));
     vis.forEach(s => this.status[s.id] = st);
@@ -251,7 +260,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   undo() {
-    if (!this.history.length) return;
+    if (!this.canEditAttendance || !this.history.length) return;
     const last = this.history.pop();
     if (last.type === 'single') {
       this.status[last.id] = last.from;
@@ -270,6 +279,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   openNote(id: string, event: Event) {
+    if (!this.canEditAttendance) return;
     event.stopPropagation();
     this.noteTargetId = id;
     this.tempNote = this.notes[id] || '';
@@ -375,6 +385,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   submitAttendance() {
+    if (!this.canEditAttendance) return;
     const unmarked = this.stats.total - this.stats.marked;
     if (unmarked > 0 && !confirm(`${unmarked} students unmarked. Submit anyway?`)) return;
 

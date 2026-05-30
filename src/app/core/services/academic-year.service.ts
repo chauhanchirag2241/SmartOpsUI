@@ -1,8 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { AcademicYearFilter } from '../../shared/enums/table-filters.enum';
+import { normalizeAcademicYearDropdownItem } from '../utils/academic-year-filter.util';
+
+export type AcademicYearDropdownScope = 'all' | 'switcher';
 
 export interface CurrentAcademicYear {
   id: string;
@@ -16,6 +19,7 @@ export interface AcademicYearDropdownItem {
   id: string;
   name: string;
   isCurrent: boolean;
+  startDate: string;
 }
 
 function resolveFilter(label: string): AcademicYearFilter {
@@ -65,8 +69,18 @@ export class AcademicYearService {
     return this.api.get<CurrentAcademicYear>('academic-year/current');
   }
 
-  getAcademicYearDropdown(): Observable<AcademicYearDropdownItem[]> {
-    return this.api.get<AcademicYearDropdownItem[]>('academic-year/dropdown');
+  /**
+   * @param scope `switcher` = current + future only (header, forms). `all` = every active year.
+   */
+  getAcademicYearDropdown(scope: AcademicYearDropdownScope = 'switcher'): Observable<AcademicYearDropdownItem[]> {
+    const params = scope === 'switcher' ? new HttpParams().set('scope', 'switcher') : undefined;
+    return this.api.get<AcademicYearDropdownItem[]>('academic-year/dropdown', params).pipe(
+      map((items) =>
+        (items ?? []).map((item) =>
+          normalizeAcademicYearDropdownItem(item as unknown as Record<string, unknown>),
+        ),
+      ),
+    );
   }
 
   setCurrentAcademicYear(id: string): Observable<void> {

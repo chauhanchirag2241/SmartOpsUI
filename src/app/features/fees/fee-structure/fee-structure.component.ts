@@ -127,6 +127,10 @@ export class FeeStructureComponent implements OnInit {
     actionVisibleFn: (action, row) => this.isVersionActionVisible(action, row),
   };
 
+  get canManageVersions(): boolean {
+    return !this.ayContext.isReadOnlyScope();
+  }
+
   ngOnInit(): void {
     this.tableConfig = applyModuleTablePermissions(
       this.baseTableConfig,
@@ -293,21 +297,57 @@ export class FeeStructureComponent implements OnInit {
   }
 
   publishVersion(id: string): void {
-    if (
-      !confirm(
-        'Publish this fee structure? The current published version for this academic year will be moved to Archived.',
-      )
-    ) {
+    const version = this.resolveVersion(id);
+    if (!version) {
+      this.toast('Version not found', true);
       return;
     }
-    this.service.publishVersion(id).subscribe({
-      next: () => {
-        this.loadVersions();
-        if (this.selectedVersion?.id === id) this.openManagePanel(id);
-        this.toast('Published');
+
+    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+      data: {
+        title: 'Publish fee structure?',
+        description:
+          'Are you sure you want to publish this fee structure? It will be locked for editing and can be used for class-wise fee amounts.',
+        recordName: `${version.academicYearTitle} — ${version.versionLabel}`,
+        recordMeta: `Status: ${version.statusLabel}`,
+        initials: 'FS',
+        warningMessage:
+          'The current published version for this academic year will be moved to Archived. Fee heads cannot be changed after publish unless you create a new version.',
+        confirmButtonText: 'Yes, publish',
+        cancelButtonText: 'No',
+        variant: 'primary',
+        headerIcon: 'publish',
       },
-      error: (e) => this.toast(extractApiError(e, 'Publish failed'), true),
+      panelClass: 'erp-dialog',
+      disableClose: true,
     });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+      this.service.publishVersion(id).subscribe({
+        next: () => {
+          this.loadVersions();
+          if (this.selectedVersion?.id === id) {
+            this.openManagePanel(id);
+          }
+          this.toast('Published');
+        },
+        error: (e) => this.toast(extractApiError(e, 'Publish failed'), true),
+      });
+    });
+  }
+
+  private resolveVersion(id: string): ReturnType<typeof normalizeFeeStructureVersion> | null {
+    const raw = this.versions.find((v) => String(v['id'] ?? '') === id);
+    if (raw) {
+      return normalizeFeeStructureVersion(raw);
+    }
+    if (this.selectedVersion?.id === id) {
+      return this.selectedVersion;
+    }
+    return null;
   }
 
   activateVersion(id: string): void {

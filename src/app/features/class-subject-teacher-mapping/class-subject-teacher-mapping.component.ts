@@ -37,7 +37,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
   private readonly ayContext = inject(AcademicYearContextService);
 
   get canEdit(): boolean {
-    return this.permissionService.canEdit(MenuCodes.ClassMappings);
+    return !this.ayContext.isReadOnlyScope() && this.permissionService.canEdit(MenuCodes.ClassMappings);
   }
 
   savingId: string | null = null;

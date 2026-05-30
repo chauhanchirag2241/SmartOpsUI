@@ -18,3 +18,8 @@
   height: 20px;
   flex-shrink: 0;
 }
+
+.scope-transition-lock {
+  visibility: hidden;
+  pointer-events: none;
+}

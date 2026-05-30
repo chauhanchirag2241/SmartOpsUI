@@ -31,7 +31,7 @@
       (ngModelChange)="onListFiltersChange()"
       [disabled]="!classFilter"
     >
-      <option value="">All status</option>
+      <option value="">All students</option>
       <option value="paid">Fully paid</option>
       <option value="partial">Partial</option>
       <option value="unpaid">Overdue</option>
@@ -106,15 +106,17 @@
       </div>
       <div class="collect-actions">
         <button
+          *ngIf="!ayContext.isReadOnlyScope()"
           type="button"
           class="btn-save collect-btn"
           [disabled]="!canCollectFee"
           (click)="openCollect()"
         >
           <mat-icon>payments</mat-icon>
-          {{ detail.dueAmount > 0 ? 'Collect fee' : 'Fully paid' }}
+          {{ detail.dueAmount > 0 ? 'Collect fee' : (detail.totalFees > 0 ? 'Fully paid' : 'No fees due') }}
         </button>
-        <span *ngIf="detail.dueAmount <= 0" class="collect-hint">All fees collected for this student</span>
+        <span *ngIf="detail.dueAmount <= 0 && detail.totalFees > 0" class="collect-hint">All fees collected for this student</span>
+        <span *ngIf="detail.totalFees <= 0" class="collect-hint">No fee structure or installments for this student in this year.</span>
       </div>
     </div>
 

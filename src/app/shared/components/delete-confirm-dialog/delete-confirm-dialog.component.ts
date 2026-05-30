@@ -22,6 +22,13 @@ export class DeleteConfirmDialogComponent {
     this.data.description = this.data.description ?? 'This will permanently remove the record and all associated data.';
     this.data.confirmButtonText = this.data.confirmButtonText ?? 'Yes, delete';
     this.data.cancelButtonText = this.data.cancelButtonText ?? 'Cancel';
+    this.data.variant = this.data.variant ?? 'danger';
+    this.data.headerIcon =
+      this.data.headerIcon ?? (this.data.variant === 'primary' ? 'event_available' : 'delete_outline');
+  }
+
+  get isPrimary(): boolean {
+    return this.data.variant === 'primary';
   }
 
   onCancel(): void {

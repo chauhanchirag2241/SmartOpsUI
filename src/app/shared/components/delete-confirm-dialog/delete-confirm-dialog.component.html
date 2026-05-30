@@ -1,8 +1,8 @@
 <div class="delete-dialog">
 
   <div class="dialog-header">
-    <div class="icon-circle">
-      <mat-icon>delete_outline</mat-icon>
+    <div class="icon-circle" [class.icon-primary]="isPrimary">
+      <mat-icon>{{ data.headerIcon }}</mat-icon>
     </div>
     <button mat-icon-button class="close-btn" (click)="onCancel()">
       <mat-icon>close</mat-icon>
@@ -33,8 +33,14 @@
     <button mat-stroked-button class="btn-cancel" (click)="onCancel()">
       <mat-icon>close</mat-icon> {{ data.cancelButtonText }}
     </button>
-    <button mat-flat-button class="btn-delete" (click)="onConfirm()">
-      <mat-icon>delete_outline</mat-icon> {{ data.confirmButtonText }}
+    <button
+      mat-flat-button
+      [class.btn-delete]="!isPrimary"
+      [class.btn-primary]="isPrimary"
+      (click)="onConfirm()"
+    >
+      <mat-icon>{{ isPrimary ? 'check_circle' : 'delete_outline' }}</mat-icon>
+      {{ data.confirmButtonText }}
     </button>
   </div>
 

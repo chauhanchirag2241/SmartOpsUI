@@ -492,17 +492,52 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     const btn = event.currentTarget as HTMLElement;
     const rect = btn.getBoundingClientRect();
     const menuWidth = 180;
+    const gap = 4;
+    const viewportPad = 8;
+
+    this.ctxMenuRowIndex = rowIndex;
+    const menuHeight = this.estimateContextMenuHeight(rowIndex);
 
     let left = rect.right - menuWidth;
-    let top = rect.bottom + 4;
+    let top = rect.bottom + gap;
 
-    if (left < 8) left = 8;
-    if (top + 240 > window.innerHeight) top = rect.top - 244;
+    if (left < viewportPad) {
+      left = viewportPad;
+    }
+    if (left + menuWidth > window.innerWidth - viewportPad) {
+      left = window.innerWidth - menuWidth - viewportPad;
+    }
+
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPad;
+    const spaceAbove = rect.top - viewportPad;
+    if (menuHeight + gap > spaceBelow && spaceAbove >= spaceBelow) {
+      top = rect.top - menuHeight - gap;
+    }
+
+    const maxTop = window.innerHeight - menuHeight - viewportPad;
+    top = Math.max(viewportPad, Math.min(top, maxTop));
 
     this.ctxMenuLeft = left;
     this.ctxMenuTop = top;
-    this.ctxMenuRowIndex = rowIndex;
     this.ctxMenuVisible = true;
+  }
+
+  private estimateContextMenuHeight(rowIndex: number): number {
+    const globalIdx = (this.currentPage - 1) * this.pageSize + rowIndex;
+    const row = this.filteredData[globalIdx] ?? {};
+    const actions = (this.config.actions ?? []).filter(
+      (action) => !this.config.actionVisibleFn || this.config.actionVisibleFn(action, row),
+    );
+
+    const itemHeight = 36;
+    const separatorHeight = 9;
+    const menuPadding = 12;
+    return (
+      actions.reduce(
+        (total, action) => total + itemHeight + (action.separatorBefore ? separatorHeight : 0),
+        0,
+      ) + menuPadding
+    );
   }
 
   onActionClick(action: DataTableAction): void {

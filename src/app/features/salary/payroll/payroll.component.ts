@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PayrollService } from '../../../core/services/payroll.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table/smart-data-table.component';
 import type { DataTableAction, DataTableBulkAction, DataTableConfig } from '../../../shared/components/smart-data-table';
 import {
@@ -28,6 +29,7 @@ import {
 export class PayrollComponent implements OnInit {
   private readonly service = inject(PayrollService);
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
@@ -213,11 +215,11 @@ export class PayrollComponent implements OnInit {
   }
 
   canProcess(): boolean {
-    return this.permissionService.canAdd(MenuCodes.SalaryPayroll);
+    return !this.ayContext.isReadOnlyScope() && this.permissionService.canAdd(MenuCodes.SalaryPayroll);
   }
 
   canMarkPaid(): boolean {
-    return this.permissionService.canEdit(MenuCodes.SalaryPayroll);
+    return !this.ayContext.isReadOnlyScope() && this.permissionService.canEdit(MenuCodes.SalaryPayroll);
   }
 
   onExportClicked(): void {

@@ -1,5 +1,6 @@
 
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -46,7 +47,10 @@ export class StudentsComponent implements OnInit {
   readonly permissionService = inject(PermissionService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly classService = inject(ClassService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+
+  private studentsRequestSeq = 0;
 
   constructor(
     private snackBar: NotificationService,
@@ -98,8 +102,15 @@ export class StudentsComponent implements OnInit {
   }
 
   private loadClassOptions(): void {
-    this.classService.getClassDropdown().subscribe({
+    const yearKey = this.ayContext.effectiveYearKey();
+    this.classService
+      .getClassDropdown()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (items) => {
+        if (yearKey !== this.ayContext.effectiveYearKey()) {
+          return;
+        }
         this.classOptions = (items || []).map((item: { id: string; name: string }) => ({
           id: String(item.id),
           name: String(item.name ?? ''),
@@ -125,17 +136,30 @@ export class StudentsComponent implements OnInit {
     this.listState = { pageIndex, pageSize, searchQuery, sortColumn, sortDirection };
 
     const classIds = this.selectedClassIds.size ? Array.from(this.selectedClassIds) : null;
+    const requestSeq = ++this.studentsRequestSeq;
+    const yearKey = this.ayContext.effectiveYearKey();
+    this.students = [];
+    this.totalStudents = 0;
 
     this.studentService
       .getStudents(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter, classIds)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: any) => {
-          // The backend now returns PagedResult format { items, totalCount, ... }
+          if (
+            requestSeq !== this.studentsRequestSeq ||
+            yearKey !== this.ayContext.effectiveYearKey()
+          ) {
+            return;
+          }
           this.students = res?.items || [];
           this.totalStudents = res?.totalCount || 0;
           this.cdr.detectChanges();
         },
         error: (err: any) => {
+          if (requestSeq !== this.studentsRequestSeq) {
+            return;
+          }
           console.error('Error loading students:', err);
           this.snackBar.open('Failed to load students', 'Close', {
             duration: 3000,
@@ -478,7 +502,7 @@ export class StudentsComponent implements OnInit {
   openPromoteDialog(rows: Record<string, unknown>[]): void {
     if (this.ayContext.isReadOnlyScope()) {
       this.snackBar.open(
-        'Promote is only allowed while viewing the current academic year.',
+        'Promote is not allowed while viewing a past academic year.',
         'Close',
         { duration: 4000, panelClass: 'snack-warning' },
       );
@@ -488,14 +512,26 @@ export class StudentsComponent implements OnInit {
       return;
     }
     const active = rows.filter((r) => r['isActive'] !== false);
-    if (!active.length) {
-      this.snackBar.open('Select active students to promote', 'Close', {
-        duration: 3000,
-        panelClass: 'snack-warning',
-      });
+    const promotable = active.filter((r) => r['enrollmentIsActive'] !== false);
+    if (!promotable.length) {
+      const alreadyPromoted = active.length > 0 && active.every((r) => r['enrollmentIsActive'] === false);
+      this.snackBar.open(
+        alreadyPromoted
+          ? 'Selected student(s) are already promoted from this academic year. Refresh the list or switch to the target year.'
+          : 'Select students with an active enrollment in the current academic year to promote.',
+        'Close',
+        { duration: 5000, panelClass: 'snack-warning' },
+      );
       return;
     }
-    this.promoteStudents = active.map((r) => ({
+    if (promotable.length < active.length) {
+      this.snackBar.open(
+        `${active.length - promotable.length} selected student(s) skipped — already promoted from this year.`,
+        'Close',
+        { duration: 4000, panelClass: 'snack-info' },
+      );
+    }
+    this.promoteStudents = promotable.map((r) => ({
       id: String(r['id'] ?? ''),
       name: String(r['name'] ?? 'Student'),
       class: String(r['class'] ?? ''),

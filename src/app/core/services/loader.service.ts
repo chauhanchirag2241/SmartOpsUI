@@ -37,11 +37,29 @@ export class LoaderService {
     this.syncVisibility();
   }
 
+  hasPendingHttp(): boolean {
+    return this.httpCount > 0;
+  }
+
   /** Manual overlay for non-HTTP work; pair with {@link hideManual}. */
   showManual(message = 'Loading...'): void {
     this.manualCount++;
     this._message.set(message);
     this.syncVisibility();
+  }
+
+  /** Shows the overlay immediately (no delay), e.g. academic year switch. */
+  showManualImmediate(message = 'Loading...'): void {
+    this.manualCount++;
+    this._message.set(message);
+    if (this.showTimer) {
+      clearTimeout(this.showTimer);
+      this.showTimer = undefined;
+    }
+    this.clearHideTimer();
+    this.showStartedAt = Date.now();
+    this._loading.set(true);
+    this.startMessageRotation();
   }
 
   hideManual(): void {

@@ -15,4 +15,8 @@ export interface DeleteDialogData {
   confirmButtonText?: string;
   /** Text for the cancel button (default: "Cancel") */
   cancelButtonText?: string;
+  /** danger = red delete style; primary = green confirm style */
+  variant?: 'danger' | 'primary';
+  /** Material icon name for the header circle */
+  headerIcon?: string;
 }

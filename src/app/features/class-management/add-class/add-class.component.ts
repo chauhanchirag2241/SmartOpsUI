@@ -209,7 +209,7 @@ export class AddClassComponent implements OnInit {
   }
 
   private loadAcademicYears(): void {
-    this.ayService.getAcademicYearDropdown().subscribe({
+    this.ayService.getAcademicYearDropdown('switcher').subscribe({
       next: (years: any[]) => {
         this.configs['academicYear'].options = (years || []).map((ay: any) => ({
           label: ay.name,

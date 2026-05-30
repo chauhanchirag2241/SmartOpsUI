@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { EMPTY, switchMap, catchError, timeout } from 'rxjs';
 import {
   HomeworkService,
@@ -37,6 +38,11 @@ export class HomeworkDetailComponent implements OnInit {
   private snackBar = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   private destroyRef = inject(DestroyRef);
+  readonly ayContext = inject(AcademicYearContextService);
+
+  get canEditSubmissions(): boolean {
+    return !this.ayContext.isReadOnlyScope();
+  }
 
   HomeworkSubmissionStatus = HomeworkSubmissionStatus;
 
@@ -242,6 +248,7 @@ export class HomeworkDetailComponent implements OnInit {
   }
 
   setStudentStatus(studentId: string, status: HomeworkSubmissionStatus): void {
+    if (!this.canEditSubmissions) return;
     this.studentRows = this.studentRows.map((row) => {
       if (row.studentId !== studentId) return row;
       const nextStatus = status;
@@ -271,7 +278,7 @@ export class HomeworkDetailComponent implements OnInit {
   }
 
   submitOrUpdateSubmissions(): void {
-    if (!this.homeworkId) return;
+    if (!this.canEditSubmissions || !this.homeworkId) return;
     this.isSubmitting = true;
     const isUpdate = this.isSubmissionsSubmitted;
     const call = isUpdate

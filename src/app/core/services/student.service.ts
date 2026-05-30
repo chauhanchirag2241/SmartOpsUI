@@ -226,11 +226,35 @@ export class StudentService {
     return this.api.get<{ ready: boolean; message?: string }>('students/promote-readiness', params);
   }
 
+  getPromotePendingFees(
+    sourceAcademicYearId: string,
+    studentIds: string[],
+  ): Observable<
+    {
+      studentId: string;
+      studentName: string;
+      totalFees: number;
+      paidAmount: number;
+      pendingAmount: number;
+    }[]
+  > {
+    let params = new HttpParams().set('sourceAcademicYearId', sourceAcademicYearId);
+    for (const id of studentIds) {
+      params = params.append('studentIds', id);
+    }
+    return this.api.get('students/promote-pending-fees', params);
+  }
+
   promoteStudents(payload: {
     sourceAcademicYearId: string;
     targetAcademicYearId: string;
     students: { studentId: string; targetClassId: string; rollNumber?: string; admissionDate?: string }[];
-  }): Observable<{ promotedCount: number; errors: string[] }> {
+  }): Observable<{
+    promotedCount: number;
+    errors: string[];
+    studentsWithFeesTransferred?: number;
+    totalPendingTransferred?: number;
+  }> {
     return this.api.post('students/promote', payload);
   }
 }

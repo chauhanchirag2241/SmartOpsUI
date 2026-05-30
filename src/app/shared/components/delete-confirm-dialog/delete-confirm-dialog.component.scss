@@ -21,11 +21,19 @@
     align-items: center;
     justify-content: center;
 
-    mat-icon { 
-      color: #c0392b; 
+    mat-icon {
+      color: #c0392b;
       font-size: 22px;
       width: 22px;
       height: 22px;
+    }
+
+    &.icon-primary {
+      background: #e8f4dc;
+
+      mat-icon {
+        color: var(--g600, #4a7c18);
+      }
     }
   }
 
@@ -150,8 +158,17 @@
     background: #c0392b;
     color: #fff;
 
-    &:hover { 
-      background: #a93226; 
+    &:hover {
+      background: #a93226;
+    }
+  }
+
+  .btn-primary {
+    background: var(--g400, #639922);
+    color: #fff;
+
+    &:hover {
+      background: var(--g600, #4a7c18);
     }
   }
 }

@@ -12,10 +12,12 @@
         <mat-icon>view_list</mat-icon>
       </button>
     </div>
-    <button type="button" class="create-btn" (click)="openCreate()">
-      <mat-icon>add</mat-icon>
-      Create homework
-    </button>
+    @if (canManageHomework) {
+      <button type="button" class="create-btn" (click)="openCreate()">
+        <mat-icon>add</mat-icon>
+        Create homework
+      </button>
+    }
   </div>
 
   <div class="stats">
@@ -107,14 +109,16 @@
           </div>
         </div>
       </div>
-      <div class="hw-card-footer" (click)="$event.stopPropagation()">
-        <button type="button" class="footer-icon-btn edit" (click)="openEdit(hw, $event)" aria-label="Edit">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button type="button" class="footer-icon-btn del" (click)="deleteHomework(hw, $event)" aria-label="Delete">
-          <mat-icon>delete</mat-icon>
-        </button>
-      </div>
+      @if (canManageHomework) {
+        <div class="hw-card-footer" (click)="$event.stopPropagation()">
+          <button type="button" class="footer-icon-btn edit" (click)="openEdit(hw, $event)" aria-label="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button type="button" class="footer-icon-btn del" (click)="deleteHomework(hw, $event)" aria-label="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
     </div>
   </div>
 
@@ -154,14 +158,16 @@
             </span>
           </td>
           <td (click)="$event.stopPropagation()">
-            <div class="row-actions">
-              <button type="button" class="footer-icon-btn edit" (click)="openEdit(hw, $event)" aria-label="Edit">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button type="button" class="footer-icon-btn del" (click)="deleteHomework(hw, $event)" aria-label="Delete">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
+            @if (canManageHomework) {
+              <div class="row-actions">
+                <button type="button" class="footer-icon-btn edit" (click)="openEdit(hw, $event)" aria-label="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button type="button" class="footer-icon-btn del" (click)="deleteHomework(hw, $event)" aria-label="Delete">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
           </td>
         </tr>
       </tbody>

@@ -37,6 +37,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 })
 export class SubjectsComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly router = inject(Router);
 
   showAddForm = false;

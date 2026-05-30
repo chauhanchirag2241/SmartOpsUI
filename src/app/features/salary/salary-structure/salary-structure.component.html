@@ -35,7 +35,7 @@
       </div>
       <div class="card-header-actions">
         <button type="button" class="btn-cancel" (click)="closeManagePanel()">Close</button>
-        <button *ngIf="!selectedVersion.isLocked" type="button" class="btn-primary" (click)="openAddComponent()">
+        <button *ngIf="canManageVersions && !selectedVersion.isLocked" type="button" class="btn-primary" (click)="openAddComponent()">
           <mat-icon>add</mat-icon> Add component
         </button>
       </div>
@@ -61,7 +61,7 @@
           <th>Calculation</th>
           <th>Default value</th>
           <th>Taxable</th>
-          <th style="width: 70px" *ngIf="!selectedVersion.isLocked">Actions</th>
+          <th style="width: 70px" *ngIf="canManageVersions && !selectedVersion.isLocked">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -74,7 +74,7 @@
           <td><span class="badge b-gray">{{ c.calculationTypeLabel }}</span></td>
           <td>{{ formatValueDisplay(c.calculationTypeLabel, c.value) }}</td>
           <td><span class="badge" [ngClass]="c.isTaxable ? 'b-amber' : 'b-gray'">{{ c.isTaxable ? 'Yes' : 'No' }}</span></td>
-          <td *ngIf="!selectedVersion.isLocked">
+          <td *ngIf="canManageVersions && !selectedVersion.isLocked">
             <button type="button" class="act-btn del" title="Delete" (click)="deleteComponent(c)">
               <mat-icon>delete</mat-icon>
             </button>

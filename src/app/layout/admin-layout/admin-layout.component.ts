@@ -9,7 +9,7 @@ import { HeaderComponent } from '../../shared/components/header/header.component
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { AuthService } from '../../core/services/auth.service';
-import { forkJoin } from 'rxjs';
+import { switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-admin-layout',
@@ -27,10 +27,10 @@ export class AdminLayoutComponent implements OnInit {
       return;
     }
 
-    forkJoin({
-      current: this.ayContext.initialize(),
-      dropdown: this.ayContext.loadDropdown(),
-    }).subscribe({ error: () => undefined });
+    this.ayContext
+      .initialize()
+      .pipe(switchMap(() => this.ayContext.loadDropdown()))
+      .subscribe({ error: () => undefined });
   }
 
   onMenuToggle(): void {

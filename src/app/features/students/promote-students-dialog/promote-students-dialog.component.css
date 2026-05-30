@@ -86,6 +86,79 @@
   color: var(--muted);
 }
 
+.promote-fee-transfer {
+  background: #f5f9ef;
+  border: 0.5px solid var(--g100, #c0dd97);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.promote-fee-transfer-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--g600, #4a7c18);
+  margin-bottom: 6px;
+}
+
+.promote-fee-transfer-title mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.promote-fee-transfer-msg {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.promote-pending-fee-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.promote-pending-fee-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 11px;
+}
+
+.promote-pending-fee-list li:last-child {
+  border-bottom: none;
+}
+
+.promote-pending-name {
+  font-weight: 500;
+}
+
+.promote-pending-amt {
+  color: #a32d2d;
+  font-weight: 600;
+  text-align: right;
+}
+
+.promote-pending-meta {
+  grid-column: 1 / -1;
+  font-size: 10px;
+}
+
+.promote-pending-total {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--g600, #4a7c18);
+}
+
 .btn-cancel {
   background: var(--card);
   border: 0.5px solid var(--border);

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { LayoutUiService } from '../../core/services/layout-ui.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -47,6 +48,11 @@ export class HomeworkComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   readonly layoutUi = inject(LayoutUiService);
+  readonly ayContext = inject(AcademicYearContextService);
+
+  get canManageHomework(): boolean {
+    return !this.ayContext.isReadOnlyScope();
+  }
 
   HomeworkPriority = HomeworkPriority;
   HomeworkSubmissionType = HomeworkSubmissionType;
@@ -199,6 +205,7 @@ export class HomeworkComponent implements OnInit {
   }
 
   openCreate(): void {
+    if (!this.canManageHomework) return;
     this.editingHomeworkId = null;
     this.form = this.emptyForm();
     this.showCreateModal = true;
@@ -206,6 +213,7 @@ export class HomeworkComponent implements OnInit {
   }
 
   openEdit(item: HomeworkListItem, event?: Event): void {
+    if (!this.canManageHomework) return;
     event?.stopPropagation();
     this.editingHomeworkId = item.id;
     this.form = {
@@ -230,6 +238,7 @@ export class HomeworkComponent implements OnInit {
   }
 
   saveHomework(): void {
+    if (!this.canManageHomework) return;
     if (!this.form.classId || !this.form.subjectId || !this.form.title?.trim() || !this.form.dueDate) {
       this.snackBar.open('Please fill required fields', 'Close', { duration: 3000 });
       return;
@@ -261,6 +270,7 @@ export class HomeworkComponent implements OnInit {
   }
 
   deleteHomework(item: HomeworkListItem, event: Event): void {
+    if (!this.canManageHomework) return;
     event.stopPropagation();
     if (!confirm(`Delete "${item.title}"?`)) return;
     this.homeworkService.delete(item.id).subscribe({

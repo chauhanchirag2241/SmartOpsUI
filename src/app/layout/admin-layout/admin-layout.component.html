@@ -10,16 +10,21 @@
         <div class="year-readonly-banner" role="status">
           <mat-icon>info</mat-icon>
           <span>
-            Viewing <strong>{{ ayContext.effectiveYearLabel() }}</strong> (read-only). Switch to the
-            <strong>current</strong> academic year in the header to add, edit, or delete.
+            Viewing <strong>{{ ayContext.effectiveYearLabel() }}</strong> (read-only — past academic year).
+            Select the <strong>current</strong> or an <strong>upcoming</strong> year to add, edit, or delete.
           </span>
         </div>
       }
       <main class="content-body">
         <div class="content-main">
-          <div class="content-main-inner">
-            <router-outlet></router-outlet>
-          </div>
+          @for (outletKey of [ayContext.routeOutletKey()]; track outletKey) {
+            <div
+              class="content-main-inner"
+              [class.scope-transition-lock]="ayContext.scopeTransitioning()"
+            >
+              <router-outlet></router-outlet>
+            </div>
+          }
         </div>
         <app-footer></app-footer>
       </main>

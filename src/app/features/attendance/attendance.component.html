@@ -11,7 +11,7 @@
       <mat-icon>keyboard</mat-icon>
       <span>Shortcuts</span>
     </button>
-    <button class="save-btn" (click)="submitAttendance()" [disabled]="isSubmitting">
+    <button *ngIf="canEditAttendance" class="save-btn" (click)="submitAttendance()" [disabled]="isSubmitting">
       <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
       <mat-icon class="spinning" *ngIf="isSubmitting">sync</mat-icon>
       {{ isSubmitting ? 'Submitting...' : 'Submit' }}
@@ -107,7 +107,7 @@
   </div>
 
   <!-- Toolbar -->
-  <div class="toolbar">
+  <div class="toolbar" *ngIf="canEditAttendance">
     <span class="bulk-label">Mark all:</span>
     <button class="bulk-btn bb-p" (click)="markAll('present')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon>Present</button>
     <button class="bulk-btn bb-a" (click)="markAll('absent')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">cancel</mat-icon>Absent</button>

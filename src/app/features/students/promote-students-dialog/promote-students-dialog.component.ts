@@ -8,6 +8,7 @@ import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { formatInr } from '../../fees/fees.shared';
 
 export type PromoteStudentRow = {
   id: string;
@@ -47,13 +48,24 @@ export class PromoteStudentsDialogComponent implements OnChanges {
   targetClasses: { id: string; name: string }[] = [];
   promoting = false;
   checkingFees = false;
+  loadingPendingFees = false;
   feeSetupError = '';
+  pendingFees: {
+    studentId: string;
+    studentName: string;
+    totalFees: number;
+    paidAmount: number;
+    pendingAmount: number;
+  }[] = [];
   resultErrors: string[] = [];
+  readonly formatInr = formatInr;
 
   ngOnChanges(): void {
     if (this.visible) {
       this.resetForm();
       this.loadAcademicYears();
+    } else {
+      this.resultErrors = [];
     }
   }
 
@@ -64,8 +76,18 @@ export class PromoteStudentsDialogComponent implements OnChanges {
     this.targetClassId = '';
     this.targetClasses = [];
     this.feeSetupError = '';
+    this.pendingFees = [];
     this.resultErrors = [];
     this.autoRollNumber = true;
+    this.loadPendingFees();
+  }
+
+  get targetYearLabel(): string {
+    return this.academicYears.find((y) => y.id === this.targetYearId)?.name ?? 'target year';
+  }
+
+  get totalPendingToTransfer(): number {
+    return this.pendingFees.reduce((sum, p) => sum + p.pendingAmount, 0);
   }
 
   get canPromote(): boolean {
@@ -79,10 +101,43 @@ export class PromoteStudentsDialogComponent implements OnChanges {
     );
   }
 
+  private loadPendingFees(): void {
+    if (!this.sourceYearId || !this.students.length) {
+      this.pendingFees = [];
+      this.refreshView();
+      return;
+    }
+
+    this.loadingPendingFees = true;
+    this.studentService
+      .getPromotePendingFees(
+        this.sourceYearId,
+        this.students.map((s) => s.id),
+      )
+      .subscribe({
+        next: (rows) => {
+          this.pendingFees = (rows ?? []).map((r) => ({
+            studentId: String(r.studentId),
+            studentName: String(r.studentName ?? ''),
+            totalFees: Number(r.totalFees ?? 0),
+            paidAmount: Number(r.paidAmount ?? 0),
+            pendingAmount: Number(r.pendingAmount ?? 0),
+          }));
+          this.loadingPendingFees = false;
+          this.refreshView();
+        },
+        error: () => {
+          this.pendingFees = [];
+          this.loadingPendingFees = false;
+          this.refreshView();
+        },
+      });
+  }
+
   private loadAcademicYears(): void {
-    this.academicYearService.getAcademicYearDropdown().subscribe({
+    this.academicYearService.getAcademicYearDropdown('switcher').subscribe({
       next: (years) => {
-        this.academicYears = (years || []).map((y: { id: string; name: string }) => ({
+        this.academicYears = (years ?? []).map((y) => ({
           id: String(y.id),
           name: String(y.name ?? ''),
         }));
@@ -104,6 +159,7 @@ export class PromoteStudentsDialogComponent implements OnChanges {
     this.targetClassId = '';
     this.targetClasses = [];
     this.feeSetupError = '';
+    this.loadPendingFees();
     if (!this.targetYearId) {
       return;
     }
@@ -205,16 +261,27 @@ export class PromoteStudentsDialogComponent implements OnChanges {
       }))
       .subscribe({
         next: (res) => {
-          this.resultErrors = res.errors ?? [];
+          this.resultErrors = (res.errors ?? []).map((e) => String(e));
           this.refreshView();
-          if (res.promotedCount > 0) {
-            this.snackBar.open(`${res.promotedCount} student(s) promoted successfully`, 'Close', {
-              duration: 4000,
+          if (res.promotedCount > 0 && !this.resultErrors.length) {
+            let msg = `${res.promotedCount} student(s) promoted successfully`;
+            const transferred = res.studentsWithFeesTransferred ?? 0;
+            if (transferred > 0) {
+              msg += `. Pending fees transferred for ${transferred} student(s) (${formatInr(res.totalPendingTransferred ?? 0)}).`;
+            }
+            this.snackBar.open(msg, 'Close', {
+              duration: 5000,
               panelClass: 'snack-success',
             });
             this.completed.emit();
+          } else if (res.promotedCount > 0 && this.resultErrors.length) {
+            this.snackBar.open(
+              `${res.promotedCount} promoted, but some follow-up steps had issues. See details below.`,
+              'Close',
+              { duration: 5000, panelClass: 'snack-warning' },
+            );
           }
-          if (this.resultErrors.length) {
+          if (this.resultErrors.length && res.promotedCount === 0) {
             this.snackBar.open(`${this.resultErrors.length} student(s) could not be promoted`, 'Close', {
               duration: 5000,
               panelClass: 'snack-warning',

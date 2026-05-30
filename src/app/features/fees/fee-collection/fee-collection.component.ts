@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,7 +7,6 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
 import { FeeCollectionService } from '../../../core/services/fee-collection.service';
 import { ClassService } from '../../../core/services/class.service';
-import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
@@ -16,12 +16,12 @@ import {
   asArray,
   extractApiError,
   formatInr,
-  normalizeDropdownItem,
   normalizeStudentDetail,
   normalizeStudentListItem,
   pick,
   studentInitials,
 } from '../fees.shared';
+import { Subject, distinctUntilChanged, filter, map, switchMap } from 'rxjs';
 
 type CollectAllocRow = {
   installmentId: string;
@@ -39,14 +39,13 @@ type CollectAllocRow = {
   templateUrl: './fee-collection.component.html',
   styleUrl: '../fees.shared.css',
 })
-export class FeeCollectionComponent implements OnInit {
+export class FeeCollectionComponent {
   private readonly service = inject(FeeCollectionService);
   private readonly classService = inject(ClassService);
-  private readonly academicYearService = inject(AcademicYearService);
-  private readonly ayContext = inject(AcademicYearContextService);
+  readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly ngZone = inject(NgZone);
+  private readonly studentsQuery$ = new Subject<string>();
 
   students: ReturnType<typeof normalizeStudentListItem>[] = [];
   classes: { id: string; name: string }[] = [];
@@ -70,29 +69,104 @@ export class FeeCollectionComponent implements OnInit {
     allocations: [] as CollectAllocRow[],
   };
 
-  ngOnInit(): void {
-    this.classService.getClassDropdown().subscribe({
-      next: (c) => {
-        this.classes = asArray(c).map((x) => ({
-          id: String(pick(x, 'id', 'Id') ?? ''),
-          name: String(pick(x, 'name', 'Name') ?? ''),
-        }));
-        this.refreshView();
-      },
-    });
+  private lastYearKey = '';
+  private lastStudentQueryKey = '';
+  private studentsRequestSeq = 0;
+  private suppressClassFilterChange = false;
 
-    this.academicYearService.getAcademicYearDropdown().subscribe({
-      next: (years) => {
-        const list = asArray(years).map(normalizeDropdownItem);
-        const effective = this.ayContext.effectiveYearId();
-        const pick =
-          effective && list.some((y) => y.id === effective) ? effective : list[0]?.id;
-        if (pick) {
-          this.academicYearId = pick;
-        }
-        this.refreshView();
-      },
-    });
+  constructor() {
+    toObservable(this.ayContext.effectiveYearKey)
+      .pipe(
+        filter((key): key is string => !!key && key !== 'none'),
+        distinctUntilChanged(),
+        switchMap((yearKey) => {
+          this.applyAcademicYearChange(yearKey);
+          return this.classService.getClassDropdown(yearKey).pipe(
+            map((items) => ({ yearKey, items })),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe({
+        next: ({ yearKey, items }) => this.applyClassDropdown(items, yearKey),
+        error: () => {
+          const yearKey = this.ayContext.effectiveYearKey();
+          if (yearKey && yearKey !== 'none') {
+            this.applyClassDropdown([], yearKey);
+          }
+        },
+      });
+
+    this.studentsQuery$
+      .pipe(
+        switchMap((queryKey) => {
+          const yearId = this.ayContext.effectiveYearId() ?? this.academicYearId;
+          const requestSeq = ++this.studentsRequestSeq;
+          const yearKey = this.ayContext.effectiveYearKey();
+          const parts = queryKey.split('|');
+          const classId = parts[1] ?? '';
+          return this.service.getStudents(classId, yearId || undefined, parts[2] || undefined, parts[3] || undefined).pipe(
+            map((list) => ({ list, requestSeq, yearKey, queryKey })),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe({
+        next: ({ list, requestSeq, yearKey, queryKey }) => {
+          if (requestSeq !== this.studentsRequestSeq || yearKey !== this.ayContext.effectiveYearKey()) {
+            return;
+          }
+          if (queryKey !== this.lastStudentQueryKey) {
+            return;
+          }
+          this.students = asArray(list).map(normalizeStudentListItem);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.students = [];
+          this.toast('Failed to load students', true);
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private applyAcademicYearChange(yearKey: string): void {
+    if (yearKey === this.lastYearKey) {
+      return;
+    }
+    this.lastYearKey = yearKey;
+    this.lastStudentQueryKey = '';
+    this.academicYearId = yearKey;
+    this.suppressClassFilterChange = true;
+    this.classFilter = '';
+    this.statusFilter = '';
+    this.searchQuery = '';
+    this.suppressClassFilterChange = false;
+    this.students = [];
+    this.selectedStudentId = '';
+    this.detail = null;
+    this.closeCollectModal();
+    this.cdr.markForCheck();
+  }
+
+  private applyClassDropdown(items: unknown, yearKey: string): void {
+    if (yearKey !== this.lastYearKey) {
+      return;
+    }
+    this.classes = asArray(items).map((x) => ({
+      id: String(pick(x, 'id', 'Id') ?? ''),
+      name: String(pick(x, 'name', 'Name') ?? ''),
+    }));
+    if (this.classFilter && !this.classes.some((cls) => cls.id === this.classFilter)) {
+      this.suppressClassFilterChange = true;
+      this.classFilter = '';
+      this.suppressClassFilterChange = false;
+      this.students = [];
+      this.selectedStudentId = '';
+      this.detail = null;
+      this.lastStudentQueryKey = '';
+    }
+    this.cdr.markForCheck();
   }
 
   get toolbarFilterActive(): boolean {
@@ -114,13 +188,17 @@ export class FeeCollectionComponent implements OnInit {
   }
 
   onClassFilterChange(): void {
+    if (this.suppressClassFilterChange) {
+      return;
+    }
     this.selectedStudentId = '';
     this.detail = null;
     this.closeCollectModal();
     if (!this.classFilter) {
       this.students = [];
       this.searchQuery = '';
-      this.refreshView();
+      this.lastStudentQueryKey = '';
+      this.cdr.markForCheck();
       return;
     }
     this.loadStudents();
@@ -136,32 +214,31 @@ export class FeeCollectionComponent implements OnInit {
   loadStudents(): void {
     if (!this.classFilter) {
       this.students = [];
-      this.refreshView();
+      this.lastStudentQueryKey = '';
+      this.cdr.markForCheck();
       return;
     }
 
-    this.service
-      .getStudents(
-        this.classFilter,
-        this.academicYearId || undefined,
-        this.searchQuery || undefined,
-        this.statusFilter || undefined,
-      )
-      .subscribe({
-        next: (list) => {
-          this.students = asArray(list).map(normalizeStudentListItem);
-          this.refreshView();
-        },
-        error: () => {
-          this.students = [];
-          this.toast('Failed to load students', true);
-          this.refreshView();
-        },
-      });
+    const yearId = this.ayContext.effectiveYearId() ?? this.academicYearId;
+    const queryKey = `${yearId}|${this.classFilter}|${this.searchQuery}|${this.statusFilter}`;
+    if (queryKey === this.lastStudentQueryKey) {
+      return;
+    }
+    this.lastStudentQueryKey = queryKey;
+    if (yearId) {
+      this.academicYearId = yearId;
+    }
+
+    this.studentsQuery$.next(queryKey);
   }
 
   get canCollectFee(): boolean {
-    return !!this.detail && this.detail.dueAmount > 0 && !this.collectingInProgress;
+    return (
+      !this.ayContext.isReadOnlyScope() &&
+      !!this.detail &&
+      this.detail.dueAmount > 0 &&
+      !this.collectingInProgress
+    );
   }
 
   get selectedAllocCount(): number {
@@ -174,7 +251,6 @@ export class FeeCollectionComponent implements OnInit {
       .reduce((sum, a) => sum + (a.amount || 0), 0);
   }
 
-  /** Net collectable amount after discount — never above student due balance. */
   get cappedCollectAmount(): number {
     const raw = this.selectedAllocDue;
     const netDue = this.detail?.dueAmount ?? raw;
@@ -194,7 +270,7 @@ export class FeeCollectionComponent implements OnInit {
     } else {
       this.expandedHeadIds.add(feeTypeId);
     }
-    this.refreshView();
+    this.cdr.markForCheck();
   }
 
   toggleAllocation(row: CollectAllocRow): void {
@@ -219,18 +295,23 @@ export class FeeCollectionComponent implements OnInit {
     this.collectingInProgress = false;
     this.selectedStudentId = id;
     this.expandedHeadIds = new Set();
-    this.service.getStudentDetail(id, this.academicYearId || undefined).subscribe({
-      next: (d) => {
-        this.detail = normalizeStudentDetail(d);
-        for (const h of this.detail.feeHeads) {
-          if (h.installments.length > 1) {
-            this.expandedHeadIds.add(h.feeTypeId);
+    const yearId = this.ayContext.effectiveYearId() ?? this.academicYearId;
+    const yearKey = this.ayContext.effectiveYearKey();
+    this.service.getStudentDetail(id, yearId || undefined).subscribe({
+        next: (d) => {
+          if (yearKey !== this.ayContext.effectiveYearKey()) {
+            return;
           }
-        }
-        this.refreshView();
-      },
-      error: (e) => this.toast(extractApiError(e, 'Failed to load student fees'), true),
-    });
+          this.detail = normalizeStudentDetail(d);
+          for (const h of this.detail.feeHeads) {
+            if (h.installments.length > 1) {
+              this.expandedHeadIds.add(h.feeTypeId);
+            }
+          }
+          this.cdr.markForCheck();
+        },
+        error: (e) => this.toast(extractApiError(e, 'Failed to load student fees'), true),
+      });
   }
 
   openCollect(): void {
@@ -268,7 +349,7 @@ export class FeeCollectionComponent implements OnInit {
     };
     this.syncCollectAmountToSelection();
     this.showCollectModal = true;
-    this.refreshView();
+    this.cdr.markForCheck();
   }
 
   private isCurrentPeriod(periodLabel: string): boolean {
@@ -281,7 +362,7 @@ export class FeeCollectionComponent implements OnInit {
   closeCollectModal(): void {
     if (this.collectingInProgress) return;
     this.showCollectModal = false;
-    this.refreshView();
+    this.cdr.markForCheck();
   }
 
   collectFee(): void {
@@ -316,7 +397,7 @@ export class FeeCollectionComponent implements OnInit {
 
     const collectedAmount = this.collectForm.amount;
     this.collectingInProgress = true;
-    this.refreshView();
+    this.cdr.markForCheck();
 
     this.service
       .collectFee({
@@ -334,14 +415,15 @@ export class FeeCollectionComponent implements OnInit {
           this.collectingInProgress = false;
           this.showCollectModal = false;
           this.detail = normalizeStudentDetail(pick(res, 'studentDetail', 'StudentDetail') ?? res);
+          this.lastStudentQueryKey = '';
           this.loadStudents();
           this.toast(formatInr(collectedAmount) + ' collected');
-          this.refreshView();
+          this.cdr.markForCheck();
         },
         error: (e) => {
           this.collectingInProgress = false;
           this.toast(extractApiError(e, 'Collection failed'), true);
-          this.refreshView();
+          this.cdr.markForCheck();
         },
       });
   }
@@ -356,10 +438,6 @@ export class FeeCollectionComponent implements OnInit {
 
   formatInr = formatInr;
   studentInitials = studentInitials;
-
-  private refreshView(): void {
-    this.ngZone.run(() => this.cdr.detectChanges());
-  }
 
   private toast(msg: string, error = false): void {
     this.snackBar.open(msg, 'Close', { duration: 2800, panelClass: error ? 'snack-error' : 'snack-success' });
