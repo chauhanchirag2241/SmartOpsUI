@@ -13,6 +13,7 @@ import {
   MappingService,
 } from '../../core/services/mapping.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { ListPageHeaderComponent } from '../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
@@ -33,6 +34,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
 
   get canEdit(): boolean {
     return this.permissionService.canEdit(MenuCodes.ClassMappings);
@@ -60,7 +62,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
   quickAddClassTeacher = false;
 
   ngOnInit(): void {
-    this.loadLookups();
+    this.loadLookups(this.ayContext.effectiveYearId() ?? undefined);
   }
 
   get filteredClasses(): ClassMappingSummary[] {

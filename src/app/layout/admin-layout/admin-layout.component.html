@@ -6,6 +6,15 @@
 
     <mat-sidenav-content class="main-content">
       <app-header></app-header>
+      @if (ayContext.isReadOnlyScope()) {
+        <div class="year-readonly-banner" role="status">
+          <mat-icon>info</mat-icon>
+          <span>
+            Viewing <strong>{{ ayContext.effectiveYearLabel() }}</strong> (read-only). Switch to the
+            <strong>current</strong> academic year in the header to add, edit, or delete.
+          </span>
+        </div>
+      }
       <main class="content-body">
         <div class="content-main">
           <div class="content-main-inner">

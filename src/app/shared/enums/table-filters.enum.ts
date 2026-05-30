@@ -28,5 +28,6 @@ export enum ClassFilter {
 export enum AcademicYearFilter {
   All = 0,
   Active = 1,
-  Inactive = 2
+  Inactive = 2,
+  Current = 3,
 }

@@ -12,9 +12,26 @@
   }
   <span class="spacer"></span>
 
-  @if (academicYearLabel) {
+  @if (ayContext.canSwitchYear() && ayContext.dropdownYears().length > 0) {
+    <div class="header-year-picker">
+      <mat-icon class="header-year-picker-icon">calendar_month</mat-icon>
+      <select
+        class="header-year-select"
+        [ngModel]="selectedYearId"
+        (ngModelChange)="onYearChange($event)"
+        aria-label="Academic year"
+      >
+        @for (year of ayContext.dropdownYears(); track year.id) {
+          <option [value]="year.id">
+            {{ year.name }}{{ year.isCurrent ? ' (current)' : '' }}
+          </option>
+        }
+      </select>
+    </div>
+  } @else if (academicYearLabel) {
     <span class="header-chip"><mat-icon>calendar_month</mat-icon>{{ academicYearLabel }}</span>
   }
+
   <span class="header-chip"><mat-icon>business</mat-icon>{{ schoolName }}</span>
 
   <button class="notification" mat-icon-button type="button" aria-label="Notifications">

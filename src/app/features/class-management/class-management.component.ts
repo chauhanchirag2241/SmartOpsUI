@@ -16,6 +16,7 @@ import type {
 } from '../../shared/components/smart-data-table';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 import { naturalTextCompare } from '../../shared/utils/natural-sort.util';
 import { formatStreamGroupDisplay } from '../../shared/utils/stream-group.util';
@@ -30,6 +31,7 @@ import { formatStreamGroupDisplay } from '../../shared/utils/stream-group.util';
 export class ClassManagementComponent implements OnInit {
   private readonly classService = inject(ClassService);
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly router = inject(Router);
 
   constructor(
@@ -237,6 +239,7 @@ export class ClassManagementComponent implements OnInit {
       this.baseClassConfig,
       this.permissionService,
       MenuCodes.Classes,
+      this.ayContext.isReadOnlyScope(),
     );
     return {
       ...permittedConfig,

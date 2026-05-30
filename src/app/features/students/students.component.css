@@ -73,3 +73,28 @@
   font-size: 12px;
   padding: 4px 0;
 }
+
+.promote-filter-section {
+  margin-top: 8px;
+}
+
+.btn-promote-students {
+  align-items: center;
+  background: var(--g50, #eaf3de);
+  border: 0.5px solid var(--primary-color, #639922);
+  border-radius: 8px;
+  color: var(--secondary-color, #3b6d11);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 6px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.btn-promote-students mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}

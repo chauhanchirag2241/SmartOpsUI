@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, Input, ChangeDetectorRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -47,6 +47,7 @@ import {
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
 import {
   formatInr,
@@ -599,6 +600,8 @@ export class AddStudentComponent implements OnInit {
     },
   ];
 
+  private readonly ayContext = inject(AcademicYearContextService);
+
   constructor(
     private fb: FormBuilder,
     private snackBar: NotificationService,
@@ -651,13 +654,13 @@ export class AddStudentComponent implements OnInit {
     }
 
     this.loadAcademicYears();
-    this.loadClasses();
+    this.loadClasses(this.ayContext.effectiveYearId() ?? undefined);
+    this.setupAcademicSelectionHandlers();
     if (this.studentId && this.mode !== 'add') {
       this.loadStudentData(this.studentId);
     }
 
     if (this.mode === 'add') {
-      this.setupAcademicSelectionHandlers();
       this.studentForm.patchValue({
         gender: 'Male',
         admissionDate: this.today(),
@@ -679,27 +682,28 @@ export class AddStudentComponent implements OnInit {
   private setupAcademicSelectionHandlers() {
     this.studentForm.get('academicYearId')?.valueChanges.subscribe((yearId) => {
       if (yearId) {
-        const classId = this.studentForm.get('classId')?.value;
-        if (classId) {
-          this.generateRollNumber(yearId, classId);
-          this.loadFeeStructure(classId, yearId);
-        } else {
-          this.clearFeeStructure(true);
-        }
+        this.loadClasses(yearId, () => this.afterAcademicYearOrClassChange());
       } else {
         this.clearFeeStructure(true);
       }
     });
 
-    this.studentForm.get('classId')?.valueChanges.subscribe((classId) => {
-      const yearId = this.studentForm.get('academicYearId')?.value;
-      if (classId && yearId) {
-        this.generateRollNumber(yearId, classId);
-        this.loadFeeStructure(classId, yearId);
-      } else {
-        this.clearFeeStructure(true);
-      }
+    this.studentForm.get('classId')?.valueChanges.subscribe(() => {
+      this.afterAcademicYearOrClassChange();
     });
+  }
+
+  private afterAcademicYearOrClassChange(): void {
+    const yearId = this.studentForm.get('academicYearId')?.value;
+    const classId = this.studentForm.get('classId')?.value;
+    if (yearId && classId) {
+      if (this.mode === 'add') {
+        this.generateRollNumber(yearId, classId);
+      }
+      this.loadFeeStructure(classId, yearId);
+    } else {
+      this.clearFeeStructure(true);
+    }
   }
 
   get feeStructureTitle(): string {
@@ -934,8 +938,9 @@ export class AddStudentComponent implements OnInit {
     });
   }
 
-  loadClasses() {
-    this.classService.getClassDropdown().subscribe({
+  loadClasses(academicYearId?: string, afterLoad?: () => void) {
+    const yearId = academicYearId ?? this.ayContext.effectiveYearId() ?? undefined;
+    this.classService.getClassDropdown(yearId).subscribe({
       next: (classes) => {
         this.classes = classes || [];
         this.configs['class'].options = this.classes.map((c: any) => ({
@@ -943,9 +948,32 @@ export class AddStudentComponent implements OnInit {
           value: c.id,
         }));
         this.cdr.detectChanges();
+        afterLoad?.();
       },
       error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 }),
     });
+  }
+
+  /** Pick enrollment for header academic year (includes promoted/historical rows). */
+  private resolveAcademicRecord(academics: any[] | undefined): any {
+    const list = academics ?? [];
+    if (!list.length) {
+      return undefined;
+    }
+
+    const effectiveYear = this.ayContext.effectiveYearId();
+    if (effectiveYear) {
+      const forYear = list.filter(
+        (a) => String(a.academicYearId ?? a.AcademicYearId) === effectiveYear,
+      );
+      if (forYear.length) {
+        const active = forYear.find((a) => a.isActive !== false && a.IsActive !== false);
+        return active ?? forYear[0];
+      }
+    }
+
+    const active = list.find((a) => a.isActive !== false && a.IsActive !== false);
+    return active ?? list[0];
   }
 
   get pageTitle(): string {
@@ -979,20 +1007,28 @@ export class AddStudentComponent implements OnInit {
   loadStudentData(id: string) {
     this.studentService.getStudentById(id).subscribe({
       next: (data: any) => {
-        this.patchForm(data);
-        if (this.mode === 'view') {
-          this.studentForm.disable({ emitEvent: false });
+        const academic = this.resolveAcademicRecord(data.academics);
+        const yearId = String(academic?.academicYearId ?? academic?.AcademicYearId ?? '');
+        const apply = () => {
+          this.patchForm(data, academic);
+          if (this.mode === 'view') {
+            this.studentForm.disable({ emitEvent: false });
+          }
+          this.cdr.detectChanges();
+        };
+        if (yearId) {
+          this.loadClasses(yearId, apply);
+        } else {
+          apply();
         }
-        this.cdr.detectChanges();
       },
       error: () => this.snackBar.open('Error loading student data', 'Close', { duration: 3000 }),
     });
   }
 
-  patchForm(data: any) {
+  patchForm(data: any, academic = this.resolveAcademicRecord(data.academics)) {
     const father = data.parents?.find((p: any) => p.relationType === 'Father');
     const mother = data.parents?.find((p: any) => p.relationType === 'Mother');
-    const academic = data.academics?.[0];
     const prevSchool = data.previousSchools?.[0];
     this.studentForm.patchValue({
       admissionNo: data.admissionNo,

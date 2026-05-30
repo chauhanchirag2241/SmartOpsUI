@@ -64,8 +64,11 @@ export class ClassService {
     return this.api.get('classes', params);
   }
 
-  getClassDropdown(): Observable<any[]> {
-    return this.api.get<any[]>('class/dropdown');
+  getClassDropdown(academicYearId?: string): Observable<any[]> {
+    const params = academicYearId
+      ? new HttpParams().set('academicYearId', academicYearId)
+      : undefined;
+    return this.api.get<any[]>('class/dropdown', params);
   }
 
   createClass(classData: any): Observable<any> {

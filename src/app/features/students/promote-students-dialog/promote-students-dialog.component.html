@@ -1,0 +1,91 @@
+<div class="overlay" [class.show]="visible" (click)="close()">
+  <div class="modal promote-modal" (click)="$event.stopPropagation()">
+    <div class="mh">
+      <div class="mt"><mat-icon>upgrade</mat-icon> Promote students</div>
+      <button type="button" class="mc-btn" [disabled]="promoting" (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="mb">
+      <p class="promote-hint">
+        {{ students.length }} student(s) will move from <strong>{{ sourceYearLabel || 'source year' }}</strong> to the
+        target year. Old enrollment will be closed; a new class enrollment will be created.
+      </p>
+
+      <div class="field">
+        <label>Source academic year</label>
+        <input type="text" [value]="sourceYearLabel" readonly />
+      </div>
+
+      <div class="field">
+        <label>Target academic year <span class="req">*</span></label>
+        <select class="sel-filter-lg" [(ngModel)]="targetYearId" (ngModelChange)="onTargetYearChange()" [disabled]="promoting">
+          <option value="">Select year</option>
+          @for (y of academicYears; track y.id) {
+            @if (y.id !== sourceYearId) {
+              <option [value]="y.id">{{ y.name }}</option>
+            }
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Promote to class <span class="req">*</span></label>
+        <select
+          class="sel-filter-lg"
+          [(ngModel)]="targetClassId"
+          (ngModelChange)="onTargetClassChange()"
+          [disabled]="promoting || !targetYearId || !targetClasses.length"
+        >
+          <option value="">Select class</option>
+          @for (c of targetClasses; track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+        @if (targetYearId && !targetClasses.length) {
+          <span class="field-note field-note--error">No classes in target year. Create classes first.</span>
+        }
+        @if (feeSetupError) {
+          <span class="field-note field-note--error">{{ feeSetupError }}</span>
+        }
+        @if (checkingFees && targetClassId) {
+          <span class="field-note">Checking fee structure…</span>
+        }
+      </div>
+
+      <label class="promote-check">
+        <input type="checkbox" [(ngModel)]="autoRollNumber" [disabled]="promoting" />
+        Auto-assign roll numbers in target class
+      </label>
+
+      @if (resultErrors.length) {
+        <div class="promote-errors">
+          <div class="promote-errors-title">Could not promote:</div>
+          <ul>
+            @for (err of resultErrors; track err) {
+              <li>{{ err }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="promote-preview">
+        <div class="promote-preview-title">Students</div>
+        <ul class="promote-student-list">
+          @for (s of students; track s.id) {
+            <li>{{ s.name }} <span class="muted">· {{ s.class || '—' }}</span></li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="mf">
+      <button type="button" class="btn-cancel" [disabled]="promoting" (click)="close()">Cancel</button>
+      <button type="button" class="btn-primary" [disabled]="!canPromote" (click)="submit()">
+        <mat-icon>check</mat-icon>
+        {{ promoting ? 'Promoting…' : 'Promote' }}
+      </button>
+    </div>
+  </div>
+</div>

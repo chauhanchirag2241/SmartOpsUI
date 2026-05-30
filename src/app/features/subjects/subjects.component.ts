@@ -18,6 +18,7 @@ import type {
 } from '../../shared/components/smart-data-table';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
@@ -248,6 +249,7 @@ export class SubjectsComponent implements OnInit {
       this.baseTableConfig,
       this.permissionService,
       MenuCodes.Subjects,
+      this.ayContext.isReadOnlyScope(),
     );
     return {
       ...permittedConfig,

@@ -218,4 +218,19 @@ export class StudentService {
 
     return null;
   }
+
+  getPromoteReadiness(targetAcademicYearId: string, targetClassId: string): Observable<{ ready: boolean; message?: string }> {
+    const params = new HttpParams()
+      .set('targetAcademicYearId', targetAcademicYearId)
+      .set('targetClassId', targetClassId);
+    return this.api.get<{ ready: boolean; message?: string }>('students/promote-readiness', params);
+  }
+
+  promoteStudents(payload: {
+    sourceAcademicYearId: string;
+    targetAcademicYearId: string;
+    students: { studentId: string; targetClassId: string; rollNumber?: string; admissionDate?: string }[];
+  }): Observable<{ promotedCount: number; errors: string[] }> {
+    return this.api.post('students/promote', payload);
+  }
 }

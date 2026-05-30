@@ -119,17 +119,28 @@ export class AcademicYearManagementComponent implements OnInit {
       { key: 'title', label: 'Year Title', sortable: true },
       { key: 'startDate', label: 'Start Date', sortable: true, cellType: 'date' },
       { key: 'endDate', label: 'End Date', sortable: true, cellType: 'date' },
-      { key: 'status', label: 'Status', cellType: 'badge', badgeMap: { Active: { cssClass: 'b-green', label: 'Active' }, Inactive: { cssClass: 'b-red', label: 'Inactive' } } },
+      {
+        key: 'status',
+        label: 'Status',
+        cellType: 'badge',
+        badgeMap: {
+          Current: { cssClass: 'b-green', label: 'Current' },
+          Archived: { cssClass: 'b-blue', label: 'Archived' },
+          Deleted: { cssClass: 'b-red', label: 'Deleted' },
+        },
+      },
     ],
     filtersInPanel: true,
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Active', icon: 'check_circle', value: 'Active' },
-      { label: 'Inactive', icon: 'cancel', value: 'Inactive' },
+      { label: 'Current', icon: 'star', value: 'Current' },
+      { label: 'Deleted', icon: 'cancel', value: 'Inactive' },
     ],
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
       { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Set as current', icon: 'star', iconColor: '#B45309' },
       {
         label: 'Delete year',
         icon: 'delete',
@@ -154,23 +165,28 @@ export class AcademicYearManagementComponent implements OnInit {
   };
 
   private isAcademicYearActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
-    if (row['isActive'] !== false) {
-      return true;
+    if (row['isActive'] === false) {
+      return action.label === 'View details';
     }
 
-    return action.label === 'View details';
+    if (action.label === 'Set as current') {
+      return row['isCurrent'] !== true && this.permissionService.canEdit(MenuCodes.AcademicYears);
+    }
+
+    if (action.label === 'Delete year') {
+      return row['isCurrent'] !== true;
+    }
+
+    return true;
   }
 
   private buildAyConfig(): DataTableConfig {
-    const permittedConfig = applyModuleTablePermissions(
+    return applyModuleTablePermissions(
       this.baseAyConfig,
       this.permissionService,
       MenuCodes.AcademicYears,
+      false,
     );
-    return {
-      ...permittedConfig,
-      columns: permittedConfig.columns.filter((col) => col.key !== 'status'),
-    };
   }
 
   onActionClicked(event: {
@@ -190,6 +206,19 @@ export class AcademicYearManagementComponent implements OnInit {
       this.formMode = 'edit';
       this.selectedYearId = id;
       this.showAddForm = true;
+    } else if (event.action.label === 'Set as current') {
+      if (!this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
+      this.ayService.setCurrentAcademicYear(id).subscribe({
+        next: () => {
+          this.snackBar.open('Current academic year updated', 'Close', { duration: 3000, panelClass: 'snack-success' });
+          this.loadAcademicYears();
+        },
+        error: (err: { error?: string }) =>
+          this.snackBar.open(err?.error ?? 'Failed to set current year', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          }),
+      });
     } else if (event.action.label === 'Delete year') {
       if (!this.permissionService.canDelete(MenuCodes.AcademicYears)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {

@@ -1,0 +1,96 @@
+@import '../../fees/fees.shared.css';
+
+.promote-modal {
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.promote-modal .mb {
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+}
+
+.promote-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.field-note {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  margin-top: 4px;
+  display: block;
+}
+
+.field-note--error {
+  color: #a32d2d;
+}
+
+.promote-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.promote-errors {
+  background: #fcebeb;
+  border: 0.5px solid #f5c2c2;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+
+.promote-errors-title {
+  font-weight: 500;
+  color: #791f1f;
+  margin-bottom: 6px;
+}
+
+.promote-errors ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #791f1f;
+}
+
+.promote-preview {
+  background: var(--input-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.promote-preview-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.promote-student-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.promote-student-list .muted {
+  color: var(--muted);
+}
+
+.btn-cancel {
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}

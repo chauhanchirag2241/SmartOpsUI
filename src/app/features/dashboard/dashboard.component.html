@@ -1,9 +1,6 @@
 <section class="dashboard-page" [class.editing]="editing()">
   <header class="dash-topbar">
     <h1>Dashboard</h1>
-    @if (academicYearLabel()) {
-      <span class="chip"><mat-icon>calendar_today</mat-icon>{{ academicYearLabel() }}</span>
-    }
     <button type="button" class="dbtn" [class.active]="editing()" (click)="toggleEdit()">
       <mat-icon>dashboard_customize</mat-icon>
       {{ editing() ? 'Done' : 'Customize' }}

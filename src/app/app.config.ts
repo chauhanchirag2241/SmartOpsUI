@@ -11,6 +11,8 @@ import { authErrorInterceptor } from './core/interceptors/auth-error.interceptor
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { tenantInterceptor } from './core/interceptors/tenant.interceptor';
+import { academicYearInterceptor } from './core/interceptors/academic-year.interceptor';
+import { academicYearReadOnlyInterceptor } from './core/interceptors/academic-year-readonly.interceptor';
 import { DD_MM_YYYY_DATE_FORMATS, DdMmYyyyDateAdapter } from './shared/date/dd-mm-yyyy-date-adapter';
 
 export const appConfig: ApplicationConfig = {
@@ -18,7 +20,14 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideAnimations(),
     provideHttpClient(
-      withInterceptors([loadingInterceptor, tenantInterceptor, authTokenInterceptor, authErrorInterceptor]),
+      withInterceptors([
+        loadingInterceptor,
+        tenantInterceptor,
+        academicYearInterceptor,
+        academicYearReadOnlyInterceptor,
+        authTokenInterceptor,
+        authErrorInterceptor,
+      ]),
     ),
     provideRouter(routes),
     { provide: APP_INITIALIZER, useFactory: tenantInitializer, multi: true },

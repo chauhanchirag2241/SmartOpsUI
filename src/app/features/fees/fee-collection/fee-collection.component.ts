@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { FeeCollectionService } from '../../../core/services/fee-collection.service';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
 import {
@@ -42,6 +43,7 @@ export class FeeCollectionComponent implements OnInit {
   private readonly service = inject(FeeCollectionService);
   private readonly classService = inject(ClassService);
   private readonly academicYearService = inject(AcademicYearService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
@@ -82,9 +84,11 @@ export class FeeCollectionComponent implements OnInit {
     this.academicYearService.getAcademicYearDropdown().subscribe({
       next: (years) => {
         const list = asArray(years).map(normalizeDropdownItem);
-        const first = list[0];
-        if (first?.id) {
-          this.academicYearId = first.id;
+        const effective = this.ayContext.effectiveYearId();
+        const pick =
+          effective && list.some((y) => y.id === effective) ? effective : list[0]?.id;
+        if (pick) {
+          this.academicYearId = pick;
         }
         this.refreshView();
       },

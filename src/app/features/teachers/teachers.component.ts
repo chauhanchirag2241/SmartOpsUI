@@ -19,6 +19,7 @@ import type {
 } from '../../shared/components/smart-data-table';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
@@ -30,6 +31,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 })
 export class TeachersComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly router = inject(Router);
 
   constructor(
@@ -191,6 +193,7 @@ export class TeachersComponent implements OnInit {
       this.baseTableConfig,
       this.permissionService,
       MenuCodes.Teachers,
+      this.ayContext.isReadOnlyScope(),
     );
     return {
       ...permittedConfig,

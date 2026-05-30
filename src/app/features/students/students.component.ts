@@ -7,6 +7,10 @@ import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { AddStudentComponent } from './add-student/add-student.component';
+import {
+  PromoteStudentsDialogComponent,
+  PromoteStudentRow,
+} from './promote-students-dialog/promote-students-dialog.component';
 import { StudentService } from '../../core/services/student.service';
 import { ClassService } from '../../core/services/class.service';
 
@@ -21,6 +25,7 @@ import type {
 } from '../../shared/components/smart-data-table';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
@@ -32,12 +37,14 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
     MatSnackBarModule,
     MatDialogModule,
     AddStudentComponent,
+    PromoteStudentsDialogComponent,
   ],
   templateUrl: './students.component.html',
   styleUrl: './students.component.css',
 })
 export class StudentsComponent implements OnInit {
-  private readonly permissionService = inject(PermissionService);
+  readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly classService = inject(ClassService);
   private readonly router = inject(Router);
 
@@ -57,6 +64,8 @@ export class StudentsComponent implements OnInit {
   classOptions: { id: string; name: string }[] = [];
   readonly selectedClassIds = new Set<string>();
   classFilterDropdownOpen = false;
+  showPromoteModal = false;
+  promoteStudents: PromoteStudentRow[] = [];
 
   private listState = {
     pageIndex: 1,
@@ -137,7 +146,7 @@ export class StudentsComponent implements OnInit {
   }
 
   openAddForm(): void {
-    if (!this.permissionService.canAdd(MenuCodes.Students)) {
+    if (this.ayContext.isReadOnlyScope() || !this.permissionService.canAdd(MenuCodes.Students)) {
       return;
     }
     this.formMode = 'add';
@@ -351,9 +360,8 @@ export class StudentsComponent implements OnInit {
     actionVisibleFn: (action, row) => this.isStudentActionVisible(action, row),
 
     bulkActions: [
-      { label: 'Send notice', icon: 'mail' },
+      { label: 'Promote to next year', icon: 'upgrade' },
       { label: 'Export', icon: 'download' },
-      { label: 'Bulk edit', icon: 'edit' },
       { label: 'Delete', icon: 'delete', danger: true },
     ],
 
@@ -381,6 +389,7 @@ export class StudentsComponent implements OnInit {
       this.baseTableConfig,
       this.permissionService,
       MenuCodes.Students,
+      this.ayContext.isReadOnlyScope(),
     );
     return {
       ...permittedConfig,
@@ -408,12 +417,12 @@ export class StudentsComponent implements OnInit {
     } else if (event.action.label === 'Show history') {
       this.openStudentHistory(id);
     } else if (event.action.label === 'Edit details') {
-      if (!this.permissionService.canEdit(MenuCodes.Students)) return;
+      if (this.ayContext.isReadOnlyScope() || !this.permissionService.canEdit(MenuCodes.Students)) return;
       this.formMode = 'edit';
       this.selectedStudentId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Delete student') {
-      if (!this.permissionService.canDelete(MenuCodes.Students)) return;
+      if (this.ayContext.isReadOnlyScope() || !this.permissionService.canDelete(MenuCodes.Students)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
           title: 'Delete student?',
@@ -466,10 +475,49 @@ export class StudentsComponent implements OnInit {
     this.openAddForm();
   }
 
+  openPromoteDialog(rows: Record<string, unknown>[]): void {
+    if (this.ayContext.isReadOnlyScope()) {
+      this.snackBar.open(
+        'Promote is only allowed while viewing the current academic year.',
+        'Close',
+        { duration: 4000, panelClass: 'snack-warning' },
+      );
+      return;
+    }
+    if (!this.permissionService.canEdit(MenuCodes.Students)) {
+      return;
+    }
+    const active = rows.filter((r) => r['isActive'] !== false);
+    if (!active.length) {
+      this.snackBar.open('Select active students to promote', 'Close', {
+        duration: 3000,
+        panelClass: 'snack-warning',
+      });
+      return;
+    }
+    this.promoteStudents = active.map((r) => ({
+      id: String(r['id'] ?? ''),
+      name: String(r['name'] ?? 'Student'),
+      class: String(r['class'] ?? ''),
+    }));
+    this.showPromoteModal = true;
+    this.cdr.detectChanges();
+  }
+
+  onPromoteCompleted(): void {
+    this.showPromoteModal = false;
+    this.promoteStudents = [];
+    this.loadStudents();
+  }
+
   onBulkActionClicked(event: {
     action: DataTableBulkAction;
     selectedRows: Record<string, unknown>[];
   }): void {
+    if (event.action.label === 'Promote to next year') {
+      this.openPromoteDialog(event.selectedRows);
+      return;
+    }
     if (event.action.label === 'Delete') {
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {

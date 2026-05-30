@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SalaryStructureService } from '../../../core/services/salary-structure.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table/smart-data-table.component';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import type { DataTableAction, DataTableConfig } from '../../../shared/components/smart-data-table';
@@ -46,6 +47,7 @@ import {
 export class SalaryStructureComponent implements OnInit {
   private readonly service = inject(SalaryStructureService);
   private readonly academicYearService = inject(AcademicYearService);
+  private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissionService = inject(PermissionService);
   private readonly snackBar = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
@@ -134,6 +136,7 @@ export class SalaryStructureComponent implements OnInit {
       this.baseTableConfig,
       this.permissionService,
       MenuCodes.SalaryStructure,
+      this.ayContext.isReadOnlyScope(),
     );
     this.loadAcademicYears();
   }
@@ -142,6 +145,12 @@ export class SalaryStructureComponent implements OnInit {
     this.academicYearService.getAcademicYearDropdown().subscribe({
       next: (years) => {
         this.academicYears = asArray(years).map(normalizeDropdownItem);
+        const effective = this.ayContext.effectiveYearId();
+        if (effective && this.academicYears.some((y) => y.id === effective)) {
+          this.academicYearFilter = effective;
+        } else if (!this.academicYearFilter && this.academicYears.length) {
+          this.academicYearFilter = this.academicYears[0].id;
+        }
         this.loadVersions();
       },
       error: () => this.toast('Failed to load academic years', true),

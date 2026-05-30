@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { LayoutUiService } from '../../core/services/layout-ui.service';
 import { RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -7,6 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { FooterComponent } from '../../shared/components/footer/footer.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
+import { AuthService } from '../../core/services/auth.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-admin-layout',
@@ -14,8 +17,21 @@ import { SidebarComponent } from '../../shared/components/sidebar/sidebar.compon
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.css',
 })
-export class AdminLayoutComponent {
+export class AdminLayoutComponent implements OnInit {
   readonly layoutUi = inject(LayoutUiService);
+  readonly ayContext = inject(AcademicYearContextService);
+  private readonly auth = inject(AuthService);
+
+  ngOnInit(): void {
+    if (!this.auth.isLoggedIn) {
+      return;
+    }
+
+    forkJoin({
+      current: this.ayContext.initialize(),
+      dropdown: this.ayContext.loadDropdown(),
+    }).subscribe({ error: () => undefined });
+  }
 
   onMenuToggle(): void {
     this.layoutUi.toggleSidebar();
