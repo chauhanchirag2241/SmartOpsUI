@@ -286,6 +286,9 @@ mat-sidenav-content.main-content {
 .form-page-shell,
 app-add-student,
 app-add-teacher,
+app-apply-staff-leave,
+app-add-notice,
+app-my-action-detail,
 .add-teacher-container {
   display: block;
   padding-bottom: 8px;
@@ -789,6 +792,8 @@ button.btn {
 .field > input[type='password'],
 .field > input[type='number'],
 .field > input[type='tel'],
+.field > input[type='date'],
+input.form-control[type='date'],
 .field > select,
 .field > textarea,
 input.form-control,
@@ -1880,11 +1885,37 @@ tr.row-inactive:hover td {
    CARDS
 ========================================================= */
 .card {
-  background: var(--card);
+  background: #ffffff;
+  background: var(--card, #ffffff);
   border: 0.5px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 12px;
+}
+
+.list-data-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.notice-preview {
+  white-space: pre-wrap;
+  background: var(--input-bg);
+  border: 0.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form-page-shell .detail-panel {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.form-page-shell .detail-panel p {
+  margin: 0 0 8px;
 }
 
 .card-title {
@@ -1909,6 +1940,101 @@ tr.row-inactive:hover td {
   color: var(--text-secondary);
   margin-top: -8px;
   margin-bottom: 12px;
+}
+
+.card-header {
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lock-hint,
+.scope-readonly-lock {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 10px 14px;
+  margin: 0;
+  color: var(--text-secondary);
+  background: var(--input-bg);
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.lock-hint mat-icon,
+.scope-readonly-lock mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--secondary-color);
+  margin-top: 1px;
+}
+
+.empty-panel {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.empty-panel mat-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  display: block;
+  margin: 0 auto 8px;
+  opacity: 0.45;
+  color: var(--secondary-color);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 8px 12px;
+  text-align: left;
+  background: var(--input-bg);
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.data-table td {
+  padding: 9px 12px;
+  border-bottom: 0.5px solid var(--border-color);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: var(--hover);
+}
+
+.workflow-page {
+  background: var(--bg-light);
+  color: var(--text-primary);
+  font-size: 13px;
+  min-height: 0;
 }
 
 .add-user {

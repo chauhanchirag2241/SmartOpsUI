@@ -14,24 +14,26 @@
     @if (hasChildren(item)) {
       <div class="section-label">{{ item.name }}</div>
       @for (child of item.children; track trackMenu($index, child)) {
-        @if (child.route) {
+        @if (navRoute(child); as path) {
           <a
             class="nav-item child-item"
-            [routerLink]="child.route"
+            [routerLink]="path"
             routerLinkActive="active-link"
-            [routerLinkActiveOptions]="{ exact: child.route === '/dashboard' }"
+            [routerLinkActiveOptions]="{ exact: path === '/dashboard' }"
+            (click)="onNavClick(child, $event)"
           >
             <mat-icon fontSet="material-symbols-outlined">{{ child.icon ?? 'circle' }}</mat-icon>
             <span>{{ child.name }}</span>
           </a>
         }
       }
-    } @else if (item.route) {
+    } @else if (navRoute(item); as path) {
       <a
         class="nav-item"
-        [routerLink]="item.route"
+        [routerLink]="path"
         routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+        [routerLinkActiveOptions]="{ exact: path === '/dashboard' }"
+        (click)="onNavClick(item, $event)"
       >
         <mat-icon fontSet="material-symbols-outlined">{{ item.icon ?? 'circle' }}</mat-icon>
         <span>{{ item.name }}</span>

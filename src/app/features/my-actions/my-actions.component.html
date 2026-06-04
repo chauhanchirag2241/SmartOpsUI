@@ -1,0 +1,76 @@
+<div class="workflow-page list-page-shell">
+  <app-list-page-header
+    title="My Actions"
+    subtitle="Pending approvals, notices, and tasks assigned to you"
+  />
+
+  <app-page-toolbar [showSearch]="false" [showFilter]="false">
+    <div toolbarFilters class="st-table-filters">
+      <div class="table-filter-section">
+        <span class="table-filter-section-label">Type</span>
+        <div class="table-filter-chips">
+          <button type="button" class="filter-chip" [class.active]="typeFilter === ''" (click)="typeFilter = ''; load()">
+            All ({{ stats.totalPending }})
+          </button>
+          <button type="button" class="filter-chip" [class.active]="typeFilter === '1'" (click)="typeFilter = '1'; load()">
+            Leave ({{ stats.leaveApprovals }})
+          </button>
+          <button type="button" class="filter-chip" [class.active]="typeFilter === '2'" (click)="typeFilter = '2'; load()">
+            Notices ({{ stats.noticeResponses }})
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-page-toolbar>
+
+  <div class="card list-data-card">
+    <div class="card-header">
+      <div class="card-title">
+        <mat-icon>task_alt</mat-icon>
+        Pending actions
+      </div>
+      @if (!loading && items.length) {
+        <span class="record-count">{{ items.length }} pending</span>
+      }
+    </div>
+
+    @if (loading) {
+      <div class="empty-panel">
+        <mat-icon>hourglass_empty</mat-icon>
+        Loading actions…
+      </div>
+    } @else if (!items.length) {
+      <div class="empty-panel">
+        <mat-icon>task_alt</mat-icon>
+        No pending actions.
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Title</th>
+            <th>Summary</th>
+            <th>Due</th>
+            <th style="width: 120px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items; track item.id) {
+            <tr class="clickable-row" (click)="openAction(item.id)">
+              <td><span class="badge b-gray">{{ item.itemTypeLabel }}</span></td>
+              <td class="title-cell">{{ item.title }}</td>
+              <td>{{ item.summary ?? '—' }}</td>
+              <td>{{ item.dueDate ?? '—' }}</td>
+              <td>
+                <button type="button" class="text-link" (click)="openAction(item.id); $event.stopPropagation()">
+                  Take action
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

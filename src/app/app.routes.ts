@@ -183,6 +183,48 @@ export const routes: Routes = [
             (m) => m.AcademicYearManagementComponent,
           ),
       },
+      {
+        path: 'leave/staff',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.LeaveStaff, permission: 'view' },
+        loadComponent: () =>
+          import('./features/leave/staff-leave.component').then((m) => m.StaffLeaveComponent),
+      },
+      {
+        path: 'leave/students',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.LeaveStudent, permission: 'view' },
+        loadComponent: () =>
+          import('./features/leave/student-leave.component').then((m) => m.StudentLeaveComponent),
+      },
+      {
+        path: 'my-actions',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.MyActions, permission: 'view' },
+        loadComponent: () =>
+          import('./features/my-actions/my-actions-shell.component').then((m) => m.MyActionsShellComponent),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/my-actions/my-actions.component').then((m) => m.MyActionsComponent),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./features/my-actions/my-action-detail.component').then(
+                (m) => m.MyActionDetailComponent,
+              ),
+          },
+        ],
+      },
+      {
+        path: 'notices',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Notices, permission: 'view' },
+        loadComponent: () =>
+          import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
     ],
   },
   {

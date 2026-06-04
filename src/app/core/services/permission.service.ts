@@ -4,6 +4,7 @@ import { ScopeService } from './scope.service';
 import { IMenu } from '../models/menu.model';
 import { IMenuPermission, IUserPermissionResponse } from '../models/permission.model';
 import { APP_MENU_APPLICATION } from '../constants/app.constants';
+import { resolveMenuRoute } from '../constants/menu-routes';
 import { isUsableAccessToken } from '../utils/token.util';
 import { ApiService } from './api.service';
 import { StorageService } from './storage.service';
@@ -41,7 +42,10 @@ export class PermissionService {
       menus: this.api.get<IMenu[]>(`menus/my?${APP_QUERY}`),
     }).pipe(
       tap(({ permissions, menus }) => {
-        this.setSession(permissions.permissions, menus);
+        this.setSession(
+          this.normalizePermissions(permissions),
+          this.normalizeMenus(menus),
+        );
       }),
       switchMap(() => this.scopeService.loadScopes()),
       map(() => void 0),
@@ -49,10 +53,17 @@ export class PermissionService {
   }
 
   setSession(permissions: IMenuPermission[], menus: IMenu[]): void {
-    this.storage.set(PERMISSIONS_KEY, permissions);
-    this.storage.set(MENUS_KEY, menus);
-    this.permissionsSubject.next(permissions);
-    this.menusSubject.next(menus);
+    const normalizedPermissions = this.normalizePermissions(permissions);
+    const normalizedMenus = this.normalizeMenus(menus);
+    this.storage.set(PERMISSIONS_KEY, normalizedPermissions);
+    this.storage.set(MENUS_KEY, normalizedMenus);
+    this.permissionsSubject.next(normalizedPermissions);
+    this.menusSubject.next(normalizedMenus);
+  }
+
+  /** Absolute app route for sidebar / deep links. */
+  resolveRoute(menu: IMenu): string | null {
+    return resolveMenuRoute(menu.code, menu.route);
   }
 
   clear(): void {
@@ -64,7 +75,8 @@ export class PermissionService {
   }
 
   getPermission(menuCode: string): IMenuPermission | undefined {
-    return this.permissions.find((p) => p.menuCode === menuCode);
+    const code = menuCode?.trim().toUpperCase();
+    return this.permissions.find((p) => p.menuCode?.trim().toUpperCase() === code);
   }
 
   canView(menuCode: string): boolean {
@@ -84,11 +96,47 @@ export class PermissionService {
   }
 
   private readCachedPermissions(): IMenuPermission[] {
-    return this.hasStoredToken() ? (this.storage.get<IMenuPermission[]>(PERMISSIONS_KEY) ?? []) : [];
+    const raw = this.hasStoredToken() ? (this.storage.get<IMenuPermission[]>(PERMISSIONS_KEY) ?? []) : [];
+    return this.normalizePermissions(raw);
   }
 
   private readCachedMenus(): IMenu[] {
-    return this.hasStoredToken() ? (this.storage.get<IMenu[]>(MENUS_KEY) ?? []) : [];
+    const raw = this.hasStoredToken() ? (this.storage.get<IMenu[]>(MENUS_KEY) ?? []) : [];
+    return this.normalizeMenus(raw);
+  }
+
+  private normalizePermissions(raw: IUserPermissionResponse | IMenuPermission[]): IMenuPermission[] {
+    const list = Array.isArray(raw)
+      ? raw
+      : ((raw as IUserPermissionResponse).permissions ?? []);
+    return (list as unknown as Record<string, unknown>[]).map((p) => ({
+      menuCode: String(p['menuCode'] ?? p['MenuCode'] ?? '').toUpperCase(),
+      canView: !!(p['canView'] ?? p['CanView']),
+      canAdd: !!(p['canAdd'] ?? p['CanAdd']),
+      canEdit: !!(p['canEdit'] ?? p['CanEdit']),
+      canDelete: !!(p['canDelete'] ?? p['CanDelete']),
+      canExport: !!(p['canExport'] ?? p['CanExport']),
+    }));
+  }
+
+  private normalizeMenus(raw: unknown): IMenu[] {
+    const list = Array.isArray(raw) ? raw : [];
+    return list.map((item) => this.normalizeMenu(item as Record<string, unknown>));
+  }
+
+  private normalizeMenu(raw: Record<string, unknown>): IMenu {
+    const children = (raw['children'] ?? raw['Children'] ?? []) as Record<string, unknown>[];
+    const code = String(raw['code'] ?? raw['Code'] ?? '');
+    const routeRaw = (raw['route'] ?? raw['Route']) as string | null | undefined;
+    return {
+      id: String(raw['id'] ?? raw['Id'] ?? ''),
+      name: String(raw['name'] ?? raw['Name'] ?? ''),
+      code,
+      route: resolveMenuRoute(code, routeRaw),
+      icon: (raw['icon'] ?? raw['Icon']) as string | null,
+      displayOrder: Number(raw['displayOrder'] ?? raw['DisplayOrder'] ?? 0),
+      children: children.map((c) => this.normalizeMenu(c)),
+    };
   }
 
   canDelete(menuCode: string): boolean {

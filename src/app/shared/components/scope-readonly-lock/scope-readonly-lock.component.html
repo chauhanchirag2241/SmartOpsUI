@@ -1,0 +1,13 @@
+@if (ayContext.isReadOnlyScope()) {
+  <p class="lock-hint scope-readonly-lock" role="status">
+    <mat-icon>lock</mat-icon>
+    <span>
+      @if (message) {
+        {{ message }}
+      } @else {
+        Viewing <strong>{{ ayContext.effectiveYearLabel() }}</strong> (read-only). Switch to the
+        <strong>current academic year</strong> in the header to {{ actionLabel }}.
+      }
+    </span>
+  </p>
+}

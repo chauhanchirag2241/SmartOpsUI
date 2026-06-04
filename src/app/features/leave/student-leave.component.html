@@ -1,0 +1,78 @@
+<div class="workflow-page list-page-shell">
+  <app-list-page-header
+    title="Student Leave"
+    subtitle="Parent-submitted leave requests — review and track status"
+  />
+
+  <app-scope-readonly-lock actionLabel="manage student leave" />
+
+  <app-page-toolbar [showSearch]="false" [showFilter]="false">
+    <div toolbarFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="student-leave-status">Status</label>
+      <select
+        id="student-leave-status"
+        class="sel-filter sel-filter-lg"
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="load()"
+      >
+        <option value="">All statuses</option>
+        <option value="Draft">Draft</option>
+        <option value="Submitted">Submitted</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+  </app-page-toolbar>
+
+  <div class="card list-data-card">
+    <div class="card-header">
+      <div class="card-title">
+        <mat-icon>child_care</mat-icon>
+        Student leave requests
+      </div>
+      @if (!loading && items.length) {
+        <span class="record-count">{{ items.length }} records</span>
+      }
+    </div>
+
+    @if (loading) {
+      <div class="empty-panel">
+        <mat-icon>hourglass_empty</mat-icon>
+        Loading student leave…
+      </div>
+    } @else if (!items.length) {
+      <div class="empty-panel">
+        <mat-icon>child_care</mat-icon>
+        No student leave requests yet.
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Class</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of items; track row.id) {
+            <tr>
+              <td class="title-cell">{{ row.studentName ?? '—' }}</td>
+              <td><span class="badge b-gray">{{ row.className ?? '—' }}</span></td>
+              <td>{{ row.fromDate }}</td>
+              <td>{{ row.toDate }}</td>
+              <td>{{ row.dayCount }}</td>
+              <td>
+                <span class="badge" [ngClass]="badgeClass(row.status)">{{ row.statusLabel }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

@@ -1,0 +1,76 @@
+<app-scope-readonly-lock actionLabel="apply leave" />
+
+@if (readOnly) {
+  <div class="topbar">
+    <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
+    <div class="page-title">Apply staff leave</div>
+  </div>
+  <div class="card">
+    <div class="empty-panel">
+      <mat-icon>lock</mat-icon>
+      This academic year is read-only. Switch to the current year to apply leave.
+    </div>
+  </div>
+} @else {
+  <div class="topbar">
+    <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
+    <div class="page-title">Apply staff leave</div>
+  </div>
+
+  <p class="form-hint">Enter leave dates, type, and reason</p>
+
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>event_busy</mat-icon>
+      Leave details
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="staff-from">From date</label>
+        <input id="staff-from" type="date" class="form-control" [(ngModel)]="form.fromDate" />
+      </div>
+      <div class="field">
+        <label for="staff-to">To date</label>
+        <input id="staff-to" type="date" class="form-control" [(ngModel)]="form.toDate" />
+      </div>
+      <div class="field">
+        <label for="staff-type">Leave type</label>
+        <select id="staff-type" class="form-control" [(ngModel)]="form.leaveType">
+          <option [ngValue]="LeaveType.Casual">Casual</option>
+          <option [ngValue]="LeaveType.Sick">Sick</option>
+          <option [ngValue]="LeaveType.Other">Other</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label for="staff-reason">Reason</label>
+        <textarea
+          id="staff-reason"
+          class="form-control"
+          [(ngModel)]="form.reason"
+          rows="4"
+          placeholder="Reason for leave…"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <div class="footer-hint">Save as draft or submit for approval</div>
+    <div class="footer-btns">
+      <app-action-button
+        type="save"
+        label="Save draft"
+        icon="save"
+        [disabled]="saving"
+        (action)="save(false)"
+      ></app-action-button>
+      <app-action-button
+        type="submit"
+        [label]="saving ? 'Submitting…' : 'Submit for approval'"
+        [icon]="saving ? 'hourglass_empty' : 'send'"
+        [disabled]="saving"
+        (action)="save(true)"
+      ></app-action-button>
+    </div>
+  </div>
+}

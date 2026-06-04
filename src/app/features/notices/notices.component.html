@@ -1,0 +1,72 @@
+@if (!showAddForm) {
+  <div class="workflow-page list-page-shell">
+    <app-list-page-header
+      title="Notices"
+      subtitle="Publish notices and collect responses via My Actions"
+      [showPrimary]="canWrite"
+      primaryLabel="New notice"
+      primaryIcon="campaign"
+      (primaryClick)="openCreate()"
+    />
+
+    <app-scope-readonly-lock actionLabel="create or publish notices" />
+
+    <div class="card list-data-card">
+      <div class="card-header">
+        <div class="card-title">
+          <mat-icon>campaign</mat-icon>
+          Notices
+        </div>
+        @if (!loading && items.length) {
+          <span class="record-count">{{ items.length }} records</span>
+        }
+      </div>
+
+      @if (loading) {
+        <div class="empty-panel">
+          <mat-icon>hourglass_empty</mat-icon>
+          Loading notices…
+        </div>
+      } @else if (!items.length) {
+        <div class="empty-panel">
+          <mat-icon>campaign</mat-icon>
+          No notices yet.
+          @if (canWrite) {
+            <div>Use <strong>New notice</strong> to create one.</div>
+          }
+        </div>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Target</th>
+              <th>Status</th>
+              <th>Responses</th>
+              <th style="width: 90px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (n of items; track n.id) {
+              <tr>
+                <td class="title-cell">{{ n.title }}</td>
+                <td><span class="badge b-gray">{{ n.targetTypeLabel }}</span></td>
+                <td>
+                  <span class="badge" [ngClass]="statusBadge(n.statusLabel)">{{ n.statusLabel }}</span>
+                </td>
+                <td>{{ n.responseCount }}</td>
+                <td>
+                  @if (canWrite && n.statusLabel === 'Draft') {
+                    <button type="button" class="text-link" (click)="publish(n.id)">Publish</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+} @else {
+  <app-add-notice (cancel)="closeAddForm()" (saved)="onNoticeSaved()" />
+}

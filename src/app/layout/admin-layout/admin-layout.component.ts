@@ -9,7 +9,8 @@ import { HeaderComponent } from '../../shared/components/header/header.component
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { AuthService } from '../../core/services/auth.service';
-import { switchMap } from 'rxjs';
+import { PermissionService } from '../../core/services/permission.service';
+import { forkJoin, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-admin-layout',
@@ -21,16 +22,17 @@ export class AdminLayoutComponent implements OnInit {
   readonly layoutUi = inject(LayoutUiService);
   readonly ayContext = inject(AcademicYearContextService);
   private readonly auth = inject(AuthService);
+  private readonly permissions = inject(PermissionService);
 
   ngOnInit(): void {
     if (!this.auth.isLoggedIn) {
       return;
     }
 
-    this.ayContext
-      .initialize()
-      .pipe(switchMap(() => this.ayContext.loadDropdown()))
-      .subscribe({ error: () => undefined });
+    forkJoin({
+      session: this.permissions.loadSession(),
+      year: this.ayContext.initialize().pipe(switchMap(() => this.ayContext.loadDropdown())),
+    }).subscribe({ error: () => undefined });
   }
 
   onMenuToggle(): void {

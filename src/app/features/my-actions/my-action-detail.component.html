@@ -1,0 +1,86 @@
+@if (loading) {
+  <div class="card">
+    <div class="empty-panel">
+      <mat-icon>hourglass_empty</mat-icon>
+      Loading action…
+    </div>
+  </div>
+} @else if (detail) {
+  <div class="topbar">
+    <app-action-button type="back" style="order: 2; margin-left: auto" (action)="goBack()"></app-action-button>
+    <div class="page-title">{{ detail.title }}</div>
+  </div>
+
+  <p class="form-hint">{{ detail.itemTypeLabel }}</p>
+
+  @if (detail.itemType === WorkflowItemType.LeaveApproval && detail.leaveRequest) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>event_busy</mat-icon>
+        Leave request
+        <span class="badge b-amber" style="margin-left: 8px">{{ detail.leaveRequest.statusLabel }}</span>
+      </div>
+      <div class="detail-panel">
+        <p><strong>Period:</strong> {{ detail.leaveRequest.fromDate }} – {{ detail.leaveRequest.toDate }}</p>
+        @if (detail.leaveRequest.studentName) {
+          <p><strong>Student:</strong> {{ detail.leaveRequest.studentName }}</p>
+        }
+        @if (detail.leaveRequest.teacherName) {
+          <p><strong>Teacher:</strong> {{ detail.leaveRequest.teacherName }}</p>
+        }
+        @if (detail.leaveRequest.reason) {
+          <p><strong>Reason:</strong> {{ detail.leaveRequest.reason }}</p>
+        }
+      </div>
+      <div class="field" style="margin-top: 12px">
+        <label for="action-remark">Remark (optional)</label>
+        <textarea id="action-remark" class="form-control" [(ngModel)]="remark" rows="2"></textarea>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <div class="footer-hint">Approve or reject this leave request</div>
+      <div class="footer-btns">
+        <button type="button" class="btn-danger" [disabled]="completing" (click)="complete('Reject')">Reject</button>
+        <app-action-button
+          type="submit"
+          [label]="completing ? 'Saving…' : 'Approve'"
+          [icon]="completing ? 'hourglass_empty' : 'check_circle'"
+          [disabled]="completing"
+          (action)="complete('Approve')"
+        ></app-action-button>
+      </div>
+    </div>
+  }
+
+  @if (detail.itemType === WorkflowItemType.NoticeResponse && detail.notice) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>campaign</mat-icon>
+        Notice response
+      </div>
+      <div class="notice-preview">{{ detail.notice.body }}</div>
+      <div class="field">
+        <label for="action-response">Your response</label>
+        <textarea
+          id="action-response"
+          class="form-control"
+          [(ngModel)]="responseText"
+          rows="4"
+          placeholder="Type your response…"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <div class="footer-hint">Submit your response to complete this action</div>
+      <app-action-button
+        type="submit"
+        [label]="completing ? 'Submitting…' : 'Submit response'"
+        [icon]="completing ? 'hourglass_empty' : 'send'"
+        [disabled]="completing"
+        (action)="complete('Respond')"
+      ></app-action-button>
+    </div>
+  }
+}

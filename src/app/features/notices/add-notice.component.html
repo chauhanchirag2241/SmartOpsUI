@@ -1,0 +1,79 @@
+<app-scope-readonly-lock actionLabel="create notices" />
+
+@if (readOnly) {
+  <div class="topbar">
+    <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
+    <div class="page-title">New notice</div>
+  </div>
+  <div class="card">
+    <div class="empty-panel">
+      <mat-icon>lock</mat-icon>
+      This academic year is read-only. Switch to the current year to create notices.
+    </div>
+  </div>
+} @else {
+  <div class="topbar">
+    <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
+    <div class="page-title">New notice</div>
+  </div>
+
+  <p class="form-hint">Create a notice — publish later from the list</p>
+
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>campaign</mat-icon>
+      Notice content
+    </div>
+    <div class="grid2">
+      <div class="field full">
+        <label for="notice-title">Title</label>
+        <input id="notice-title" type="text" class="form-control" [(ngModel)]="form.title" placeholder="Notice title" />
+      </div>
+      <div class="field full">
+        <label for="notice-body">Body</label>
+        <textarea id="notice-body" class="form-control" [(ngModel)]="form.body" rows="5" placeholder="Notice content…"></textarea>
+      </div>
+      <div class="field">
+        <label for="notice-target">Target audience</label>
+        <select id="notice-target" class="form-control" [(ngModel)]="form.targetType">
+          <option [ngValue]="NoticeTargetType.AllStaff">All staff</option>
+          <option [ngValue]="NoticeTargetType.ClassParents">Class parents</option>
+        </select>
+      </div>
+      @if (form.targetType === NoticeTargetType.ClassParents) {
+        <div class="field">
+          <label for="notice-class">Class</label>
+          <select id="notice-class" class="form-control" [(ngModel)]="form.targetRefId">
+            <option [ngValue]="null">Select class</option>
+            @for (c of classes; track c.id) {
+              <option [ngValue]="c.id">{{ c.name }}</option>
+            }
+          </select>
+        </div>
+      }
+      <div class="field full">
+        <label class="checkbox-inline">
+          <input type="checkbox" [(ngModel)]="form.requiresResponse" />
+          Requires response
+        </label>
+      </div>
+      @if (form.requiresResponse) {
+        <div class="field">
+          <label for="notice-deadline">Response deadline</label>
+          <input id="notice-deadline" type="date" class="form-control" [(ngModel)]="form.responseDeadline" />
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <div class="footer-hint">Notice is saved as draft until you publish</div>
+    <app-action-button
+      type="save"
+      [label]="saving ? 'Saving…' : 'Save draft'"
+      [icon]="saving ? 'hourglass_empty' : 'save'"
+      [disabled]="saving"
+      (action)="saveDraft()"
+    ></app-action-button>
+  </div>
+}

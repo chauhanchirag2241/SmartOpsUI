@@ -19,6 +19,10 @@ export const MenuCodes = {
   SalaryStructure: 'SALARY_STRUCTURE',
   SalaryEmployees: 'SALARY_EMPLOYEES',
   SalaryPayroll: 'SALARY_PAYROLL',
+  LeaveStaff: 'LEAVE_STAFF',
+  LeaveStudent: 'LEAVE_STUDENT',
+  MyActions: 'MY_ACTIONS',
+  Notices: 'NOTICES',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

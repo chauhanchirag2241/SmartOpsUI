@@ -1,6 +1,6 @@
 import { Component, Output, EventEmitter, inject, computed } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/services/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -18,6 +18,7 @@ export class SidebarComponent {
 
   private readonly auth = inject(AuthService);
   private readonly permissionService = inject(PermissionService);
+  private readonly router = inject(Router);
 
   private readonly user = toSignal(this.auth.currentUser$, { initialValue: this.auth.currentUser });
   private readonly menus = toSignal(this.permissionService.menus$, {
@@ -29,7 +30,14 @@ export class SidebarComponent {
     return items
       .map((item) => ({
         ...item,
-        children: (item.children ?? []).filter((child) => this.permissionService.canView(child.code)),
+        route: this.permissionService.resolveRoute(item) ?? item.route,
+        children: (item.children ?? [])
+          .filter((child) => this.permissionService.canView(child.code))
+          .map((child) => ({
+            ...child,
+            route: this.permissionService.resolveRoute(child) ?? child.route,
+          }))
+          .filter((child) => !!child.route),
       }))
       .filter((item) => {
         if (item.route) {
@@ -65,5 +73,18 @@ export class SidebarComponent {
 
   hasChildren(item: IMenu): boolean {
     return (item.children?.length ?? 0) > 0;
+  }
+
+  navRoute(item: IMenu): string | null {
+    return this.permissionService.resolveRoute(item);
+  }
+
+  onNavClick(item: IMenu, event: MouseEvent): void {
+    const path = this.permissionService.resolveRoute(item);
+    if (!path) {
+      event.preventDefault();
+      return;
+    }
+    void this.router.navigateByUrl(path);
   }
 }
