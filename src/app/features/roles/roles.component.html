@@ -1,0 +1,18 @@
+<section class="roles-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="roles"
+      [serverSide]="false"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-role
+      [mode]="formMode"
+      [roleId]="selectedRoleId"
+      (cancel)="closeAddForm()"
+      (saved)="onRoleSaved()"
+    />
+  }
+</section>

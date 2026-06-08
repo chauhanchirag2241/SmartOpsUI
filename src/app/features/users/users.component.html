@@ -1,0 +1,18 @@
+<section class="users-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="users"
+      [serverSide]="false"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-user
+      [mode]="formMode"
+      [userId]="selectedUserId"
+      (cancel)="closeAddForm()"
+      (saved)="onUserSaved()"
+    />
+  }
+</section>

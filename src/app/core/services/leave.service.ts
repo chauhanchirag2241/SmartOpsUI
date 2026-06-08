@@ -25,6 +25,10 @@ export interface CreateStudentLeaveRequest extends CreateLeaveRequest {
 export class LeaveService {
   private readonly api = inject(ApiService);
 
+  getStaffApprovers(): Observable<unknown[]> {
+    return this.api.get('leave/staff/approvers');
+  }
+
   getStaffList(status?: string, teacherId?: string, from?: string, to?: string): Observable<unknown[]> {
     let params = new HttpParams();
     if (status) params = params.set('status', status);

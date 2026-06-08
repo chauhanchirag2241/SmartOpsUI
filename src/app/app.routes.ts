@@ -225,6 +225,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
+      {
+        path: 'configuration/users',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Users, permission: 'view' },
+        loadComponent: () =>
+          import('./features/users/users.component').then((m) => m.UsersComponent),
+      },
+      {
+        path: 'configuration/roles',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Roles, permission: 'view' },
+        loadComponent: () =>
+          import('./features/roles/roles.component').then((m) => m.RolesComponent),
+      },
+      {
+        path: 'settings',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Settings, permission: 'view' },
+        loadComponent: () =>
+          import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+      },
     ],
   },
   {

@@ -21,6 +21,9 @@ export const MENU_ROUTE_BY_CODE: Record<string, string> = {
   [MenuCodes.LeaveStudent]: '/leave/students',
   [MenuCodes.MyActions]: '/my-actions',
   [MenuCodes.Notices]: '/notices',
+  [MenuCodes.Users]: '/configuration/users',
+  [MenuCodes.Roles]: '/configuration/roles',
+  [MenuCodes.Settings]: '/settings',
 };
 
 export function resolveMenuRoute(code: string, route?: string | null): string | null {

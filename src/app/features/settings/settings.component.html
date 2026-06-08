@@ -1,0 +1,111 @@
+<section class="settings-page">
+  <header class="page-header">
+    <div>
+      <h1>Settings</h1>
+      <p>
+        @if (selectedSchoolName) {
+          School configuration for <strong>{{ selectedSchoolName }}</strong>
+        } @else {
+          Loading school configuration…
+        }
+      </p>
+    </div>
+  </header>
+
+  @if (!schoolReady) {
+    <div class="alert alert-warn">
+      <mat-icon>info</mat-icon>
+      School portal is still loading.
+    </div>
+  }
+
+  @if (loading) {
+    <p class="loading">Loading settings…</p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <section class="card">
+        <h2>
+          <mat-icon>work_off</mat-icon>
+          Staff leave approval
+        </h2>
+
+        <label class="field">
+          <span>Approval mode</span>
+          <select formControlName="staffApprovalMode">
+            <option value="AnyOne">Any one approver</option>
+            <option value="AllMust">All must approve</option>
+          </select>
+        </label>
+
+        <div class="chips-block">
+          <span class="label">Approver user types</span>
+          <div class="chips">
+            @for (type of userTypes; track type.id) {
+              <button
+                type="button"
+                class="chip"
+                [class.selected]="isStaffTypeSelected(type.code)"
+                [disabled]="!canEdit"
+                (click)="toggleStaffType(type.code)"
+              >
+                {{ type.name }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>
+          <mat-icon>child_care</mat-icon>
+          Student leave approval
+        </h2>
+
+        <p class="hint">Short leaves are routed to the class teacher by default.</p>
+
+        <label class="field">
+          <span>Approval mode</span>
+          <select formControlName="studentApprovalMode">
+            <option value="AnyOne">Any one approver</option>
+            <option value="AllMust">All must approve</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Long leave threshold (days)</span>
+          <input type="number" formControlName="studentLongLeaveMinDays" min="1" />
+        </label>
+
+        <label class="checkbox-field">
+          <input type="checkbox" formControlName="studentLongLeaveTransferToPrincipal" />
+          <span>Transfer long leave to Principal (skip class teacher)</span>
+        </label>
+
+        <div class="chips-block">
+          <span class="label">Long leave approver user types</span>
+          <div class="chips">
+            @for (type of userTypes; track type.id) {
+              <button
+                type="button"
+                class="chip"
+                [class.selected]="isLongLeaveTypeSelected(type.code)"
+                [disabled]="!canEdit"
+                (click)="toggleLongLeaveType(type.code)"
+              >
+                {{ type.name }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+
+      @if (canEdit) {
+        <footer class="actions">
+          <button type="submit" class="btn-primary" [disabled]="saving || !schoolReady">
+            {{ saving ? 'Saving…' : 'Save settings' }}
+          </button>
+        </footer>
+      }
+    </form>
+  }
+</section>

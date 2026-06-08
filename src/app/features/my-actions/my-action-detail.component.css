@@ -1,0 +1,114 @@
+.form-fill-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.form-fill-q {
+  background: var(--input-bg, #f9fafb);
+  border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-md, 8px);
+  padding: 14px;
+}
+
+.form-fill-q-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a1a);
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.form-fill-q-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--badge-bg, #eaf3de);
+  color: var(--badge-text, #3b6d11);
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.form-fill-q-req {
+  color: #c0392b;
+  margin-left: 2px;
+}
+
+.form-fill-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-fill-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-fill-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-md, 8px);
+  background: var(--card, #fff);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary, #1a1a1a);
+  transition: border-color 0.15s, background 0.15s;
+  margin: 0;
+}
+
+.form-fill-option:hover {
+  border-color: var(--primary-color, #639922);
+  background: var(--hover, #f0f7e8);
+}
+
+.form-fill-option.is-selected {
+  border-color: var(--primary-color, #639922);
+  background: var(--hover, #f0f7e8);
+}
+
+.form-fill-option input[type='radio'],
+.form-fill-option input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary-color, #639922);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.form-fill-option-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.form-fill-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  font-style: italic;
+}
+
+.form-fill-yesno {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .form-fill-yesno {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,84 +1,114 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-import { MyActionsService } from '../../core/services/my-actions.service';
+import { MyActionsService, WorkflowItemType } from '../../core/services/my-actions.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
-import { ListPageHeaderComponent } from '../../shared/components/list-page-header/list-page-header.component';
-import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
-
-interface ActionRow {
-  id: string;
-  itemType: number;
-  itemTypeLabel: string;
-  title: string;
-  summary?: string;
-  dueDate?: string;
-  createdOn: string;
-}
-
-interface ActionStats {
-  totalPending: number;
-  leaveApprovals: number;
-  noticeResponses: number;
-  formFills: number;
-}
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
+import { MenuCodes } from '../../core/constants/menu-codes';
+import { PermissionService } from '../../core/services/permission.service';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
+import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
+import type { DataTableAction, DataTableConfig, DataTableFilter } from '../../shared/components/smart-data-table';
+import { ActionTableRow, mapActionRows } from './my-actions.shared';
 
 @Component({
   selector: 'app-my-actions',
   standalone: true,
-  imports: [CommonModule, MatIconModule, ListPageHeaderComponent, PageToolbarComponent],
+  imports: [SmartDataTableComponent],
   templateUrl: './my-actions.component.html',
-  styleUrl: '../leave/workflow-page.shared.css',
+  styleUrl: './my-actions.component.css',
 })
 export class MyActionsComponent implements OnInit {
   private readonly actionsService = inject(MyActionsService);
   private readonly notify = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
 
-  items: ActionRow[] = [];
-  stats: ActionStats = { totalPending: 0, leaveApprovals: 0, noticeResponses: 0, formFills: 0 };
-  typeFilter: '' | '1' | '2' = '';
-  loading = false;
+  tableConfig!: DataTableConfig;
+  tableRows: ActionTableRow[] = [];
+  currentFilter = 'All';
+
+  private readonly baseTableConfig: DataTableConfig = {
+    header: {
+      title: 'My Actions',
+      subtitle: 'Pending approvals, notices, and tasks assigned to you',
+      showAddButton: false,
+    },
+    columns: [
+      {
+        key: 'itemTypeLabel',
+        label: 'Type',
+        sortable: true,
+        cellType: 'badge',
+        badgeMap: {
+          LeaveApproval: { cssClass: 'b-amber', label: 'Leave' },
+          NoticeResponse: { cssClass: 'b-blue', label: 'Notice' },
+          FormFill: { cssClass: 'b-gray', label: 'Form' },
+        },
+      },
+      { key: 'title', label: 'Title', sortable: true },
+      { key: 'summary', label: 'Summary' },
+      { key: 'dueDate', label: 'Due', sortable: true },
+    ],
+    filters: [
+      { label: 'All', icon: 'list', value: 'All' },
+      {
+        label: 'Leave',
+        icon: 'event_busy',
+        value: 'Leave',
+        filterFn: (row) => row['itemType'] === WorkflowItemType.LeaveApproval,
+      },
+      {
+        label: 'Notices',
+        icon: 'campaign',
+        value: 'Notices',
+        filterFn: (row) =>
+          row['itemType'] === WorkflowItemType.NoticeResponse ||
+          row['itemType'] === WorkflowItemType.FormFill,
+      },
+    ],
+    actions: [{ label: 'Take action', icon: 'task_alt', iconColor: '#639922' }],
+    searchPlaceholder: 'Search by title or summary…',
+    searchKeys: ['title', 'summary', 'itemTypeLabel'],
+    itemLabel: 'actions',
+    defaultPageSize: 10,
+    selectable: false,
+    showExport: false,
+  };
 
   ngOnInit(): void {
-    this.loadStats();
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.MyActions,
+      this.ayContext.isReadOnlyScope(),
+    );
     this.load();
   }
 
-  loadStats(): void {
-    this.actionsService.getStats().subscribe({
-      next: (s) => {
-        const raw = s as ActionStats;
-        this.stats = {
-          totalPending: raw.totalPending ?? 0,
-          leaveApprovals: raw.leaveApprovals ?? 0,
-          noticeResponses: raw.noticeResponses ?? 0,
-          formFills: raw.formFills ?? 0,
-        };
+  load(): void {
+    this.actionsService.getList().subscribe({
+      next: (data) => {
+        this.tableRows = mapActionRows(data);
+        refreshUi(this.cdr);
+      },
+      error: (err) => {
+        this.notify.error(typeof err?.error === 'string' ? err.error : 'Failed to load actions');
         refreshUi(this.cdr);
       },
     });
   }
 
-  load(): void {
-    this.loading = true;
-    refreshUi(this.cdr);
-    const itemType = this.typeFilter ? Number(this.typeFilter) : undefined;
-    this.actionsService.getList(itemType).subscribe({
-      next: (data) => {
-        this.items = (Array.isArray(data) ? data : []) as ActionRow[];
-        this.loading = false;
-        refreshUi(this.cdr);
-      },
-      error: (err) => {
-        this.notify.error(err?.error ?? 'Failed to load actions');
-        this.loading = false;
-        refreshUi(this.cdr);
-      },
-    });
+  onFilterChanged(filter: DataTableFilter | null): void {
+    this.currentFilter = filter?.value ?? 'All';
+  }
+
+  onActionClicked(event: { action: DataTableAction; row: Record<string, unknown> }): void {
+    const id = String(event.row['id'] ?? '');
+    if (!id) return;
+    this.openAction(id);
   }
 
   openAction(id: string): void {

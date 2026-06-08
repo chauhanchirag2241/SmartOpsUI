@@ -302,6 +302,14 @@ export class AddStudentComponent implements OnInit {
         },
       ],
     },
+    fatherEmail: {
+      type: 'input',
+      inputType: 'email',
+      controlName: 'fatherEmail',
+      label: "Father's email",
+      placeholder: 'parent@email.com',
+      validations: [{ name: 'email', message: 'Invalid email', validator: Validators.email }],
+    },
     fatherOcc: {
       type: 'input',
       controlName: 'fatherOcc',
@@ -331,6 +339,14 @@ export class AddStudentComponent implements OnInit {
           validator: Validators.pattern('^[0-9]{10}$'),
         },
       ],
+    },
+    motherEmail: {
+      type: 'input',
+      inputType: 'email',
+      controlName: 'motherEmail',
+      label: "Mother's email",
+      placeholder: 'parent@email.com',
+      validations: [{ name: 'email', message: 'Invalid email', validator: Validators.email }],
     },
     motherOcc: {
       type: 'input',
@@ -449,9 +465,11 @@ export class AddStudentComponent implements OnInit {
           fields: [
             'fatherName',
             'fatherMobile',
+            'fatherEmail',
             'fatherOcc',
             'motherName',
             'motherMobile',
+            'motherEmail',
             'motherOcc',
           ],
         },
@@ -545,9 +563,11 @@ export class AddStudentComponent implements OnInit {
       'address',
       'fatherName',
       'fatherMobile',
+      'fatherEmail',
       'fatherOcc',
       'motherName',
       'motherMobile',
+      'motherEmail',
       'motherOcc',
     ],
     1: ['admissionDate', 'academicYear', 'admissionNo', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
@@ -628,9 +648,11 @@ export class AddStudentComponent implements OnInit {
       address: ['', Validators.required],
       fatherName: ['', [Validators.required, nameValidator()]],
       fatherMobile: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
+      fatherEmail: ['', Validators.email],
       fatherOcc: ['', nameValidator()],
       motherName: ['', nameValidator()],
       motherMobile: ['', Validators.pattern('^[0-9]{10}$')],
+      motherEmail: ['', Validators.email],
       motherOcc: ['', nameValidator()],
       customFields: [[]],
 
@@ -1047,10 +1069,12 @@ export class AddStudentComponent implements OnInit {
 
       fatherName: father?.name,
       fatherMobile: father?.mobile,
+      fatherEmail: father?.email,
       fatherOcc: father?.occupation,
 
       motherName: mother?.name,
       motherMobile: mother?.mobile,
+      motherEmail: mother?.email,
       motherOcc: mother?.occupation,
 
       admissionDate: this.toLocalDate(academic?.admissionDate),

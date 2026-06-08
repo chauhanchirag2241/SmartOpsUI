@@ -65,12 +65,14 @@ export class StudentService {
           relationType: 'Father',
           name: studentData.fatherName,
           mobile: studentData.fatherMobile,
+          email: studentData.fatherEmail || null,
           occupation: studentData.fatherOcc
         },
         {
           relationType: 'Mother',
           name: studentData.motherName,
           mobile: studentData.motherMobile,
+          email: studentData.motherEmail || null,
           occupation: studentData.motherOcc
         }
       ],
@@ -133,12 +135,14 @@ export class StudentService {
           relationType: 'Father',
           name: studentData.fatherName,
           mobile: studentData.fatherMobile,
+          email: studentData.fatherEmail || null,
           occupation: studentData.fatherOcc
         },
         {
           relationType: 'Mother',
           name: studentData.motherName,
           mobile: studentData.motherMobile,
+          email: studentData.motherEmail || null,
           occupation: studentData.motherOcc
         }
       ],

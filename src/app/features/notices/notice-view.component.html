@@ -1,0 +1,149 @@
+<div class="topbar">
+  <app-action-button type="back" style="order: 2; margin-left: auto" (action)="close.emit()"></app-action-button>
+  <div class="page-title">View notice</div>
+</div>
+
+@if (loading) {
+  <div class="card">
+    <div class="empty-panel">Loading notice…</div>
+  </div>
+} @else if (detail) {
+  <p class="form-hint">{{ detail.title }}</p>
+
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>info</mat-icon>
+      Notice details
+    </div>
+    <table class="detail-table">
+      <tbody>
+        <tr>
+          <th>Title</th>
+          <td>{{ detail.title }}</td>
+        </tr>
+        <tr>
+          <th>Type</th>
+          <td>{{ contentTypeDisplay }}</td>
+        </tr>
+        <tr>
+          <th>Audience</th>
+          <td>{{ audienceDisplay }}</td>
+        </tr>
+        <tr>
+          <th>Status</th>
+          <td>
+            {{ detail.statusLabel }}
+            @if (!isActive) {
+              <span class="badge b-gray" style="margin-left: 8px">Inactive</span>
+            }
+          </td>
+        </tr>
+        @if (detail.responseDeadline) {
+          <tr>
+            <th>Response deadline</th>
+            <td>{{ detail.responseDeadline }}</td>
+          </tr>
+        }
+        <tr>
+          <th>Requires response</th>
+          <td>{{ detail.requiresResponse ? 'Yes' : 'No' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  @if (!isFormType && detail.body?.trim()) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>campaign</mat-icon>
+        Message
+      </div>
+      <div class="notice-preview">{{ detail.body }}</div>
+    </div>
+  }
+
+  @if (isDocumentType) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>description</mat-icon>
+        Document
+      </div>
+      <table class="detail-table">
+        <tbody>
+          <tr>
+            <th>Document name</th>
+            <td>{{ detail.content?.documentName || '—' }}</td>
+          </tr>
+          <tr>
+            <th>Link</th>
+            <td>
+              @if (detail.content?.documentUrl) {
+                <a [href]="detail.content?.documentUrl" target="_blank" rel="noopener">
+                  {{ detail.content?.documentUrl }}
+                </a>
+              } @else {
+                —
+              }
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (isFeeType && detail.content?.feeMessageTemplate) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>payments</mat-icon>
+        Fee message template
+      </div>
+      <div class="notice-preview">{{ detail.content?.feeMessageTemplate }}</div>
+    </div>
+  }
+
+  @if (isFormType && questions.length) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>quiz</mat-icon>
+        Form questions
+      </div>
+      <table class="detail-table detail-table-questions">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Question</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Options / answer key</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (q of questions; track q.id; let i = $index) {
+            <tr>
+              <td>{{ i + 1 }}</td>
+              <td>{{ q.label }}</td>
+              <td>{{ questionTypeLabel(q.type) }}</td>
+              <td>{{ q.required ? 'Yes' : 'No' }}</td>
+              <td>
+                @if (q.options?.length) {
+                  <ul class="option-list">
+                    @for (opt of q.options; track opt.id) {
+                      <li>
+                        {{ opt.label }}
+                        @if (q.hasAnswerKey && (q.correctOptionIds ?? []).includes(opt.id)) {
+                          <span class="correct-mark">✓ correct</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

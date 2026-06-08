@@ -1,0 +1,89 @@
+<div class="topbar">
+  <app-action-button type="back" style="order: 2; margin-left: auto" (action)="close.emit()"></app-action-button>
+  <div class="page-title">Responses</div>
+</div>
+
+<p class="form-hint">{{ noticeTitle }}</p>
+
+@if (pollStats.length) {
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>bar_chart</mat-icon>
+      Poll results
+    </div>
+    @for (q of pollStats; track q.questionId) {
+      <div style="margin-top: 10px">
+        <div style="font-weight: 600; margin-bottom: 8px">{{ q.questionLabel }}</div>
+        <div class="form-hint" style="margin-top: 0">Total votes: {{ q.total }}</div>
+        <div style="display: grid; gap: 8px; margin-top: 8px">
+          @for (opt of q.options; track opt.id) {
+            <div style="display: grid; grid-template-columns: 1fr 70px; gap: 10px; align-items: center">
+              <div>
+                <div style="display: flex; justify-content: space-between; gap: 10px">
+                  <span>{{ opt.label }}</span>
+                  <span class="form-hint" style="margin: 0">{{ opt.count }}</span>
+                </div>
+                <div style="height: 8px; background: var(--bg-light); border-radius: 999px; overflow: hidden; margin-top: 6px">
+                  <div
+                    style="height: 8px; background: var(--primary-color)"
+                    [style.width.%]="opt.percent"
+                  ></div>
+                </div>
+              </div>
+              <div style="text-align: right; font-weight: 600">{{ opt.percent }}%</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<div class="card list-data-card">
+  <div class="card-header">
+    <div class="card-title">
+      <mat-icon>forum</mat-icon>
+      Submitted responses
+    </div>
+    @if (!loading) {
+      <span class="record-count">{{ rows.length }} records</span>
+    }
+  </div>
+
+  @if (loading) {
+    <div class="empty-panel">
+      <mat-icon>hourglass_empty</mat-icon>
+      Loading responses…
+    </div>
+  } @else if (!rows.length) {
+    <div class="empty-panel">
+      <mat-icon>forum</mat-icon>
+      No responses yet.
+    </div>
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Respondent</th>
+          <th>Responded on</th>
+          <th>Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows; track row.id) {
+          <tr>
+            <td>{{ row.respondent }}</td>
+            <td>{{ row.respondedOn }}</td>
+            <td class="title-cell">
+              @if (row.isFormResponse) {
+                <pre class="response-pre">{{ row.responseText }}</pre>
+              } @else {
+                {{ row.responseText }}
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

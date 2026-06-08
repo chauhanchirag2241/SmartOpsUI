@@ -1,32 +1,70 @@
-<div class="chips-wrap" [class.disabled]="disabled">
-  <div class="chips-selected">
-    @for (item of getSelectedOptions(); track item.id) {
-      <span class="chip">
-        {{ item.name }}
-        @if (!disabled) {
-          <mat-icon class="chip-remove" (click)="remove(item.id)">close</mat-icon>
-        }
-      </span>
-    } @empty {
-      <span class="chips-empty">None selected</span>
-    }
+<div class="sms" [class.open]="panelOpen" [class.disabled]="disabled">
+  <div
+    class="sms-control"
+    [class.is-disabled]="disabled"
+    role="combobox"
+    [attr.aria-expanded]="panelOpen"
+    tabindex="0"
+    (click)="togglePanel($event)"
+    (keydown.enter)="togglePanel($event)"
+    (keydown.space)="togglePanel($event)"
+  >
+    <div class="sms-chips">
+      @for (chip of visibleChips; track chip.id) {
+        <span class="sms-chip">
+          <span class="sms-chip-label">{{ chip.name }}</span>
+          @if (!disabled) {
+            <span class="sms-chip-remove" (click)="remove(chip.id, $event)">
+              <mat-icon>close</mat-icon>
+            </span>
+          }
+        </span>
+      }
+      @if (overflowCount > 0) {
+        <span class="sms-overflow">+{{ overflowCount }}</span>
+      }
+      @if (!selectedIds.length) {
+        <span class="sms-placeholder">{{ placeholder }}</span>
+      }
+    </div>
+
+    <span class="sms-actions">
+      @if (selectedIds.length && !disabled) {
+        <span class="sms-clear" (click)="clearAll($event)">
+          <mat-icon>close</mat-icon>
+        </span>
+      }
+      <mat-icon class="sms-caret">{{ panelOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </span>
   </div>
 
-  @if (!disabled) {
-    <div class="chips-add">
-      <input
-        type="text"
-        class="chips-search"
-        [placeholder]="placeholder"
-        [value]="searchTerm"
-        (input)="searchTerm = $any($event.target).value"
-      />
-      <select class="chips-select" (change)="onPick($event)">
-        <option value="">+ Add</option>
+  @if (panelOpen && !disabled) {
+    <div class="sms-panel" (click)="$event.stopPropagation()">
+      <div class="sms-search">
+        <input
+          type="text"
+          class="sms-search-input"
+          [(ngModel)]="searchTerm"
+          [placeholder]="searchPlaceholder"
+          (click)="$event.stopPropagation()"
+        />
+        <mat-icon class="sms-search-icon">search</mat-icon>
+      </div>
+
+      <div class="sms-options">
         @for (opt of filteredOptions; track opt.id) {
-          <option [value]="opt.id">{{ opt.name }}</option>
+          <label class="sms-option" [class.is-selected]="isSelected(opt.id)">
+            <mat-checkbox
+              [checked]="isSelected(opt.id)"
+              (change)="toggleOption(opt.id, $event.checked)"
+              (click)="$event.stopPropagation()"
+            />
+            <span class="sms-option-label">{{ opt.name }}</span>
+          </label>
+        } @empty {
+          <div class="sms-empty">No matches found</div>
         }
-      </select>
+      </div>
     </div>
   }
 </div>

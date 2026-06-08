@@ -1,0 +1,204 @@
+<section class="add-role-page role-page">
+  <header class="form-header">    <button type="button" class="back" (click)="onCancel()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div>
+      <h2>{{ mode === 'add' ? 'Add role' : mode === 'edit' ? 'Edit role' : 'Role details' }}</h2>
+      <p>Define role name, permissions, and assign users</p>
+    </div>
+  </header>
+
+  @if (errorMessage) {
+    <p class="error-banner">{{ errorMessage }}</p>
+  }
+
+  @if (loading) {
+    <p class="hint-text">Loading…</p>
+  } @else {
+    <nav class="tabs" aria-label="Role tabs">
+      <button type="button" [class.active]="activeTab === 'details'" (click)="setTab('details')">
+        <mat-icon>badge</mat-icon>
+        Role details
+      </button>
+      <button type="button" [class.active]="activeTab === 'permissions'" (click)="setTab('permissions')">
+        <mat-icon>verified_user</mat-icon>
+        Permissions
+      </button>
+      <button type="button" [class.active]="activeTab === 'widgets'" (click)="setTab('widgets')">
+        <mat-icon>dashboard</mat-icon>
+        Dashboard widgets
+      </button>
+      @if (isEditMode) {
+        <button type="button" [class.active]="activeTab === 'users'" (click)="setTab('users')">
+          <mat-icon>group</mat-icon>
+          Users
+        </button>
+      }
+    </nav>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      @if (activeTab === 'details') {
+        <div class="card">
+          <div class="card-title">
+            <mat-icon>badge</mat-icon>
+            Basic details
+          </div>
+          <div class="grid-two">
+            <label class="field" [class.invalid]="showError('name')">
+              <span>Role name <strong>*</strong></span>
+              <input type="text" formControlName="name" placeholder="e.g. Class Teacher" />
+              @if (showError('name')) {
+                <em>Name is required</em>
+              }
+            </label>
+            <label class="field" [class.invalid]="showError('code')">
+              <span>Role code <strong>*</strong></span>
+              <input type="text" formControlName="code" placeholder="e.g. CLASS_TEACHER" />
+              @if (showError('code')) {
+                <em>Code is required</em>
+              }
+            </label>
+            <label class="field full">
+              <span>Description</span>
+              <textarea formControlName="description" placeholder="What this role can do…"></textarea>
+            </label>
+            @if (isEditMode) {
+              <label class="field checkbox-field">
+                <input type="checkbox" formControlName="isActive" />
+                <span>Active role</span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'permissions') {
+        <div class="card">
+          <div class="card-title">
+            <mat-icon>verified_user</mat-icon>
+            Menu permissions
+            @if (canEdit) {
+              <button type="button" class="link-btn" (click)="selectAllPermissions(true)">Select all</button>
+              <button type="button" class="link-btn" (click)="selectAllPermissions(false)">Clear all</button>
+            }
+          </div>
+          <div class="menu-permission-table">
+            <div class="menu-permission-header">
+              <span>Menu</span>
+              <span>View</span>
+              <span>Add</span>
+              <span>Edit</span>
+              <span>Delete</span>
+              <span>Export</span>
+            </div>
+            @for (menu of menuPermissions; track trackMenu($index, menu)) {
+              <div class="menu-permission-row">
+                <span>{{ menu.menuName }}</span>
+                <label><input type="checkbox" [checked]="menu.canView" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canView', $any($event.target).checked)" /></label>
+                <label><input type="checkbox" [checked]="menu.canAdd" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canAdd', $any($event.target).checked)" /></label>
+                <label><input type="checkbox" [checked]="menu.canEdit" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canEdit', $any($event.target).checked)" /></label>
+                <label><input type="checkbox" [checked]="menu.canDelete" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canDelete', $any($event.target).checked)" /></label>
+                <label><input type="checkbox" [checked]="menu.canExport" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canExport', $any($event.target).checked)" /></label>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'widgets') {
+        <div class="card">
+          <div class="card-title">
+            <mat-icon>dashboard</mat-icon>
+            Dashboard widgets
+            @if (canEdit) {
+              <button type="button" class="link-btn" (click)="selectAllWidgets(true)">Select all</button>
+              <button type="button" class="link-btn" (click)="selectAllWidgets(false)">Clear all</button>
+            }
+          </div>
+          <p class="hint-text">
+            Widgets also require the linked module &quot;View&quot; permission. Users only see data for their assigned scope (e.g. teacher class mappings).
+          </p>
+          @for (category of widgetCategories; track category) {
+            <h3 class="widget-category">{{ category }}</h3>
+            <div class="widget-permission-grid">
+              @for (widget of widgetsForCategory(category); track widget.widgetCode) {
+                <label class="widget-permission-item" [class.needs-menu]="widget.canView && !menuHasView(widget.requiredMenuCode)">
+                  <input
+                    type="checkbox"
+                    [checked]="widget.canView"
+                    [disabled]="!canEdit"
+                    (change)="setWidgetPermission(widget, $any($event.target).checked)"
+                  />
+                  <span>
+                    <strong>{{ widget.widgetName }}</strong>
+                    <small>Requires {{ widget.requiredMenuCode }} view</small>
+                  </span>
+                </label>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (activeTab === 'users' && isEditMode) {
+        @if (!schoolReady) {
+          <div class="card"><p class="hint-text">Wait for the school portal to finish loading.</p></div>
+        } @else if (loadingUsers) {
+          <div class="card"><p class="hint-text">Loading users…</p></div>
+        } @else {
+          <div class="permissions-layout">
+            <section class="permission-panel full-width">
+              <div class="permission-header">
+                <h2>
+                  <mat-icon>group</mat-icon>
+                  Assign users
+                </h2>
+                <span class="summary-chip">{{ assignedUserCount }} selected</span>
+              </div>
+              <div class="permission-rows">
+                @for (row of roleUserRows; track row.id) {
+                  <div class="permission-row">
+                    <button
+                      type="button"
+                      class="toggle"
+                      [class.checked]="row.assigned"
+                      [disabled]="!canEdit"
+                      (click)="toggleRoleUser(row)"
+                    >
+                      <span></span>
+                    </button>
+                    <span class="permission-name">{{ row.username }}</span>
+                    <code>{{ row.email }}</code>
+                  </div>
+                } @empty {
+                  <p class="hint-text">No users in this school.</p>
+                }
+              </div>
+            </section>
+          </div>
+        }
+      }
+
+      @if (canEdit) {
+        <footer class="role-footer form-actions">
+          <button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
+          @if (activeTab === 'users') {
+            <button type="button" class="save-btn" [disabled]="saving || !schoolReady" (click)="saveRoleUsers()">
+              <mat-icon>save</mat-icon>
+              {{ saving ? 'Saving…' : 'Save user assignments' }}
+            </button>
+          } @else {
+            <span class="summary-chip">
+              <mat-icon>verified</mat-icon>
+              {{ enabledPermissionCount }} menu · {{ enabledWidgetCount }} widgets
+            </span>
+            <button type="submit" class="save-btn" [disabled]="saving">
+              <mat-icon>save</mat-icon>
+              {{ saving ? 'Saving…' : mode === 'add' ? 'Create role' : 'Save role' }}
+            </button>
+          }
+        </footer>
+      }
+    </form>
+  }
+</section>

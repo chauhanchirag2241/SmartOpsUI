@@ -3,7 +3,7 @@
 @if (readOnly) {
   <div class="topbar">
     <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
-    <div class="page-title">New notice</div>
+    <div class="page-title">{{ isEditing ? 'Edit notice' : 'New notice' }}</div>
   </div>
   <div class="card">
     <div class="empty-panel">
@@ -14,66 +14,283 @@
 } @else {
   <div class="topbar">
     <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
-    <div class="page-title">New notice</div>
+    <div class="page-title">{{ isEditing ? 'Edit draft notice' : 'Create notice' }}</div>
   </div>
 
-  <p class="form-hint">Create a notice — publish later from the list</p>
+  <p class="form-hint">
+    @if (isEditing) {
+      Update this draft — publish when ready from the list
+    } @else {
+      Choose type, audience, and content — publish later from the list
+    }
+  </p>
+
+  @if (loadingNotice) {
+    <div class="card">
+      <div class="empty-panel">Loading notice…</div>
+    </div>
+  } @else {
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>tune</mat-icon>
+      Type & audience
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="notice-content-type">Content type</label>
+        <select
+          id="notice-content-type"
+          class="form-control"
+          [(ngModel)]="form.contentType"
+          (ngModelChange)="onContentTypeChange()"
+        >
+          @for (opt of contentTypeOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      @if (!isFeeType) {
+        <div class="field">
+          <label for="notice-target">Send to</label>
+          <select
+            id="notice-target"
+            class="form-control"
+            [(ngModel)]="form.targetType"
+            (ngModelChange)="onTargetTypeChange()"
+          >
+            @for (opt of targetTypeOptions; track opt.value) {
+              @if (opt.value !== NoticeTargetType.PendingFeeParents) {
+                <option [ngValue]="opt.value">{{ opt.label }}</option>
+              }
+            }
+          </select>
+        </div>
+      } @else {
+        <div class="field">
+          <label>Send to</label>
+          <div class="form-control" style="background: #f8faf5">Parents with pending fees (auto)</div>
+        </div>
+      }
+
+      @if (needsClassPicker) {
+        <div class="field full">
+          <label>Classes (multi-select)</label>
+          <app-multi-select-chips
+            [options]="classChipOptions"
+            [selectedIds]="selectedClassIds"
+            (selectedIdsChange)="selectedClassIds = $event"
+            placeholder="Select classes…"
+            searchPlaceholder="Search classes"
+          />
+          <p class="form-hint">Select one or more classes — notice will be sent to all parents in those classes.</p>
+        </div>
+      }
+
+      @if (needsRecipientPicker) {
+        <div class="field full">
+          <label>Recipients (multi-select)</label>
+          <app-multi-select-chips
+            [options]="recipientChipOptions"
+            [selectedIds]="selectedRecipientIds"
+            (selectedIdsChange)="selectedRecipientIds = $event"
+            placeholder="Select recipients…"
+            searchPlaceholder="Search recipients"
+          />
+          <p class="form-hint">Select one or more — notice will be sent to all selected people.</p>
+        </div>
+      }
+
+      <div class="field full">
+        <div class="form-hint" style="margin: 0">
+          @if (loadingAudience) {
+            Estimating recipients…
+          } @else {
+            <mat-icon style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle">groups</mat-icon>
+            Estimated recipients: <strong>{{ audienceCount }}</strong>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title">
       <mat-icon>campaign</mat-icon>
-      Notice content
+      Content
     </div>
     <div class="grid2">
       <div class="field full">
         <label for="notice-title">Title</label>
         <input id="notice-title" type="text" class="form-control" [(ngModel)]="form.title" placeholder="Notice title" />
       </div>
-      <div class="field full">
-        <label for="notice-body">Body</label>
-        <textarea id="notice-body" class="form-control" [(ngModel)]="form.body" rows="5" placeholder="Notice content…"></textarea>
-      </div>
-      <div class="field">
-        <label for="notice-target">Target audience</label>
-        <select id="notice-target" class="form-control" [(ngModel)]="form.targetType">
-          <option [ngValue]="NoticeTargetType.AllStaff">All staff</option>
-          <option [ngValue]="NoticeTargetType.ClassParents">Class parents</option>
-        </select>
-      </div>
-      @if (form.targetType === NoticeTargetType.ClassParents) {
-        <div class="field">
-          <label for="notice-class">Class</label>
-          <select id="notice-class" class="form-control" [(ngModel)]="form.targetRefId">
-            <option [ngValue]="null">Select class</option>
-            @for (c of classes; track c.id) {
-              <option [ngValue]="c.id">{{ c.name }}</option>
+
+      @if (!isFormType) {
+        <div class="field full">
+          <label for="notice-body">
+            @if (isFeeType) {
+              Summary (optional intro)
+            } @else {
+              Body / message
             }
-          </select>
+          </label>
+          <textarea
+            id="notice-body"
+            class="form-control"
+            [(ngModel)]="form.body"
+            rows="4"
+            [placeholder]="isFeeType ? 'Short intro shown above personalized fee details…' : 'Notice content…'"
+          ></textarea>
         </div>
       }
-      <div class="field full">
-        <label class="checkbox-inline">
-          <input type="checkbox" [(ngModel)]="form.requiresResponse" />
-          Requires response
-        </label>
-      </div>
-      @if (form.requiresResponse) {
-        <div class="field">
-          <label for="notice-deadline">Response deadline</label>
-          <input id="notice-deadline" type="date" class="form-control" [(ngModel)]="form.responseDeadline" />
+
+      @if (isFeeType) {
+        <div class="field full">
+          <label for="fee-template">Personalized fee message</label>
+          <textarea
+            id="fee-template"
+            class="form-control"
+            [(ngModel)]="form.content!.feeMessageTemplate"
+            rows="4"
+            placeholder="Use parentName, pendingAmount, students placeholders"
+          ></textarea>
+          <p class="form-hint">
+            Use <code>{{ '{' }}{{ '{' }}parentName{{ '}' }}{{ '}' }}</code>,
+            <code>{{ '{' }}{{ '{' }}pendingAmount{{ '}' }}{{ '}' }}</code>,
+            <code>{{ '{' }}{{ '{' }}students{{ '}' }}{{ '}' }}</code> — each parent gets a personalized message.
+          </p>
         </div>
+      }
+
+      @if (isDocumentType) {
+        <div class="field">
+          <label for="doc-name">Document name</label>
+          <input
+            id="doc-name"
+            type="text"
+            class="form-control"
+            [(ngModel)]="form.content!.documentName"
+            placeholder="e.g. Annual report PDF"
+          />
+        </div>
+        <div class="field">
+          <label for="doc-url">Document link</label>
+          <input
+            id="doc-url"
+            type="url"
+            class="form-control"
+            [(ngModel)]="form.content!.documentUrl"
+            placeholder="https://…"
+          />
+        </div>
+      }
+
+      @if (isFormType) {
+        <div class="field full">
+          <label>Form questions</label>
+          @for (q of form.content?.questions ?? []; track q.id; let i = $index) {
+            <div class="q-card">
+              <div class="q-row">
+                <input
+                  class="q-input"
+                  type="text"
+                  [(ngModel)]="q.label"
+                  [attr.placeholder]="'Question ' + (i + 1)"
+                />
+
+                <select class="type-select" [(ngModel)]="q.type" (ngModelChange)="onQuestionTypeChange(i)">
+                  <option value="text">Text</option>
+                  <option value="yesno">Yes / No</option>
+                  <option value="number">Number</option>
+                  <option value="mcq_single">MCQ (single)</option>
+                  <option value="mcq_multi">MCQ (multi)</option>
+                  <option value="poll">Poll</option>
+                </select>
+              </div>
+
+              <div class="q-meta">
+                <label class="req-label">
+                  <input type="checkbox" [(ngModel)]="q.required" />
+                  Required
+                </label>
+                <button type="button" class="remove-btn" (click)="removeQuestion(i)">Remove</button>
+              </div>
+
+              @if (q.type === 'mcq_single' || q.type === 'mcq_multi' || q.type === 'poll') {
+                <div class="mcq-section">
+                  <div class="mcq-header">
+                    <div class="mcq-label">Options</div>
+                    @if (q.type === 'mcq_single' || q.type === 'mcq_multi') {
+                      <label class="req-label" style="margin-left: auto">
+                        <input type="checkbox" [(ngModel)]="q.hasAnswerKey" />
+                        Answer key
+                      </label>
+                    }
+                  </div>
+
+                  @for (opt of q.options ?? []; track opt.id) {
+                    <div class="mcq-option-row">
+                      @if ((q.type === 'mcq_single' || q.type === 'mcq_multi') && q.hasAnswerKey) {
+                        <input
+                          class="mcq-correct"
+                          [type]="q.type === 'mcq_multi' ? 'checkbox' : 'radio'"
+                          [name]="'correct-' + q.id"
+                          [checked]="(q.correctOptionIds ?? []).includes(opt.id)"
+                          (change)="toggleCorrect(i, opt.id)"
+                        />
+                      } @else {
+                        <div class="mcq-dot"></div>
+                      }
+
+                      <input class="mcq-input" type="text" [(ngModel)]="opt.label" placeholder="Option" />
+                      <button type="button" class="remove-opt-btn" (click)="removeOption(i, opt.id)" aria-label="Remove option">
+                        ×
+                      </button>
+                    </div>
+                  }
+
+                  <button type="button" class="add-option-btn" (click)="addOption(i)">+ Add option</button>
+                </div>
+              }
+            </div>
+          }
+          <button type="button" class="add-question-btn" (click)="addQuestion()">
+            <mat-icon>add</mat-icon>
+            Add question
+          </button>
+          <p class="form-hint">Recipients fill this form from My Actions.</p>
+        </div>
+      }
+
+      @if (!isFormType && !isFeeType) {
+        <div class="field full">
+          <label class="checkbox-inline">
+            <input type="checkbox" [(ngModel)]="form.requiresResponse" />
+            Requires written response
+          </label>
+          <p class="form-hint" style="margin: 6px 0 0">
+            Published notices appear in each recipient's My Actions inbox.
+          </p>
+        </div>
+        @if (form.requiresResponse) {
+          <div class="field">
+            <label for="notice-deadline">Response deadline</label>
+            <input id="notice-deadline" type="date" class="form-control" [(ngModel)]="form.responseDeadline" />
+          </div>
+        }
       }
     </div>
   </div>
 
   <div class="footer-actions">
-    <div class="footer-hint">Notice is saved as draft until you publish</div>
+    <div class="footer-hint">Saved as draft until you publish from the list</div>
     <app-action-button
       type="save"
-      [label]="saving ? 'Saving…' : 'Save draft'"
+      [label]="saving ? 'Saving…' : (isEditing ? 'Update draft' : 'Save draft')"
       [icon]="saving ? 'hourglass_empty' : 'save'"
-      [disabled]="saving"
+      [disabled]="saving || loadingNotice"
       (action)="saveDraft()"
     ></app-action-button>
   </div>
+  }
 }

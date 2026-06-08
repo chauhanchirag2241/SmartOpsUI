@@ -1,0 +1,27 @@
+.approver-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.approver-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  background: var(--input-bg);
+  border: 0.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.approver-list mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--primary-color);
+}

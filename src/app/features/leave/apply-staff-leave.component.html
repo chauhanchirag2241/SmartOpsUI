@@ -17,7 +17,28 @@
     <div class="page-title">Apply staff leave</div>
   </div>
 
-  <p class="form-hint">Enter leave dates, type, and reason</p>
+  <p class="form-hint">Enter leave details and submit for approval</p>
+
+  <div class="card">
+    <div class="card-title">
+      <mat-icon>verified_user</mat-icon>
+      Approver
+    </div>
+    @if (loadingApprovers) {
+      <p class="form-hint" style="margin: 0">Loading approver…</p>
+    } @else if (approvers.length) {
+      <ul class="approver-list">
+        @for (a of approvers; track a.id) {
+          <li>
+            <mat-icon>person</mat-icon>
+            {{ a.name }}
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="form-hint" style="margin: 0">School admin will review your leave request.</p>
+    }
+  </div>
 
   <div class="card">
     <div class="card-title">
@@ -55,22 +76,13 @@
   </div>
 
   <div class="footer-actions">
-    <div class="footer-hint">Save as draft or submit for approval</div>
-    <div class="footer-btns">
-      <app-action-button
-        type="save"
-        label="Save draft"
-        icon="save"
-        [disabled]="saving"
-        (action)="save(false)"
-      ></app-action-button>
-      <app-action-button
-        type="submit"
-        [label]="saving ? 'Submitting…' : 'Submit for approval'"
-        [icon]="saving ? 'hourglass_empty' : 'send'"
-        [disabled]="saving"
-        (action)="save(true)"
-      ></app-action-button>
-    </div>
+    <div class="footer-hint">Leave will be submitted directly for approval</div>
+    <app-action-button
+      type="submit"
+      [label]="saving ? 'Submitting…' : 'Submit leave'"
+      [icon]="saving ? 'hourglass_empty' : 'send'"
+      [disabled]="saving"
+      (action)="submit()"
+    ></app-action-button>
   </div>
 }

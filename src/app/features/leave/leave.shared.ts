@@ -29,6 +29,36 @@ export function asLeaveArray(data: unknown): LeaveListItem[] {
   return Array.isArray(data) ? (data as LeaveListItem[]) : [];
 }
 
+export function leaveItemsToTableRows(items: LeaveListItem[]): Record<string, unknown>[] {
+  return items.map((row) => ({
+    id: row.id,
+    teacherName: row.teacherName ?? '—',
+    fromDate: row.fromDate,
+    toDate: row.toDate,
+    dayCount: row.dayCount,
+    leaveTypeLabel: row.leaveTypeLabel ?? '—',
+    status: row.status,
+    statusLabel: row.statusLabel,
+    createdOn: row.createdOn,
+  }));
+}
+
+export interface LeaveApprover {
+  id: string;
+  name: string;
+}
+
+export function asApproverArray(data: unknown): LeaveApprover[] {
+  if (!Array.isArray(data)) return [];
+  return data.map((raw) => {
+    const r = raw as Record<string, unknown>;
+    return {
+      id: String(r['id'] ?? r['Id'] ?? ''),
+      name: String(r['name'] ?? r['Name'] ?? '—'),
+    };
+  });
+}
+
 export function noticeStatusBadgeClass(statusLabel: string): string {
   const s = String(statusLabel ?? '').toLowerCase();
   if (s === 'published') return 'b-green';

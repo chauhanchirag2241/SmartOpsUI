@@ -1,8 +1,12 @@
 @if (loading) {
+  <div class="topbar">
+    <div class="page-title">Loading action…</div>
+    <app-action-button type="back" style="order: 2; margin-left: auto" (action)="goBack()"></app-action-button>
+  </div>
   <div class="card">
     <div class="empty-panel">
       <mat-icon>hourglass_empty</mat-icon>
-      Loading action…
+      Please wait…
     </div>
   </div>
 } @else if (detail) {
@@ -11,27 +15,48 @@
     <div class="page-title">{{ detail.title }}</div>
   </div>
 
-  <p class="form-hint">{{ detail.itemTypeLabel }}</p>
+  <p class="form-hint">
+    {{ detail.itemTypeLabel }}
+    @if (detail.dueDate) {
+      · Due {{ detail.dueDate }}
+    }
+  </p>
 
-  @if (detail.itemType === WorkflowItemType.LeaveApproval && detail.leaveRequest) {
+  @if (isLeaveApproval) {
     <div class="card">
       <div class="card-title">
         <mat-icon>event_busy</mat-icon>
         Leave request
-        <span class="badge b-amber" style="margin-left: 8px">{{ detail.leaveRequest.statusLabel }}</span>
-      </div>
-      <div class="detail-panel">
-        <p><strong>Period:</strong> {{ detail.leaveRequest.fromDate }} – {{ detail.leaveRequest.toDate }}</p>
-        @if (detail.leaveRequest.studentName) {
-          <p><strong>Student:</strong> {{ detail.leaveRequest.studentName }}</p>
-        }
-        @if (detail.leaveRequest.teacherName) {
-          <p><strong>Teacher:</strong> {{ detail.leaveRequest.teacherName }}</p>
-        }
-        @if (detail.leaveRequest.reason) {
-          <p><strong>Reason:</strong> {{ detail.leaveRequest.reason }}</p>
+        @if (detail.leaveRequest?.statusLabel) {
+          <span class="badge b-amber" style="margin-left: 8px">{{ detail.leaveRequest?.statusLabel }}</span>
         }
       </div>
+
+      @if (detail.leaveRequest) {
+        <div class="detail-panel">
+          <p><strong>Period:</strong> {{ detail.leaveRequest.fromDate }} – {{ detail.leaveRequest.toDate }}</p>
+          @if (detail.leaveRequest.dayCount) {
+            <p><strong>Days:</strong> {{ detail.leaveRequest.dayCount }}</p>
+          }
+          @if (detail.leaveRequest.leaveTypeLabel) {
+            <p><strong>Leave type:</strong> {{ detail.leaveRequest.leaveTypeLabel }}</p>
+          }
+          @if (detail.leaveRequest.studentName) {
+            <p><strong>Student:</strong> {{ detail.leaveRequest.studentName }}</p>
+          }
+          @if (detail.leaveRequest.teacherName) {
+            <p><strong>Teacher:</strong> {{ detail.leaveRequest.teacherName }}</p>
+          }
+          @if (detail.leaveRequest.reason) {
+            <p><strong>Reason:</strong> {{ detail.leaveRequest.reason }}</p>
+          }
+        </div>
+      } @else if (detail.summary) {
+        <div class="detail-panel">
+          <p>{{ detail.summary }}</p>
+        </div>
+      }
+
       <div class="field" style="margin-top: 12px">
         <label for="action-remark">Remark (optional)</label>
         <textarea id="action-remark" class="form-control" [(ngModel)]="remark" rows="2"></textarea>
@@ -53,34 +78,213 @@
     </div>
   }
 
-  @if (detail.itemType === WorkflowItemType.NoticeResponse && detail.notice) {
+  @if (isFormFill) {
     <div class="card">
       <div class="card-title">
-        <mat-icon>campaign</mat-icon>
-        Notice response
+        <mat-icon>quiz</mat-icon>
+        Form
       </div>
-      <div class="notice-preview">{{ detail.notice.body }}</div>
-      <div class="field">
-        <label for="action-response">Your response</label>
-        <textarea
-          id="action-response"
-          class="form-control"
-          [(ngModel)]="responseText"
-          rows="4"
-          placeholder="Type your response…"
-        ></textarea>
-      </div>
+
+      @if (detail.notice) {
+        <p class="form-hint" style="margin-top: 0">{{ detail.notice.title }}</p>
+        @if (detail.notice.body) {
+          <div class="notice-preview">{{ detail.notice.body }}</div>
+        }
+        @if (detail.notice.responseDeadline) {
+          <p class="form-hint">Due: {{ detail.notice.responseDeadline }}</p>
+        }
+
+        <div class="form-fill-body">
+          @for (q of formQuestions; track q.id; let qi = $index) {
+            <div class="form-fill-q">
+              <div class="form-fill-q-label">
+                <span class="form-fill-q-num">{{ qi + 1 }}</span>
+                <span>
+                  {{ q.label }}
+                  @if (q.required) {
+                    <span class="form-fill-q-req">*</span>
+                  }
+                </span>
+              </div>
+
+              @if (q.type === 'mcq_single' || q.type === 'poll') {
+                <div class="form-fill-options">
+                  @for (opt of questionOptions(q); track opt.id) {
+                    <label
+                      class="form-fill-option"
+                      [class.is-selected]="isSingleSelected(q.id, opt.id)"
+                    >
+                      <input
+                        type="radio"
+                        [name]="'opt-' + q.id"
+                        [checked]="isSingleSelected(q.id, opt.id)"
+                        (change)="setSingleOptionAnswer(q.id, opt.id)"
+                      />
+                      <span class="form-fill-option-text">{{ opt.label }}</span>
+                    </label>
+                  }
+                  @if (!questionOptions(q).length) {
+                    <p class="form-fill-empty">No options available for this question.</p>
+                  }
+                </div>
+              } @else if (q.type === 'mcq_multi') {
+                <div class="form-fill-options">
+                  @for (opt of questionOptions(q); track opt.id) {
+                    <label
+                      class="form-fill-option"
+                      [class.is-selected]="isSelectedOption(q.id, opt.id)"
+                    >
+                      <input
+                        type="checkbox"
+                        [checked]="isSelectedOption(q.id, opt.id)"
+                        (change)="toggleOptionAnswer(q.id, opt.id, $any($event.target).checked)"
+                      />
+                      <span class="form-fill-option-text">{{ opt.label }}</span>
+                    </label>
+                  }
+                  @if (!questionOptions(q).length) {
+                    <p class="form-fill-empty">No options available for this question.</p>
+                  }
+                </div>
+              } @else if (q.type === 'yesno') {
+                <div class="form-fill-yesno">
+                  @for (yn of ['Yes', 'No']; track yn) {
+                    <label
+                      class="form-fill-option"
+                      [class.is-selected]="formAnswers[q.id] === yn"
+                    >
+                      <input
+                        type="radio"
+                        [name]="'yn-' + q.id"
+                        [value]="yn"
+                        [checked]="formAnswers[q.id] === yn"
+                        (change)="formAnswers[q.id] = yn"
+                      />
+                      <span class="form-fill-option-text">{{ yn }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (q.type === 'number') {
+                <input
+                  [id]="'form-q-' + q.id"
+                  type="number"
+                  class="form-control form-fill-input"
+                  [(ngModel)]="formAnswers[q.id]"
+                  placeholder="Enter a number"
+                />
+              } @else {
+                <textarea
+                  [id]="'form-q-' + q.id"
+                  class="form-control form-fill-input"
+                  [(ngModel)]="formAnswers[q.id]"
+                  rows="3"
+                  placeholder="Type your answer"
+                ></textarea>
+              }
+            </div>
+          }
+        </div>
+      } @else if (detail.summary) {
+        <div class="notice-preview">{{ detail.summary }}</div>
+      }
     </div>
 
     <div class="footer-actions">
-      <div class="footer-hint">Submit your response to complete this action</div>
+      <div class="footer-hint">Submit your answers to complete this form</div>
       <app-action-button
         type="submit"
-        [label]="completing ? 'Submitting…' : 'Submit response'"
+        [label]="completing ? 'Submitting…' : 'Submit form'"
         [icon]="completing ? 'hourglass_empty' : 'send'"
         [disabled]="completing"
-        (action)="complete('Respond')"
+        (action)="complete('SubmitForm')"
       ></app-action-button>
+    </div>
+  }
+
+  @if (isNoticeResponse) {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>campaign</mat-icon>
+        @if (detail.notice?.contentTypeLabel === 'FeeReminder') {
+          Fee reminder
+        } @else if (detail.notice?.contentTypeLabel === 'Document') {
+          Document
+        } @else if (detail.notice?.requiresResponse) {
+          Notice response
+        } @else {
+          Notice
+        }
+      </div>
+
+      @if (detail.notice) {
+        <p class="form-hint" style="margin-top: 0">{{ detail.notice.title }}</p>
+
+        @if (detail.summary && detail.notice.contentTypeLabel === 'FeeReminder') {
+          <div class="notice-preview">{{ detail.summary }}</div>
+        }
+        @if (detail.notice.body) {
+          <div class="notice-preview">{{ detail.notice.body }}</div>
+        }
+
+        @if (detail.notice.content?.documentUrl; as documentUrl) {
+          <p style="margin-top: 12px">
+            <a [href]="documentUrl" target="_blank" rel="noopener">
+              <mat-icon style="vertical-align: middle; font-size: 18px">description</mat-icon>
+              {{ detail.notice.content?.documentName || 'Open document' }}
+            </a>
+          </p>
+        }
+
+        @if (detail.notice.responseDeadline) {
+          <p class="form-hint">Response due: {{ detail.notice.responseDeadline }}</p>
+        }
+      } @else if (detail.summary) {
+        <div class="notice-preview">{{ detail.summary }}</div>
+      }
+
+      @if (noticeRequiresResponse) {
+        <div class="field">
+          <label for="action-response">Your response</label>
+          <textarea
+            id="action-response"
+            class="form-control"
+            [(ngModel)]="responseText"
+            rows="4"
+            placeholder="Type your response…"
+          ></textarea>
+        </div>
+      }
+    </div>
+
+    <div class="footer-actions">
+      @if (!noticeRequiresResponse) {
+        <div class="footer-hint">Mark this notice as read to complete the action</div>
+        <app-action-button
+          type="submit"
+          [label]="completing ? 'Saving…' : 'Mark as read'"
+          [icon]="completing ? 'hourglass_empty' : 'done_all'"
+          [disabled]="completing"
+          (action)="complete('Acknowledge')"
+        ></app-action-button>
+      } @else {
+        <div class="footer-hint">Submit your response to complete this action</div>
+        <app-action-button
+          type="submit"
+          [label]="completing ? 'Submitting…' : 'Submit response'"
+          [icon]="completing ? 'hourglass_empty' : 'send'"
+          [disabled]="completing"
+          (action)="complete('Respond')"
+        ></app-action-button>
+      }
+    </div>
+  }
+
+  @if (!isLeaveApproval && !isNoticeAction) {
+    <div class="card">
+      <div class="empty-panel">
+        <mat-icon>info</mat-icon>
+        This action type is not supported in the web app yet.
+      </div>
     </div>
   }
 }
