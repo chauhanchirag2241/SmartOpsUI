@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { SchoolConfigService } from './core/services/school-config.service';
 import { LoaderComponent } from './shared/components/loader/loader.component';
 
 @Component({
@@ -8,4 +9,10 @@ import { LoaderComponent } from './shared/components/loader/loader.component';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {}
+export class App implements OnInit {
+  private readonly schoolConfig = inject(SchoolConfigService);
+
+  ngOnInit(): void {
+    void this.schoolConfig.loadForCurrentHost();
+  }
+}

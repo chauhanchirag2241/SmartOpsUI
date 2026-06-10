@@ -6,7 +6,6 @@ import { provideRouter, withRouterConfig } from '@angular/router';
 
 import { routes } from './app.routes';
 import { authInitializer } from './core/initializers/auth.initializer';
-import { tenantInitializer } from './core/initializers/tenant.initializer';
 import { authErrorInterceptor } from './core/interceptors/auth-error.interceptor';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
@@ -32,7 +31,6 @@ export const appConfig: ApplicationConfig = {
       ]),
     ),
     provideRouter(routes, withRouterConfig({ onSameUrlNavigation: 'reload' })),
-    { provide: APP_INITIALIZER, useFactory: tenantInitializer, multi: true },
     { provide: APP_INITIALIZER, useFactory: authInitializer, multi: true },
     { provide: DateAdapter, useClass: DdMmYyyyDateAdapter },
     { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_DATE_FORMATS },

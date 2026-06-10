@@ -187,3 +187,31 @@ body {
 .delete-item .mat-icon {
   color: #c0392b !important;
 }
+
+/* Material checkbox — SmartOps green theme (replaces indigo-pink accent) */
+.mat-mdc-checkbox {
+  --mdc-checkbox-selected-checkmark-color: #fff;
+  --mdc-checkbox-selected-focus-icon-color: #639922;
+  --mdc-checkbox-selected-hover-icon-color: #639922;
+  --mdc-checkbox-selected-icon-color: #639922;
+  --mdc-checkbox-selected-pressed-icon-color: #639922;
+  --mdc-checkbox-unselected-focus-icon-color: #639922;
+  --mdc-checkbox-unselected-hover-icon-color: #639922;
+  --mdc-checkbox-unselected-pressed-icon-color: #639922;
+  --mdc-checkbox-selected-focus-state-layer-color: #639922;
+  --mdc-checkbox-selected-hover-state-layer-color: #639922;
+  --mdc-checkbox-selected-pressed-state-layer-color: #639922;
+  --mdc-checkbox-unselected-focus-state-layer-color: #639922;
+  --mdc-checkbox-unselected-hover-state-layer-color: #639922;
+  --mdc-checkbox-unselected-pressed-state-layer-color: #639922;
+}
+
+.mat-mdc-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__background,
+.mat-mdc-checkbox.mat-mdc-checkbox-indeterminate .mdc-checkbox__background {
+  background-color: #639922 !important;
+  border-color: #639922 !important;
+}
+
+.mat-mdc-checkbox:hover .mdc-checkbox__background {
+  border-color: #639922 !important;
+}

@@ -17,13 +17,18 @@ import { TenantService } from '../../../core/services/tenant.service';
 import { RoleDto, RoleService } from '../../../core/services/role.service';
 import { UserService } from '../../../core/services/user.service';
 import { UserTypeDto, UserTypeService } from '../../../core/services/user-type.service';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
+import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 
 const FALLBACK_ROLES = ['Admin'];
 
 @Component({
   selector: 'app-add-user',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule],
+  host: { class: 'add-user-page form-page-shell' },
+  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
   templateUrl: './add-user.component.html',
   styleUrl: './add-user.component.css',
 })
@@ -51,6 +56,72 @@ export class AddUserComponent implements OnInit {
   rolesLoading = false;
   rolesLoadError = '';
 
+  readonly configs: Record<string, FormFieldConfig> = {
+    username: {
+      type: 'input',
+      controlName: 'username',
+      label: 'Username',
+      placeholder: 'e.g. principal',
+      maxLength: 100,
+      validations: [
+        { name: 'required', validator: Validators.required, message: 'Username is required' },
+        { name: 'maxlength', validator: Validators.maxLength(100), message: 'Max 100 characters' },
+      ],
+    },
+    email: {
+      type: 'input',
+      controlName: 'email',
+      label: 'Email',
+      inputType: 'email',
+      placeholder: 'user@school.com',
+      maxLength: 256,
+      validations: [
+        { name: 'required', validator: Validators.required, message: 'Email is required' },
+        { name: 'email', validator: Validators.email, message: 'Enter a valid email' },
+      ],
+    },
+    password: {
+      type: 'input',
+      controlName: 'password',
+      label: 'Password',
+      inputType: 'password',
+      placeholder: 'Min 8 characters',
+      validations: [
+        { name: 'minlength', validator: Validators.minLength(8), message: 'At least 8 characters' },
+      ],
+    },
+    userTypeId: {
+      type: 'select',
+      controlName: 'userTypeId',
+      label: 'User type',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [],
+      validations: [
+        { name: 'required', validator: Validators.required, message: 'User type is required' },
+      ],
+    },
+    isActive: {
+      type: 'checkbox',
+      controlName: 'isActive',
+      label: 'Active user',
+    },
+    lockoutEnabled: {
+      type: 'checkbox',
+      controlName: 'lockoutEnabled',
+      label: 'Lockout enabled',
+    },
+  };
+
+  get pageTitle(): string {
+    if (this.mode === 'add') {
+      return 'Add user';
+    }
+    if (this.mode === 'edit') {
+      return 'Edit user';
+    }
+    return 'User details';
+  }
+
   get canEdit(): boolean {
     return this.mode !== 'view' && this.permissionService.canEdit(MenuCodes.Users);
   }
@@ -75,6 +146,11 @@ export class AddUserComponent implements OnInit {
 
     if (this.mode === 'add') {
       this.form.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
+      this.configs['password'].label = 'Password';
+      this.configs['password'].placeholder = 'Min 8 characters';
+    } else {
+      this.configs['password'].label = 'New password';
+      this.configs['password'].placeholder = 'Leave blank to keep current';
     }
 
     if (this.userId && this.mode !== 'add') {
@@ -90,6 +166,10 @@ export class AddUserComponent implements OnInit {
     this.userTypeService.getUserTypes().subscribe({
       next: (types) => {
         this.userTypes = types;
+        this.configs['userTypeId'].options = types.map((t) => ({
+          label: t.name,
+          value: t.id,
+        }));
         this.cdr.markForCheck();
       },
     });
@@ -230,11 +310,6 @@ export class AddUserComponent implements OnInit {
           this.cdr.markForCheck();
         },
       });
-  }
-
-  showError(controlName: string): boolean {
-    const c = this.form.get(controlName);
-    return !!(c && c.invalid && (c.dirty || c.touched));
   }
 
   private loadUser(id: string): void {

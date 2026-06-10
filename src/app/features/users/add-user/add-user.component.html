@@ -1,107 +1,54 @@
-<section class="add-user">
-  <header class="form-header">    <button type="button" class="back" (click)="onCancel()">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <div>
-      <h2>{{ mode === 'add' ? 'Add user' : mode === 'edit' ? 'Edit user' : 'User details' }}</h2>
-      <p>
-        @if (selectedSchoolName) {
-          Portal account for <strong>{{ selectedSchoolName }}</strong>
-        } @else {
-          School portal context is loading
-        }
-      </p>
-    </div>
-  </header>
+<div class="topbar">
+  <app-action-button
+    type="back"
+    style="order: 2; margin-left: auto"
+    (action)="onCancel()"
+  />
+  <div class="page-title">{{ pageTitle }}</div>
+</div>
 
-  @if (!schoolReady && mode === 'add') {
-    <div class="alert alert-warn">
-      <mat-icon>info</mat-icon>
-      Wait for the school portal to finish loading, then try again.
-    </div>
-  }
+@if (!schoolReady && mode === 'add') {
+  <div class="alert alert-warn">
+    <mat-icon>info</mat-icon>
+    Wait for the school portal to finish loading, then try again.
+  </div>
+}
 
-  @if (loading) {
-    <p class="loading">Loading user…</p>
-  } @else {
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <div class="section-title">
+@if (loading) {
+  <p class="loading-state">Loading user…</p>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="card">
+      <div class="card-title">
         <mat-icon>person</mat-icon>
         Account details
-        <small>Maps to global.users table</small>
       </div>
-
-      <div class="grid">
-        <label class="field" [class.invalid]="showError('username')">
-          <span>Username <strong>*</strong></span>
-          <input type="text" formControlName="username" placeholder="e.g. principal" maxlength="100" />
-          @if (showError('username')) {
-            <em>Username is required (max 100 characters)</em>
-          }
-        </label>
-
-        <label class="field" [class.invalid]="showError('email')">
-          <span>Email <strong>*</strong></span>
-          <input type="email" formControlName="email" placeholder="user@school.com" maxlength="256" />
-          @if (showError('email')) {
-            <em>Valid email is required</em>
-          }
-        </label>
-
-        <label class="field" [class.invalid]="showError('password')">
-          <span>Password @if (mode === 'add') { <strong>*</strong> }</span>
-          <input
-            type="password"
-            formControlName="password"
-            [placeholder]="mode === 'add' ? 'Min 8 characters' : 'Leave blank to keep current'"
-          />
-          @if (showError('password')) {
-            <em>Password must be at least 8 characters</em>
-          }
-        </label>
-
-        <label class="field" [class.invalid]="showError('userTypeId')">
-          <span>User type <strong>*</strong></span>
-          <select formControlName="userTypeId">
-            <option value="">Select user type</option>
-            @for (type of userTypes; track type.id) {
-              <option [value]="type.id">{{ type.name }}</option>
-            }
-          </select>
-          @if (showError('userTypeId')) {
-            <em>User type is required</em>
-          }
-        </label>
-
-        <div class="field toggles">
-          <label class="checkbox-field">
-            <input type="checkbox" formControlName="isActive" />
-            <span>Active (isactive)</span>
-          </label>
-          <label class="checkbox-field">
-            <input type="checkbox" formControlName="lockoutEnabled" />
-            <span>Lockout enabled (lockoutenabled)</span>
-          </label>
-        </div>
+      <div class="grid2">
+        <app-dynamic-field [config]="configs['username']" [group]="form" />
+        <app-dynamic-field [config]="configs['email']" [group]="form" />
+        <app-dynamic-field [config]="configs['password']" [group]="form" />
+        <app-dynamic-field [config]="configs['userTypeId']" [group]="form" />
+        <app-dynamic-field [config]="configs['isActive']" [group]="form" />
+        <app-dynamic-field [config]="configs['lockoutEnabled']" [group]="form" />
       </div>
+    </div>
 
-      <div class="roles-block">
-        <div class="roles-header">
-          <h3>
-            <mat-icon>badge</mat-icon>
-            Roles
-          </h3>
-          <small>Maps to global.userroles — select at least one</small>
-          @if (rolesLoading) {
-            <span class="roles-status">Loading roles…</span>
-          }
-        </div>
-
-        @if (rolesLoadError) {
-          <p class="roles-hint warn">{{ rolesLoadError }}</p>
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>badge</mat-icon>
+        Roles
+        @if (rolesLoading) {
+          <span class="hint-text" style="margin-left: auto">Loading roles…</span>
         }
+      </div>
 
-        <div class="role-chips">
+      @if (rolesLoadError) {
+        <p class="hint-text">{{ rolesLoadError }}</p>
+      }
+
+      <div class="chips-block">
+        <span class="label">Select at least one role for this user</span>
+        <div class="chips">
           @for (role of roles; track role.id) {
             <button
               type="button"
@@ -114,20 +61,23 @@
             </button>
           } @empty {
             @if (!rolesLoading) {
-              <p class="roles-hint">No roles available.</p>
+              <p class="hint-text">No roles available.</p>
             }
           }
         </div>
       </div>
+    </div>
 
-      @if (canEdit) {
-        <footer class="actions">
-          <button type="button" class="btn-secondary" (click)="onCancel()">Cancel</button>
-          <button type="submit" class="btn-primary" [disabled]="isSaving || (mode === 'add' && !schoolReady)">
-            {{ isSaving ? 'Saving…' : mode === 'add' ? 'Create user' : 'Save changes' }}
-          </button>
-        </footer>
-      }
-    </form>
-  }
-</section>
+    @if (canEdit) {
+      <div class="footer-actions">
+        <app-action-button type="cancel" (action)="onCancel()" />
+        <app-action-button
+          type="save"
+          [disabled]="isSaving || (mode === 'add' && !schoolReady)"
+          [label]="isSaving ? 'Saving…' : mode === 'add' ? 'Create user' : 'Save changes'"
+          (action)="onSubmit()"
+        />
+      </div>
+    }
+  </form>
+}

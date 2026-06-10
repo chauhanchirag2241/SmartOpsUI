@@ -8,6 +8,7 @@ import { AdminLayoutComponent } from './layout/admin-layout/admin-layout.compone
 import { AuthLayoutComponent } from './layout/auth-layout/auth-layout.component';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'auth/login' },
   {
     path: '',
     component: AdminLayoutComponent,

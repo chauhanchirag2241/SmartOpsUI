@@ -20,6 +20,9 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { TenantService } from '../../../core/services/tenant.service';
 import { RoleDto, RoleService } from '../../../core/services/role.service';
 import { SchoolUserDto, UserService } from '../../../core/services/user.service';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 interface RoleUserRow {
   id: string;
   username: string;
@@ -30,7 +33,8 @@ interface RoleUserRow {
 @Component({
   selector: 'app-add-role',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule],
+  host: { class: 'add-role-page form-page-shell role-page' },
+  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
   templateUrl: './add-role.component.html',
   styleUrl: './add-role.component.css',
 })
@@ -57,6 +61,51 @@ export class AddRoleComponent implements OnInit {
   loadingUsers = false;
   menuPermissions: IRoleMenuPermission[] = [];
   dashboardWidgetPermissions: IRoleDashboardWidgetPermission[] = [];
+
+  readonly configs: Record<string, FormFieldConfig> = {
+    name: {
+      type: 'input',
+      controlName: 'name',
+      label: 'Role name',
+      placeholder: 'e.g. Class Teacher',
+      maxLength: 100,
+      validations: [
+        { name: 'required', validator: Validators.required, message: 'Role name is required' },
+      ],
+    },
+    code: {
+      type: 'input',
+      controlName: 'code',
+      label: 'Role code',
+      placeholder: 'e.g. CLASS_TEACHER',
+      maxLength: 50,
+      validations: [
+        { name: 'required', validator: Validators.required, message: 'Role code is required' },
+      ],
+    },
+    description: {
+      type: 'textarea',
+      controlName: 'description',
+      label: 'Description',
+      placeholder: 'What this role can do…',
+      maxLength: 256,
+    },
+    isActive: {
+      type: 'checkbox',
+      controlName: 'isActive',
+      label: 'Active role',
+    },
+  };
+
+  get pageTitle(): string {
+    if (this.mode === 'add') {
+      return 'Add role';
+    }
+    if (this.mode === 'edit') {
+      return 'Edit role';
+    }
+    return 'Role details';
+  }
 
   get canEdit(): boolean {
     return this.mode !== 'view' && this.permissionService.canEdit(MenuCodes.Roles);
@@ -267,11 +316,6 @@ export class AddRoleComponent implements OnInit {
 
   trackMenu(index: number, menu: IRoleMenuPermission): string {
     return `${menu.menuCode}-${index}`;
-  }
-
-  showError(controlName: string): boolean {
-    const c = this.form.get(controlName);
-    return !!(c && c.invalid && (c.dirty || c.touched));
   }
 
   private loadRole(id: string): void {

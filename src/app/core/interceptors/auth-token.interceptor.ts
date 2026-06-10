@@ -8,16 +8,20 @@ function isAuthApiUrl(url: string): boolean {
   return url.includes('/auth/login') || url.includes('/auth/refresh');
 }
 
+function isPublicBootstrapApiUrl(url: string): boolean {
+  return isAuthApiUrl(url) || url.includes('/schools/by-subdomain/');
+}
+
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const token = auth.getToken();
 
-  if (token && !isUsableAccessToken(token) && !isAuthApiUrl(req.url)) {
+  if (token && !isUsableAccessToken(token) && !isPublicBootstrapApiUrl(req.url)) {
     auth.expireSession();
     return EMPTY;
   }
 
-  if (!isUsableAccessToken(token)) {
+  if (!isUsableAccessToken(token) || isPublicBootstrapApiUrl(req.url)) {
     return next(req);
   }
 
