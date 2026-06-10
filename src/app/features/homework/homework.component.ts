@@ -12,10 +12,8 @@ import { SubjectService } from '../../core/services/subject.service';
 import {
   HomeworkService,
   HomeworkPriority,
-  HomeworkSubmissionType,
-  CreateHomeworkRequest,
 } from '../../core/services/homework.service';
-import { ListPageHeaderComponent } from '../../shared/components/list-page-header/list-page-header.component';
+import { AddHomeworkComponent } from './add-homework/add-homework.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
 import {
   HomeworkListItem,
@@ -33,8 +31,8 @@ import {
     FormsModule,
     MatIconModule,
     MatSnackBarModule,
-    ListPageHeaderComponent,
     PageToolbarComponent,
+    AddHomeworkComponent,
   ],
   templateUrl: './homework.component.html',
   styleUrl: './homework.component.css',
@@ -55,7 +53,6 @@ export class HomeworkComponent implements OnInit {
   }
 
   HomeworkPriority = HomeworkPriority;
-  HomeworkSubmissionType = HomeworkSubmissionType;
 
   items: HomeworkListItem[] = [];
   classes: any[] = [];
@@ -69,9 +66,10 @@ export class HomeworkComponent implements OnInit {
   searchQuery = '';
   viewMode: 'grid' | 'list' = 'grid';
 
-  showCreateModal = false;
+  showAddForm = false;
+  formMode: 'add' | 'edit' = 'add';
   editingHomeworkId: string | null = null;
-  form: CreateHomeworkRequest = this.emptyForm();
+  editingHomeworkForm?: any;
 
   ngOnInit(): void {
     this.loadDropdowns();
@@ -79,22 +77,7 @@ export class HomeworkComponent implements OnInit {
     this.loadList();
   }
 
-  private emptyForm(): CreateHomeworkRequest {
-    const today = this.localDateString();
-    const due = new Date();
-    due.setDate(due.getDate() + 2);
-    return {
-      classId: '',
-      subjectId: '',
-      title: '',
-      description: '',
-      assignDate: today,
-      dueDate: this.localDateString(due),
-      priority: HomeworkPriority.Normal,
-      marks: null,
-      submissionType: HomeworkSubmissionType.Physical,
-    };
-  }
+
 
   loadDropdowns(): void {
     this.classService.getClassDropdown().subscribe({
@@ -206,17 +189,19 @@ export class HomeworkComponent implements OnInit {
 
   openCreate(): void {
     if (!this.canManageHomework) return;
+    this.formMode = 'add';
     this.editingHomeworkId = null;
-    this.form = this.emptyForm();
-    this.showCreateModal = true;
+    this.editingHomeworkForm = undefined;
+    this.showAddForm = true;
     this.refreshView();
   }
 
   openEdit(item: HomeworkListItem, event?: Event): void {
     if (!this.canManageHomework) return;
     event?.stopPropagation();
+    this.formMode = 'edit';
     this.editingHomeworkId = item.id;
-    this.form = {
+    this.editingHomeworkForm = {
       classId: item.classId,
       subjectId: item.subjectId,
       title: item.title,
@@ -227,46 +212,22 @@ export class HomeworkComponent implements OnInit {
       marks: item.marks ?? null,
       submissionType: item.submissionType,
     };
-    this.showCreateModal = true;
+    this.showAddForm = true;
     this.refreshView();
   }
 
-  closeCreate(): void {
-    this.showCreateModal = false;
+  closeAddForm(): void {
+    this.showAddForm = false;
     this.editingHomeworkId = null;
+    this.editingHomeworkForm = undefined;
     this.refreshView();
   }
 
-  saveHomework(): void {
-    if (!this.canManageHomework) return;
-    if (!this.form.classId || !this.form.subjectId || !this.form.title?.trim() || !this.form.dueDate) {
-      this.snackBar.open('Please fill required fields', 'Close', { duration: 3000 });
-      return;
-    }
-
-    const req = { ...this.form, title: this.form.title.trim() };
-    const call = this.editingHomeworkId
-      ? this.homeworkService.update(this.editingHomeworkId, req)
-      : this.homeworkService.create(req);
-
-    call.subscribe({
-      next: (res) => {
-        this.snackBar.open(
-          this.editingHomeworkId ? 'Homework updated' : 'Homework assigned',
-          'Close',
-          { duration: 2500, panelClass: ['snack-success'] },
-        );
-        this.closeCreate();
-        this.loadList();
-        this.loadStats();
-        this.refreshView();
-      },
-      error: (err) =>
-        this.snackBar.open(err?.error || 'Save failed', 'Close', {
-          duration: 3000,
-          panelClass: ['snack-error'],
-        }),
-    });
+  onHomeworkSaved(): void {
+    this.closeAddForm();
+    this.loadList();
+    this.loadStats();
+    this.refreshView();
   }
 
   deleteHomework(item: HomeworkListItem, event: Event): void {

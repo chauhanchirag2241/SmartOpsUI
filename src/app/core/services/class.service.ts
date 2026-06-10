@@ -76,7 +76,7 @@ export class ClassService {
       className: classData.className,
       section: enumToInt(Section, classData.section, true),
       streamGroup: streamGroupToApiInt(classData.streamGroup),
-      academicYearId: classData.academicYear,
+      academicYearId: classData.academicYearId || classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
       shift: enumToInt(Shift, classData.shift),
@@ -97,7 +97,7 @@ export class ClassService {
       className: classData.className,
       section: enumToInt(Section, classData.section, true),
       streamGroup: streamGroupToApiInt(classData.streamGroup),
-      academicYearId: classData.academicYear,
+      academicYearId: classData.academicYearId || classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
       shift: enumToInt(Shift, classData.shift),
@@ -109,5 +109,9 @@ export class ClassService {
 
   deleteClass(id: string): Observable<any> {
     return this.api.delete(`classes/${id}`);
+  }
+
+  recoverClass(id: string): Observable<any> {
+    return this.api.put(`classes/${id}/recover`, {});
   }
 }

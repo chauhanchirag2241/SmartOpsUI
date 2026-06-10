@@ -169,7 +169,7 @@
           <div
             class="badge-opt"
             [class.active]="group.get(config.controlName)?.value === option.value"
-            [class.disabled]="config.disabled"
+            [class.disabled]="config.disabled || group.get(config.controlName)?.disabled"
             (click)="setControlValue(config.controlName, option.value)"
           >
             {{ option.label }}
@@ -194,7 +194,7 @@
       <app-file-upload
         [accept]="config.accept || 'image/png,image/jpeg'"
         [mode]="config.fileMode || 'avatar'"
-        [disabled]="config.disabled ?? false"
+        [disabled]="config.disabled || group.get(config.controlName)?.disabled || false"
         (fileSelected)="setControlValue(config.controlName, $event.file)"
       />
       @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {

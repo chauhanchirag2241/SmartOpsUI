@@ -375,6 +375,11 @@ export class StudentsComponent implements OnInit {
         iconColor: '#639922',
       },
       {
+        label: 'Recover student',
+        icon: 'unarchive',
+        iconColor: '#10B981',
+      },
+      {
         label: 'Delete student',
         icon: 'delete',
         danger: true,
@@ -385,9 +390,14 @@ export class StudentsComponent implements OnInit {
 
     bulkActions: [
       { label: 'Promote to next year', icon: 'upgrade' },
-      { label: 'Export', icon: 'download' },
-      { label: 'Delete', icon: 'delete', danger: true },
     ],
+    bulkActionVisibleFn: (action, selectedRows) => {
+      if (action.label === 'Promote to next year') {
+        // Hide option if any selected student is deleted/inactive
+        return !selectedRows.some((row) => row['isActive'] === false);
+      }
+      return true;
+    },
 
     searchPlaceholder: 'Search by name, admission no...',
     searchKeys: ['name', 'admNo', 'class', 'email'],
@@ -401,11 +411,10 @@ export class StudentsComponent implements OnInit {
   };
 
   private isStudentActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
-    if (row['isActive'] !== false) {
-      return true;
+    if (row['isActive'] === false) {
+      return action.label === 'View profile' || action.label === 'Show history' || action.label === 'Recover student';
     }
-
-    return action.label === 'View profile' || action.label === 'Show history';
+    return action.label !== 'Recover student';
   }
 
   private buildTableConfig(): DataTableConfig {
@@ -477,6 +486,24 @@ export class StudentsComponent implements OnInit {
                 duration: 3000,
                 panelClass: 'snack-error',
               }),
+          });
+        }
+      });
+    } else if (event.action.label === 'Recover student') {
+      if (this.ayContext.isReadOnlyScope() || !this.permissionService.canEdit(MenuCodes.Students)) return;
+      this.studentService.recoverStudent(id).subscribe({
+        next: () => {
+          this.snackBar.open('Student recovered successfully', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-success',
+          });
+          this.loadStudents();
+        },
+        error: (err) => {
+          const msg = err?.error?.message || (typeof err?.error === 'string' ? err.error : 'Failed to recover student');
+          this.snackBar.open(msg, 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
           });
         }
       });
@@ -554,38 +581,12 @@ export class StudentsComponent implements OnInit {
       this.openPromoteDialog(event.selectedRows);
       return;
     }
-    if (event.action.label === 'Delete') {
-      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
-        data: {
-          title: 'Delete multiple students?',
-          description: `You are about to delete ${event.selectedRows.length} student records. This action is permanent.`,
-          recordName: `${event.selectedRows.length} Students Selected`,
-          recordMeta: 'Bulk Deletion',
-          initials: 'BD',
-          warningMessage:
-            'This will permanently remove all selected students and their associated data.',
-        },
-        panelClass: 'erp-dialog',
-        disableClose: true,
-      });
-
-      dialogRef.afterClosed().subscribe((confirmed: any) => {
-        if (confirmed) {
-          // Implement bulk delete logic here
-          this.snackBar.open(
-            `Bulk delete for ${event.selectedRows.length} students initiated`,
-            'Close',
-            { duration: 3000, panelClass: 'snack-success' },
-          );
-        }
-      });
-    } else {
-      this.snackBar.open(
-        `${event.action.label} → ${event.selectedRows.length} student(s)`,
-        'Close',
-        { duration: 3000, panelClass: 'snack-info' },
-      );
-    }
+    
+    this.snackBar.open(
+      `${event.action.label} → ${event.selectedRows.length} student(s)`,
+      'Close',
+      { duration: 3000, panelClass: 'snack-info' },
+    );
   }
 
   private getInitials(name: string): string {

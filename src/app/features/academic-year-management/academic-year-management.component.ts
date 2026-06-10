@@ -234,7 +234,10 @@ export class AcademicYearManagementComponent implements OnInit {
               this.snackBar.open('Academic year deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
               this.loadAcademicYears();
             },
-            error: () => this.snackBar.open('Failed to delete academic year', 'Close', { duration: 3000, panelClass: 'snack-error' })
+            error: (err) => {
+              const msg = err?.error?.message || (typeof err?.error === 'string' ? err.error : 'Failed to delete academic year');
+              this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'snack-error' });
+            }
           });
         }
       });

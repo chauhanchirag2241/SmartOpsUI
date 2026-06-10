@@ -176,6 +176,10 @@ export class StudentService {
     return this.api.delete(`students/${id}`);
   }
 
+  recoverStudent(id: string): Observable<any> {
+    return this.api.put(`students/${id}/recover`, {});
+  }
+
   getNextRollNumber(academicYearId: string, classId: string): Observable<any> {
     const params = new HttpParams()
       .set('academicYearId', academicYearId)

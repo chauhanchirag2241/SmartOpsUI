@@ -1,0 +1,38 @@
+<div class="topbar">
+  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="closeForm()"></app-action-button>
+  <div class="page-title">{{ mode === 'edit' ? 'Edit Homework' : 'Create New Homework' }}</div>
+</div>
+
+<p class="form-hint">Fill in the details below to {{ mode === 'edit' ? 'update the' : 'assign new' }} homework.</p>
+
+<form [formGroup]="homeworkForm">
+  @for (tab of tabs; track tab.stepIndex) {
+    @for (section of tab.sections; track section.title) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}
+        </div>
+        <div [class]="section.layout">
+          @for (field of section.fields; track field) {
+            <app-dynamic-field
+              [config]="configs[field]"
+              [group]="homeworkForm"
+              [full]="field === 'title' || field === 'description'"
+            />
+          }
+        </div>
+      </div>
+    }
+  }
+</form>
+
+<div class="footer-actions">
+  <div class="footer-hint">Save homework to assign it to students.</div>
+  <app-action-button
+    type="save"
+    [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Homework' : 'Assign Homework')"
+    [icon]="isSaving ? 'hourglass_empty' : 'send'"
+    [disabled]="isSaving"
+    (action)="saveHomework()">
+  </app-action-button>
+</div>

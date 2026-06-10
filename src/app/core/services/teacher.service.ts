@@ -168,6 +168,7 @@ export class TeacherService {
 
     return {
       id,
+      userId: teacher.userId,
       firstName: teacher.personal.firstName,
       lastName: teacher.personal.lastName,
       dob: this.formatDate(teacher.personal.dob),

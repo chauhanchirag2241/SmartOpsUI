@@ -149,4 +149,6 @@ export interface DataTableConfig {
   header?: DataTableHeader;
   /** Optional per-row filter for context menu actions */
   actionVisibleFn?: (action: DataTableAction, row: Record<string, unknown>) => boolean;
+  /** Optional filter for bulk actions based on selected rows */
+  bulkActionVisibleFn?: (action: DataTableBulkAction, selectedRows: Record<string, unknown>[]) => boolean;
 }

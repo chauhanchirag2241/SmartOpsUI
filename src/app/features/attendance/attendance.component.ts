@@ -11,6 +11,9 @@ import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { DeleteDialogData } from '../../shared/interfaces/delete-dialog.interface';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 
 interface Student {
@@ -31,7 +34,7 @@ interface AttendanceNote {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, AvatarComponent, PageToolbarComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MatDialogModule, AvatarComponent, PageToolbarComponent],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css'
 })
@@ -41,6 +44,7 @@ export class AttendanceComponent implements OnInit {
   private attendanceService = inject(AttendanceService);
   private snackBar = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
+  private dialog = inject(MatDialog);
   readonly ayContext = inject(AcademicYearContextService);
 
   get canEditAttendance(): boolean {
@@ -55,6 +59,7 @@ export class AttendanceComponent implements OnInit {
   
   selectedClassId = '';
   selectedDate = this.localDateString();
+  readonly maxDate = this.localDateString();
   searchQuery = '';
   appliedSearchQuery = '';
   
@@ -387,7 +392,35 @@ export class AttendanceComponent implements OnInit {
   submitAttendance() {
     if (!this.canEditAttendance) return;
     const unmarked = this.stats.total - this.stats.marked;
-    if (unmarked > 0 && !confirm(`${unmarked} students unmarked. Submit anyway?`)) return;
+    if (unmarked > 0) {
+      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+        data: {
+          title: 'Submit attendance?',
+          description: `There are ${unmarked} student(s) unmarked. Are you sure you want to submit anyway?`,
+          recordName: `${unmarked} unmarked students`,
+          recordMeta: `Date: ${this.displaySelectedDate}`,
+          initials: '?',
+          confirmButtonText: 'Yes, submit',
+          cancelButtonText: 'Cancel',
+          variant: 'primary',
+          headerIcon: 'warning'
+        } as DeleteDialogData,
+        panelClass: 'erp-dialog',
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.executeSubmit();
+        }
+      });
+      return;
+    }
+
+    this.executeSubmit();
+  }
+
+  private executeSubmit() {
 
     const markedStudents = this.students
       .filter(student => {

@@ -142,11 +142,11 @@
     </div>
   </div>
 
-  @if (selectedRows.size > 0 && config.bulkActions?.length) {
+  @if (selectedRows.size > 0 && visibleBulkActions.length) {
     <div class="bulk-bar">
       <div class="bulk-count">{{ selectedRows.size }} row{{ selectedRows.size !== 1 ? 's' : '' }} selected</div>
       <div class="bulk-actions">
-        @for (ba of config.bulkActions ?? []; track trackBulkAction($index, ba)) {
+        @for (ba of visibleBulkActions; track trackBulkAction($index, ba)) {
           <button type="button" class="bulk-btn" [class.danger]="ba.danger" (click)="onBulkAction(ba)">
             <mat-icon>{{ ba.icon }}</mat-icon>
             {{ ba.label }}

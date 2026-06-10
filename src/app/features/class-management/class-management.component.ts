@@ -200,9 +200,14 @@ export class ClassManagementComponent implements OnInit {
       { label: 'Inactive', icon: 'cancel', value: 'Inactive' },
     ],
     actions: [
-      { label: 'View details', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'View class', icon: 'visibility', iconColor: '#639922' },
+      { label: 'Edit class', icon: 'edit', iconColor: '#1E40AF' },
       { label: 'Show history', icon: 'history', iconColor: '#639922' },
+      {
+        label: 'Recover class',
+        icon: 'unarchive',
+        iconColor: '#10B981',
+      },
       {
         label: 'Delete class',
         icon: 'delete',
@@ -211,10 +216,6 @@ export class ClassManagementComponent implements OnInit {
       },
     ],
     actionVisibleFn: (action, row) => this.isClassActionVisible(action, row),
-    bulkActions: [
-      { label: 'Export', icon: 'download' },
-      { label: 'Delete', icon: 'delete', danger: true },
-    ],
     searchPlaceholder: 'Search by class, section, teacher...',
     searchKeys: ['className', 'section', 'streamGroup', 'roomNumber'],
     itemLabel: 'classes',
@@ -227,11 +228,10 @@ export class ClassManagementComponent implements OnInit {
   };
 
   private isClassActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
-    if (row['isActive'] !== false) {
-      return true;
+    if (row['isActive'] === false) {
+      return action.label === 'View class' || action.label === 'Show history' || action.label === 'Recover class';
     }
-
-    return action.label === 'View details' || action.label === 'Show history';
+    return action.label !== 'Recover class';
   }
 
   private buildClassConfig(): DataTableConfig {
@@ -254,12 +254,12 @@ export class ClassManagementComponent implements OnInit {
   }): void {
     const id = event.row['id'] as string;
 
-    if (event.action.label === 'View details') {
+    if (event.action.label === 'View class') {
       if (!this.permissionService.canView(MenuCodes.Classes)) return;
       this.formMode = 'view';
       this.selectedClassId = id;
       this.showAddForm = true;
-    } else if (event.action.label === 'Edit details') {
+    } else if (event.action.label === 'Edit class') {
       if (!this.permissionService.canEdit(MenuCodes.Classes)) return;
       this.formMode = 'edit';
       this.selectedClassId = id;
@@ -293,11 +293,31 @@ export class ClassManagementComponent implements OnInit {
               });
               this.loadClasses();
             },
-            error: () =>
-              this.snackBar.open('Failed to delete class', 'Close', {
+            error: (err) => {
+              const msg = err?.error?.message || (typeof err?.error === 'string' ? err.error : 'Failed to delete class');
+              this.snackBar.open(msg, 'Close', {
                 duration: 3000,
                 panelClass: 'snack-error',
-              }),
+              });
+            }
+          });
+        }
+      });
+    } else if (event.action.label === 'Recover class') {
+      if (!this.permissionService.canEdit(MenuCodes.Classes)) return;
+      this.classService.recoverClass(id).subscribe({
+        next: () => {
+          this.snackBar.open('Class recovered successfully', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-success',
+          });
+          this.loadClasses();
+        },
+        error: (err) => {
+          const msg = err?.error?.message || (typeof err?.error === 'string' ? err.error : 'Failed to recover class');
+          this.snackBar.open(msg, 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
           });
         }
       });
@@ -320,39 +340,4 @@ export class ClassManagementComponent implements OnInit {
     this.openAddForm();
   }
 
-  onBulkActionClicked(event: {
-    action: DataTableBulkAction;
-    selectedRows: Record<string, unknown>[];
-  }): void {
-    if (event.action.label === 'Delete') {
-      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
-        data: {
-          title: 'Delete selected classes?',
-          description: `You are about to delete ${event.selectedRows.length} classes. This action is permanent.`,
-          recordName: `${event.selectedRows.length} Classes Selected`,
-          recordMeta: 'Bulk Deletion',
-          initials: 'BD',
-          warningMessage: 'This will permanently remove all selected class records.',
-        },
-        panelClass: 'erp-dialog',
-        disableClose: true,
-      });
-
-      dialogRef.afterClosed().subscribe((confirmed: any) => {
-        if (confirmed) {
-          this.snackBar.open(
-            `Bulk delete for ${event.selectedRows.length} classes initiated`,
-            'Close',
-            { duration: 3000, panelClass: 'snack-success' },
-          );
-        }
-      });
-    } else {
-      this.snackBar.open(
-        `${event.action.label} → ${event.selectedRows.length} class(es)`,
-        'Close',
-        { duration: 3000, panelClass: 'snack-info' },
-      );
-    }
-  }
 }

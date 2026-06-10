@@ -1,5 +1,6 @@
 <div class="homework-container">
-  <div class="topbar">
+  @if (!showAddForm) {
+    <div class="topbar">
     <div class="page-info">
       <div class="page-title">Homework</div>
       <div class="page-sub">Create and manage homework for your classes</div>
@@ -173,87 +174,15 @@
       </tbody>
     </table>
   </div>
+  } @else {
+    <app-add-homework
+      [mode]="formMode"
+      [homeworkId]="editingHomeworkId"
+      [initialForm]="editingHomeworkForm"
+      (cancel)="closeAddForm()"
+      (saved)="onHomeworkSaved()"
+    />
+  }
 </div>
 
-<!-- Create / Edit modal -->
-<div
-  class="overlay"
-  [class.show]="showCreateModal"
-  [class.sidebar-open]="layoutUi.sidebarOpened()"
-  (click)="closeCreate()"
->
-  <div class="modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <div class="modal-title">
-        <mat-icon>menu_book</mat-icon>
-        {{ editingHomeworkId ? 'Edit homework' : 'Create new homework' }}
-      </div>
-      <button type="button" class="modal-close" (click)="closeCreate()"><mat-icon>close</mat-icon></button>
-    </div>
-    <div class="modal-body">
-      <div class="grid2">
-        <div class="field">
-          <label>Class <span class="req">*</span></label>
-          <select [(ngModel)]="form.classId">
-            <option value="">Select class</option>
-            <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Subject <span class="req">*</span></label>
-          <select [(ngModel)]="form.subjectId">
-            <option value="">Select subject</option>
-            <option *ngFor="let s of subjects" [value]="s.id">{{ s.subjectName || s.name }}</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>Homework title <span class="req">*</span></label>
-        <input [(ngModel)]="form.title" placeholder="e.g. Chapter 4 — Algebra exercises" />
-      </div>
-      <div class="field">
-        <label>Description / Instructions</label>
-        <textarea [(ngModel)]="form.description" placeholder="Write instructions for students..."></textarea>
-      </div>
-      <div class="grid3">
-        <div class="field">
-          <label>Assign date</label>
-          <input type="date" [(ngModel)]="form.assignDate" />
-        </div>
-        <div class="field">
-          <label>Due date <span class="req">*</span></label>
-          <input type="date" [(ngModel)]="form.dueDate" />
-        </div>
-        <div class="field">
-          <label>Priority</label>
-          <select [(ngModel)]="form.priority">
-            <option [ngValue]="HomeworkPriority.Normal">Normal</option>
-            <option [ngValue]="HomeworkPriority.High">High</option>
-            <option [ngValue]="HomeworkPriority.Low">Low</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label>Marks (optional)</label>
-          <input type="number" [(ngModel)]="form.marks" min="0" placeholder="e.g. 10" />
-        </div>
-        <div class="field">
-          <label>Submission type</label>
-          <select [(ngModel)]="form.submissionType">
-            <option [ngValue]="HomeworkSubmissionType.Physical">Physical (in class)</option>
-            <option [ngValue]="HomeworkSubmissionType.Online">Online (portal upload)</option>
-            <option [ngValue]="HomeworkSubmissionType.Both">Both</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closeCreate()">Cancel</button>
-      <button type="button" class="btn-save" (click)="saveHomework()">
-        <mat-icon>send</mat-icon>
-        {{ editingHomeworkId ? 'Save changes' : 'Assign homework' }}
-      </button>
-    </div>
-  </div>
-</div>
+

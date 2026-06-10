@@ -143,6 +143,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     return this.config?.columns?.filter((col) => this.columnVisibility[col.key] !== false) ?? [];
   }
 
+  get visibleBulkActions(): DataTableBulkAction[] {
+    const actions = this.config?.bulkActions ?? [];
+    if (!this.config?.bulkActionVisibleFn) return actions;
+    const selectedData = this.getSelectedRows();
+    return actions.filter(action => this.config.bulkActionVisibleFn!(action, selectedData));
+  }
+
   get totalColumnsCount(): number {
     let count = this.visibleColumns.length;
     if (this.config?.selectable !== false) count++;

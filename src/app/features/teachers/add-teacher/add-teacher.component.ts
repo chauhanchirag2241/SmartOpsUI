@@ -762,9 +762,12 @@ export class AddTeacherComponent implements OnInit {
     return this.teacherForm.get('schedule') as FormGroup;
   }
 
+  private loadedTeacher: any = null;
+
   loadTeacherData(): void {
     this.teacherService.getTeacherById(this.teacherId!).subscribe({
       next: (data) => {
+        this.loadedTeacher = data;
         this.teacherForm.patchValue({
           personal: {
             firstName: data.firstName,
@@ -1111,6 +1114,10 @@ export class AddTeacherComponent implements OnInit {
     const data = this.teacherForm.getRawValue();
     data.schedule.classId = data.schedule.classId || null;
     data.schedule.classAssignments = [];
+
+    if (this.mode === 'edit' && this.loadedTeacher) {
+      data.userId = this.loadedTeacher.userId;
+    }
 
     const action =
       this.mode === 'edit'

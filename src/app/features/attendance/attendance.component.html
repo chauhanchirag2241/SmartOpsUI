@@ -63,6 +63,7 @@
         type="date"
         class="sel-filter sel-filter-lg att-date-filter"
         [ngModel]="selectedDate"
+        [max]="maxDate"
         (ngModelChange)="onDateChanged($event)"
       />
     </div>

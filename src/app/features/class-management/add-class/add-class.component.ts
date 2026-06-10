@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,10 +18,7 @@ import {
   formatStreamGroupDisplay,
 } from '../../../shared/utils/stream-group.util';
 import { ClassService } from '../../../core/services/class.service';
-import { AcademicYearService } from '../../../core/services/academic-year.service';
-
-
-
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 @Component({
   selector: 'app-add-class',
   standalone: true,
@@ -75,14 +72,6 @@ export class AddClassComponent implements OnInit {
       placeholder: SELECT_PLACEHOLDER,
       options: enumToOptions(StreamGroup),
     },
-    academicYear: {
-      type: 'select',
-      controlName: 'academicYear',
-      label: 'Academic year',
-      placeholder: SELECT_PLACEHOLDER,
-      options: [],
-      validations: [{ name: 'required', message: 'Academic year is required', validator: Validators.required }],
-    },
     studentCapacity: {
       type: 'input',
       inputType: 'number',
@@ -118,25 +107,20 @@ export class AddClassComponent implements OnInit {
           fields: ['className', 'section', 'streamGroup'],
         },
         {
-          title: 'Academic details',
-          icon: 'event',
-          layout: 'grid2',
-          fields: ['academicYear', 'studentCapacity'],
-        },
-        {
           title: 'Room & schedule',
           icon: 'meeting_room',
           layout: 'grid2',
-          fields: ['roomNumber', 'shift', 'medium', 'description'],
+          fields: ['studentCapacity', 'roomNumber', 'shift', 'medium', 'description'],
         },
       ],
     },
   ];
 
+  private readonly ayContext = inject(AcademicYearContextService);
+
   constructor(
     private fb: FormBuilder,
     private classService: ClassService,
-    private ayService: AcademicYearService,
     private snackBar: NotificationService,
     private cdr: ChangeDetectorRef
   ) {
@@ -144,7 +128,6 @@ export class AddClassComponent implements OnInit {
       className: ['', Validators.required],
       section: ['', Validators.required],
       streamGroup: [null],
-      academicYear: ['', Validators.required],
       studentCapacity: [''],
       roomNumber: [''],
       shift: [null],
@@ -163,7 +146,6 @@ export class AddClassComponent implements OnInit {
 
 
   ngOnInit(): void {
-    this.loadAcademicYears();
     if ((this.mode === 'edit' || this.mode === 'view') && this.classId) {
       this.loadClass(this.classId);
     }
@@ -190,7 +172,6 @@ export class AddClassComponent implements OnInit {
           className: res.className,
           section: AddClassComponent.intToEnum(Section, res.section),
           streamGroup: streamGroupFromApiInt(res.streamGroup),
-          academicYear: res.academicYearId,
           studentCapacity: res.capacity,
           roomNumber: res.roomNumber,
           shift: AddClassComponent.intToEnum(Shift, res.shift),
@@ -208,19 +189,7 @@ export class AddClassComponent implements OnInit {
     });
   }
 
-  private loadAcademicYears(): void {
-    this.ayService.getAcademicYearDropdown('switcher').subscribe({
-      next: (years: any[]) => {
-        this.configs['academicYear'].options = (years || []).map((ay: any) => ({
-          label: ay.name,
-          value: ay.id,
-        }));
-        this.cdr.detectChanges();
-      },
-      error: () =>
-        this.snackBar.open('Failed to load academic years', 'Close', { duration: 3000, panelClass: 'snack-error' }),
-    });
-  }
+
 
   saveClass(): void {
     if (this.classForm.invalid || this.mode === 'view') {
@@ -231,6 +200,9 @@ export class AddClassComponent implements OnInit {
 
     this.isSaving = true;
     const payloadRaw = this.classForm.getRawValue();
+    payloadRaw.academicYearId = this.ayContext.effectiveYearKey();
+    payloadRaw.academicYear = this.ayContext.effectiveYearKey();
+    
     this.classService
       .getClasses(1, 2000, '', null, null, 'All')
       .pipe(

@@ -156,7 +156,7 @@ export class DynamicFieldComponent {
 
   setControlValue(controlName: string, value: unknown): void {
     const control = this.group.get(controlName);
-    if (!control || this.config.disabled) return;
+    if (!control || control.disabled || this.config.disabled) return;
     control.setValue(value);
     control.markAsTouched();
   }
