@@ -44,8 +44,8 @@
           @if (detail.leaveRequest.studentName) {
             <p><strong>Student:</strong> {{ detail.leaveRequest.studentName }}</p>
           }
-          @if (detail.leaveRequest.teacherName) {
-            <p><strong>Teacher:</strong> {{ detail.leaveRequest.teacherName }}</p>
+          @if (detail.leaveRequest.employeeName ?? detail.leaveRequest.teacherName) {
+            <p><strong>Employee:</strong> {{ detail.leaveRequest.employeeName ?? detail.leaveRequest.teacherName }}</p>
           }
           @if (detail.leaveRequest.reason) {
             <p><strong>Reason:</strong> {{ detail.leaveRequest.reason }}</p>

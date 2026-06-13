@@ -1,7 +1,7 @@
 <div class="fees-page salary-page list-page-shell">
   <app-list-page-header
     title="Salary Management — Employee Salary"
-    subtitle="Assign published structure and per-teacher component amounts"
+    subtitle="Assign published structure and per-employee component amounts"
   />
 
   <app-page-toolbar
@@ -32,8 +32,8 @@
       <div
         *ngFor="let e of employees"
         class="list-item"
-        [class.active]="selectedTeacherId === e.teacherId"
-        (click)="selectEmployee(e.teacherId)"
+        [class.active]="selectedEmployeeId === e.employeeId"
+        (click)="selectEmployee(e.employeeId)"
       >
         <div class="s-av">{{ studentInitials(e.employeeName) }}</div>
         <div style="flex: 1; min-width: 0">
@@ -48,14 +48,14 @@
     </div>
 
     <div>
-      <div *ngIf="!selectedTeacherId" class="card">
+      <div *ngIf="!selectedEmployeeId" class="card">
         <div class="empty-panel">
           <mat-icon>person_search</mat-icon>
           Select an employee to view or assign salary
         </div>
       </div>
 
-      <div *ngIf="selectedTeacherId && loadingDetail" class="card">
+      <div *ngIf="selectedEmployeeId && loadingDetail" class="card">
         <div class="empty-panel">Loading salary details...</div>
       </div>
 
@@ -144,7 +144,7 @@
         </div>
         <p class="info-chip">
           <mat-icon>info</mat-icon>
-          Structure defaults come from the published version. Override amounts per teacher (e.g. different basic or HRA).
+          Structure defaults come from the published version. Override amounts per employee (e.g. different basic or HRA).
         </p>
         <table class="data-table">
           <thead>

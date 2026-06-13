@@ -41,7 +41,7 @@ export class EmployeeSalaryComponent implements OnInit {
 
   employees: ReturnType<typeof normalizeEmployeeListItem>[] = [];
   assignableVersions: ReturnType<typeof normalizeSalaryStructureVersion>[] = [];
-  selectedTeacherId: string | null = null;
+  selectedEmployeeId: string | null = null;
   detail: ReturnType<typeof normalizeEmployeeDetail> | null = null;
 
   search = '';
@@ -125,8 +125,8 @@ export class EmployeeSalaryComponent implements OnInit {
         this.departments = [
           ...new Set(items.map((e) => e.department).filter((d): d is string => !!d)),
         ].sort();
-        if (this.selectedTeacherId && !items.some((e) => e.teacherId === this.selectedTeacherId)) {
-          this.selectedTeacherId = null;
+        if (this.selectedEmployeeId && !items.some((e) => e.employeeId === this.selectedEmployeeId)) {
+          this.selectedEmployeeId = null;
           this.detail = null;
         }
         this.loadingList = false;
@@ -141,12 +141,12 @@ export class EmployeeSalaryComponent implements OnInit {
     });
   }
 
-  selectEmployee(teacherId: string): void {
-    this.selectedTeacherId = teacherId;
+  selectEmployee(employeeId: string): void {
+    this.selectedEmployeeId = employeeId;
     this.loadingDetail = true;
     this.detail = null;
     this.refresh();
-    this.service.getEmployeeDetail(teacherId).subscribe({
+    this.service.getEmployeeDetail(employeeId).subscribe({
       next: (raw) => {
         this.detail = normalizeEmployeeDetail(raw);
         this.loadingDetail = false;
@@ -213,7 +213,7 @@ export class EmployeeSalaryComponent implements OnInit {
   }
 
   saveAssignment(): void {
-    if (!this.selectedTeacherId) return;
+    if (!this.selectedEmployeeId) return;
     if (!this.assignForm.salaryStructureVersionId) {
       this.toast('Select a salary structure version', true);
       return;
@@ -226,7 +226,7 @@ export class EmployeeSalaryComponent implements OnInit {
       return;
     }
     this.service
-      .assignOrUpdate(this.selectedTeacherId, {
+      .assignOrUpdate(this.selectedEmployeeId, {
         salaryStructureVersionId: this.assignForm.salaryStructureVersionId,
         effectiveDate: this.assignForm.effectiveDate,
         components,

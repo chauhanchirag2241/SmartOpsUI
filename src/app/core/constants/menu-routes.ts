@@ -1,10 +1,17 @@
+import { canonicalMenuCode } from './menu-code-aliases';
 import { MenuCodes } from './menu-codes';
+
+/** Legacy routes from before Teachers → Employees rename. */
+const LEGACY_ROUTE_ALIASES: Record<string, string> = {
+  '/teachers': '/employees',
+};
 
 /** Fallback when API menu row has no route (e.g. stale cache or manual menu insert). */
 export const MENU_ROUTE_BY_CODE: Record<string, string> = {
   [MenuCodes.Dashboard]: '/dashboard',
   [MenuCodes.Students]: '/students',
-  [MenuCodes.Teachers]: '/teachers',
+  [MenuCodes.Employees]: '/employees',
+  TEACHERS: '/employees',
   [MenuCodes.Classes]: '/classes',
   [MenuCodes.ClassMappings]: '/class-subject-teacher-mapping',
   [MenuCodes.Subjects]: '/subjects',
@@ -27,13 +34,15 @@ export const MENU_ROUTE_BY_CODE: Record<string, string> = {
 };
 
 export function resolveMenuRoute(code: string, route?: string | null): string | null {
+  const key = canonicalMenuCode(code);
   const trimmed = route?.trim();
+  let resolved: string | null;
   if (trimmed) {
-    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  }
-  const key = code?.trim().toUpperCase();
-  if (!key) {
+    resolved = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  } else if (!key) {
     return null;
+  } else {
+    resolved = MENU_ROUTE_BY_CODE[key] ?? null;
   }
-  return MENU_ROUTE_BY_CODE[key] ?? null;
+  return resolved ? (LEGACY_ROUTE_ALIASES[resolved] ?? resolved) : null;
 }

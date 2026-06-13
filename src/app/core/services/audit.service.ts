@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { AuditLogPagedResponse } from '../models/audit-history.model';
 import { ApiService } from './api.service';
 
-export type AuditHistoryEntityType = 'student' | 'teacher' | 'class' | 'subject';
+export type AuditHistoryEntityType = 'student' | 'employee' | 'class' | 'subject';
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {

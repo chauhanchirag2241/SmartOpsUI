@@ -43,7 +43,7 @@ function mapFieldValue(
     case 'subject':
       return mapSubjectField(field, value);
     case 'student':
-    case 'teacher':
+    case 'employee':
       return mapPersonField(field, value);
     default:
       return null;

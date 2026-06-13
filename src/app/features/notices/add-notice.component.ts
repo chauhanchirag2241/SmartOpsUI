@@ -82,8 +82,8 @@ export class AddNoticeComponent implements OnInit {
   ];
 
   readonly targetTypeOptions = [
-    { value: NoticeTargetType.AllStaff, label: 'All teachers / staff' },
-    { value: NoticeTargetType.SingleTeacher, label: 'Particular teacher(s)' },
+    { value: NoticeTargetType.AllStaff, label: 'All employees / staff' },
+    { value: NoticeTargetType.SingleTeacher, label: 'Particular employee(s)' },
     { value: NoticeTargetType.ClassParents, label: 'Class-wise parents' },
     { value: NoticeTargetType.SingleParent, label: 'Particular parent(s)' },
     { value: NoticeTargetType.SingleUser, label: 'Particular user(s)' },

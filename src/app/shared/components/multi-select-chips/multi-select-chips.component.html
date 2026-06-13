@@ -34,7 +34,7 @@
           <mat-icon>close</mat-icon>
         </span>
       }
-      <mat-icon class="sms-caret">{{ panelOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+      <mat-icon class="sms-caret">{{ panelOpen ? (compact ? 'arrow_drop_up' : 'expand_less') : (compact ? 'arrow_drop_down' : 'expand_more') }}</mat-icon>
     </span>
   </div>
 
@@ -52,17 +52,35 @@
       </div>
 
       <div class="sms-options">
-        @for (opt of filteredOptions; track opt.id) {
-          <label class="sms-option" [class.is-selected]="isSelected(opt.id)">
-            <mat-checkbox
-              [checked]="isSelected(opt.id)"
-              (change)="toggleOption(opt.id, $event.checked)"
-              (click)="$event.stopPropagation()"
-            />
-            <span class="sms-option-label">{{ opt.name }}</span>
-          </label>
-        } @empty {
-          <div class="sms-empty">No matches found</div>
+        @if (singleSelect) {
+          @for (opt of filteredOptions; track opt.id) {
+            <button
+              type="button"
+              class="sms-option sms-option-single"
+              [class.is-selected]="isSelected(opt.id)"
+              (click)="selectSingle(opt.id)"
+            >
+              <span class="sms-option-label">{{ opt.name }}</span>
+              @if (isSelected(opt.id)) {
+                <mat-icon class="sms-option-check">check</mat-icon>
+              }
+            </button>
+          } @empty {
+            <div class="sms-empty">No matches found</div>
+          }
+        } @else {
+          @for (opt of filteredOptions; track opt.id) {
+            <label class="sms-option" [class.is-selected]="isSelected(opt.id)">
+              <mat-checkbox
+                [checked]="isSelected(opt.id)"
+                (change)="toggleOption(opt.id, $event.checked)"
+                (click)="$event.stopPropagation()"
+              />
+              <span class="sms-option-label">{{ opt.name }}</span>
+            </label>
+          } @empty {
+            <div class="sms-empty">No matches found</div>
+          }
         }
       </div>
     </div>

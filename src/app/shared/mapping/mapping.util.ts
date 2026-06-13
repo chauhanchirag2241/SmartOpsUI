@@ -78,8 +78,8 @@ export function flatToGridRows(
         row = { rowKeyId: r.classId, valueIds: [] };
         byClass.set(r.classId, row);
       }
-      if (r.teacherId && !row.valueIds.includes(r.teacherId)) {
-        row.valueIds.push(r.teacherId);
+      if (r.employeeId && !row.valueIds.includes(r.employeeId)) {
+        row.valueIds.push(r.employeeId);
       }
     }
     return [...byClass.values()];
@@ -94,8 +94,8 @@ export function flatToGridRows(
       row = { rowKeyId: r.subjectId, valueIds: [] };
       bySubject.set(r.subjectId, row);
     }
-    if (r.teacherId && !row.valueIds.includes(r.teacherId)) {
-      row.valueIds.push(r.teacherId);
+    if (r.employeeId && !row.valueIds.includes(r.employeeId)) {
+      row.valueIds.push(r.employeeId);
     }
   }
   return [...bySubject.values()];
@@ -125,7 +125,7 @@ export function subjectRowsToPayload(
     academicYearId,
     rows: rows
       .filter((r) => r.rowKeyId)
-      .map((r) => ({ classId: r.rowKeyId, teacherIds: r.valueIds })),
+      .map((r) => ({ classId: r.rowKeyId, employeeIds: r.valueIds })),
   };
 }
 
@@ -139,7 +139,7 @@ export function classRowsToPayload(
     classTeacherId: classTeacherId || undefined,
     rows: rows
       .filter((r) => r.rowKeyId)
-      .map((r) => ({ subjectId: r.rowKeyId, teacherIds: r.valueIds })),
+      .map((r) => ({ subjectId: r.rowKeyId, employeeIds: r.valueIds })),
   };
 }
 
@@ -148,7 +148,7 @@ export function parseFlatRecords(data: any[]): MappingFlatRecord[] {
   return (data || []).map((r) => ({
     classId: String(r.classId ?? r.ClassId ?? ''),
     subjectId: String(r.subjectId ?? r.SubjectId ?? ''),
-    teacherId: String(r.teacherId ?? r.TeacherId ?? ''),
+    employeeId: String(r.employeeId ?? r.EmployeeId ?? r.teacherId ?? r.TeacherId ?? ''),
     isClassTeacher: !!(r.isClassTeacher ?? r.IsClassTeacher),
   }));
 }

@@ -156,7 +156,7 @@ body {
 ========================================================= */
 .page-container,
 .students-page,
-.teachers-page,
+.employees-page,
 .subjects-page,
 .roles-page,
 .schools-page,
@@ -177,7 +177,7 @@ body {
   gap: 14px;
 }
 
-.teachers-page {
+.employees-page {
   /*padding: 1rem;*/
   height: 100%;
   overflow-y: auto;
@@ -285,13 +285,13 @@ mat-sidenav-content.main-content {
 /* Form pages: wizard footer + copyright footer spacing */
 .form-page-shell,
 app-add-student,
-app-add-teacher,
+app-add-employee,
 app-add-user,
 app-add-role,
 app-apply-staff-leave,
 app-add-notice,
 app-my-action-detail,
-.add-teacher-container {
+.add-employee-container {
   display: block;
   padding-bottom: 8px;
 }

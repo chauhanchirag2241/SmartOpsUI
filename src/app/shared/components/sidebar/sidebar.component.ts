@@ -80,9 +80,9 @@ export class SidebarComponent {
   }
 
   onNavClick(item: IMenu, event: MouseEvent): void {
+    event.preventDefault();
     const path = this.permissionService.resolveRoute(item);
     if (!path) {
-      event.preventDefault();
       return;
     }
     void this.router.navigateByUrl(path);

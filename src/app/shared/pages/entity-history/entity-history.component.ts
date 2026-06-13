@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Observable, catchError, EMPTY, map, switchMap } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { StudentService } from '../../../core/services/student.service';
-import { TeacherService } from '../../../core/services/teacher.service';
+import { EmployeeService } from '../../../core/services/employee.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
 import { ActionButtonComponent } from '../../components/action-button/action-button.component';
@@ -25,7 +25,7 @@ interface EntityHistoryRouteConfig {
 
 const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   student: { listRoute: '/students', entityType: 'student' },
-  teacher: { listRoute: '/teachers', entityType: 'teacher' },
+  employee: { listRoute: '/employees', entityType: 'employee' },
   class: { listRoute: '/classes', entityType: 'class' },
   subject: { listRoute: '/subjects', entityType: 'subject' },
 };
@@ -46,7 +46,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly studentService = inject(StudentService);
-  private readonly teacherService = inject(TeacherService);
+  private readonly employeeService = inject(EmployeeService);
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
   private readonly snackBar = inject(NotificationService);
@@ -108,14 +108,14 @@ export class EntityHistoryComponent implements OnInit {
 
   private loadHeader(kind: EntityHistoryKind, id: string): Observable<EntityHistoryHeader> {
     switch (kind) {
-      case 'teacher':
-        return this.teacherService.getTeacherById(id).pipe(
+      case 'employee':
+        return this.employeeService.getEmployeeById(id).pipe(
           map((data) => ({
             title:
               [data.firstName, data.lastName]
                 .map((p: string) => String(p ?? '').trim())
                 .filter(Boolean)
-                .join(' ') || 'Teacher',
+                .join(' ') || 'Employee',
             subtitle: [data.employeeId, data.email]
               .map((p: string) => String(p ?? '').trim())
               .filter(Boolean)

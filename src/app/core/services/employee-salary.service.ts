@@ -15,11 +15,11 @@ export class EmployeeSalaryService {
     return this.api.get<any[]>('salary/employees', params);
   }
 
-  getEmployeeDetail(teacherId: string): Observable<any> {
-    return this.api.get<any>(`salary/employees/${teacherId}`);
+  getEmployeeDetail(employeeId: string): Observable<any> {
+    return this.api.get<any>(`salary/employees/${employeeId}`);
   }
 
-  assignOrUpdate(teacherId: string, body: unknown): Observable<any> {
-    return this.api.put<any>(`salary/employees/${teacherId}`, body);
+  assignOrUpdate(employeeId: string, body: unknown): Observable<any> {
+    return this.api.put<any>(`salary/employees/${employeeId}`, body);
   }
 }

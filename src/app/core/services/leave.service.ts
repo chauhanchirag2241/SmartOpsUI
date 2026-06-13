@@ -29,10 +29,10 @@ export class LeaveService {
     return this.api.get('leave/staff/approvers');
   }
 
-  getStaffList(status?: string, teacherId?: string, from?: string, to?: string): Observable<unknown[]> {
+  getStaffList(status?: string, employeeId?: string, from?: string, to?: string): Observable<unknown[]> {
     let params = new HttpParams();
     if (status) params = params.set('status', status);
-    if (teacherId) params = params.set('teacherId', teacherId);
+    if (employeeId) params = params.set('employeeId', employeeId);
     if (from) params = params.set('from', from);
     if (to) params = params.set('to', to);
     return this.api.get('leave/staff', params);

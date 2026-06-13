@@ -37,9 +37,9 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'teachers/:id/history',
+        path: 'employees/:id/history',
         canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.Teachers, permission: 'view', entityKind: 'teacher' },
+        data: { menuCode: MenuCodes.Employees, permission: 'view', entityKind: 'employee' },
         loadComponent: () =>
           import('./shared/pages/entity-history/entity-history.component').then(
             (m) => m.EntityHistoryComponent,
@@ -65,10 +65,15 @@ export const routes: Routes = [
       },
       {
         path: 'teachers',
+        redirectTo: 'employees',
+        pathMatch: 'full',
+      },
+      {
+        path: 'employees',
         canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.Teachers, permission: 'view' },
+        data: { menuCode: MenuCodes.Employees, permission: 'view' },
         loadComponent: () =>
-          import('./features/teachers/teachers.component').then((m) => m.TeachersComponent),
+          import('./features/employees/employees.component').then((m) => m.EmployeesComponent),
       },
       {
         path: 'classes',

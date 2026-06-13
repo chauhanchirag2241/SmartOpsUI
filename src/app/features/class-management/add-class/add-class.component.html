@@ -3,7 +3,7 @@
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
-<p class="form-hint">Subject and teacher mappings are managed from the Class Mapping screen.</p>
+<p class="form-hint">Subject and employee assignments are managed from the Class Mapping screen.</p>
 
 <form [formGroup]="classForm">
   @for (tab of tabs; track tab.stepIndex) {
@@ -27,7 +27,7 @@
 </form>
 
 <div class="footer-actions">
-  <div class="footer-hint">Save class details, then map subjects and teachers from Class Mapping.</div>
+  <div class="footer-hint">Save class details, then map subjects and employees from Class Mapping.</div>
 
   @if (mode !== 'view') {
     <app-action-button

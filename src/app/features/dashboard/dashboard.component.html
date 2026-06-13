@@ -36,7 +36,7 @@
   } @else {
     @if (data(); as d) {
       <div class="dash-content">
-        @if (has(W.StudentsStat) || has(W.TeachersStat) || has(W.ClassesStat) || has(W.SubjectsStat)) {
+        @if (has(W.StudentsStat) || has(W.EmployeesStat) || has(W.ClassesStat) || has(W.SubjectsStat)) {
           <div class="grid4">
             @if (has(W.StudentsStat) && d.summary) {
               <article class="card stat-card">
@@ -50,16 +50,16 @@
                 <div class="sc-lbl">Total students</div>
               </article>
             }
-            @if (has(W.TeachersStat) && d.summary) {
+            @if (has(W.EmployeesStat) && d.summary) {
               <article class="card stat-card">
                 @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.TeachersStat)" aria-label="Remove">
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.EmployeesStat)" aria-label="Remove">
                     <mat-icon>close</mat-icon>
                   </button>
                 }
                 <div class="sc-icon bi"><mat-icon>co_present</mat-icon></div>
-                <div class="sc-val">{{ d.summary.totalTeachers }}</div>
-                <div class="sc-lbl">Total teachers</div>
+                <div class="sc-val">{{ d.summary.totalEmployees ?? d.summary.totalTeachers }}</div>
+                <div class="sc-lbl">Total employees</div>
               </article>
             }
             @if (has(W.ClassesStat) && d.summary) {
@@ -188,7 +188,7 @@
           </div>
         }
 
-        @if (has(W.RecentStudents) || has(W.TeachersList) || has(W.HomeworkDue)) {
+        @if (has(W.RecentStudents) || has(W.EmployeesList) || has(W.HomeworkDue)) {
           <div class="grid3">
             @if (has(W.RecentStudents) && d.recentStudents) {
               <article class="card">
@@ -213,18 +213,18 @@
                 }
               </article>
             }
-            @if (has(W.TeachersList) && d.teachers) {
+            @if (has(W.EmployeesList) && (d.employees ?? d.teachers)) {
               <article class="card">
                 @if (editing()) {
-                  <button type="button" class="rm-btn" (click)="hideWidget(W.TeachersList)" aria-label="Remove">
+                  <button type="button" class="rm-btn" (click)="hideWidget(W.EmployeesList)" aria-label="Remove">
                     <mat-icon>close</mat-icon>
                   </button>
                 }
                 <div class="ch">
-                  <h2><mat-icon>co_present</mat-icon>Teachers</h2>
-                  <a routerLink="/teachers" class="link">View all</a>
+                  <h2><mat-icon>co_present</mat-icon>Employees</h2>
+                  <a routerLink="/employees" class="link">View all</a>
                 </div>
-                @for (t of d.teachers; track t.name) {
+                @for (t of (d.employees ?? d.teachers); track t.name) {
                   <div class="mini-li">
                     <span class="mla bl">{{ t.initials }}</span>
                     <div class="mini-body">

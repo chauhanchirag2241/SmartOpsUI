@@ -6,7 +6,7 @@ export const MenuCodes = {
   Settings: 'SETTINGS',
   Academics: 'ACADEMICS',
   Students: 'STUDENTS',
-  Teachers: 'TEACHERS',
+  Employees: 'EMPLOYEES',
   Classes: 'CLASSES',
   ClassMappings: 'CLASS_MAPPINGS',
   Subjects: 'SUBJECTS',

@@ -4,6 +4,7 @@ import { ScopeService } from './scope.service';
 import { IMenu } from '../models/menu.model';
 import { IMenuPermission, IUserPermissionResponse } from '../models/permission.model';
 import { APP_MENU_APPLICATION } from '../constants/app.constants';
+import { canonicalMenuCode } from '../constants/menu-code-aliases';
 import { resolveMenuRoute } from '../constants/menu-routes';
 import { isUsableAccessToken } from '../utils/token.util';
 import { ApiService } from './api.service';
@@ -75,12 +76,29 @@ export class PermissionService {
   }
 
   getPermission(menuCode: string): IMenuPermission | undefined {
-    const code = menuCode?.trim().toUpperCase();
-    return this.permissions.find((p) => p.menuCode?.trim().toUpperCase() === code);
+    const code = canonicalMenuCode(menuCode);
+    return this.permissions.find((p) => canonicalMenuCode(p.menuCode) === code);
   }
 
   canView(menuCode: string): boolean {
-    return this.getPermission(menuCode)?.canView ?? false;
+    const code = canonicalMenuCode(menuCode);
+    if (this.getPermission(code)?.canView) {
+      return true;
+    }
+    // menus/my already requires canview in the API; use the tree when the permissions payload is stale.
+    return this.hasMenuInTree(code);
+  }
+
+  private hasMenuInTree(menuCode: string): boolean {
+    const code = canonicalMenuCode(menuCode);
+    const walk = (items: IMenu[]): boolean =>
+      items.some((item) => {
+        if (canonicalMenuCode(item.code) === code) {
+          return true;
+        }
+        return walk(item.children ?? []);
+      });
+    return walk(this.menus);
   }
 
   canAdd(menuCode: string): boolean {
@@ -108,15 +126,43 @@ export class PermissionService {
   private normalizePermissions(raw: IUserPermissionResponse | IMenuPermission[]): IMenuPermission[] {
     const list = Array.isArray(raw)
       ? raw
-      : ((raw as IUserPermissionResponse).permissions ?? []);
-    return (list as unknown as Record<string, unknown>[]).map((p) => ({
-      menuCode: String(p['menuCode'] ?? p['MenuCode'] ?? '').toUpperCase(),
-      canView: !!(p['canView'] ?? p['CanView']),
-      canAdd: !!(p['canAdd'] ?? p['CanAdd']),
-      canEdit: !!(p['canEdit'] ?? p['CanEdit']),
-      canDelete: !!(p['canDelete'] ?? p['CanDelete']),
-      canExport: !!(p['canExport'] ?? p['CanExport']),
-    }));
+      : ((raw as IUserPermissionResponse).permissions
+          ?? (raw as unknown as Record<string, unknown>)['Permissions']
+          ?? []);
+    const merged = new Map<string, IMenuPermission>();
+
+    for (const p of list as unknown as Record<string, unknown>[]) {
+      const menuCode = canonicalMenuCode(String(p['menuCode'] ?? p['MenuCode'] ?? ''));
+      if (!menuCode) {
+        continue;
+      }
+
+      const existing = merged.get(menuCode);
+      const next: IMenuPermission = {
+        menuCode,
+        canView: !!(p['canView'] ?? p['CanView']),
+        canAdd: !!(p['canAdd'] ?? p['CanAdd']),
+        canEdit: !!(p['canEdit'] ?? p['CanEdit']),
+        canDelete: !!(p['canDelete'] ?? p['CanDelete']),
+        canExport: !!(p['canExport'] ?? p['CanExport']),
+      };
+
+      if (!existing) {
+        merged.set(menuCode, next);
+        continue;
+      }
+
+      merged.set(menuCode, {
+        menuCode,
+        canView: existing.canView || next.canView,
+        canAdd: existing.canAdd || next.canAdd,
+        canEdit: existing.canEdit || next.canEdit,
+        canDelete: existing.canDelete || next.canDelete,
+        canExport: existing.canExport || next.canExport,
+      });
+    }
+
+    return Array.from(merged.values());
   }
 
   private normalizeMenus(raw: unknown): IMenu[] {
@@ -126,7 +172,7 @@ export class PermissionService {
 
   private normalizeMenu(raw: Record<string, unknown>): IMenu {
     const children = (raw['children'] ?? raw['Children'] ?? []) as Record<string, unknown>[];
-    const code = String(raw['code'] ?? raw['Code'] ?? '');
+    const code = canonicalMenuCode(String(raw['code'] ?? raw['Code'] ?? ''));
     const routeRaw = (raw['route'] ?? raw['Route']) as string | null | undefined;
     return {
       id: String(raw['id'] ?? raw['Id'] ?? ''),

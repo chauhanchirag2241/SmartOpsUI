@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  HostBinding,
   HostListener,
   Input,
   Output,
@@ -31,11 +32,18 @@ export class MultiSelectChipsComponent {
   @Input() placeholder = 'Select…';
   @Input() searchPlaceholder = 'Search';
   @Input() maxVisibleChips = 3;
+  @Input() singleSelect = false;
+  @Input() compact = false;
 
   @Output() selectedIdsChange = new EventEmitter<string[]>();
 
   panelOpen = false;
   searchTerm = '';
+
+  @HostBinding('class.compact')
+  get compactHostClass(): boolean {
+    return this.compact;
+  }
 
   get filteredOptions(): MappingOption[] {
     const term = this.searchTerm.trim().toLowerCase();
@@ -73,6 +81,10 @@ export class MultiSelectChipsComponent {
 
   toggleOption(id: string, checked: boolean): void {
     if (this.disabled || !id) return;
+    if (this.singleSelect) {
+      this.selectSingle(checked ? id : '');
+      return;
+    }
     if (checked) {
       if (!this.selectedIds.includes(id)) {
         this.selectedIdsChange.emit([...this.selectedIds, id]);
@@ -80,6 +92,15 @@ export class MultiSelectChipsComponent {
       return;
     }
     this.selectedIdsChange.emit(this.selectedIds.filter((x) => x !== id));
+  }
+
+  selectSingle(id: string): void {
+    if (this.disabled) return;
+    const next = id ? [id] : [];
+    this.selectedIdsChange.emit(next);
+    this.panelOpen = false;
+    this.searchTerm = '';
+    this.cdr.markForCheck();
   }
 
   remove(id: string, event: Event): void {

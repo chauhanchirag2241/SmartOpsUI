@@ -2,7 +2,9 @@ export interface LeaveListItem {
   id: string;
   requestType: string;
   requestTypeLabel: string;
-  teacherId?: string | null;
+  employeeId?: string | null;
+  employeeName?: string | null;
+  /** @deprecated use employeeName */
   teacherName?: string | null;
   studentId?: string | null;
   studentName?: string | null;
@@ -32,7 +34,7 @@ export function asLeaveArray(data: unknown): LeaveListItem[] {
 export function leaveItemsToTableRows(items: LeaveListItem[]): Record<string, unknown>[] {
   return items.map((row) => ({
     id: row.id,
-    teacherName: row.teacherName ?? '—',
+    employeeName: row.employeeName ?? row.teacherName ?? '—',
     fromDate: row.fromDate,
     toDate: row.toDate,
     dayCount: row.dayCount,

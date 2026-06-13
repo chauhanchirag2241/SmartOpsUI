@@ -1,17 +1,17 @@
 <div class="topbar">
   <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="onCancel()"></app-action-button>
   <div class="page-title">
-    {{ mode === 'edit' ? 'Edit teacher' : mode === 'view' ? 'Teacher details' : 'Add new teacher' }}
+    {{ mode === 'edit' ? 'Edit employee' : mode === 'view' ? 'Employee details' : 'Add new employee' }}
   </div>
 </div>
 
 <div class="progress-bar">
-  <div class="progress-fill" [style.width]="((currentStep + 1) / 4) * 100 + '%'"></div>
+  <div class="progress-fill" [style.width]="progressPercent + '%'"></div>
 </div>
-<div class="step-hint">{{ hints[currentStep] }}</div>
+<div class="step-hint">{{ currentStepHint }}</div>
 
 <div class="tabs" role="tablist">
-  @for (step of steps; track step.title; let i = $index) {
+  @for (step of steps; track $index; let i = $index) {
     <div
       class="tab"
       [class.active]="currentStep === i"
@@ -25,12 +25,13 @@
   }
 </div>
 
-<form [formGroup]="teacherForm">
+<form [formGroup]="employeeForm">
   @for (tab of tabs; track tab.stepIndex) {
     @if (currentStep === tab.stepIndex) {
+      @if (tab.hint) {
+        <p class="form-hint">{{ tab.hint }}</p>
+      }
       @for (section of tab.sections; track section.title) {
-        
-        <!-- PHOTO-GRID layout -->
         @if (section.layout === 'photo-grid') {
           <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
@@ -38,17 +39,16 @@
               <app-dynamic-field [config]="configs['photo']" [group]="$any(getGroupForSection(tab, section))" />
               <div class="photo-fields">
                 @for (field of section.fields; track field) {
-                  @if (field !== 'photo') {
-                    <app-dynamic-field [config]="configs[field]" [group]="$any(getGroupForSection(tab, section))" />
-                  }
+                  <app-dynamic-field
+                    [config]="configs[field]"
+                    [group]="$any(getGroupForSection(tab, section))"
+                    [full]="field === 'address'"
+                  />
                 }
               </div>
             </div>
           </div>
-        }
-
-        <!-- FORM-ARRAY layout -->
-        @else if (section.layout === 'form-array') {
+        } @else if (section.layout === 'form-array') {
           <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
             <div [formArrayName]="section.formArrayName || ''">
@@ -73,30 +73,44 @@
               </button>
             }
           </div>
-        }
-
-        <!-- REVIEW layout -->
-        @else if (section.layout === 'review') {
+        } @else if (section.layout === 'review') {
           <div class="card">
-            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
-            <div class="summary-grid">
-              @for (field of section.fields; track field) {
-                <div class="sum-item">
-                  <div class="sum-key">{{ configs[field].label }}</div>
-                  <div class="sum-val">{{ getReviewValue(section, field) }}</div>
-                </div>
-              }
+              <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+              <div class="summary-grid">
+                @for (field of section.fields; track field) {
+                  <div class="sum-item">
+                    <div class="sum-key">{{ configs[field].label }}</div>
+                    <div class="sum-val">{{ getReviewValue(section, field) }}</div>
+                  </div>
+                }
             </div>
           </div>
-        }
-
-        <!-- STANDARD grid2 / grid3 layouts -->
-        @else {
+        } @else {
           <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
             <div [class]="section.layout">
               @for (field of section.fields; track field) {
-                <app-dynamic-field [config]="configs[field]" [group]="$any(getGroupForSection(tab, section))" [full]="field === 'address'" />
+                @if (field === 'reportingManagerId') {
+                  <div class="custom-field reporting-manager-field">
+                    <label>{{ configs['reportingManagerId'].label }}</label>
+                    <app-multi-select-chips
+                      [options]="reportingManagerChipOptions"
+                      [selectedIds]="reportingManagerSelectedIds"
+                      (selectedIdsChange)="onReportingManagerChange($event)"
+                      [disabled]="mode === 'view'"
+                      [singleSelect]="true"
+                      [compact]="true"
+                      placeholder="Select reporting manager…"
+                      searchPlaceholder="Search employees"
+                    />
+                  </div>
+                } @else {
+                  <app-dynamic-field
+                    [config]="configs[field]"
+                    [group]="$any(getGroupForSection(tab, section))"
+                    [full]="field === 'address'"
+                  />
+                }
               }
             </div>
           </div>
@@ -114,16 +128,12 @@
     (action)="prevStep()">
   </app-action-button>
 
-  @if (currentStep < 3) {
-    <app-action-button
-      type="next"
-      [disabled]="false"
-      (action)="nextStep()">
-    </app-action-button>
+  @if (currentStep < lastStepIndex) {
+    <app-action-button type="next" [disabled]="false" (action)="nextStep()"></app-action-button>
   } @else if (mode !== 'view') {
     <app-action-button
       type="save"
-      [label]="mode === 'edit' ? 'Update Teacher' : 'Confirm & Add'"
+      [label]="mode === 'edit' ? 'Update employee' : 'Confirm & Add'"
       icon="check_circle"
       [disabled]="false"
       (action)="nextStep()">

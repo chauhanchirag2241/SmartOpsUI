@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormsModule,
@@ -12,15 +12,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { TeacherService } from '../../../core/services/teacher.service';
+import { EmployeeService } from '../../../core/services/employee.service';
+import { DepartmentService } from '../../../core/services/department.service';
+import { RoleService, RoleDto } from '../../../core/services/role.service';
+import { UserTypeDto, UserTypeService } from '../../../core/services/user-type.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import {
-  FileUploadComponent,
-  SelectedUploadFile,
-} from '../../../shared/components/file-upload/file-upload.component';
-import { DigitsOnlyDirective } from '../../../shared/directives/digits-only.directive';
-import { LettersOnlyDirective } from '../../../shared/directives/letters-only.directive';
-import { BloodGroup, enumToOptions, Gender } from '../../../shared/enums/field-options.enum';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
@@ -49,19 +45,22 @@ import {
   sanitizeExperienceInput,
   formatShiftRangeDisplay,
   normalizeTimeValue,
-  optionalPositiveIntValidator,
   shiftEndTimeValidator,
   shiftStartTimeValidator,
   syncShiftTimeValidity,
 } from '../../../shared/utils/form-validators.util';
 import { validateFormControls } from '../../../shared/utils/form-validation.util';
-
+import { BloodGroup, enumToOptions, Gender } from '../../../shared/enums/field-options.enum';
 import { FormSection, FormTab } from '../../../shared/interfaces/form-layout';
+import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { MappingOption } from '../../../shared/mapping/mapping.types';
+
+const STAFF_USER_TYPE_CODES = new Set(['TEACHER', 'ACCOUNTANT', 'STAFF']);
 
 @Component({
-  selector: 'app-add-teacher',
+  selector: 'app-add-employee',
   standalone: true,
-  host: { class: 'add-teacher-page form-page-shell' },
+  host: { class: 'add-employee-page form-page-shell' },
   imports: [
     CommonModule,
     FormsModule,
@@ -72,32 +71,43 @@ import { FormSection, FormTab } from '../../../shared/interfaces/form-layout';
     MatInputModule,
     DynamicFieldComponent,
     ActionButtonComponent,
+    MultiSelectChipsComponent,
   ],
-  templateUrl: './add-teacher.component.html',
-  styleUrl: './add-teacher.component.css',
+  templateUrl: './add-employee.component.html',
+  styleUrl: './add-employee.component.css',
 })
-export class AddTeacherComponent implements OnInit {
+export class AddEmployeeComponent implements OnInit {
   @Input() mode: 'add' | 'edit' | 'view' = 'add';
-  @Input() teacherId?: string;
+  @Input() employeeId?: string;
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  teacherForm: FormGroup;
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  employeeForm: FormGroup;
   currentStep = 0;
-  selectedPhoto: SelectedUploadFile | null = null;
   readonly bloodGroupOptions = enumToOptions(BloodGroup);
+
+  userTypes: UserTypeDto[] = [];
+  roles: RoleDto[] = [];
+  departments: { label: string; value: string }[] = [];
+  reportingManagers: { label: string; value: string }[] = [];
+  reportingManagerChipOptions: MappingOption[] = [];
+
   steps = [
     { title: 'Personal', icon: 'person' },
     { title: 'Professional', icon: 'work' },
-    { title: 'Schedule & Access', icon: 'schedule' },
+    { title: 'Organization & Access', icon: 'corporate_fare' },
+    { title: 'Schedule', icon: 'schedule' },
     { title: 'Review', icon: 'fact_check' },
   ];
 
   hints = [
-    'Step 1 of 4 — Personal information',
-    'Step 2 of 4 — Professional details',
-    'Step 3 of 4 — Schedule and portal access',
-    'Step 4 of 4 — Review & save',
+    'Personal information',
+    'Professional details',
+    'Organization and portal access',
+    'Work schedule',
+    'Review & save',
   ];
 
   readonly configs: Record<string, FormFieldConfig> = {
@@ -142,9 +152,7 @@ export class AddTeacherComponent implements OnInit {
       label: 'Gender',
       className: 'col-3',
       options: enumToOptions(Gender),
-      validations: [
-        { name: 'required', message: 'Gender is required', validator: Validators.required },
-      ],
+      validations: [{ name: 'required', message: 'Gender is required', validator: Validators.required }],
     },
     bloodGroup: {
       type: 'select',
@@ -176,9 +184,7 @@ export class AddTeacherComponent implements OnInit {
       type: 'datepicker',
       controlName: 'joiningDate',
       label: 'Joining date',
-      validations: [
-        { name: 'required', message: 'Joining date is required', validator: Validators.required },
-      ],
+      validations: [{ name: 'required', message: 'Joining date is required', validator: Validators.required }],
     },
     employmentType: {
       type: 'badges',
@@ -190,13 +196,7 @@ export class AddTeacherComponent implements OnInit {
         { label: 'Contract', value: 'Contract' },
         { label: 'Visiting', value: 'Visiting' },
       ],
-      validations: [
-        {
-          name: 'required',
-          message: 'Employment type is required',
-          validator: Validators.required,
-        },
-      ],
+      validations: [{ name: 'required', message: 'Employment type is required', validator: Validators.required }],
     },
     relation: {
       type: 'select',
@@ -236,19 +236,35 @@ export class AddTeacherComponent implements OnInit {
         { label: 'Grade 4', value: 'Grade 4' },
       ],
     },
-    role: {
+    employeeTypeId: {
       type: 'select',
-      controlName: 'role',
-      label: 'Role',
-      options: [
-        { label: 'Teacher', value: 'Teacher' },
-        { label: 'HOD', value: 'HOD' },
-        { label: 'Class Teacher', value: 'Class Teacher' },
-        { label: 'Admin', value: 'Admin' },
-      ],
-      validations: [
-        { name: 'required', message: 'Role is required', validator: Validators.required },
-      ],
+      controlName: 'employeeTypeId',
+      label: 'Employee type',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [],
+      validations: [{ name: 'required', message: 'Employee type is required', validator: Validators.required }],
+    },
+    portalRoleId: {
+      type: 'select',
+      controlName: 'portalRoleId',
+      label: 'Portal role',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [],
+      validations: [{ name: 'required', message: 'Portal role is required', validator: Validators.required }],
+    },
+    departmentId: {
+      type: 'select',
+      controlName: 'departmentId',
+      label: 'Department',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [],
+    },
+    reportingManagerId: {
+      type: 'select',
+      controlName: 'reportingManagerId',
+      label: 'Reporting manager',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [],
     },
     portalAccess: {
       type: 'select',
@@ -277,11 +293,7 @@ export class AddTeacherComponent implements OnInit {
       maxLength: 10,
       validations: [
         { name: 'required', message: 'Mobile is required', validator: Validators.required },
-        {
-          name: 'pattern',
-          message: 'Enter a valid 10-digit number',
-          validator: Validators.pattern('^[0-9]{10}$'),
-        },
+        { name: 'pattern', message: 'Enter a valid 10-digit number', validator: Validators.pattern('^[0-9]{10}$') },
       ],
     },
     alternateMobile: {
@@ -291,13 +303,7 @@ export class AddTeacherComponent implements OnInit {
       placeholder: '10-digit',
       inputType: 'tel',
       maxLength: 10,
-      validations: [
-        {
-          name: 'pattern',
-          message: 'Enter a valid 10-digit number',
-          validator: Validators.pattern('^[0-9]{10}$'),
-        },
-      ],
+      validations: [{ name: 'pattern', message: 'Enter a valid 10-digit number', validator: Validators.pattern('^[0-9]{10}$') }],
     },
     email: {
       type: 'input',
@@ -333,13 +339,7 @@ export class AddTeacherComponent implements OnInit {
       placeholder: '10-digit',
       inputType: 'tel',
       maxLength: 10,
-      validations: [
-        {
-          name: 'pattern',
-          message: 'Enter a valid 10-digit number',
-          validator: Validators.pattern('^[0-9]{10}$'),
-        },
-      ],
+      validations: [{ name: 'pattern', message: 'Enter a valid 10-digit number', validator: Validators.pattern('^[0-9]{10}$') }],
     },
     employeeId: { type: 'input', controlName: 'employeeId', label: 'Employee ID', disabled: true },
     experience: {
@@ -371,13 +371,7 @@ export class AddTeacherComponent implements OnInit {
       inputType: 'tel',
       maxLength: 4,
       placeholder: 'YYYY',
-      validations: [
-        {
-          name: 'pattern',
-          validator: Validators.pattern(/^\d{4}$/),
-          message: 'Passing year must be exactly 4 numbers',
-        },
-      ],
+      validations: [{ name: 'pattern', validator: Validators.pattern(/^\d{4}$/), message: 'Passing year must be exactly 4 numbers' }],
     },
     percentage: {
       type: 'input',
@@ -386,13 +380,7 @@ export class AddTeacherComponent implements OnInit {
       inputType: 'tel',
       maxLength: 3,
       placeholder: '0–100',
-      validations: [
-        {
-          name: 'pattern',
-          validator: Validators.pattern(/^(100|\d{1,2})$/),
-          message: 'Enter a valid percentage (0–100)',
-        },
-      ],
+      validations: [{ name: 'pattern', validator: Validators.pattern(/^(100|\d{1,2})$/), message: 'Enter a valid percentage (0–100)' }],
     },
     shiftStartTime: {
       type: 'input',
@@ -405,22 +393,6 @@ export class AddTeacherComponent implements OnInit {
       controlName: 'shiftEndTime',
       label: 'Shift end',
       inputType: 'time',
-    },
-    weeklyPeriods: {
-      type: 'input',
-      controlName: 'weeklyPeriods',
-      label: 'Weekly periods',
-      inputType: 'tel',
-      maxLength: 2,
-      placeholder: 'e.g. 30',
-    },
-    maxPeriodsPerDay: {
-      type: 'input',
-      controlName: 'maxPeriodsPerDay',
-      label: 'Max periods/day',
-      inputType: 'tel',
-      maxLength: 2,
-      placeholder: 'e.g. 6',
     },
     username: {
       type: 'input',
@@ -443,13 +415,7 @@ export class AddTeacherComponent implements OnInit {
       label: 'IFSC code',
       placeholder: 'e.g. SBIN0001234',
       maxLength: 11,
-      validations: [
-        {
-          name: 'pattern',
-          message: 'Enter a valid IFSC code',
-          validator: Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$'),
-        },
-      ],
+      validations: [{ name: 'pattern', message: 'Enter a valid IFSC code', validator: Validators.pattern('^[A-Z]{4}0[A-Z0-9]{6}$') }],
     },
     bankName: {
       type: 'input',
@@ -474,44 +440,34 @@ export class AddTeacherComponent implements OnInit {
       'personal.emergencyContact.mobile',
     ],
     1: ['professional.joiningDate'],
-    2: ['schedule.role'],
+    2: ['organization.employeeTypeId', 'organization.portalRoleId'],
+    3: [],
+    4: [],
   };
 
-  readonly personalFields = [
-    'firstName',
-    'lastName',
-    'dob',
-    'gender',
-    'bloodGroup',
-    'aadhaarNumber',
-    'panNumber',
-  ];
+  readonly personalFields = ['firstName', 'lastName', 'dob', 'gender', 'bloodGroup', 'aadhaarNumber', 'panNumber'];
   readonly contactFields = ['mobile', 'alternateMobile', 'email', 'address'];
   readonly emergencyContactFields = ['emergencyContactName', 'relation', 'emergencyContactMobile'];
-  readonly employmentFields = [
-    'employeeId',
-    'joiningDate',
-    'designation',
-    'experience',
-    'salaryGrade',
-    'employmentType',
-  ];
+  readonly employmentFields = ['employeeId', 'joiningDate', 'designation', 'experience', 'salaryGrade', 'employmentType'];
   readonly qualificationFields = ['degree', 'university', 'year', 'percentage'];
   readonly bankFields = ['accountNumber', 'ifscCode', 'bankName'];
-  readonly scheduleFields = ['shiftStartTime', 'shiftEndTime', 'weeklyPeriods', 'maxPeriodsPerDay'];
-  readonly systemAccessFields = ['role', 'portalAccess', 'username', 'sendWelcomeEmail'];
+  readonly organizationFields = [
+    'employeeTypeId',
+    'portalRoleId',
+    'departmentId',
+    'reportingManagerId',
+    'portalAccess',
+    'username',
+    'sendWelcomeEmail',
+  ];
+  readonly scheduleFields = ['shiftStartTime', 'shiftEndTime'];
 
   readonly tabs: FormTab[] = [
     {
       stepIndex: 0,
       groupPath: 'personal',
       sections: [
-        {
-          title: 'Photo & basic details',
-          icon: 'account_circle',
-          layout: 'photo-grid',
-          fields: this.personalFields,
-        },
+        { title: 'Photo & basic details', icon: 'account_circle', layout: 'photo-grid', fields: this.personalFields },
         { title: 'Contact details', icon: 'phone', layout: 'grid3', fields: this.contactFields },
         {
           title: 'Emergency contact',
@@ -525,13 +481,7 @@ export class AddTeacherComponent implements OnInit {
     {
       stepIndex: 1,
       sections: [
-        {
-          title: 'Employment details',
-          icon: 'badge',
-          layout: 'grid3',
-          fields: this.employmentFields,
-          groupPath: 'professional',
-        },
+        { title: 'Employment details', icon: 'badge', layout: 'grid3', fields: this.employmentFields, groupPath: 'professional' },
         {
           title: 'Qualifications',
           icon: 'school',
@@ -540,32 +490,22 @@ export class AddTeacherComponent implements OnInit {
           groupPath: 'professional',
           formArrayName: 'qualifications',
         },
-        {
-          title: 'Bank details',
-          icon: 'account_balance',
-          layout: 'grid3',
-          fields: this.bankFields,
-          groupPath: 'professional',
-          subGroup: 'bankDetails',
-        },
+        { title: 'Bank details', icon: 'account_balance', layout: 'grid3', fields: this.bankFields, groupPath: 'professional', subGroup: 'bankDetails' },
       ],
     },
     {
       stepIndex: 2,
-      groupPath: 'schedule',
-      hint: 'Class and subject assignments are managed from the Class Mapping screen.',
-      sections: [
-        { title: 'Timing', icon: 'schedule', layout: 'grid3', fields: this.scheduleFields },
-        {
-          title: 'System access',
-          icon: 'security',
-          layout: 'grid2',
-          fields: this.systemAccessFields,
-        },
-      ],
+      groupPath: 'organization',
+      sections: [{ title: 'Organization & access', icon: 'security', layout: 'grid2', fields: this.organizationFields }],
     },
     {
       stepIndex: 3,
+      groupPath: 'schedule',
+      hint: 'Set daily shift timings for all employees.',
+      sections: [{ title: 'Work schedule', icon: 'schedule', layout: 'grid3', fields: this.scheduleFields }],
+    },
+    {
+      stepIndex: 4,
       sections: [
         {
           title: 'Personal summary',
@@ -579,38 +519,23 @@ export class AddTeacherComponent implements OnInit {
             emergencyContactMobile: 'emergencyContact',
           },
         },
-        {
-          title: 'Professional summary',
-          icon: 'work_outline',
-          layout: 'review',
-          fields: this.employmentFields,
-          groupPath: 'professional',
-        },
-        {
-          title: 'Banking',
-          icon: 'account_balance',
-          layout: 'review',
-          fields: this.bankFields,
-          groupPath: 'professional',
-          subGroup: 'bankDetails',
-        },
-        {
-          title: 'Schedule & access',
-          icon: 'schedule',
-          layout: 'review',
-          fields: [...this.scheduleFields, ...this.systemAccessFields],
-          groupPath: 'schedule',
-        },
+        { title: 'Professional summary', icon: 'work_outline', layout: 'review', fields: this.employmentFields, groupPath: 'professional' },
+        { title: 'Banking', icon: 'account_balance', layout: 'review', fields: this.bankFields, groupPath: 'professional', subGroup: 'bankDetails' },
+        { title: 'Organization & access', icon: 'corporate_fare', layout: 'review', fields: this.organizationFields, groupPath: 'organization' },
+        { title: 'Schedule', icon: 'schedule', layout: 'review', fields: this.scheduleFields, groupPath: 'schedule' },
       ],
     },
   ];
 
   constructor(
     private fb: FormBuilder,
-    private teacherService: TeacherService,
+    private employeeService: EmployeeService,
+    private departmentService: DepartmentService,
+    private roleService: RoleService,
+    private userTypeService: UserTypeService,
     private snackBar: NotificationService,
   ) {
-    this.teacherForm = this.fb.group({
+    this.employeeForm = this.fb.group({
       personal: this.fb.group({
         photo: [null],
         firstName: ['', [Validators.required, nameValidator(PERSON_NAME_MAX_LENGTH)]],
@@ -644,36 +569,99 @@ export class AddTeacherComponent implements OnInit {
           bankName: ['', bankNameValidator(BANK_NAME_MAX_LENGTH)],
         }),
       }),
-      schedule: this.fb.group({
-        classId: [''],
-        shiftStartTime: [null, shiftStartTimeValidator()],
-        shiftEndTime: [null, shiftEndTimeValidator()],
-        weeklyPeriods: [null, optionalPositiveIntValidator(99)],
-        maxPeriodsPerDay: [null, optionalPositiveIntValidator(12)],
-        role: ['Teacher', Validators.required],
+      organization: this.fb.group({
+        employeeTypeId: ['', Validators.required],
+        portalRoleId: ['', Validators.required],
+        departmentId: [null],
+        reportingManagerId: [null],
         portalAccess: ['Enabled'],
         username: [{ value: '', disabled: true }],
         sendWelcomeEmail: ['Yes — send credentials'],
       }),
+      schedule: this.fb.group({
+        shiftStartTime: [null, shiftStartTimeValidator()],
+        shiftEndTime: [null, shiftEndTimeValidator()],
+      }),
     });
   }
 
-  private today(): Date {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
+  get lastStepIndex(): number {
+    return this.steps.length - 1;
+  }
+
+  get currentStepHint(): string {
+    return `Step ${this.currentStep + 1} of ${this.steps.length} — ${this.hints[this.currentStep]}`;
+  }
+
+  get progressPercent(): number {
+    return ((this.currentStep + 1) / this.steps.length) * 100;
   }
 
   ngOnInit(): void {
     this.wireShiftTimeValidation();
+    this.loadLookups();
     if (this.mode === 'add') {
       this.generateEmployeeId();
       this.setupUsernameGeneration();
       this.professionalGroup.patchValue({ joiningDate: this.today() });
     }
-    if (this.mode !== 'add' && this.teacherId) {
-      this.loadTeacherData();
+    if (this.mode !== 'add' && this.employeeId) {
+      this.loadEmployeeData();
     }
+  }
+
+  private loadLookups(): void {
+    this.userTypeService.getUserTypes().subscribe({
+      next: (types) => {
+        this.userTypes = types
+          .filter((t) => STAFF_USER_TYPE_CODES.has(String(t.code ?? '').toUpperCase()))
+          .map((t) => ({
+            ...t,
+            name: String(t.code ?? '').toUpperCase() === 'STAFF' ? 'Other Staff' : t.name,
+          }));
+        this.configs['employeeTypeId'].options = this.userTypes.map((t) => ({ label: t.name, value: t.id }));
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.roleService.getRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles.filter((r) => r.name !== 'PlatformAdmin');
+        this.configs['portalRoleId'].options = this.roles.map((r) => ({ label: r.name, value: r.id }));
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.departmentService.getDepartments().subscribe({
+      next: (deps) => {
+        this.departments = deps.map((d) => ({ label: d.name, value: d.id }));
+        this.configs['departmentId'].options = this.departments;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.employeeService.getEmployeeDropdown().subscribe({
+      next: (items) => {
+        const eligible = this.mode === 'edit' && this.employeeId
+          ? items.filter((e) => e.id !== this.employeeId)
+          : items;
+        this.reportingManagers = eligible.map((e) => ({
+          label: e.designation ? `${e.name} (${e.designation})` : e.name,
+          value: e.id,
+        }));
+        this.reportingManagerChipOptions = eligible.map((e) => ({
+          id: e.id,
+          name: e.designation ? `${e.name} (${e.designation})` : e.name,
+        }));
+        this.configs['reportingManagerId'].options = this.reportingManagers;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.reportingManagers = [];
+        this.reportingManagerChipOptions = [];
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private wireShiftTimeValidation(): void {
@@ -685,57 +673,73 @@ export class AddTeacherComponent implements OnInit {
   }
 
   private setupUsernameGeneration(): void {
-    const firstControl = this.teacherForm.get('personal.firstName');
-    const lastControl = this.teacherForm.get('personal.lastName');
-
+    const firstControl = this.employeeForm.get('personal.firstName');
+    const lastControl = this.employeeForm.get('personal.lastName');
     firstControl?.valueChanges.subscribe(() => this.updateGeneratedUsername());
     lastControl?.valueChanges.subscribe(() => this.updateGeneratedUsername());
   }
 
   private updateGeneratedUsername(): void {
     if (this.mode !== 'add') return;
-
-    const first = (this.teacherForm.get('personal.firstName')?.value || '').trim().toLowerCase();
-    const last = (this.teacherForm.get('personal.lastName')?.value || '').trim().toLowerCase();
-    const employeeId = this.teacherForm.get('professional.employeeId')?.value || '';
+    const first = (this.employeeForm.get('personal.firstName')?.value || '').trim().toLowerCase();
+    const last = (this.employeeForm.get('personal.lastName')?.value || '').trim().toLowerCase();
+    const employeeId = this.employeeForm.get('professional.employeeId')?.value || '';
     const idSuffix = employeeId.split('-').pop() || '';
-
     if (first || last) {
       const base = last ? `${first}.${last}` : first;
       const username = `${base}${idSuffix ? '.' + idSuffix : ''}`.replace(/[^a-z0-9.]/g, '');
-      this.teacherForm.get('schedule.username')?.setValue(username);
+      this.organizationGroup.get('username')?.setValue(username);
     }
   }
 
-  get qualifications() {
-    return this.teacherForm.get('professional.qualifications') as FormArray;
+  get qualifications(): FormArray {
+    return this.employeeForm.get('professional.qualifications') as FormArray;
   }
 
   get personalGroup(): FormGroup {
-    return this.teacherForm.get('personal') as FormGroup;
+    return this.employeeForm.get('personal') as FormGroup;
   }
 
-  get emergencyContactGroup(): FormGroup {
-    return this.personalGroup.get('emergencyContact') as FormGroup;
+  get professionalGroup(): FormGroup {
+    return this.employeeForm.get('professional') as FormGroup;
   }
 
-  getGroupForTab(tab: any): FormGroup | null {
-    if (!tab.groupPath) return null;
-    return this.teacherForm.get(tab.groupPath) as FormGroup;
+  get organizationGroup(): FormGroup {
+    return this.employeeForm.get('organization') as FormGroup;
   }
 
-  getGroupForSection(tab: any, section: any): FormGroup {
+  get reportingManagerSelectedIds(): string[] {
+    const id = this.organizationGroup.get('reportingManagerId')?.value;
+    return id ? [String(id)] : [];
+  }
+
+  onReportingManagerChange(ids: string[]): void {
+    const control = this.organizationGroup.get('reportingManagerId');
+    control?.setValue(ids[0] ?? null);
+    control?.markAsDirty();
+    control?.markAsTouched();
+  }
+
+  get scheduleGroup(): FormGroup {
+    return this.employeeForm.get('schedule') as FormGroup;
+  }
+
+  get bankDetailsGroup(): FormGroup {
+    return this.professionalGroup.get('bankDetails') as FormGroup;
+  }
+
+  getGroupForSection(tab: FormTab, section: FormSection): FormGroup {
     const basePath = section.groupPath || tab.groupPath;
-    let group = this.teacherForm.get(basePath) as FormGroup;
+    let group = this.employeeForm.get(basePath!) as FormGroup;
     if (section.subGroup) {
       group = group.get(section.subGroup) as FormGroup;
     }
     return group;
   }
 
-  getReviewValue(section: any, field: string): any {
+  getReviewValue(section: FormSection, field: string): string {
     const basePath = section.groupPath;
-    let actualPath = basePath;
+    let actualPath = basePath ?? '';
     if (section.subGroup) {
       actualPath += '.' + section.subGroup;
     }
@@ -744,31 +748,31 @@ export class AddTeacherComponent implements OnInit {
     }
     const controlName = this.configs[field].controlName;
     actualPath += '.' + controlName;
-    const val = this.teacherForm.get(actualPath)?.value;
+    const val = this.employeeForm.get(actualPath)?.value;
+    if (field === 'employeeTypeId') {
+      return this.userTypes.find((t) => t.id === val)?.name ?? val ?? '—';
+    }
+    if (field === 'portalRoleId') {
+      return this.roles.find((r) => r.id === val)?.name ?? val ?? '—';
+    }
+    if (field === 'departmentId') {
+      return this.departments.find((d) => d.value === val)?.label ?? val ?? '—';
+    }
+    if (field === 'reportingManagerId') {
+      return this.reportingManagers.find((m) => m.value === val)?.label ?? val ?? '—';
+    }
     if (val === true) return 'Yes';
     if (val === false) return 'No';
     return val || '—';
   }
 
-  get professionalGroup(): FormGroup {
-    return this.teacherForm.get('professional') as FormGroup;
-  }
+  private loadedEmployee: any = null;
 
-  get bankDetailsGroup(): FormGroup {
-    return this.professionalGroup.get('bankDetails') as FormGroup;
-  }
-
-  get scheduleGroup(): FormGroup {
-    return this.teacherForm.get('schedule') as FormGroup;
-  }
-
-  private loadedTeacher: any = null;
-
-  loadTeacherData(): void {
-    this.teacherService.getTeacherById(this.teacherId!).subscribe({
+  loadEmployeeData(): void {
+    this.employeeService.getEmployeeById(this.employeeId!).subscribe({
       next: (data) => {
-        this.loadedTeacher = data;
-        this.teacherForm.patchValue({
+        this.loadedEmployee = data;
+        this.employeeForm.patchValue({
           personal: {
             firstName: data.firstName,
             lastName: data.lastName,
@@ -790,47 +794,43 @@ export class AddTeacherComponent implements OnInit {
             salaryGrade: data.salaryGrade,
             employmentType: data.employmentType,
             bankDetails: {
-              accountNumber: data.bankAccountNumber
-                ? sanitizeBankAccountInput(String(data.bankAccountNumber))
-                : '',
+              accountNumber: data.bankAccountNumber ? sanitizeBankAccountInput(String(data.bankAccountNumber)) : '',
               ifscCode: data.bankIfscCode ? sanitizeIfscInput(String(data.bankIfscCode)) : '',
               bankName: data.bankName,
             },
           },
-          schedule: {
-            classId: data.classId,
-            shiftStartTime: normalizeTimeValue(data.shiftStartTime ?? data.shiftStarttime),
-            shiftEndTime: normalizeTimeValue(data.shiftEndTime ?? data.shiftEndtime),
-            weeklyPeriods: data.weeklyPeriods ?? null,
-            maxPeriodsPerDay: data.maxPeriodsPerDay ?? null,
-            role: data.role,
+          organization: {
+            employeeTypeId: data.employeeTypeId ?? data.userTypeId ?? '',
+            portalRoleId: data.portalRoleId ?? data.roleId ?? '',
+            departmentId: data.departmentId ?? null,
+            reportingManagerId: data.reportingManagerId ?? null,
             portalAccess: data.portalAccess ? 'Enabled' : 'Disabled',
             username: data.username,
+          },
+          schedule: {
+            shiftStartTime: normalizeTimeValue(data.shiftStartTime ?? data.shiftStarttime),
+            shiftEndTime: normalizeTimeValue(data.shiftEndTime ?? data.shiftEndtime),
           },
         });
         this.setQualificationsFromApi(data.qualifications);
         syncShiftTimeValidity(this.scheduleGroup);
         if (this.mode === 'view') {
-          this.teacherForm.disable();
+          this.employeeForm.disable();
         }
       },
       error: () => {
-        this.snackBar.open('Failed to load teacher data', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load employee data', 'Close', { duration: 3000 });
       },
     });
   }
 
   addQualification(): void {
-    if (this.mode === 'view') {
-      return;
-    }
+    if (this.mode === 'view') return;
     this.qualifications.push(this.createQualificationRow());
   }
 
   removeQualification(index: number): void {
-    if (this.mode === 'view') {
-      return;
-    }
+    if (this.mode === 'view') return;
     if (this.qualifications.length > 1) {
       this.qualifications.removeAt(index);
     }
@@ -848,12 +848,7 @@ export class AddTeacherComponent implements OnInit {
   private setQualificationsFromApi(raw: unknown): void {
     const arr = this.qualifications;
     arr.clear({ emitEvent: false });
-    const items = raw
-      ? String(raw)
-          .split(';')
-          .map((x) => x.trim())
-          .filter(Boolean)
-      : [];
+    const items = raw ? String(raw).split(';').map((x) => x.trim()).filter(Boolean) : [];
     if (!items.length) {
       arr.push(this.createQualificationRow(), { emitEvent: false });
       return;
@@ -865,92 +860,18 @@ export class AddTeacherComponent implements OnInit {
   }
 
   private parseQualificationEntry(text: string): { degree: string; university: string; year: string; percentage: string } {
-    const parts = text.trim().split(' — ').map(p => p.trim());
-    return {
-      degree: parts[0] || '',
-      university: parts[1] || '',
-      year: parts[2] || '',
-      percentage: parts[3] || '',
-    };
-  }
-
-  onPhotoSelected(file: SelectedUploadFile): void {
-    this.selectedPhoto = file;
+    const parts = text.trim().split(' — ').map((p) => p.trim());
+    return { degree: parts[0] || '', university: parts[1] || '', year: parts[2] || '', percentage: parts[3] || '' };
   }
 
   setGender(gender: string): void {
     if (this.mode === 'view') return;
-    this.teacherForm.get('personal.gender')?.setValue(gender);
+    this.employeeForm.get('personal.gender')?.setValue(gender);
   }
 
   setEmploymentType(type: string): void {
     if (this.mode === 'view') return;
-    this.teacherForm.get('professional.employmentType')?.setValue(type);
-  }
-
-  get experienceError(): string {
-    const control = this.professionalGroup.get('experience');
-    const detail = control?.errors?.['experience'];
-    if (detail && typeof detail === 'object' && 'message' in detail) {
-      return (detail as { message: string }).message;
-    }
-    return 'Experience must be between 0 and 99 years';
-  }
-
-  onExperienceInput(event: Event): void {
-    if (this.mode === 'view') return;
-    const input = event.target as HTMLInputElement;
-    const sanitized = sanitizeExperienceInput(input.value);
-    const control = this.professionalGroup.get('experience');
-
-    if (sanitized === null) {
-      control?.setValue(null);
-      if (input.value !== '') {
-        input.value = '';
-      }
-      return;
-    }
-
-    control?.setValue(sanitized);
-    const display = String(sanitized);
-    if (input.value !== display) {
-      input.value = display;
-    }
-  }
-
-  onExperienceBlur(): void {
-    const control = this.professionalGroup.get('experience');
-    if (!control) return;
-    if (control.value == null || control.value === '') {
-      control.setValue(0);
-    } else {
-      control.setValue(clampExperienceValue(control.value));
-    }
-    control.markAsTouched();
-  }
-
-  get bankNameError(): string {
-    return this.resolveFieldError(
-      this.bankDetailsGroup.get('bankName'),
-      'bankName',
-      'Bank name cannot exceed 50 characters',
-    );
-  }
-
-  get bankAccountError(): string {
-    return this.resolveFieldError(
-      this.bankDetailsGroup.get('accountNumber'),
-      'bankAccount',
-      'Enter a valid bank account number (9–18 digits)',
-    );
-  }
-
-  get ifscError(): string {
-    return this.resolveFieldError(
-      this.bankDetailsGroup.get('ifscCode'),
-      'ifsc',
-      'Enter a valid 11-character IFSC (e.g. SBIN0001234)',
-    );
+    this.employeeForm.get('professional.employmentType')?.setValue(type);
   }
 
   get shiftTimeError(): string {
@@ -963,42 +884,11 @@ export class AddTeacherComponent implements OnInit {
     return 'Select a valid shift time range';
   }
 
-  get weeklyPeriodsError(): string {
-    return this.resolveFieldError(
-      this.scheduleGroup.get('weeklyPeriods'),
-      'positiveInt',
-      'Enter a whole number of at least 1',
-    );
-  }
-
-  get maxPeriodsPerDayError(): string {
-    return this.resolveFieldError(
-      this.scheduleGroup.get('maxPeriodsPerDay'),
-      'positiveInt',
-      'Enter a whole number of at least 1',
-    );
-  }
-
   get shiftSummary(): string {
     return formatShiftRangeDisplay(
       this.scheduleGroup.get('shiftStartTime')?.value,
       this.scheduleGroup.get('shiftEndTime')?.value,
     );
-  }
-
-  openTimePicker(event: Event): void {
-    if (this.mode === 'view') return;
-    const wrap = event.currentTarget as HTMLElement;
-    const input = wrap.querySelector('input.time-input') as HTMLInputElement | null;
-    if (!input || input.disabled) return;
-    input.focus();
-    if (typeof input.showPicker === 'function') {
-      try {
-        input.showPicker();
-      } catch {
-        /* showPicker may throw if not user-gesture in some browsers */
-      }
-    }
   }
 
   onShiftTimeChange(): void {
@@ -1011,64 +901,6 @@ export class AddTeacherComponent implements OnInit {
     this.scheduleGroup.get('shiftEndTime')?.markAsTouched();
   }
 
-  onPeriodsInput(event: Event, controlName: 'weeklyPeriods' | 'maxPeriodsPerDay'): void {
-    if (this.mode === 'view') return;
-    const input = event.target as HTMLInputElement;
-    const digits = input.value.replace(/\D/g, '').slice(0, 2);
-    const control = this.scheduleGroup.get(controlName);
-    const next = digits === '' ? null : Number(digits);
-    control?.setValue(next);
-    if (input.value !== digits) {
-      input.value = digits;
-    }
-  }
-
-  onPeriodsBlur(controlName: 'weeklyPeriods' | 'maxPeriodsPerDay'): void {
-    this.scheduleGroup.get(controlName)?.markAsTouched();
-  }
-
-  onBankAccountInput(event: Event): void {
-    if (this.mode === 'view') return;
-    const input = event.target as HTMLInputElement;
-    const sanitized = sanitizeBankAccountInput(input.value);
-    const control = this.bankDetailsGroup.get('accountNumber');
-    control?.setValue(sanitized);
-    if (input.value !== sanitized) {
-      input.value = sanitized;
-    }
-  }
-
-  onBankAccountBlur(): void {
-    this.bankDetailsGroup.get('accountNumber')?.markAsTouched();
-  }
-
-  onIfscInput(event: Event): void {
-    if (this.mode === 'view') return;
-    const input = event.target as HTMLInputElement;
-    const sanitized = sanitizeIfscInput(input.value);
-    const control = this.bankDetailsGroup.get('ifscCode');
-    control?.setValue(sanitized);
-    if (input.value !== sanitized) {
-      input.value = sanitized;
-    }
-  }
-
-  onIfscBlur(): void {
-    this.bankDetailsGroup.get('ifscCode')?.markAsTouched();
-  }
-
-  private resolveFieldError(
-    control: ReturnType<FormGroup['get']>,
-    errorKey: string,
-    fallback: string,
-  ): string {
-    const detail = control?.errors?.[errorKey];
-    if (detail && typeof detail === 'object' && 'message' in detail) {
-      return (detail as { message: string }).message;
-    }
-    return fallback;
-  }
-
   goTab(step: number): void {
     if (step > this.currentStep && !this.validateStep(this.currentStep)) {
       return;
@@ -1077,73 +909,62 @@ export class AddTeacherComponent implements OnInit {
   }
 
   nextStep(): void {
-    if (this.currentStep < 3) {
+    if (this.currentStep < this.lastStepIndex) {
       if (!this.validateStep(this.currentStep)) {
-        this.snackBar.open('Please fix errors on this step before continuing', 'Close', {
-          duration: 3000,
-        });
+        this.snackBar.open('Please fix errors on this step before continuing', 'Close', { duration: 3000 });
         return;
       }
-      this.currentStep++;
+      this.currentStep += 1;
     } else {
-      this.saveTeacher();
+      this.saveEmployee();
+    }
+  }
+
+  prevStep(): void {
+    if (this.currentStep > 0) {
+      this.currentStep -= 1;
     }
   }
 
   private validateStep(step: number): boolean {
     const paths = this.stepFieldPaths[step] ?? [];
-    return validateFormControls(this.teacherForm, paths);
+    return validateFormControls(this.employeeForm, paths);
   }
 
-  prevStep(): void {
-    if (this.currentStep > 0) {
-      this.currentStep--;
-    }
-  }
-
-  saveTeacher(): void {
-    if (this.teacherForm.invalid) {
-      this.teacherForm.markAllAsTouched();
-      this.snackBar.open('Please fill all required fields', 'Close', {
-        duration: 3000,
-        panelClass: 'snack-error',
-      });
+  saveEmployee(): void {
+    if (this.employeeForm.invalid) {
+      this.employeeForm.markAllAsTouched();
+      this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
       return;
     }
 
-    const data = this.teacherForm.getRawValue();
-    data.schedule.classId = data.schedule.classId || null;
-    data.schedule.classAssignments = [];
-
-    if (this.mode === 'edit' && this.loadedTeacher) {
-      data.userId = this.loadedTeacher.userId;
+    const data = this.employeeForm.getRawValue();
+    if (this.mode === 'edit' && this.loadedEmployee) {
+      data.userId = this.loadedEmployee.userId;
     }
 
     const action =
       this.mode === 'edit'
-        ? this.teacherService.updateTeacher(this.teacherId!, data)
-        : this.teacherService.createTeacher(data);
+        ? this.employeeService.updateEmployee(this.employeeId!, data)
+        : this.employeeService.createEmployee(data, {
+            userTypes: this.userTypes,
+            roles: this.roles,
+          });
 
     action.subscribe({
       next: () => {
         if (this.mode === 'add') {
           this.persistEmployeeSequence();
         }
-        this.snackBar.open(
-          `Teacher ${this.mode === 'edit' ? 'updated' : 'added'} successfully`,
-          'Close',
-          { duration: 3000 },
-        );
+        this.snackBar.open(`Employee ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
         this.saved.emit();
       },
       error: (err) => {
         const apiErrors = err?.error?.errors;
-        let message = 'Failed to save teacher';
+        let message = 'Failed to save employee';
         if (apiErrors && typeof apiErrors === 'object') {
           const parts = Object.values(apiErrors).flat().filter(Boolean);
-          if (parts.length) {
-            message = parts.join(' ');
-          }
+          if (parts.length) message = parts.join(' ');
         } else if (err?.error?.detail) {
           message = String(err.error.detail);
         } else if (err?.error?.message) {
@@ -1160,29 +981,17 @@ export class AddTeacherComponent implements OnInit {
     this.cancel.emit();
   }
 
-  formatDate(value: unknown): string {
-    if (!value) return '—';
-    const date = value instanceof Date ? value : new Date(String(value));
-    if (Number.isNaN(date.getTime())) return String(value);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    return `${day}-${month}-${date.getFullYear()}`;
+  private today(): Date {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
   }
 
   private toLocalDate(value: unknown): Date | null {
-    if (!value) {
-      return null;
-    }
-
-    if (value instanceof Date) {
-      return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-    }
-
+    if (!value) return null;
+    if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate());
     const [year, month, day] = String(value).substring(0, 10).split('-').map(Number);
-    if (!year || !month || !day) {
-      return null;
-    }
-
+    if (!year || !month || !day) return null;
     return new Date(year, month - 1, day);
   }
 
@@ -1191,11 +1000,11 @@ export class AddTeacherComponent implements OnInit {
     const storageKey = `smartops-emp-sequence-${year}`;
     const next = Number(localStorage.getItem(storageKey) || '0') + 1;
     const employeeId = `EMP-${year}-${String(next).padStart(4, '0')}`;
-    this.teacherForm.get('professional.employeeId')?.setValue(employeeId);
+    this.employeeForm.get('professional.employeeId')?.setValue(employeeId);
   }
 
   private persistEmployeeSequence(): void {
-    const employeeId = String(this.teacherForm.get('professional.employeeId')?.value || '');
+    const employeeId = String(this.employeeForm.get('professional.employeeId')?.value || '');
     const match = employeeId.match(/^EMP-(\d{4})-(\d{4})$/);
     if (!match) return;
     localStorage.setItem(`smartops-emp-sequence-${match[1]}`, String(Number(match[2])));

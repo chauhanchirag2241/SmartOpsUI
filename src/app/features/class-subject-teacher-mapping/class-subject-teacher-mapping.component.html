@@ -1,7 +1,7 @@
 <div class="mapping-page list-page-shell">
   <app-list-page-header
     title="Class — Subject — Teacher Mapping"
-    subtitle="Map subjects to classes and assign teachers in one place"
+    subtitle="Map subjects to classes and assign employees in one place"
   />
 
   @if (errorMessage) {
@@ -39,7 +39,7 @@
         </div>
       </div>
       <span toolbarRight class="total-info">
-        {{ filteredClasses.length }} classes · {{ subjects.length }} subjects · {{ teachers.length }} teachers
+        {{ filteredClasses.length }} classes · {{ subjects.length }} subjects · {{ employees.length }} employees
       </span>
     </app-page-toolbar>
 
@@ -80,8 +80,8 @@
                 <div class="cs-label">Subjects</div>
               </div>
               <div class="cs-item">
-                <div class="cs-val">{{ mappedTeacherCount }}</div>
-                <div class="cs-label">Teachers assigned</div>
+                <div class="cs-val">{{ mappedEmployeeCount }}</div>
+                <div class="cs-label">Employees assigned</div>
               </div>
               <div class="cs-item">
                 <div class="cs-val">{{ classTeacherCount }}</div>
@@ -94,7 +94,7 @@
             <div class="map-card-header">
               <div class="map-card-title">
                 <mat-icon>menu_book</mat-icon>
-                Subject — Teacher mapping
+                Subject — Employee mapping
               </div>
               @if (canEdit) {
                 <button type="button" class="add-map-btn" (click)="toggleQuickAdd()">
@@ -109,7 +109,7 @@
                 <thead>
                   <tr>
                     <th>Subject</th>
-                    <th>Assigned teacher</th>
+                    <th>Assigned employee</th>
                     <th>Class teacher</th>
                     <th>Status</th>
                     <th></th>
@@ -139,19 +139,19 @@
                         </td>
                         <td>
                           <div class="teacher-assign">
-                            @if (row.teacherName) {
-                              <div class="teacher-av">{{ teacherInitials(row.teacherName) }}</div>
+                            @if (row.employeeName ?? row.teacherName) {
+                              <div class="teacher-av">{{ employeeInitials(row.employeeName ?? row.teacherName) }}</div>
                             }
                             <div class="sel-container">
                               <select
                                 class="teacher-sel"
                                 [disabled]="!canEdit || savingId === row.id"
-                                [ngModel]="row.teacherId ?? ''"
-                                (ngModelChange)="onTeacherChange(row, $event)"
+                                [ngModel]="row.employeeId ?? row.teacherId ?? ''"
+                                (ngModelChange)="onEmployeeChange(row, $event)"
                               >
                                 <option value="">Assign later</option>
-                                @for (teacher of teachers; track teacher.id) {
-                                  <option [value]="teacher.id">{{ teacher.name }}</option>
+                                @for (employee of employees; track employee.id) {
+                                  <option [value]="employee.id">{{ employee.name }}</option>
                                 }
                               </select>
                             </div>
@@ -169,7 +169,7 @@
                           </label>
                         </td>
                         <td>
-                          @if (row.teacherId) {
+                          @if (row.employeeId ?? row.teacherId) {
                             <span class="s-badge sb-mapped">
                               <mat-icon>check_circle</mat-icon>
                               Mapped
@@ -212,10 +212,10 @@
                   </select>
                 </div>
                 <div class="sel-wrap">
-                  <select [(ngModel)]="quickAddTeacherId" aria-label="Teacher">
+                  <select [(ngModel)]="quickAddEmployeeId" aria-label="Employee">
                     <option value="">Assign later</option>
-                    @for (teacher of teachers; track teacher.id) {
-                      <option [value]="teacher.id">{{ teacher.name }}</option>
+                    @for (employee of employees; track employee.id) {
+                      <option [value]="employee.id">{{ employee.name }}</option>
                     }
                   </select>
                 </div>
@@ -232,11 +232,11 @@
           <div class="summary-footer">
             <div class="sf-item">
               <span class="sf-dot mapped"></span>
-              Fully mapped: <span class="sf-val">{{ mappedTeacherCount }}</span>
+              Fully mapped: <span class="sf-val">{{ mappedEmployeeCount }}</span>
             </div>
             <div class="sf-item">
               <span class="sf-dot pending"></span>
-              Teacher pending: <span class="sf-val">{{ pendingTeacherCount }}</span>
+              Employee pending: <span class="sf-val">{{ pendingEmployeeCount }}</span>
             </div>
           </div>
         } @else {

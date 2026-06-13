@@ -21,7 +21,9 @@ export interface IDashboardResponse {
   attendanceToday?: IAttendanceToday;
   salary?: ISalaryDashboard;
   recentStudents?: IRecentStudent[];
-  teachers?: IDashboardTeacher[];
+  employees?: IDashboardEmployee[];
+  /** @deprecated use employees */
+  teachers?: IDashboardEmployee[];
   homeworkDue?: IHomeworkDue[];
   classesOverview?: IClassOverview[];
   alerts?: IDashboardAlerts;
@@ -30,6 +32,8 @@ export interface IDashboardResponse {
 
 export interface IDashboardSummary {
   totalStudents: number;
+  totalEmployees?: number;
+  /** @deprecated use totalEmployees */
   totalTeachers: number;
   totalClasses: number;
   attendanceMarkedToday: number;
@@ -72,13 +76,16 @@ export interface IRecentStudent {
   badgeTone: string;
 }
 
-export interface IDashboardTeacher {
+export interface IDashboardEmployee {
   initials: string;
   name: string;
   detail: string;
   status: string;
   statusTone: string;
 }
+
+/** @deprecated use IDashboardEmployee */
+export type IDashboardTeacher = IDashboardEmployee;
 
 export interface IHomeworkDue {
   title: string;

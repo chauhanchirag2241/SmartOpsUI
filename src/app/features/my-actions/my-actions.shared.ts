@@ -12,6 +12,8 @@ export interface ActionTableRow extends Record<string, unknown> {
 
 export interface ActionLeaveRequest {
   studentName?: string;
+  employeeName?: string;
+  /** @deprecated use employeeName */
   teacherName?: string;
   fromDate: string;
   toDate: string;
@@ -102,7 +104,7 @@ export function mapLeaveRequest(raw: unknown): ActionLeaveRequest | null {
 
   return {
     studentName: asString(record['studentName']),
-    teacherName: asString(record['teacherName']),
+    employeeName: asString(record['employeeName'] ?? record['teacherName']),
     fromDate,
     toDate,
     reason: asString(record['reason']),

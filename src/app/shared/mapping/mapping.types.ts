@@ -15,7 +15,7 @@ export interface MappingGridRow {
 export interface MappingFlatRecord {
   classId: string;
   subjectId: string;
-  teacherId: string;
+  employeeId: string;
   isClassTeacher?: boolean;
 }
 
@@ -30,11 +30,11 @@ export interface TeacherMappingPayload {
 
 export interface SubjectMappingPayload {
   academicYearId?: string;
-  rows: { classId: string; teacherIds: string[] }[];
+  rows: { classId: string; employeeIds: string[] }[];
 }
 
 export interface ClassMappingPayload {
   academicYearId?: string;
   classTeacherId?: string;
-  rows: { subjectId: string; teacherIds: string[] }[];
+  rows: { subjectId: string; employeeIds: string[] }[];
 }

@@ -25,6 +25,7 @@ export interface MappingLookups {
   classes: MappingLookupOption[];
   subjects: MappingLookupOption[];
   teachers: MappingLookupOption[];
+  employees?: MappingLookupOption[];
   classSummaries: ClassMappingSummary[];
 }
 
@@ -35,7 +36,11 @@ export interface ClassSubjectTeacherMapping {
   subjectId: string;
   subjectName?: string;
   subjectCode?: string;
+  employeeId?: string | null;
+  employeeName?: string | null;
+  /** @deprecated use employeeId */
   teacherId?: string | null;
+  /** @deprecated use employeeName */
   teacherName?: string | null;
   academicYearId: string;
   isClassTeacher: boolean;
@@ -44,20 +49,20 @@ export interface ClassSubjectTeacherMapping {
 export interface CreateMappingRequest {
   classId: string;
   subjectId: string;
-  teacherId?: string | null;
+  employeeId?: string | null;
   academicYearId?: string;
   isClassTeacher?: boolean;
 }
 
 export interface UpdateMappingRequest {
-  teacherId?: string | null;
+  employeeId?: string | null;
   isClassTeacher?: boolean;
   assignLater?: boolean;
 }
 
 export interface AssignTeacherRequest {
   assignLater: boolean;
-  teacherId?: string | null;
+  employeeId?: string | null;
 }
 
 /** Reserved for future student-class mapping APIs. */

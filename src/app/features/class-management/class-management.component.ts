@@ -216,7 +216,7 @@ export class ClassManagementComponent implements OnInit {
       },
     ],
     actionVisibleFn: (action, row) => this.isClassActionVisible(action, row),
-    searchPlaceholder: 'Search by class, section, teacher...',
+    searchPlaceholder: 'Search by class, section, class teacher...',
     searchKeys: ['className', 'section', 'streamGroup', 'roomNumber'],
     itemLabel: 'classes',
     defaultPageSize: 10,
@@ -275,7 +275,7 @@ export class ClassManagementComponent implements OnInit {
           description:
             'This will permanently remove the class section and any linked scheduling data.',
           recordName: `${event.row['className']} - ${event.row['section']}`,
-          recordMeta: `${event.row['academicYear']} · ${event.row['classTeacher'] || 'No teacher assigned'}`,
+          recordMeta: `${event.row['academicYear']} · ${event.row['classTeacher'] || 'No class teacher assigned'}`,
           initials: `${String(event.row['className']).charAt(0)}${String(event.row['section']).charAt(0)}`,
           warningMessage: 'This action cannot be undone.',
         },

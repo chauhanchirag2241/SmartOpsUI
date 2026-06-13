@@ -46,7 +46,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
 
   academicYears: MappingLookupOption[] = [];
   subjects: MappingLookupOption[] = [];
-  teachers: MappingLookupOption[] = [];
+  employees: MappingLookupOption[] = [];
   classSummaries: ClassMappingSummary[] = [];
 
   selectedAcademicYearId = '';
@@ -58,7 +58,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
 
   quickAddOpen = false;
   quickAddSubjectId = '';
-  quickAddTeacherId = '';
+  quickAddEmployeeId = '';
   quickAddClassTeacher = false;
 
   ngOnInit(): void {
@@ -77,16 +77,16 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
     return this.classSummaries.find((c) => c.classId === this.activeClassId);
   }
 
-  get mappedTeacherCount(): number {
-    return this.mappings.filter((m) => !!m.teacherId).length;
+  get mappedEmployeeCount(): number {
+    return this.mappings.filter((m) => !!(m.employeeId ?? m.teacherId)).length;
   }
 
   get classTeacherCount(): number {
     return this.mappings.filter((m) => m.isClassTeacher).length;
   }
 
-  get pendingTeacherCount(): number {
-    return this.mappings.filter((m) => !m.teacherId).length;
+  get pendingEmployeeCount(): number {
+    return this.mappings.filter((m) => !(m.employeeId ?? m.teacherId)).length;
   }
 
   get availableSubjectsForQuickAdd(): MappingLookupOption[] {
@@ -102,7 +102,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
         next: (data) => {
           this.academicYears = data.academicYears ?? [];
           this.subjects = data.subjects ?? [];
-          this.teachers = data.teachers ?? [];
+          this.employees = data.employees ?? data.teachers ?? [];
           this.classSummaries = data.classSummaries ?? [];
           this.selectedAcademicYearId =
             academicYearId ?? data.activeAcademicYearId ?? this.academicYears[0]?.id ?? '';
@@ -185,7 +185,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
     return `${summary.className.replace(/\s+/g, '').slice(-2)}${section}`.slice(0, 4).toUpperCase();
   }
 
-  teacherInitials(name?: string | null): string {
+  employeeInitials(name?: string | null): string {
     if (!name) return '';
     return name
       .split(' ')
@@ -196,17 +196,17 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
       .toUpperCase();
   }
 
-  onTeacherChange(row: ClassSubjectTeacherMapping, teacherId: string): void {
+  onEmployeeChange(row: ClassSubjectTeacherMapping, employeeId: string): void {
     if (!this.canEdit) return;
 
-    const assignLater = !teacherId;
+    const assignLater = !employeeId;
     this.savingId = row.id;
     this.cdr.markForCheck();
 
     this.mappingService
       .assignTeacher(row.id, {
         assignLater,
-        teacherId: assignLater ? null : teacherId,
+        employeeId: assignLater ? null : employeeId,
       })
       .pipe(
         finalize(() => {
@@ -217,7 +217,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
       .subscribe({
         next: (updated) => this.replaceRow(updated),
         error: (err) => {
-          const msg = this.extractErrorMessage(err, 'Failed to update teacher');
+          const msg = this.extractErrorMessage(err, 'Failed to update employee');
           this.snackBar.open(msg, 'Close', { duration: 4000, panelClass: 'snack-error' });
           this.loadMappingsForClass(this.activeClassId);
         },
@@ -255,7 +255,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
     this.quickAddOpen = !this.quickAddOpen;
     if (this.quickAddOpen) {
       this.quickAddSubjectId = '';
-      this.quickAddTeacherId = '';
+      this.quickAddEmployeeId = '';
       this.quickAddClassTeacher = false;
     }
   }
@@ -270,7 +270,7 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
       .createMapping({
         classId: this.activeClassId,
         subjectId: this.quickAddSubjectId,
-        teacherId: this.quickAddTeacherId || null,
+        employeeId: this.quickAddEmployeeId || null,
         academicYearId: this.selectedAcademicYearId || undefined,
         isClassTeacher: this.quickAddClassTeacher,
       })

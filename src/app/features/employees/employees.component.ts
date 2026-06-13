@@ -5,8 +5,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
-import { AddTeacherComponent } from './add-teacher/add-teacher.component';
-import { TeacherService } from '../../core/services/teacher.service';
+import { AddEmployeeComponent } from './add-employee/add-employee.component';
+import { EmployeeService } from '../../core/services/employee.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
@@ -23,64 +23,69 @@ import { AcademicYearContextService } from '../../core/services/academic-year-co
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
-  selector: 'app-teachers',
+  selector: 'app-employees',
   standalone: true,
-  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, AddTeacherComponent],
-  templateUrl: './teachers.component.html',
-  styleUrl: './teachers.component.css',
+  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, AddEmployeeComponent],
+  templateUrl: './employees.component.html',
+  styleUrl: './employees.component.css',
 })
-export class TeachersComponent implements OnInit {
+export class EmployeesComponent implements OnInit {
   private readonly permissionService = inject(PermissionService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly router = inject(Router);
 
   constructor(
     private snackBar: NotificationService,
-    private teacherService: TeacherService,
+    private employeeService: EmployeeService,
     private cdr: ChangeDetectorRef,
-    private dialog: MatDialog
-  ) { }
+    private dialog: MatDialog,
+  ) {}
 
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
-  selectedTeacherId?: string;
-  totalTeachers = 0;
+  selectedEmployeeId?: string;
+  totalEmployees = 0;
   currentFilter: StaffFilter = StaffFilter.Active;
-  teachers: Record<string, unknown>[] = [];
+  employees: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
     this.tableConfig = this.buildTableConfig();
-    this.loadTeachers();
+    this.loadEmployees();
   }
 
-  loadTeachers(
+  loadEmployees(
     pageIndex = 1,
     pageSize = 10,
     searchQuery = '',
     sortColumn: string | null = null,
     sortDirection: string | null = null,
-    filter: StaffFilter = this.currentFilter
+    filter: StaffFilter = this.currentFilter,
   ): void {
-    this.teacherService.getTeachers(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
-      next: (res: any) => {
-        this.teachers = res?.items || [];
-        this.totalTeachers = res?.totalCount || 0;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error loading teachers:', err);
-        this.teachers = [];
-        this.totalTeachers = 0;
-        this.cdr.detectChanges();
-        this.snackBar.open('Failed to load teachers', 'Close', { duration: 3000, panelClass: 'snack-error' });
-      }
-    });
+    this.employeeService
+      .getEmployees(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
+      .subscribe({
+        next: (res: any) => {
+          this.employees = res?.items || [];
+          this.totalEmployees = res?.totalCount || 0;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading employees:', err);
+          this.employees = [];
+          this.totalEmployees = 0;
+          this.cdr.detectChanges();
+          this.snackBar.open('Failed to load employees', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          });
+        },
+      });
   }
 
   openAddForm(): void {
-    if (!this.permissionService.canAdd(MenuCodes.Teachers)) return;
+    if (!this.permissionService.canAdd(MenuCodes.Employees)) return;
     this.formMode = 'add';
-    this.selectedTeacherId = undefined;
+    this.selectedEmployeeId = undefined;
     this.showAddForm = true;
   }
 
@@ -88,14 +93,21 @@ export class TeachersComponent implements OnInit {
     this.showAddForm = false;
   }
 
-  onTeacherSaved(): void {
+  onEmployeeSaved(): void {
     this.showAddForm = false;
-    this.loadTeachers();
+    this.loadEmployees();
   }
 
   onPageChange(event: any): void {
     const filterValue = event.currentFilter ? (event.currentFilter as unknown as StaffFilter) : this.currentFilter;
-    this.loadTeachers(event.pageIndex, event.pageSize, event.searchQuery, event.sortColumn, event.sortDirection, filterValue);
+    this.loadEmployees(
+      event.pageIndex,
+      event.pageSize,
+      event.searchQuery,
+      event.sortColumn,
+      event.sortDirection,
+      filterValue,
+    );
   }
 
   onFilterChanged(filter: DataTableFilter | null): void {
@@ -104,24 +116,24 @@ export class TeachersComponent implements OnInit {
     } else {
       this.currentFilter = StaffFilter.All;
     }
-    this.loadTeachers();
+    this.loadEmployees();
   }
 
   tableConfig!: DataTableConfig;
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
-      title: 'Teachers',
+      title: 'Employees',
       subtitle: 'Manage faculty and staff members',
       showAddButton: true,
-      addButtonText: 'Add teacher',
+      addButtonText: 'Add employee',
       addButtonIcon: 'add',
-      addButtonClass: 'btn-primary'
+      addButtonClass: 'btn-primary',
     },
     columns: [
       {
-        key: 'teacher',
-        label: 'Teacher',
+        key: 'employee',
+        label: 'Name',
         sortable: true,
         cellType: 'avatar',
         toggleable: false,
@@ -129,6 +141,16 @@ export class TeachersComponent implements OnInit {
           nameKey: 'name',
           subtitleKey: 'email',
         },
+      },
+      {
+        key: 'employeeType',
+        label: 'Employee type',
+        sortable: true,
+      },
+      {
+        key: 'department',
+        label: 'Department',
+        sortable: true,
       },
       {
         key: 'designation',
@@ -140,8 +162,8 @@ export class TeachersComponent implements OnInit {
         label: 'Status',
         cellType: 'badge',
         badgeMap: {
-          'true': { cssClass: 'b-green', label: 'Active' },
-          'false': { cssClass: 'b-red', label: 'Inactive' },
+          true: { cssClass: 'b-green', label: 'Active' },
+          false: { cssClass: 'b-red', label: 'Inactive' },
         },
       },
     ],
@@ -157,34 +179,33 @@ export class TeachersComponent implements OnInit {
       { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
       { label: 'Show history', icon: 'history', iconColor: '#639922' },
       {
-        label: 'Delete teacher',
+        label: 'Delete employee',
         icon: 'delete',
         danger: true,
         separatorBefore: true,
       },
     ],
-    actionVisibleFn: (action, row) => this.isTeacherActionVisible(action, row),
+    actionVisibleFn: (action, row) => this.isEmployeeActionVisible(action, row),
     bulkActions: [
       { label: 'Send notice', icon: 'mail' },
       { label: 'Export', icon: 'download' },
       { label: 'Delete', icon: 'delete', danger: true },
     ],
     searchPlaceholder: 'Search by name or email...',
-    searchKeys: ['name', 'email', 'designation'],
-    itemLabel: 'teachers',
+    searchKeys: ['name', 'email', 'designation', 'department', 'employeeType'],
+    itemLabel: 'employees',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],
   };
 
-  teacherRowClass = (row: Record<string, unknown>): string => {
+  employeeRowClass = (row: Record<string, unknown>): string => {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
 
-  private isTeacherActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+  private isEmployeeActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
     if (row['isActive'] !== false) {
       return true;
     }
-
     return action.label === 'View profile' || action.label === 'Show history';
   }
 
@@ -192,7 +213,7 @@ export class TeachersComponent implements OnInit {
     const permittedConfig = applyModuleTablePermissions(
       this.baseTableConfig,
       this.permissionService,
-      MenuCodes.Teachers,
+      MenuCodes.Employees,
       this.ayContext.isReadOnlyScope(),
     );
     return {
@@ -204,41 +225,48 @@ export class TeachersComponent implements OnInit {
   onActionClicked(event: any): void {
     const id = event.row['id'] as string;
     if (event.action.label === 'View profile') {
-      if (!this.permissionService.canView(MenuCodes.Teachers)) return;
+      if (!this.permissionService.canView(MenuCodes.Employees)) return;
       this.formMode = 'view';
-      this.selectedTeacherId = id;
+      this.selectedEmployeeId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit details') {
-      if (!this.permissionService.canEdit(MenuCodes.Teachers)) return;
+      if (!this.permissionService.canEdit(MenuCodes.Employees)) return;
       this.formMode = 'edit';
-      this.selectedTeacherId = id;
+      this.selectedEmployeeId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Show history') {
-      if (!this.permissionService.canView(MenuCodes.Teachers)) return;
-      this.router.navigate(['/teachers', id, 'history']);
-    } else if (event.action.label === 'Delete teacher') {
-      if (!this.permissionService.canDelete(MenuCodes.Teachers)) return;
+      if (!this.permissionService.canView(MenuCodes.Employees)) return;
+      this.router.navigate(['/employees', id, 'history']);
+    } else if (event.action.label === 'Delete employee') {
+      if (!this.permissionService.canDelete(MenuCodes.Employees)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
-          title: 'Delete teacher?',
-          description: 'This will permanently remove the teacher and all associated records.',
+          title: 'Delete employee?',
+          description: 'This will permanently remove the employee and all associated records.',
           recordName: event.row['name'] as string,
-          recordMeta: `${event.row['email']} · ${event.row['dept']}`,
+          recordMeta: `${event.row['email']} · ${event.row['department'] ?? event.row['dept'] ?? ''}`,
           initials: this.getInitials(event.row['name'] as string),
-          warningMessage: 'This action cannot be undone.'
+          warningMessage: 'This action cannot be undone.',
         },
         panelClass: 'erp-dialog',
-        disableClose: true
+        disableClose: true,
       });
 
       dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
-          this.teacherService.deleteTeacher(id).subscribe({
+          this.employeeService.deleteEmployee(id).subscribe({
             next: () => {
-              this.snackBar.open('Teacher deleted successfully', 'Close', { duration: 3000, panelClass: 'snack-success' });
-              this.loadTeachers();
+              this.snackBar.open('Employee deleted successfully', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-success',
+              });
+              this.loadEmployees();
             },
-            error: () => this.snackBar.open('Failed to delete teacher', 'Close', { duration: 3000, panelClass: 'snack-error' })
+            error: () =>
+              this.snackBar.open('Failed to delete employee', 'Close', {
+                duration: 3000,
+                panelClass: 'snack-error',
+              }),
           });
         }
       });
@@ -249,7 +277,7 @@ export class TeachersComponent implements OnInit {
     this.openAddForm();
   }
 
-  onBulkActionClicked(event: any): void {
+  onBulkActionClicked(_event: any): void {
     // Implement bulk actions
   }
 
