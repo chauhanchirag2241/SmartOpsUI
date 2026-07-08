@@ -75,8 +75,16 @@ export class EmployeeService {
     return this.api.post<any>('employees', this.toEmployeeCreatePayload(employee, lookups));
   }
 
-  updateEmployee(id: string, employee: any): Observable<any> {
-    return this.api.put<any>(`employees/${id}`, this.toEmployeeUpdatePayload(id, employee));
+  updateEmployee(
+    id: string,
+    employee: any,
+    lookups?: {
+      userTypes?: { id: string; code: string; name: string }[];
+      roles?: { id: string; name: string; code: string }[];
+      existing?: Record<string, unknown>;
+    },
+  ): Observable<any> {
+    return this.api.put<any>(`employees/${id}`, this.toEmployeeUpdatePayload(id, employee, lookups));
   }
 
   deleteEmployee(id: string): Observable<any> {
@@ -145,6 +153,7 @@ export class EmployeeService {
 
     const userType = lookups?.userTypes?.find((t) => t.id === organization.employeeTypeId);
     const role = lookups?.roles?.find((r) => r.id === organization.portalRoleId);
+    const portalEnabled = organization.portalAccess !== 'Disabled';
 
     return {
       personal: {
@@ -175,9 +184,9 @@ export class EmployeeService {
       },
       access: {
         userTypeCode: userType?.code ?? organization.userTypeCode ?? 'TEACHER',
-        portalRoleName: role?.name ?? organization.portalRoleName ?? 'Teacher',
-        portalAccess: organization.portalAccess || 'Enabled',
-        username: organization.username || null,
+        portalRoleName: portalEnabled ? (role?.name ?? 'Teacher') : 'Teacher',
+        portalAccess: portalEnabled ? 'Enabled' : 'Disabled',
+        username: portalEnabled ? (organization.username || null) : null,
       },
       organization: {
         departmentId: this.emptyGuidToNull(organization.departmentId),
@@ -190,17 +199,30 @@ export class EmployeeService {
     };
   }
 
-  private toEmployeeUpdatePayload(id: string, employee: any): any {
+  private toEmployeeUpdatePayload(
+    id: string,
+    employee: any,
+    lookups?: {
+      userTypes?: { id: string; code: string; name: string }[];
+      roles?: { id: string; name: string; code: string }[];
+      existing?: Record<string, unknown>;
+    },
+  ): any {
     if (!employee?.personal || !employee?.professional) {
       return { ...employee, id };
     }
 
     const organization = employee.organization ?? {};
     const schedule = employee.schedule ?? {};
+    const existing = lookups?.existing ?? {};
+    const userType = lookups?.userTypes?.find((t) => t.id === organization.employeeTypeId);
+    const role = lookups?.roles?.find((r) => r.id === organization.portalRoleId);
+    const portalEnabled = organization.portalAccess === 'Enabled' || organization.portalAccess === true;
+    const existingRoleName = String(existing['portalRoleName'] ?? existing['PortalRoleName'] ?? 'Teacher');
 
     return {
       id,
-      userId: employee.userId,
+      userId: employee.userId ?? existing['userId'] ?? existing['UserId'] ?? null,
       firstName: employee.personal.firstName,
       lastName: employee.personal.lastName,
       dob: this.formatDate(employee.personal.dob),
@@ -222,15 +244,15 @@ export class EmployeeService {
       bankAccountNumber: employee.professional.bankDetails?.accountNumber,
       bankIfscCode: employee.professional.bankDetails?.ifscCode,
       bankName: employee.professional.bankDetails?.bankName,
-      employeeTypeId: organization.employeeTypeId || null,
-      portalRoleId: organization.portalRoleId || null,
-      departmentId: organization.departmentId || null,
-      reportingManagerId: organization.reportingManagerId || null,
+      userTypeCode: userType?.code ?? existing['userTypeCode'] ?? existing['UserTypeCode'] ?? 'TEACHER',
+      portalRoleName: portalEnabled ? (role?.name ?? existingRoleName) : existingRoleName,
+      departmentId: this.emptyGuidToNull(organization.departmentId),
+      reportingManagerId: this.emptyGuidToNull(organization.reportingManagerId),
       shiftStartTime: schedule.shiftStartTime || null,
       shiftEndTime: schedule.shiftEndTime || null,
-      portalAccess: organization.portalAccess === 'Enabled' || organization.portalAccess === true,
-      username: organization.username,
-      isActive: true,
+      portalAccess: portalEnabled,
+      username: portalEnabled ? (organization.username || null) : (existing['username'] ?? existing['Username'] ?? null),
+      isActive: existing['isActive'] ?? existing['IsActive'] ?? true,
     };
   }
 }

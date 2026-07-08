@@ -452,11 +452,11 @@ export class AddEmployeeComponent implements OnInit {
   readonly qualificationFields = ['degree', 'university', 'year', 'percentage'];
   readonly bankFields = ['accountNumber', 'ifscCode', 'bankName'];
   readonly organizationFields = [
+    'portalAccess',
     'employeeTypeId',
-    'portalRoleId',
     'departmentId',
     'reportingManagerId',
-    'portalAccess',
+    'portalRoleId',
     'username',
     'sendWelcomeEmail',
   ];
@@ -599,6 +599,7 @@ export class AddEmployeeComponent implements OnInit {
 
   ngOnInit(): void {
     this.wireShiftTimeValidation();
+    this.wirePortalAccessValidation();
     this.loadLookups();
     if (this.mode === 'add') {
       this.generateEmployeeId();
@@ -620,6 +621,8 @@ export class AddEmployeeComponent implements OnInit {
             name: String(t.code ?? '').toUpperCase() === 'STAFF' ? 'Other Staff' : t.name,
           }));
         this.configs['employeeTypeId'].options = this.userTypes.map((t) => ({ label: t.name, value: t.id }));
+        this.lookupsReady.userTypes = true;
+        this.tryApplyOrganizationLookups();
         this.cdr.markForCheck();
       },
     });
@@ -628,6 +631,8 @@ export class AddEmployeeComponent implements OnInit {
       next: (roles) => {
         this.roles = roles.filter((r) => r.name !== 'PlatformAdmin');
         this.configs['portalRoleId'].options = this.roles.map((r) => ({ label: r.name, value: r.id }));
+        this.lookupsReady.roles = true;
+        this.tryApplyOrganizationLookups();
         this.cdr.markForCheck();
       },
     });
@@ -767,6 +772,86 @@ export class AddEmployeeComponent implements OnInit {
   }
 
   private loadedEmployee: any = null;
+  private readonly lookupsReady = { userTypes: false, roles: false };
+  private employeeDataReady = false;
+
+  get isPortalAccessEnabled(): boolean {
+    return this.organizationGroup.get('portalAccess')?.value === 'Enabled';
+  }
+
+  shouldShowOrganizationField(field: string): boolean {
+    if (field === 'portalRoleId' || field === 'username') {
+      return this.isPortalAccessEnabled;
+    }
+    if (field === 'sendWelcomeEmail') {
+      return this.mode === 'add' && this.isPortalAccessEnabled;
+    }
+    return true;
+  }
+
+  private resolveEmployeeTypeId(data: Record<string, unknown>): string | null {
+    const direct = data['employeeTypeId'] ?? data['userTypeId'] ?? data['EmployeeTypeId'] ?? data['UserTypeId'];
+    if (direct) {
+      return String(direct);
+    }
+    const code = String(data['userTypeCode'] ?? data['UserTypeCode'] ?? '').toUpperCase();
+    if (!code) {
+      return null;
+    }
+    return this.userTypes.find((t) => String(t.code ?? '').toUpperCase() === code)?.id ?? null;
+  }
+
+  private resolvePortalRoleId(data: Record<string, unknown>): string | null {
+    const direct = data['portalRoleId'] ?? data['roleId'] ?? data['PortalRoleId'] ?? data['RoleId'];
+    if (direct) {
+      return String(direct);
+    }
+    const roleName = String(data['portalRoleName'] ?? data['PortalRoleName'] ?? '').trim();
+    if (!roleName) {
+      return null;
+    }
+    return this.roles.find((r) => r.name === roleName)?.id ?? null;
+  }
+
+  private tryApplyOrganizationLookups(): void {
+    if (!this.employeeDataReady || !this.lookupsReady.userTypes || !this.lookupsReady.roles || !this.loadedEmployee) {
+      return;
+    }
+
+    const employeeTypeId = this.resolveEmployeeTypeId(this.loadedEmployee);
+    const portalRoleId = this.resolvePortalRoleId(this.loadedEmployee);
+
+    this.organizationGroup.patchValue(
+      {
+        employeeTypeId: employeeTypeId ?? '',
+        portalRoleId: portalRoleId ?? '',
+      },
+      { emitEvent: false },
+    );
+    this.syncPortalAccessValidation();
+    this.cdr.markForCheck();
+  }
+
+  private syncPortalAccessValidation(): void {
+    const portalRole = this.organizationGroup.get('portalRoleId');
+    if (!portalRole) {
+      return;
+    }
+
+    if (this.isPortalAccessEnabled) {
+      portalRole.setValidators(Validators.required);
+    } else {
+      portalRole.clearValidators();
+      portalRole.setValue(null, { emitEvent: false });
+    }
+    portalRole.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private wirePortalAccessValidation(): void {
+    const portalAccess = this.organizationGroup.get('portalAccess');
+    this.syncPortalAccessValidation();
+    portalAccess?.valueChanges.subscribe(() => this.syncPortalAccessValidation());
+  }
 
   loadEmployeeData(): void {
     this.employeeService.getEmployeeById(this.employeeId!).subscribe({
@@ -800,18 +885,20 @@ export class AddEmployeeComponent implements OnInit {
             },
           },
           organization: {
-            employeeTypeId: data.employeeTypeId ?? data.userTypeId ?? '',
-            portalRoleId: data.portalRoleId ?? data.roleId ?? '',
-            departmentId: data.departmentId ?? null,
-            reportingManagerId: data.reportingManagerId ?? null,
-            portalAccess: data.portalAccess ? 'Enabled' : 'Disabled',
-            username: data.username,
+            employeeTypeId: '',
+            portalRoleId: '',
+            departmentId: data.departmentId ? String(data.departmentId) : null,
+            reportingManagerId: data.reportingManagerId ? String(data.reportingManagerId) : null,
+            portalAccess: data.portalAccess === true || data.portalAccess === 'Enabled' ? 'Enabled' : 'Disabled',
+            username: data.username ?? data.Username ?? '',
           },
           schedule: {
             shiftStartTime: normalizeTimeValue(data.shiftStartTime ?? data.shiftStarttime),
             shiftEndTime: normalizeTimeValue(data.shiftEndTime ?? data.shiftEndtime),
           },
         });
+        this.employeeDataReady = true;
+        this.tryApplyOrganizationLookups();
         this.setQualificationsFromApi(data.qualifications);
         syncShiftTimeValidity(this.scheduleGroup);
         if (this.mode === 'view') {
@@ -927,7 +1014,13 @@ export class AddEmployeeComponent implements OnInit {
   }
 
   private validateStep(step: number): boolean {
-    const paths = this.stepFieldPaths[step] ?? [];
+    let paths = this.stepFieldPaths[step] ?? [];
+    if (step === 2) {
+      paths = ['organization.employeeTypeId'];
+      if (this.isPortalAccessEnabled) {
+        paths = [...paths, 'organization.portalRoleId'];
+      }
+    }
     return validateFormControls(this.employeeForm, paths);
   }
 
@@ -940,12 +1033,16 @@ export class AddEmployeeComponent implements OnInit {
 
     const data = this.employeeForm.getRawValue();
     if (this.mode === 'edit' && this.loadedEmployee) {
-      data.userId = this.loadedEmployee.userId;
+      data.userId = this.loadedEmployee.userId ?? this.loadedEmployee.UserId;
     }
 
     const action =
       this.mode === 'edit'
-        ? this.employeeService.updateEmployee(this.employeeId!, data)
+        ? this.employeeService.updateEmployee(this.employeeId!, data, {
+            userTypes: this.userTypes,
+            roles: this.roles,
+            existing: this.loadedEmployee,
+          })
         : this.employeeService.createEmployee(data, {
             userTypes: this.userTypes,
             roles: this.roles,

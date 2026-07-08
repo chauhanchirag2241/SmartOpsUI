@@ -265,4 +265,17 @@ export class StudentService {
   }> {
     return this.api.post('students/promote', payload);
   }
+
+  uploadPhoto(id: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return this.api.post(`students/${id}/photo`, formData);
+  }
+
+  uploadDocument(id: string, documentName: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('documentName', documentName);
+    formData.append('document', file);
+    return this.api.post(`students/${id}/documents`, formData);
+  }
 }

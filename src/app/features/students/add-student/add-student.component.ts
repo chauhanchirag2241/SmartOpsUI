@@ -29,7 +29,7 @@ import {
 } from '../../../shared/utils/form-validation.util';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '../../../core/services/notification.service';
-import { finalize } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
@@ -1267,14 +1267,14 @@ export class AddStudentComponent implements OnInit {
           : this.studentService.createStudent(payload);
 
       saveObs
-        .pipe(
-          finalize(() => {
+        .subscribe({
+          next: async (res: any) => {
+            const returnedStudentId = res?.studentId || this.studentId;
+            if (returnedStudentId) {
+              await this.uploadFiles(returnedStudentId);
+            }
             this.isSaving = false;
             this.cdr.detectChanges();
-          }),
-        )
-        .subscribe({
-          next: () => {
             this.snackBar.open(
               `Student ${this.mode === 'edit' ? 'updated' : 'saved'} successfully`,
               'Close',
@@ -1286,6 +1286,8 @@ export class AddStudentComponent implements OnInit {
             this.saved.emit();
           },
           error: (err) => {
+            this.isSaving = false;
+            this.cdr.detectChanges();
             const errorMsg = err?.error?.message || err?.message || 'Error saving student';
             this.snackBar.open(errorMsg, 'Close', {
               duration: 4000,
@@ -1295,7 +1297,33 @@ export class AddStudentComponent implements OnInit {
         });
     } catch (e) {
       this.isSaving = false;
+      this.cdr.detectChanges();
       this.snackBar.open('Unexpected error occurred', 'Close', { duration: 3000 });
+    }
+  }
+
+  private async uploadFiles(studentId: string): Promise<void> {
+    if (!studentId) return;
+
+    if (this.selectedPhoto && this.selectedPhoto.file) {
+      try {
+        await firstValueFrom(this.studentService.uploadPhoto(studentId, this.selectedPhoto.file));
+      } catch (err) {
+        console.error('Photo upload failed', err);
+      }
+    }
+
+    const docKeys = Object.keys(this.selectedDocuments);
+    for (const docKey of docKeys) {
+      const selectedDoc = this.selectedDocuments[docKey];
+      if (selectedDoc && selectedDoc.file) {
+        const docName = this.documentChecklist.find(d => d.name === docKey)?.name || docKey;
+        try {
+          await firstValueFrom(this.studentService.uploadDocument(studentId, docName, selectedDoc.file));
+        } catch (err) {
+          console.error(`Document ${docKey} upload failed`, err);
+        }
+      }
     }
   }
 

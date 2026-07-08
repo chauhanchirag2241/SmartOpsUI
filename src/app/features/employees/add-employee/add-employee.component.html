@@ -78,18 +78,21 @@
               <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
               <div class="summary-grid">
                 @for (field of section.fields; track field) {
+                  @if (section.groupPath !== 'organization' || shouldShowOrganizationField(field)) {
                   <div class="sum-item">
                     <div class="sum-key">{{ configs[field].label }}</div>
                     <div class="sum-val">{{ getReviewValue(section, field) }}</div>
                   </div>
+                  }
                 }
-            </div>
+              </div>
           </div>
         } @else {
           <div class="card" [formGroup]="getGroupForSection(tab, section)">
             <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
             <div [class]="section.layout">
               @for (field of section.fields; track field) {
+                @if (section.groupPath !== 'organization' || shouldShowOrganizationField(field)) {
                 @if (field === 'reportingManagerId') {
                   <div class="custom-field reporting-manager-field">
                     <label>{{ configs['reportingManagerId'].label }}</label>
@@ -110,6 +113,7 @@
                     [group]="$any(getGroupForSection(tab, section))"
                     [full]="field === 'address'"
                   />
+                }
                 }
               }
             </div>
