@@ -108,6 +108,13 @@ export const routes: Routes = [
           import('./features/attendance/attendance.component').then((m) => m.AttendanceComponent),
       },
       {
+        path: 'attendance-report',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.AttendanceReport, permission: 'view' },
+        loadComponent: () =>
+          import('./features/attendance/attendance-report/attendance-report.component').then((m) => m.AttendanceReportComponent),
+      },
+      {
         path: 'homework',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Homework, permission: 'view' },

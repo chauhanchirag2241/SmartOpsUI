@@ -30,4 +30,13 @@ export class AttendanceService {
   submitAttendance(request: SubmitAttendanceRequestDto): Observable<any> {
     return this.api.post<any>('attendance/submit', request);
   }
+
+  getAttendanceReport(classId: string, month: number, academicYearId: string): Observable<any> {
+    const params = new HttpParams()
+      .set('classId', classId)
+      .set('month', month.toString())
+      .set('academicYearId', academicYearId);
+
+    return this.api.get<any>('attendance/report', params);
+  }
 }

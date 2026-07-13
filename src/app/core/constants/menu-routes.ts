@@ -17,6 +17,7 @@ export const MENU_ROUTE_BY_CODE: Record<string, string> = {
   [MenuCodes.Subjects]: '/subjects',
   [MenuCodes.AcademicYears]: '/academic-years',
   [MenuCodes.Attendance]: '/attendance',
+  [MenuCodes.AttendanceReport]: '/attendance-report',
   [MenuCodes.Homework]: '/homework',
   [MenuCodes.FeesStructure]: '/fees-structure',
   [MenuCodes.FeesClassAmounts]: '/fees-class-amounts',

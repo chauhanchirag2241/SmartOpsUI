@@ -1,0 +1,234 @@
+<header class="page-header">
+  <div class="header-info">
+    <h1>Attendance Report</h1>
+    <span>Class-wise, date-wise and student-wise attendance analysis</span>
+  </div>
+  <div class="page-header-actions">
+    <app-action-button type="back" routerLink="/attendance"></app-action-button>
+  </div>
+</header>
+
+<!-- TOOLBAR ROW 1 (Selects & Filters) -->
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+  
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field" style="width: 140px;">
+    <mat-select [ngModel]="selectedAcademicYearId()" (ngModelChange)="selectedAcademicYearId.set($event)">
+      <mat-option *ngFor="let ay of academicYears()" [value]="ay.id">{{ay.name}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field" style="width: 140px;">
+    <mat-select [ngModel]="selectedMonth()" (ngModelChange)="selectedMonth.set(+$event)">
+      <mat-option [value]="1">January</mat-option>
+      <mat-option [value]="2">February</mat-option>
+      <mat-option [value]="3">March</mat-option>
+      <mat-option [value]="4">April</mat-option>
+      <mat-option [value]="5">May</mat-option>
+      <mat-option [value]="6">June</mat-option>
+      <mat-option [value]="7">July</mat-option>
+      <mat-option [value]="8">August</mat-option>
+      <mat-option [value]="9">September</mat-option>
+      <mat-option [value]="10">October</mat-option>
+      <mat-option [value]="11">November</mat-option>
+      <mat-option [value]="12">December</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field" style="width: 140px;">
+    <mat-select [ngModel]="selectedClassId()" (ngModelChange)="selectedClassId.set($event)">
+      <mat-option *ngFor="let cls of classes()" [value]="cls.id">{{cls.className}} - {{cls.section}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  
+  <button type="button" class="btn btn-primary" style="height: 32px;" (click)="loadReport()">
+    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">search</mat-icon> Generate
+  </button>
+  
+  <div style="display:flex;gap:5px;align-items:center;margin-left:4px;">
+    <button type="button" class="filter-chip" [class.active]="chipFilter() === 'all'" (click)="setChip('all')">All students</button>
+    <button type="button" class="filter-chip" [class.active]="chipFilter() === 'low'" (click)="setChip('low')">Below 75%</button>
+    <button type="button" class="filter-chip" [class.active]="chipFilter() === 'absent'" (click)="setChip('absent')">Frequently absent</button>
+  </div>
+</div>
+
+<!-- TOOLBAR ROW 2 (Search & Exports) -->
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+  
+  <div class="search-wrap">
+    <input type="text" placeholder="Search student..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+    <button type="button" class="search-icon-btn" aria-label="Search">
+      <mat-icon>search</mat-icon>
+    </button>
+  </div>
+
+  <div class="toolbar-right">
+    <button type="button" class="icon-btn" (click)="showToast('Exporting Excel...')">
+      <mat-icon>table_view</mat-icon> Excel
+    </button>
+    <button type="button" class="icon-btn" (click)="showToast('Generating PDF...')">
+      <mat-icon>picture_as_pdf</mat-icon> PDF
+    </button>
+    <button type="button" class="icon-btn" (click)="showToast('Printing register...')">
+      <mat-icon>print</mat-icon> Print
+    </button>
+  </div>
+</div>
+
+<ng-container *ngIf="loading()">
+  <div class="loading-state" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+    Loading report data...
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!loading() && reportData()">
+  <!-- STATS STRIP -->
+  <div class="stats-strip" style="margin-bottom:12px">
+    <div class="ss"><div class="ss-accent" style="background:var(--g400)"></div><div class="ss-val">{{reportData().totalWorkingDays}}</div><div class="ss-label">Working days</div></div>
+    <div class="ss"><div class="ss-accent" style="background:var(--g400)"></div><div class="ss-val">{{reportData().classAveragePercentage}}%</div><div class="ss-label">Class avg attendance</div></div>
+    <div class="ss"><div class="ss-accent" style="background:var(--g400)"></div><div class="ss-val">{{reportData().studentsWithPerfectAttendance}}</div><div class="ss-label">100% attendance</div></div>
+    <div class="ss"><div class="ss-accent" style="background:#EF9F27"></div><div class="ss-val" style="color:#854F0B">{{reportData().studentsBelow75Percent}}</div><div class="ss-label">Below 75%</div></div>
+    <div class="ss"><div class="ss-accent" style="background:#E24B4A"></div><div class="ss-val" style="color:#A32D2D">{{reportData().chronicAbsentees}}</div><div class="ss-label">Chronic absentees</div></div>
+  </div>
+
+  <!-- VIEW TOGGLE + CONTENT -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:12px;font-weight:500">{{reportData().className}} · {{reportData().month}}/{{reportData().year}} · {{filteredStudents().length}} students</div>
+    <div class="view-tabs">
+      <div class="vt" [class.active]="currentView() === 'register'" (click)="setView('register')"><mat-icon style="font-size:16px; width:16px; height:16px;">table_chart</mat-icon> Register</div>
+      <div class="vt" [class.active]="currentView() === 'summary'" (click)="setView('summary')"><mat-icon style="font-size:16px; width:16px; height:16px;">list</mat-icon> Summary</div>
+      <div class="vt" [class.active]="currentView() === 'day'" (click)="setView('day')"><mat-icon style="font-size:16px; width:16px; height:16px;">calendar_today</mat-icon> Day view</div>
+    </div>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div id="main-area">
+
+    <!-- REGISTER VIEW -->
+    <div class="card" *ngIf="currentView() === 'register'">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>table_chart</mat-icon>Attendance Register</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge b-green">P = Present</span>
+          <span class="badge b-red">A = Absent</span>
+          <span class="badge b-amber">L = Leave</span>
+          <span class="badge b-purple">Lt = Late</span>
+          <span class="badge b-gray">Su = Sunday</span>
+        </div>
+      </div>
+      <div class="reg-wrap">
+        <table class="register">
+          <thead>
+            <tr>
+              <th class="reg-roll" rowspan="2">Roll</th>
+              <th class="reg-name" rowspan="2" style="padding:7px 8px;text-align:left">Student name</th>
+              <th [colSpan]="daysInMonth().length" style="text-align:center">{{reportData().month}}/{{reportData().year}}</th>
+              <th class="reg-sum" colspan="5" style="text-align:center">Summary</th>
+            </tr>
+            <tr>
+              <th *ngFor="let day of daysInMonth()" class="day-col" [class.sun]="isSunday(day)">
+                {{day}}
+              </th>
+              <th class="reg-sum">P</th><th class="reg-sum">A</th><th class="reg-sum">L</th><th class="reg-sum">Lt</th><th class="reg-sum">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let student of filteredStudents()">
+              <td class="reg-roll reg-roll-cell">{{student.rollNo}}</td>
+              <td class="reg-name reg-name-cell" [title]="student.studentName">{{student.studentName}}</td>
+              
+              <td *ngFor="let day of daysInMonth()" class="reg-cell" 
+                  [class.rc-H]="isSunday(day)"
+                  [class.rc-P]="student.dailyStatus[day] === 'P'"
+                  [class.rc-A]="student.dailyStatus[day] === 'A'"
+                  [class.rc-L]="student.dailyStatus[day] === 'L'"
+                  [class.rc-late]="student.dailyStatus[day] === 'late'"
+                  [class.rc-empty]="!student.dailyStatus[day]">
+                  <ng-container *ngIf="isSunday(day)">Su</ng-container>
+                  <ng-container *ngIf="!isSunday(day)">
+                    {{student.dailyStatus[day] === 'late' ? 'Lt' : (student.dailyStatus[day] || '—')}}
+                  </ng-container>
+              </td>
+
+              <td class="reg-cell reg-sum" style="color:var(--g600)">{{student.totalPresent}}</td>
+              <td class="reg-cell reg-sum" style="color:#A32D2D">{{student.totalAbsent}}</td>
+              <td class="reg-cell reg-sum" style="color:#854F0B">{{student.totalLeave}}</td>
+              <td class="reg-cell reg-sum" style="color:#5B21B6">{{student.totalLate}}</td>
+              <td class="reg-cell reg-sum" [style.color]="student.attendancePercentage >= 75 ? 'var(--g600)' : '#A32D2D'" style="font-weight:700">
+                {{student.attendancePercentage}}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUMMARY VIEW -->
+    <div class="card" *ngIf="currentView() === 'summary'">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>list</mat-icon>Student-wise Summary</div>
+        <span style="font-size:11px;color:var(--muted)">{{filteredStudents().length}} students</span>
+      </div>
+      <div class="summary-table-wrap">
+        <table class="summary">
+          <thead><tr>
+            <th style="min-width:160px">Student</th>
+            <th style="text-align:center;color:var(--g600)">P</th>
+            <th style="text-align:center;color:#A32D2D">A</th>
+            <th style="text-align:center;color:#854F0B">L</th>
+            <th style="text-align:center;color:#5B21B6">Lt</th>
+            <th style="min-width:110px">Attendance %</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody>
+            <tr *ngFor="let student of filteredStudents()">
+              <td>
+                <div class="cell-user">
+                  <app-avatar [name]="student.studentName" size="sm"></app-avatar>
+                  <div>
+                    <div class="cell-name">{{student.studentName}}</div>
+                    <div class="cell-sub">Roll {{student.rollNo}}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="text-align:center;font-weight:500;color:var(--g600)">{{student.totalPresent}}</td>
+              <td style="text-align:center;font-weight:500;color:#A32D2D">{{student.totalAbsent}}</td>
+              <td style="text-align:center;font-weight:500;color:#854F0B">{{student.totalLeave}}</td>
+              <td style="text-align:center;font-weight:500;color:#5B21B6">{{student.totalLate}}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:5px">
+                  <div class="pct-bar">
+                    <div class="pct-fill" [ngClass]="student.attendancePercentage >= 90 ? 'pct-good' : (student.attendancePercentage >= 75 ? 'pct-warn' : 'pct-bad')" [style.width.%]="student.attendancePercentage"></div>
+                  </div>
+                  <span style="font-size:11px;font-weight:600">{{student.attendancePercentage}}%</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="student.attendancePercentage >= 90 ? 'b-green' : (student.attendancePercentage >= 75 ? 'b-amber' : 'b-red')">
+                  {{student.attendancePercentage >= 90 ? 'Excellent' : (student.attendancePercentage >= 75 ? 'Good' : 'Low')}}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DAY VIEW -->
+    <div class="card" *ngIf="currentView() === 'day'">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>calendar_today</mat-icon>Day View Summary</div>
+        <div style="font-size:11px;color:var(--muted)">Shows aggregated totals per student for the selected month.</div>
+      </div>
+      <div class="day-view-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:14px;">
+        <div *ngFor="let student of filteredStudents()" class="dv-card" style="background:var(--input-bg);border:0.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:500;">ROLL {{student.rollNo}}</div>
+          <app-avatar [name]="student.studentName" size="md" style="margin: 0 auto 8px auto"></app-avatar>
+          <div style="font-size:11px;font-weight:500;margin-bottom:6px">{{student.studentName}}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--g600)">{{student.attendancePercentage}}%</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px">{{student.totalPresent}} P, {{student.totalAbsent}} A</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</ng-container>

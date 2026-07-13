@@ -12,6 +12,7 @@ export const MenuCodes = {
   Subjects: 'SUBJECTS',
   AcademicYears: 'ACADEMIC_YEARS',
   Attendance: 'ATTENDANCE',
+  AttendanceReport: 'ATTENDANCE_REPORT',
   Homework: 'HOMEWORK',
   FeesStructure: 'FEES_STRUCTURE',
   FeesClassAmounts: 'FEES_CLASS_AMOUNTS',
