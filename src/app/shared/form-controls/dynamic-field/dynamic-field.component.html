@@ -83,17 +83,17 @@
           <span class="req">*</span>
         }
       </label>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
-        <textarea
-          matInput
-          [id]="controlId"
-          [placeholder]="getPlaceholder()"
-          [formControlName]="config.controlName"
-          [rows]="3"
-          [disabled]="config.disabled ?? false"
-        ></textarea>
-        <mat-error>{{ getError() }}</mat-error>
-      </mat-form-field>
+      <textarea
+        class="form-control native-textarea"
+        [id]="controlId"
+        [placeholder]="getPlaceholder()"
+        [formControlName]="config.controlName"
+        [rows]="3"
+        [disabled]="config.disabled ?? false"
+      ></textarea>
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <span class="inline-error">{{ getError() }}</span>
+      }
     </div>
   }
   @case ('checkbox') {

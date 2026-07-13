@@ -214,6 +214,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  align-items: start;
 }
 
 .grid-3,
@@ -221,6 +222,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
+  align-items: start;
 }
 
 .full {
@@ -242,6 +244,9 @@ body {
   background: var(--white);
   border-right: 1px solid rgba(0, 0, 0, 0.07);
   width: var(--sidenav-width);
+  min-width: var(--sidenav-width);
+  max-width: var(--sidenav-width);
+  overflow-x: hidden;
 }
 
 mat-sidenav-content.main-content {
@@ -288,6 +293,7 @@ app-add-student,
 app-add-employee,
 app-add-user,
 app-add-role,
+app-add-homework,
 app-apply-staff-leave,
 app-add-notice,
 app-my-action-detail,
@@ -312,6 +318,9 @@ app-sidebar,
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .brand {
@@ -454,8 +463,23 @@ app-sidebar,
   border-top: 1px solid var(--border-slate);
   display: flex;
   gap: 11px;
-  min-height: 78px;
-  padding: 14px 16px;
+  height: 58px;
+  min-height: 58px;
+  max-height: 58px;
+  padding: 0 16px;
+  overflow: hidden;
+  cursor: default;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sidebar-footer-info {
+  display: block;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  max-width: calc(100% - 48px);
+  overflow: hidden;
 }
 
 .avatar {
@@ -474,9 +498,12 @@ app-sidebar,
 .sidebar-footer strong {
   color: var(--text-heading);
   display: block;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-footer small {
@@ -484,7 +511,10 @@ app-sidebar,
   display: block;
   font-size: 0.78rem;
   line-height: 1.25;
-  margin-top: 4px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -775,6 +805,7 @@ button.btn {
   gap: 5px;
   min-width: 0;
   width: 100%;
+  overflow: visible;
 }
 
 .form-group > label,
@@ -830,6 +861,7 @@ textarea.form-control {
   display: block;
   min-width: 0;
   width: 100%;
+  overflow: visible;
 }
 
 .gender-field .badge-options {
@@ -843,6 +875,7 @@ textarea.form-control {
 .compact-field.mat-mdc-form-field {
   width: 100%;
   font-size: 13px;
+  overflow: visible;
   --mat-form-field-container-height: 32px;
   --mat-form-field-container-vertical-padding: 4px;
   --mdc-outlined-text-field-container-shape: 7px;
@@ -859,12 +892,24 @@ textarea.form-control {
   background-color: var(--input-bg) !important;
   height: auto !important;
   min-height: 0 !important;
-  padding: 0 10px !important;
+  overflow: visible !important;
+  padding: 1px 10px 0 !important;
+}
+
+.compact-field .mat-mdc-text-field-wrapper.mdc-text-field {
+  overflow: visible !important;
+}
+
+.compact-field .mdc-notched-outline {
+  z-index: 1;
 }
 
 .compact-field .mat-mdc-form-field-flex {
   align-items: center;
   min-height: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
 }
 
 .compact-field .mat-mdc-form-field-infix {
@@ -887,6 +932,20 @@ textarea.form-control {
   margin: 0 !important;
   min-height: 18px !important;
   padding: 0 !important;
+}
+
+.compact-field:has(textarea.mat-mdc-input-element) {
+  --mat-form-field-container-height: auto;
+}
+
+.compact-field:has(textarea.mat-mdc-input-element) .mat-mdc-form-field-infix {
+  align-items: stretch;
+  min-height: 72px !important;
+}
+
+/* Native textarea fields (address, description, etc.) */
+textarea.form-control.native-textarea {
+  display: block;
 }
 
 /* Select — compact height (same as text inputs) */
@@ -936,6 +995,7 @@ textarea.form-control {
 .compact-field:hover .mdc-notched-outline__notch,
 .compact-field:hover .mdc-notched-outline__trailing {
   border-color: var(--primary-color) !important;
+  border-top-width: 1px !important;
 }
 
 .compact-field.mat-focused .mdc-notched-outline__leading,
@@ -943,6 +1003,13 @@ textarea.form-control {
 .compact-field.mat-focused .mdc-notched-outline__trailing {
   border-color: var(--primary-color) !important;
   border-width: 1px !important;
+}
+
+.compact-field.mat-form-field-invalid .mdc-notched-outline__leading,
+.compact-field.mat-form-field-invalid .mdc-notched-outline__notch,
+.compact-field.mat-form-field-invalid .mdc-notched-outline__trailing {
+  border-color: var(--danger-color) !important;
+  border-top-width: 1px !important;
 }
 
 .compact-field .mat-mdc-icon-button {
@@ -1901,6 +1968,7 @@ tr.row-inactive:hover td {
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 12px;
+  overflow: visible;
 }
 
 .list-data-card {

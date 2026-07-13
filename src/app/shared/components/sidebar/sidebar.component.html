@@ -42,9 +42,9 @@
   }
 </nav>
 
-<div class="sidebar-footer">
+<div class="sidebar-footer" [title]="displayName()">
   <span class="avatar">{{ initials() }}</span>
-  <span>
+  <span class="sidebar-footer-info">
     <strong>{{ displayName() }}</strong>
     <small>{{ displayRole() }}</small>
   </span>

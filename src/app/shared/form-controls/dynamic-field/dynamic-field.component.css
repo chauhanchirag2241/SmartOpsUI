@@ -2,6 +2,7 @@
   display: block;
   min-width: 0;
   width: 100%;
+  overflow: visible;
 }
 
 .full-width {
@@ -24,6 +25,32 @@
 .req {
   color: var(--danger-color);
   margin-left: 2px;
+}
+
+.native-textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.native-textarea:disabled {
+  -webkit-text-fill-color: var(--text-primary);
+  color: var(--text-primary);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.native-textarea:disabled::placeholder {
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.native-textarea.ng-touched.ng-invalid {
+  border-color: var(--danger-color);
+}
+
+.native-textarea.ng-touched.ng-invalid:focus {
+  border-color: var(--danger-color);
 }
 
 .checkbox-field {
