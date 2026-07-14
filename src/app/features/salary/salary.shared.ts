@@ -118,9 +118,10 @@ export function normalizeSalaryModuleStats(raw: any) {
 
 export function normalizeEmployeeListItem(raw: any) {
   return {
-    employeeId: String(
-      pick(raw, 'employeeId', 'EmployeeId') ?? pick(raw, 'teacherId', 'TeacherId') ?? '',
-    ),
+    /** DB primary key — use for API routes */
+    employeeRecordId: String(pick(raw, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
+    /** Business employee code shown in UI */
+    employeeCode: String(pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
@@ -138,9 +139,8 @@ export function normalizeEmployeeDetail(raw: any) {
     isEarning: Boolean(pick(l, 'isEarning', 'IsEarning')),
   });
   return {
-    employeeId: String(
-      pick(raw, 'employeeId', 'EmployeeId') ?? pick(raw, 'teacherId', 'TeacherId') ?? '',
-    ),
+    employeeRecordId: String(pick(raw, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
+    employeeCode: String(pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
@@ -169,9 +169,7 @@ export function normalizeEmployeeDetail(raw: any) {
 export function normalizePayrollRun(raw: any) {
   const entries = asArray<any>(pick(raw, 'entries', 'Entries')).map((e) => ({
     id: String(pick(e, 'id', 'Id') ?? ''),
-    employeeId: String(
-      pick(e, 'employeeId', 'EmployeeId') ?? pick(e, 'teacherId', 'TeacherId') ?? '',
-    ),
+    employeeRecordId: String(pick(e, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
     employeeName: String(pick(e, 'employeeName', 'EmployeeName') ?? ''),
     department: String(pick(e, 'department', 'Department') ?? ''),
     basicSalary: Number(pick(e, 'basicSalary', 'BasicSalary') ?? 0),
@@ -209,9 +207,7 @@ export function normalizePayslip(raw: any) {
     payYear: Number(pick(raw, 'payYear', 'PayYear') ?? 0),
     payMonth: Number(pick(raw, 'payMonth', 'PayMonth') ?? 0),
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
-    employeeId: String(
-      pick(raw, 'employeeId', 'EmployeeId') ?? pick(raw, 'teacherId', 'TeacherId') ?? '',
-    ),
+    employeeCode: String(pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
     workingDays: Number(pick(raw, 'workingDays', 'WorkingDays') ?? 0),

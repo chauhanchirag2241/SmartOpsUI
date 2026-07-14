@@ -61,9 +61,6 @@ export class PayrollComponent implements OnInit {
     columns: [
       { key: 'employeeName', label: 'Employee', sortable: true },
       { key: 'department', label: 'Department', sortable: true },
-      { key: 'basicDisplay', label: 'Basic', sortable: true, align: 'right', width: '100px' },
-      { key: 'hraDisplay', label: 'HRA', sortable: true, align: 'right', width: '90px' },
-      { key: 'allowancesDisplay', label: 'Allowances', sortable: true, align: 'right', width: '100px' },
       { key: 'grossDisplay', label: 'Gross', sortable: true, align: 'right', width: '100px' },
       { key: 'deductionsDisplay', label: 'Deductions', sortable: true, align: 'right', width: '100px' },
       { key: 'netDisplay', label: 'Net salary', sortable: true, align: 'right', width: '110px' },
@@ -109,9 +106,6 @@ export class PayrollComponent implements OnInit {
     if (!this.payroll) return [];
     return this.payroll.entries.map((e) => ({
       ...e,
-      basicDisplay: formatInr(e.basicSalary),
-      hraDisplay: formatInr(e.hraAmount),
-      allowancesDisplay: formatInr(e.allowances),
       grossDisplay: formatInr(e.grossSalary),
       deductionsDisplay: formatInr(e.totalDeductions),
       netDisplay: formatInr(e.netSalary),

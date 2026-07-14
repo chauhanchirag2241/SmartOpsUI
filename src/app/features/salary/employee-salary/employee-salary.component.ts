@@ -23,6 +23,12 @@ import {
   studentInitials,
 } from '../salary.shared';
 
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return '';
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : '';
+}
+
 @Component({
   selector: 'app-employee-salary',
   standalone: true,
@@ -125,7 +131,7 @@ export class EmployeeSalaryComponent implements OnInit {
         this.departments = [
           ...new Set(items.map((e) => e.department).filter((d): d is string => !!d)),
         ].sort();
-        if (this.selectedEmployeeId && !items.some((e) => e.employeeId === this.selectedEmployeeId)) {
+        if (this.selectedEmployeeId && !items.some((e) => e.employeeRecordId === this.selectedEmployeeId)) {
           this.selectedEmployeeId = null;
           this.detail = null;
         }
@@ -175,7 +181,7 @@ export class EmployeeSalaryComponent implements OnInit {
 
     this.assignForm = {
       salaryStructureVersionId: versionId,
-      effectiveDate: this.detail.effectiveDate || new Date().toISOString().split('T')[0],
+      effectiveDate: toDateInputValue(this.detail.effectiveDate) || new Date().toISOString().split('T')[0],
       componentValues: [],
     };
     this.showAssignModal = true;
@@ -218,9 +224,16 @@ export class EmployeeSalaryComponent implements OnInit {
       this.toast('Select a salary structure version', true);
       return;
     }
+    if (!this.assignForm.effectiveDate) {
+      this.toast('Effective date is required', true);
+      return;
+    }
     const components = this.assignForm.componentValues
-      .filter((c) => c.value > 0)
-      .map((c) => ({ salaryVersionComponentId: c.salaryVersionComponentId, value: c.value }));
+      .map((c) => ({
+        salaryVersionComponentId: c.salaryVersionComponentId,
+        value: Number(c.value),
+      }))
+      .filter((c) => Number.isFinite(c.value) && c.value > 0);
     if (!components.length) {
       this.toast('Enter at least one component value', true);
       return;
@@ -237,6 +250,7 @@ export class EmployeeSalaryComponent implements OnInit {
           this.showAssignModal = false;
           this.loadEmployees();
           this.toast('Employee salary saved');
+          this.refresh();
         },
         error: (e) => this.toast(extractApiError(e, 'Save failed'), true),
       });
