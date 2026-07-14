@@ -1,48 +1,102 @@
 <div class="brand">
-  <span class="brand-icon"><mat-icon fontSet="material-symbols-outlined">school</mat-icon></span>
+  <span class="brand-icon" title="SmartOps"><mat-icon fontSet="material-symbols-outlined">school</mat-icon></span>
   <span class="brand-info">
     <strong>SmartOps</strong>
     <small>School ERP</small>
   </span>
-  <button mat-icon-button class="menu-btn" (click)="onToggle()" aria-label="Toggle menu">
-    <mat-icon>menu_open</mat-icon>
+  <button
+    type="button"
+    class="pin-btn"
+    (click)="onTogglePin($event)"
+    [class.is-pinned]="pinned()"
+    [attr.aria-label]="pinned() ? 'Unpin sidebar' : 'Pin sidebar open'"
+    [attr.title]="pinned() ? 'Unpin sidebar' : 'Pin sidebar open'"
+  >
+    <mat-icon fontSet="material-symbols-outlined">push_pin</mat-icon>
   </button>
 </div>
 
 <nav class="sidebar-nav" aria-label="Primary">
   @for (item of visibleNavItems(); track trackMenu($index, item)) {
     @if (hasChildren(item)) {
-      <div class="section-label">{{ item.name }}</div>
-      @for (child of item.children; track trackMenu($index, child)) {
-        @if (navRoute(child); as path) {
-          <a
-            class="nav-item child-item"
-            [routerLink]="path"
-            routerLinkActive="active-link"
-            [routerLinkActiveOptions]="{ exact: path === '/dashboard' }"
-            (click)="onNavClick(child, $event)"
-          >
-            <mat-icon fontSet="material-symbols-outlined">{{ child.icon ?? 'circle' }}</mat-icon>
-            <span>{{ child.name }}</span>
-          </a>
+      <div
+        class="nav-group"
+        [class.expanded]="labelsVisible() && isExpanded(item.code)"
+        [class.flyout-open]="isFlyoutOpen(item.code)"
+        [class.has-active-child]="isGroupActive(item)"
+      >
+        <button
+          type="button"
+          class="nav-group-header"
+          [attr.title]="item.name"
+          (click)="onGroupClick(item, $event)"
+          [attr.aria-expanded]="labelsVisible() ? isExpanded(item.code) : isFlyoutOpen(item.code)"
+        >
+          <mat-icon fontSet="material-symbols-outlined">{{ item.icon ?? 'folder' }}</mat-icon>
+          <span class="nav-label">{{ item.name }}</span>
+          <mat-icon class="nav-chevron" fontSet="material-symbols-outlined">
+            {{ labelsVisible() && isExpanded(item.code) ? 'expand_more' : 'chevron_right' }}
+          </mat-icon>
+        </button>
+
+        @if (labelsVisible() && isExpanded(item.code)) {
+          <div class="nav-group-body">
+            @for (child of item.children; track trackMenu($index, child)) {
+              @if (navRoute(child); as path) {
+                <a
+                  class="nav-item child-item"
+                  [routerLink]="path"
+                  routerLinkActive="active-link"
+                  [routerLinkActiveOptions]="{ exact: path === '/dashboard' }"
+                  [attr.title]="child.name"
+                  (click)="onNavClick(child, $event)"
+                >
+                  <mat-icon fontSet="material-symbols-outlined">{{ child.icon ?? 'circle' }}</mat-icon>
+                  <span class="nav-label">{{ child.name }}</span>
+                </a>
+              }
+            }
+          </div>
         }
-      }
+
+        @if (!labelsVisible() && isFlyoutOpen(item.code)) {
+          <div class="nav-flyout" role="menu" [attr.aria-label]="item.name">
+            <div class="nav-flyout-title">{{ item.name }}</div>
+            @for (child of item.children; track trackMenu($index, child)) {
+              @if (navRoute(child); as path) {
+                <a
+                  class="nav-flyout-item"
+                  [routerLink]="path"
+                  routerLinkActive="active-link"
+                  [routerLinkActiveOptions]="{ exact: path === '/dashboard' }"
+                  role="menuitem"
+                  (click)="onNavClick(child, $event)"
+                >
+                  <mat-icon fontSet="material-symbols-outlined">{{ child.icon ?? 'circle' }}</mat-icon>
+                  <span>{{ child.name }}</span>
+                </a>
+              }
+            }
+          </div>
+        }
+      </div>
     } @else if (navRoute(item); as path) {
       <a
         class="nav-item"
         [routerLink]="path"
         routerLinkActive="active-link"
         [routerLinkActiveOptions]="{ exact: path === '/dashboard' }"
+        [attr.title]="item.name"
         (click)="onNavClick(item, $event)"
       >
         <mat-icon fontSet="material-symbols-outlined">{{ item.icon ?? 'circle' }}</mat-icon>
-        <span>{{ item.name }}</span>
+        <span class="nav-label">{{ item.name }}</span>
       </a>
     }
   }
 </nav>
 
-<div class="sidebar-footer" [title]="displayName()">
+<div class="sidebar-footer" [title]="displayName() + ' · ' + displayRole()">
   <span class="avatar">{{ initials() }}</span>
   <span class="sidebar-footer-info">
     <strong>{{ displayName() }}</strong>

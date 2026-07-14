@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -30,6 +31,7 @@ export class AcademicYearManagementComponent implements OnInit {
   private readonly ayService = inject(AcademicYearService);
   private readonly permissionService = inject(PermissionService);
   private readonly ayContext = inject(AcademicYearContextService);
+  private readonly router = inject(Router);
 
   constructor(
     private snackBar: NotificationService,
@@ -143,6 +145,7 @@ export class AcademicYearManagementComponent implements OnInit {
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
       { label: 'Edit details', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Show history', icon: 'history', iconColor: '#639922' },
       { label: 'Set as current', icon: 'star', iconColor: '#B45309' },
       {
         label: 'Delete year',
@@ -169,7 +172,7 @@ export class AcademicYearManagementComponent implements OnInit {
 
   private isAcademicYearActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
     if (row['isActive'] === false) {
-      return action.label === 'View details';
+      return action.label === 'View details' || action.label === 'Show history';
     }
 
     if (action.label === 'Set as current') {
@@ -204,6 +207,9 @@ export class AcademicYearManagementComponent implements OnInit {
       this.formMode = 'view';
       this.selectedYearId = id;
       this.showAddForm = true;
+    } else if (event.action.label === 'Show history') {
+      if (!this.permissionService.canView(MenuCodes.AcademicYears)) return;
+      void this.router.navigate(['/academic-years', id, 'history']);
     } else if (event.action.label === 'Edit details') {
       if (this.ayContext.isReadOnlyScope() || !this.permissionService.canEdit(MenuCodes.AcademicYears)) return;
       this.formMode = 'edit';

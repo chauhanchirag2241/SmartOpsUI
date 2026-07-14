@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { AuditLogPagedResponse } from '../models/audit-history.model';
 import { ApiService } from './api.service';
 
-export type AuditHistoryEntityType = 'student' | 'employee' | 'class' | 'subject';
+export type AuditHistoryEntityType = 'student' | 'employee' | 'class' | 'subject' | 'academic-year';
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {
@@ -17,7 +17,7 @@ export class AuditService {
     pageSize = 20,
   ): Observable<AuditLogPagedResponse> {
     const params = new HttpParams().set('page', page).set('pageSize', pageSize);
-    const path = `${entityType === 'class' ? 'classes' : `${entityType}s`}/${entityId}/history`;
+    const path = this.resolveHistoryPath(entityType, entityId);
     return this.api.get<AuditLogPagedResponse>(path, params);
   }
 
@@ -27,5 +27,16 @@ export class AuditService {
     pageSize = 20,
   ): Observable<AuditLogPagedResponse> {
     return this.getEntityHistory('student', studentId, page, pageSize);
+  }
+
+  private resolveHistoryPath(entityType: AuditHistoryEntityType, entityId: string): string {
+    switch (entityType) {
+      case 'class':
+        return `classes/${entityId}/history`;
+      case 'academic-year':
+        return `academicYears/${entityId}/history`;
+      default:
+        return `${entityType}s/${entityId}/history`;
+    }
   }
 }

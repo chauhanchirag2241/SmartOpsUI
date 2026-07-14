@@ -63,7 +63,6 @@ export class ClassFeeAmountsComponent implements OnInit {
   installmentPreview: ReturnType<typeof normalizeInstallmentPreview>[] = [];
   showInstallmentPreview = false;
   loadingInstallments = false;
-  private initialAcademicYearId = '';
 
   ngOnInit(): void {
     this.academicYearService.getAcademicYearDropdown().subscribe({
@@ -76,7 +75,6 @@ export class ClassFeeAmountsComponent implements OnInit {
             : this.academicYears[0]?.id;
         if (pick) {
           this.academicYearId = pick;
-          this.initialAcademicYearId = pick;
           this.loadVersions();
         }
         this.refreshView();
@@ -100,16 +98,6 @@ export class ClassFeeAmountsComponent implements OnInit {
   get isDraftOrPublished(): boolean {
     const s = this.amountData?.versionStatusLabel;
     return s === 'Draft' || s === 'Published';
-  }
-
-  get toolbarFilterActive(): boolean {
-    return !!this.initialAcademicYearId && this.academicYearId !== this.initialAcademicYearId;
-  }
-
-  onToolbarFiltersCleared(): void {
-    if (!this.initialAcademicYearId) return;
-    this.academicYearId = this.initialAcademicYearId;
-    this.onYearChange();
   }
 
   onYearChange(): void {

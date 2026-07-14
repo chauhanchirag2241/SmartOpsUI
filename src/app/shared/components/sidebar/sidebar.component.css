@@ -1,1 +1,7 @@
-/* Sidebar: src/style.css */
+/* Host class hooks are applied from sidebar.component.ts */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}

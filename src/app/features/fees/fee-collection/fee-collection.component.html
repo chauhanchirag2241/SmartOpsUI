@@ -1,6 +1,6 @@
 <div class="fees-page list-page-shell">
 <app-list-page-header
-  title="Fees Management — Student Collection"
+  title="Fee Collection"
   subtitle="Collect and track fees for individual students"
 />
 
@@ -8,28 +8,27 @@
   searchPlaceholder="Search by student name or roll no..."
   [searchValue]="searchQuery"
   [searchDisabled]="!classFilter"
-  [filterPanelActive]="toolbarFilterActive"
+  [showFilter]="false"
   (searchSubmitted)="onToolbarSearchSubmit($event)"
-  (advancedFiltersCleared)="onToolbarFiltersCleared()"
 >
-  <div toolbarFilters class="st-table-filters">
-    <label class="table-filter-section-label" for="fee-class-filter">Class</label>
+  <div toolbarInline class="fee-toolbar-inline">
     <select
       id="fee-class-filter"
-      class="sel-filter sel-filter-lg"
+      class="sel-filter"
       [(ngModel)]="classFilter"
       (ngModelChange)="onClassFilterChange()"
+      aria-label="Class"
     >
       <option value="">Select class</option>
       <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
     </select>
-    <label class="table-filter-section-label" for="fee-status-filter">Fee status</label>
     <select
       id="fee-status-filter"
-      class="sel-filter sel-filter-lg"
+      class="sel-filter"
       [(ngModel)]="statusFilter"
       (ngModelChange)="onListFiltersChange()"
       [disabled]="!classFilter"
+      aria-label="Fee status"
     >
       <option value="">All students</option>
       <option value="paid">Fully paid</option>

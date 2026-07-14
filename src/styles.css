@@ -93,8 +93,7 @@ body {
 .compact-field:hover .mat-mdc-select-arrow,
 .compact-field:hover .mat-mdc-select-value-text,
 .compact-field:hover .mat-datepicker-toggle-default-icon,
-.compact-field:hover .mat-mdc-input-element,
-.compact-field:hover textarea.mat-mdc-input-element {
+.compact-field:hover .mat-mdc-input-element {
   color: var(--secondary-color) !important;
 }
 
@@ -102,6 +101,75 @@ body {
 .compact-field.mat-focused .mat-mdc-select-value-text,
 .compact-field.mat-focused .mat-datepicker-toggle-default-icon {
   color: var(--primary-color) !important;
+}
+
+/* Tailwind preflight resets — restore Material input layout inside compact-field */
+.compact-field .mat-mdc-input-element {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  margin: 0 !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+}
+
+/* Tailwind preflight zeros borders — restore Material outlined field borders */
+.compact-field .mdc-notched-outline__leading,
+.compact-field .mdc-notched-outline__notch,
+.compact-field .mdc-notched-outline__trailing {
+  border-color: var(--border-color, rgba(0, 0, 0, 0.38)) !important;
+  border-style: solid !important;
+}
+
+.compact-field .mdc-notched-outline__leading {
+  border-left-width: 1px !important;
+  border-right-width: 0 !important;
+  border-top-width: 1px !important;
+  border-bottom-width: 1px !important;
+}
+
+.compact-field .mdc-notched-outline__notch {
+  border-top-width: 1px !important;
+  border-bottom-width: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+}
+
+.compact-field .mdc-notched-outline__trailing {
+  border-left-width: 0 !important;
+  border-right-width: 1px !important;
+  border-top-width: 1px !important;
+  border-bottom-width: 1px !important;
+}
+
+.compact-field:hover .mdc-notched-outline__leading,
+.compact-field:hover .mdc-notched-outline__notch,
+.compact-field:hover .mdc-notched-outline__trailing,
+.compact-field.mat-focused .mdc-notched-outline__leading,
+.compact-field.mat-focused .mdc-notched-outline__notch,
+.compact-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--primary-color, #639922) !important;
+}
+
+.compact-field.mat-form-field-invalid .mdc-notched-outline__leading,
+.compact-field.mat-form-field-invalid .mdc-notched-outline__notch,
+.compact-field.mat-form-field-invalid .mdc-notched-outline__trailing {
+  border-color: var(--danger-color, #c0392b) !important;
+}
+
+.compact-field .mat-mdc-input-element::placeholder {
+  color: var(--text-secondary, #999) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--text-secondary, #999) !important;
+}
+
+.compact-field .mat-mdc-select .mat-mdc-select-placeholder {
+  color: var(--text-secondary, #999) !important;
+  opacity: 1 !important;
 }
 
 /* Material Select Option Overrides */

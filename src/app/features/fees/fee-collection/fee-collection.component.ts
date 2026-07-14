@@ -169,17 +169,6 @@ export class FeeCollectionComponent {
     this.cdr.markForCheck();
   }
 
-  get toolbarFilterActive(): boolean {
-    return !!this.classFilter || !!this.statusFilter;
-  }
-
-  onToolbarFiltersCleared(): void {
-    this.classFilter = '';
-    this.statusFilter = '';
-    this.searchQuery = '';
-    this.onClassFilterChange();
-  }
-
   onToolbarSearchSubmit(q: string): void {
     this.searchQuery = q;
     if (this.classFilter) {

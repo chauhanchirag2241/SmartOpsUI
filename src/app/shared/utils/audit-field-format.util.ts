@@ -42,12 +42,31 @@ function mapFieldValue(
       return mapClassField(field, value);
     case 'subject':
       return mapSubjectField(field, value);
+    case 'academic-year':
+      return mapAcademicYearField(field, value);
     case 'student':
     case 'employee':
       return mapPersonField(field, value);
     default:
       return null;
   }
+}
+
+function mapAcademicYearField(field: string, value: string): string | null {
+  switch (field) {
+    case 'iscurrent':
+    case 'isactive':
+      return mapBooleanLabel(value);
+    default:
+      return null;
+  }
+}
+
+function mapBooleanLabel(value: string): string | null {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1') return 'Yes';
+  if (normalized === 'false' || normalized === '0') return 'No';
+  return null;
 }
 
 function mapClassField(field: string, value: string): string | null {

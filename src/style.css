@@ -61,7 +61,13 @@
   --border: var(--border-color);
 
   /* Layout */
-  --sidenav-width: 230px;
+  --sidenav-width: 240px;
+  --sidenav-collapsed-width: 72px;
+  --nav-ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --nav-duration: 0.55s;
+  --sidenav-transition: width var(--nav-duration) var(--nav-ease),
+    min-width var(--nav-duration) var(--nav-ease),
+    max-width var(--nav-duration) var(--nav-ease);
 
   /* Spacing & radius */
   --radius-sm: 6px;
@@ -243,10 +249,37 @@ body {
 .sidenav {
   background: var(--white);
   border-right: 1px solid rgba(0, 0, 0, 0.07);
-  width: var(--sidenav-width);
-  min-width: var(--sidenav-width);
-  max-width: var(--sidenav-width);
-  overflow-x: hidden;
+  width: var(--sidenav-collapsed-width) !important;
+  min-width: var(--sidenav-collapsed-width) !important;
+  max-width: var(--sidenav-collapsed-width) !important;
+  overflow: visible;
+  transition: var(--sidenav-transition);
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
+}
+
+.admin-wrapper.nav-expanded .sidenav,
+.sidenav.sidenav-expanded {
+  width: var(--sidenav-width) !important;
+  min-width: var(--sidenav-width) !important;
+  max-width: var(--sidenav-width) !important;
+}
+
+/* Keep main content in sync with sidebar width (Material does not auto-update on CSS width change) */
+.admin-wrapper.nav-collapsed .mat-sidenav-content.main-content,
+.admin-wrapper.nav-collapsed .mat-drawer-content.main-content {
+  margin-left: var(--sidenav-collapsed-width) !important;
+  transition: margin-left var(--nav-duration, 0.48s) var(--nav-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.admin-wrapper.nav-expanded .mat-sidenav-content.main-content,
+.admin-wrapper.nav-expanded .mat-drawer-content.main-content {
+  margin-left: var(--sidenav-width) !important;
+  transition: margin-left var(--nav-duration, 0.48s) var(--nav-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.sidenav .mat-drawer-inner-container {
+  overflow-x: visible !important;
+  overflow-y: hidden !important;
 }
 
 mat-sidenav-content.main-content {
@@ -256,6 +289,8 @@ mat-sidenav-content.main-content {
   min-height: 0;
   background: var(--bg-light);
   overflow: hidden;
+  box-sizing: border-box;
+  transition: margin-left var(--nav-duration, 0.48s) var(--nav-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .main-content {
@@ -308,7 +343,7 @@ app-my-action-detail,
 }
 
 /* =========================================================
-   SIDEBAR
+   SIDEBAR (icon rail + expandable)
 ========================================================= */
 app-sidebar,
 .sidebar-host {
@@ -319,22 +354,28 @@ app-sidebar,
   height: 100%;
   min-height: 0;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
+  position: relative;
 }
 
 .brand {
   align-items: center;
   border-bottom: 1px solid var(--border-slate);
   display: flex;
-  gap: 10px;
-  min-height: 54px;
-  padding: 8px 10px 8px 14px;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 10px 8px 12px;
+  overflow: visible;
 }
 
 .brand-info {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.35s var(--nav-ease, ease), max-width var(--nav-duration, 0.48s) var(--nav-ease, ease);
+  max-width: 140px;
 }
 
 .brand-icon {
@@ -343,9 +384,10 @@ app-sidebar,
   border-radius: var(--radius-md);
   color: var(--white);
   display: inline-flex;
-  height: 33px;
+  flex: 0 0 36px;
+  height: 36px;
   justify-content: center;
-  width: 33px;
+  width: 36px;
 }
 
 .brand-icon mat-icon {
@@ -360,6 +402,7 @@ app-sidebar,
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.05;
+  white-space: nowrap;
 }
 
 .brand small {
@@ -368,14 +411,18 @@ app-sidebar,
   font-size: 0.78rem;
   line-height: 1.25;
   margin-top: 2px;
+  white-space: nowrap;
 }
 
 .menu-btn {
   color: var(--text-slate);
-  margin-right: -8px;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  flex: 0 0 36px;
+  height: 36px !important;
+  width: 36px !important;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .menu-btn:hover {
@@ -383,37 +430,170 @@ app-sidebar,
   color: var(--text-heading);
 }
 
+.pin-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 32px;
+  height: 32px;
+  justify-content: center;
+  overflow: visible;
+  padding: 0;
+  width: 32px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.2s ease;
+}
+
+.pin-btn mat-icon,
+.pin-btn .mat-icon {
+  display: block;
+  flex: none;
+  font-size: 20px !important;
+  height: 20px !important;
+  line-height: 20px !important;
+  overflow: visible;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease, color 0.15s ease;
+  width: 20px !important;
+}
+
+.pin-btn:hover {
+  background: #eef7e9;
+  color: var(--secondary-color);
+}
+
+.pin-btn.is-pinned {
+  background: #eef7e9;
+  color: var(--secondary-color);
+}
+
+.pin-btn.is-pinned mat-icon,
+.pin-btn.is-pinned .mat-icon {
+  color: var(--secondary-color);
+  font-variation-settings: 'FILL' 1;
+  transform: rotate(0deg);
+}
+
 .sidebar-nav {
   flex: 1;
   min-height: 0;
+  overflow-x: visible;
   overflow-y: auto;
-  padding: 12px 8px 14px;
+  padding: 10px 8px 14px;
+  scrollbar-width: thin;
 }
 
-.section-label {
-  color: #56657a;
-  font-size: 0.72rem;
+.nav-group {
+  margin-top: 2px;
+  position: relative;
+}
+
+.nav-group-header {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: #536274;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 10px;
+  text-align: left;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.35s var(--nav-ease, ease);
+  width: 100%;
+}
+
+.nav-group-header:hover,
+.nav-group.expanded > .nav-group-header,
+.nav-group.flyout-open > .nav-group-header,
+.nav-group.has-active-child > .nav-group-header {
+  background: #eef7e9;
+  color: var(--secondary-color);
+}
+
+.nav-group-header mat-icon:first-child {
+  color: currentColor;
+  flex: 0 0 22px;
+  font-size: 22px;
+  height: 22px;
+  line-height: 22px;
+  width: 22px;
+}
+
+.nav-label {
+  flex: 1;
+  font-size: 0.92rem;
   font-weight: 500;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  padding: 10px 2px 7px;
-  text-transform: uppercase;
+  line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.35s var(--nav-ease, ease), max-width var(--nav-duration, 0.48s) var(--nav-ease, ease);
+  max-width: 160px;
+}
+
+.nav-chevron {
+  flex: 0 0 18px !important;
+  font-size: 18px !important;
+  height: 18px !important;
+  line-height: 18px !important;
+  opacity: 0.7;
+  width: 18px !important;
+  transition: transform 0.4s var(--nav-ease, ease), opacity 0.3s ease;
+}
+
+.nav-group.expanded > .nav-group-header .nav-chevron {
+  transform: rotate(0deg);
+}
+
+.nav-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+  overflow: hidden;
+  padding: 0 0 6px 8px;
+  animation: navGroupIn 0.4s var(--nav-ease, ease);
+}
+
+@keyframes navGroupIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    max-height: 480px;
+    transform: translateY(0);
+  }
 }
 
 .nav-item {
   align-items: center;
-  border-radius: 7px;
+  border-radius: 10px;
   color: #536274;
   display: flex;
-  gap: 11px;
-  min-height: 33px;
-  padding: 0 8px;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 10px;
   text-decoration: none;
-  transition: background 0.14s ease, color 0.14s ease;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 .nav-item + .nav-item {
   margin-top: 1px;
+}
+
+.nav-item.child-item {
+  min-height: 34px;
+  padding-left: 14px;
 }
 
 .nav-item:hover,
@@ -424,19 +604,11 @@ app-sidebar,
 
 .nav-item mat-icon {
   color: currentColor;
-  flex: 0 0 19px;
-  font-size: 19px;
-  height: 19px;
-  line-height: 19px;
-  width: 19px;
-}
-
-.nav-item span:not(.nav-badge) {
-  flex: 1;
-  font-size: 0.95rem;
-  font-weight: 500;
-  line-height: 1;
-  min-width: 0;
+  flex: 0 0 22px;
+  font-size: 22px;
+  height: 22px;
+  line-height: 22px;
+  width: 22px;
 }
 
 .nav-badge {
@@ -458,6 +630,70 @@ app-sidebar,
   background: var(--danger-color);
 }
 
+/* Flyout panel (icon-rail mode) */
+.nav-flyout {
+  animation: navFlyoutIn 0.35s var(--nav-ease, ease);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 31, 15, 0.14);
+  left: calc(100% + 10px);
+  min-width: 200px;
+  padding: 8px;
+  position: absolute;
+  top: 0;
+  z-index: 40;
+}
+
+@keyframes navFlyoutIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.nav-flyout-title {
+  color: var(--text-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 6px 10px 8px;
+  text-transform: uppercase;
+}
+
+.nav-flyout-item {
+  align-items: center;
+  border-radius: 8px;
+  color: #536274;
+  display: flex;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-flyout-item:hover,
+.nav-flyout-item.active-link {
+  background: #eef7e9;
+  color: var(--secondary-color);
+}
+
+.nav-flyout-item mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.nav-flyout-item span {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
 .sidebar-footer {
   align-items: center;
   border-top: 1px solid var(--border-slate);
@@ -466,7 +702,7 @@ app-sidebar,
   height: 58px;
   min-height: 58px;
   max-height: 58px;
-  padding: 0 16px;
+  padding: 0 12px;
   overflow: hidden;
   cursor: default;
   width: 100%;
@@ -477,9 +713,10 @@ app-sidebar,
   display: block;
   flex: 1 1 0%;
   min-width: 0;
-  width: 100%;
-  max-width: calc(100% - 48px);
   overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.35s var(--nav-ease, ease), max-width var(--nav-duration, 0.48s) var(--nav-ease, ease);
+  max-width: 160px;
 }
 
 .avatar {
@@ -488,10 +725,10 @@ app-sidebar,
   border-radius: 50%;
   color: var(--secondary-color);
   display: inline-flex;
-  flex: 0 0 37px;
+  flex: 0 0 36px;
   font-size: 0.78rem;
   font-weight: 800;
-  height: 37px;
+  height: 36px;
   justify-content: center;
 }
 
@@ -515,6 +752,45 @@ app-sidebar,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Collapsed icon-rail mode */
+app-sidebar.rail-mode .brand {
+  justify-content: center;
+  padding: 8px 6px;
+  gap: 0;
+}
+
+app-sidebar.rail-mode .brand-info,
+app-sidebar.rail-mode .nav-label,
+app-sidebar.rail-mode .nav-chevron,
+app-sidebar.rail-mode .sidebar-footer-info,
+app-sidebar.rail-mode .pin-btn {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 0;
+  width: 0;
+}
+
+app-sidebar.rail-mode .sidebar-nav {
+  padding: 10px 6px 14px;
+}
+
+app-sidebar.rail-mode .nav-item,
+app-sidebar.rail-mode .nav-group-header {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  min-height: 44px;
+}
+
+app-sidebar.rail-mode .sidebar-footer {
+  justify-content: center;
+  padding: 0 6px;
 }
 
 /* =========================================================
@@ -805,7 +1081,6 @@ button.btn {
   gap: 5px;
   min-width: 0;
   width: 100%;
-  overflow: visible;
 }
 
 .form-group > label,
@@ -861,7 +1136,6 @@ textarea.form-control {
   display: block;
   min-width: 0;
   width: 100%;
-  overflow: visible;
 }
 
 .gender-field .badge-options {
@@ -875,7 +1149,6 @@ textarea.form-control {
 .compact-field.mat-mdc-form-field {
   width: 100%;
   font-size: 13px;
-  overflow: visible;
   --mat-form-field-container-height: 32px;
   --mat-form-field-container-vertical-padding: 4px;
   --mdc-outlined-text-field-container-shape: 7px;
@@ -883,6 +1156,7 @@ textarea.form-control {
   --mdc-outlined-text-field-hover-outline-color: var(--primary-color);
   --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
   --mdc-outlined-text-field-container-color: var(--input-bg);
+  --mdc-outlined-text-field-outline-width: 1px;
   --mdc-typography-subtitle1-font-size: 13px;
   --mat-select-enabled-arrow-color: var(--text-secondary);
   --mat-select-focused-arrow-color: var(--primary-color);
@@ -890,26 +1164,11 @@ textarea.form-control {
 
 .compact-field .mat-mdc-text-field-wrapper {
   background-color: var(--input-bg) !important;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
-  padding: 1px 10px 0 !important;
-}
-
-.compact-field .mat-mdc-text-field-wrapper.mdc-text-field {
-  overflow: visible !important;
-}
-
-.compact-field .mdc-notched-outline {
-  z-index: 1;
 }
 
 .compact-field .mat-mdc-form-field-flex {
   align-items: center;
   min-height: 0;
-  overflow: visible;
-  position: relative;
-  z-index: 0;
 }
 
 .compact-field .mat-mdc-form-field-infix {
@@ -921,8 +1180,7 @@ textarea.form-control {
   width: 100%;
 }
 
-.compact-field .mat-mdc-input-element,
-.compact-field textarea.mat-mdc-input-element {
+.compact-field .mat-mdc-input-element {
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -934,18 +1192,12 @@ textarea.form-control {
   padding: 0 !important;
 }
 
-.compact-field:has(textarea.mat-mdc-input-element) {
-  --mat-form-field-container-height: auto;
-}
-
-.compact-field:has(textarea.mat-mdc-input-element) .mat-mdc-form-field-infix {
-  align-items: stretch;
-  min-height: 72px !important;
-}
-
-/* Native textarea fields (address, description, etc.) */
+/* Native textarea fields (address, description, etc.) — not Material outline */
 textarea.form-control.native-textarea {
   display: block;
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.4;
 }
 
 /* Select — compact height (same as text inputs) */
@@ -995,21 +1247,18 @@ textarea.form-control.native-textarea {
 .compact-field:hover .mdc-notched-outline__notch,
 .compact-field:hover .mdc-notched-outline__trailing {
   border-color: var(--primary-color) !important;
-  border-top-width: 1px !important;
 }
 
 .compact-field.mat-focused .mdc-notched-outline__leading,
 .compact-field.mat-focused .mdc-notched-outline__notch,
 .compact-field.mat-focused .mdc-notched-outline__trailing {
   border-color: var(--primary-color) !important;
-  border-width: 1px !important;
 }
 
 .compact-field.mat-form-field-invalid .mdc-notched-outline__leading,
 .compact-field.mat-form-field-invalid .mdc-notched-outline__notch,
 .compact-field.mat-form-field-invalid .mdc-notched-outline__trailing {
   border-color: var(--danger-color) !important;
-  border-top-width: 1px !important;
 }
 
 .compact-field .mat-mdc-icon-button {
@@ -1506,16 +1755,30 @@ input[type='checkbox'] {
 
 .page-toolbar-wrap {
   margin-bottom: 8px;
+  /* Standalone toolbar: do not clip the Filter dropdown (inherits overflow:hidden from .table-wrap) */
+  overflow: visible;
 }
 
 .page-toolbar-wrap > .toolbar {
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-bottom: none;
+  border-radius: inherit;
+}
+
+.page-toolbar-wrap .filter-drop {
+  position: relative;
+  z-index: 30;
+}
+
+.page-toolbar-wrap .table-filter-menu {
+  z-index: 40;
 }
 
 .list-page-shell {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  justify-content: flex-start;
+  min-height: 0;
 }
 
 .table-container,
@@ -1523,7 +1786,7 @@ input[type='checkbox'] {
   background: var(--card);
   border: 0.5px solid var(--border-color);
   border-radius: var(--radius-xl);
-  overflow: visible;
+  overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
 
@@ -1968,7 +2231,6 @@ tr.row-inactive:hover td {
   border-radius: var(--radius-lg);
   padding: 16px;
   margin-bottom: 12px;
-  overflow: visible;
 }
 
 .list-data-card {

@@ -1,3 +1,46 @@
+:host {
+  display: block;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+:host ::ng-deep .sidenav-container {
+  height: 100dvh;
+}
+
+/* Force content offset to match live sidebar width — CSS class driven (smooth transition) */
+:host.nav-collapsed ::ng-deep .mat-drawer-content,
+:host.nav-collapsed ::ng-deep mat-sidenav-content.main-content {
+  margin-left: var(--sidenav-collapsed-width, 72px) !important;
+  transition: margin-left var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1));
+}
+
+:host.nav-expanded ::ng-deep .mat-drawer-content,
+:host.nav-expanded ::ng-deep mat-sidenav-content.main-content {
+  margin-left: var(--sidenav-width, 240px) !important;
+  transition: margin-left var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1));
+}
+
+:host.nav-collapsed ::ng-deep .sidenav.mat-drawer,
+:host.nav-collapsed ::ng-deep mat-sidenav.sidenav {
+  width: var(--sidenav-collapsed-width, 72px) !important;
+  min-width: var(--sidenav-collapsed-width, 72px) !important;
+  max-width: var(--sidenav-collapsed-width, 72px) !important;
+  transition: width var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1)),
+    min-width var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1)),
+    max-width var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1));
+}
+
+:host.nav-expanded ::ng-deep .sidenav.mat-drawer,
+:host.nav-expanded ::ng-deep mat-sidenav.sidenav {
+  width: var(--sidenav-width, 240px) !important;
+  min-width: var(--sidenav-width, 240px) !important;
+  max-width: var(--sidenav-width, 240px) !important;
+  transition: width var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1)),
+    min-width var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1)),
+    max-width var(--nav-duration, 0.55s) var(--nav-ease, cubic-bezier(0.25, 0.8, 0.25, 1));
+}
+
 .year-readonly-banner {
   display: flex;
   align-items: center;

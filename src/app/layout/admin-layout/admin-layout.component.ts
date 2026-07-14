@@ -17,6 +17,11 @@ import { forkJoin, switchMap } from 'rxjs';
   imports: [FooterComponent, HeaderComponent, MatSidenavModule, MatButtonModule, MatIconModule, RouterOutlet, SidebarComponent],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.css',
+  host: {
+    '[class.nav-expanded]': 'layoutUi.sidebarExpanded()',
+    '[class.nav-collapsed]': '!layoutUi.sidebarExpanded()',
+    '[class.nav-pinned]': 'layoutUi.sidebarPinned()',
+  },
 })
 export class AdminLayoutComponent implements OnInit {
   readonly layoutUi = inject(LayoutUiService);
@@ -33,9 +38,5 @@ export class AdminLayoutComponent implements OnInit {
       session: this.permissions.loadSession(),
       year: this.ayContext.initialize().pipe(switchMap(() => this.ayContext.loadDropdown())),
     }).subscribe({ error: () => undefined });
-  }
-
-  onMenuToggle(): void {
-    this.layoutUi.toggleSidebar();
   }
 }

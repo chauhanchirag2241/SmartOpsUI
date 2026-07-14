@@ -9,6 +9,7 @@ import { StudentService } from '../../../core/services/student.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
+import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { ActionButtonComponent } from '../../components/action-button/action-button.component';
 import { AuditHistoryEntityType } from '../../../core/services/audit.service';
 import { AuditHistoryComponent } from '../../components/audit-history/audit-history.component';
@@ -28,6 +29,7 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   employee: { listRoute: '/employees', entityType: 'employee' },
   class: { listRoute: '/classes', entityType: 'class' },
   subject: { listRoute: '/subjects', entityType: 'subject' },
+  'academic-year': { listRoute: '/academic-years', entityType: 'academic-year' },
 };
 
 interface EntityHistoryHeader {
@@ -49,6 +51,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
+  private readonly academicYearService = inject(AcademicYearService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -141,6 +144,17 @@ export class EntityHistoryComponent implements OnInit {
             title: String(data.subjectName ?? 'Subject').trim() || 'Subject',
             subtitle: String(data.subjectCode ?? '').trim(),
           })),
+        );
+      case 'academic-year':
+        return this.academicYearService.getAcademicYearById(id).pipe(
+          map((raw) => {
+            const data = raw as Record<string, unknown>;
+            const title = String(data['title'] ?? 'Academic year').trim() || 'Academic year';
+            const start = String(data['startDate'] ?? '').trim();
+            const end = String(data['endDate'] ?? '').trim();
+            const subtitle = [start, end].filter(Boolean).join(' → ');
+            return { title, subtitle };
+          }),
         );
       case 'student':
       default:

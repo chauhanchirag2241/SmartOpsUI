@@ -6,34 +6,30 @@
 
 <app-page-toolbar
   [showSearch]="false"
-  [filterPanelActive]="toolbarFilterActive"
-  (advancedFiltersCleared)="onToolbarFiltersCleared()"
+  [showFilter]="false"
 >
-  <div toolbarFilters class="st-table-filters">
-    <label class="table-filter-section-label" for="cfa-academic-year">Academic year</label>
+  <div toolbarInline class="fee-toolbar-inline">
     <select
       id="cfa-academic-year"
-      class="sel-filter sel-filter-lg"
+      class="sel-filter"
       [(ngModel)]="academicYearId"
       (ngModelChange)="onYearChange()"
+      aria-label="Academic year"
     >
       <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
     </select>
-    <label class="table-filter-section-label" for="cfa-version">Fee structure</label>
     <select
       id="cfa-version"
-      class="sel-filter sel-filter-lg"
+      class="sel-filter"
       [(ngModel)]="feeStructureVersionId"
       (ngModelChange)="onVersionChange()"
       [disabled]="loadingVersions || !versions.length"
+      aria-label="Fee structure"
     >
       <option *ngFor="let v of versions" [value]="v.id">
         {{ v.versionLabel }} — {{ v.statusLabel }}
       </option>
     </select>
-    <p class="fee-filter-hint fee-filter-hint-panel">
-      Draft &amp; Published: edit any class · Active: only classes without saved amounts (e.g. new classes)
-    </p>
   </div>
   <span
     toolbarRight
@@ -44,6 +40,9 @@
     {{ selectedVersion.statusLabel }}
   </span>
 </app-page-toolbar>
+<p class="fee-filter-hint fee-inline-hint">
+  Draft &amp; Published: edit any class · Active: only classes without saved amounts (e.g. new classes)
+</p>
 
 <div class="split-layout">
   <div class="side-list">

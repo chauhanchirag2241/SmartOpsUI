@@ -1,7 +1,18 @@
-<div class="admin-wrapper">
+<div
+  class="admin-wrapper"
+  [class.nav-expanded]="layoutUi.sidebarExpanded()"
+  [class.nav-collapsed]="!layoutUi.sidebarExpanded()"
+>
   <mat-sidenav-container class="sidenav-container">
-    <mat-sidenav mode="side" [opened]="layoutUi.sidebarOpened()" class="sidenav">
-      <app-sidebar (toggle)="onMenuToggle()"></app-sidebar>
+    <mat-sidenav
+      mode="side"
+      [opened]="true"
+      disableClose
+      class="sidenav"
+      [class.sidenav-expanded]="layoutUi.sidebarExpanded()"
+      [class.sidenav-collapsed]="!layoutUi.sidebarExpanded()"
+    >
+      <app-sidebar></app-sidebar>
     </mat-sidenav>
 
     <mat-sidenav-content class="main-content">

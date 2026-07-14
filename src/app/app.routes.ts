@@ -197,6 +197,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'academic-years/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.AcademicYears, permission: 'view', entityKind: 'academic-year' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
         path: 'leave/staff',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.LeaveStaff, permission: 'view' },
