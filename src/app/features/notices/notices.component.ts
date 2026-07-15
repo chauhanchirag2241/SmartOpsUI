@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { NoticeListItem, NoticesService } from '../../core/services/notices.service';
@@ -8,6 +9,7 @@ import { refreshUi } from '../../core/utils/ui-refresh.util';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 import { canEditInScope } from '../leave/workflow-page.util';
 import { ScopeReadonlyLockComponent } from '../../shared/components/scope-readonly-lock/scope-readonly-lock.component';
+import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import type { DataTableAction, DataTableConfig, DataTableFilter } from '../../shared/components/smart-data-table';
 import { AddNoticeComponent } from './add-notice.component';
@@ -23,6 +25,7 @@ import { NoticeViewComponent } from './notice-view.component';
     AddNoticeComponent,
     NoticeResponsesComponent,
     NoticeViewComponent,
+    MatDialogModule,
   ],
   templateUrl: './notices.component.html',
   styleUrl: './notices.component.css',
@@ -30,6 +33,7 @@ import { NoticeViewComponent } from './notice-view.component';
 export class NoticesComponent implements OnInit {
   private readonly noticesService = inject(NoticesService);
   private readonly notify = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissionService = inject(PermissionService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -208,15 +212,33 @@ export class NoticesComponent implements OnInit {
     }
 
     if (event.action.label === 'Delete') {
-      if (!confirm('Delete this notice? Recipients will no longer see it.')) return;
-      this.noticesService.delete(id).subscribe({
-        next: () => {
-          this.notify.success('Notice deleted');
-          this.load();
+      const title = String(event.row['title'] ?? 'Notice');
+      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+        data: {
+          title: 'Delete notice?',
+          description: 'Recipients will no longer see this notice.',
+          recordName: title,
+          recordMeta: String(event.row['statusLabel'] ?? event.row['audienceLabel'] ?? ''),
+          initials: this.initialsFrom(title),
+          warningMessage: 'This action cannot be undone.',
+          confirmButtonText: 'Yes, delete',
+          cancelButtonText: 'Cancel',
         },
-        error: (err) => {
-          this.notify.error(typeof err?.error === 'string' ? err.error : 'Delete failed');
-        },
+        panelClass: 'erp-dialog',
+        disableClose: true,
+      });
+
+      dialogRef.afterClosed().subscribe((confirmed) => {
+        if (!confirmed) return;
+        this.noticesService.delete(id).subscribe({
+          next: () => {
+            this.notify.success('Notice deleted');
+            this.load();
+          },
+          error: (err) => {
+            this.notify.error(typeof err?.error === 'string' ? err.error : 'Delete failed');
+          },
+        });
       });
       return;
     }
@@ -265,5 +287,14 @@ export class NoticesComponent implements OnInit {
       publishedOn: n.publishedOn ?? '',
       isActive: n.isActive ?? true,
     };
+  }
+
+  private initialsFrom(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'N';
+    return parts
+      .slice(0, 2)
+      .map((p) => p[0]!.toUpperCase())
+      .join('');
   }
 }

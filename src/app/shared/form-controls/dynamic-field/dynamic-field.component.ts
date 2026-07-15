@@ -1,11 +1,13 @@
-import { Component, HostBinding, Input } from '@angular/core';
+import { Component, HostBinding, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { DatePicker } from 'primeng/datepicker';
 
 import { SELECT_PLACEHOLDER } from '../../constants/form.constants';
 import { DigitsOnlyDirective } from '../../directives/digits-only.directive';
@@ -30,8 +32,10 @@ import {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     MatDatepickerModule,
     MatCheckboxModule,
+    DatePicker,
     DigitsOnlyDirective,
     LettersOnlyDirective,
     FileUploadComponent,
@@ -39,10 +43,14 @@ import {
   templateUrl: './dynamic-field.component.html',
   styleUrl: './dynamic-field.component.css',
 })
-export class DynamicFieldComponent {
+export class DynamicFieldComponent implements OnChanges {
   @Input({ required: true }) config!: FormFieldConfig;
   @Input({ required: true }) group!: FormGroup;
   @Input() full = false;
+
+  /** Display text for autocomplete; value stored in form control is option.value */
+  readonly autocompleteSearch = new FormControl<string>('', { nonNullable: true });
+  filteredOptions: SelectOption[] = [];
 
   @HostBinding('class.field') readonly fieldClass = true;
 
@@ -313,5 +321,60 @@ export class DynamicFieldComponent {
 
   usesDigitsOnly(): boolean {
     return this.config.inputType === 'tel' || this.isAadhaarField();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['config'] || changes['group']) {
+      this.syncAutocompleteFromValue();
+    }
+  }
+
+  filterAutocomplete(term: string): void {
+    const q = (term ?? '').trim().toLowerCase();
+    const options = this.config.options ?? [];
+    this.filteredOptions = q
+      ? options.filter((o) => o.label.toLowerCase().includes(q))
+      : [...options];
+  }
+
+  displayAutocompleteLabel(value: unknown): string {
+    if (value == null || value === '') {
+      return '';
+    }
+    const match = (this.config.options ?? []).find((o) => String(o.value) === String(value));
+    return match?.label ?? '';
+  }
+
+  onAutocompleteInput(term: string): void {
+    this.filterAutocomplete(term);
+    const match = (this.config.options ?? []).find(
+      (o) => o.label.toLowerCase() === term.trim().toLowerCase(),
+    );
+    if (!match) {
+      const control = this.group.get(this.config.controlName);
+      if (control && control.value != null && control.value !== '') {
+        control.setValue(null);
+        control.markAsTouched();
+      }
+    }
+  }
+
+  onAutocompleteSelected(option: SelectOption): void {
+    this.setControlValue(this.config.controlName, option.value);
+    this.autocompleteSearch.setValue(option.label, { emitEvent: false });
+  }
+
+  private syncAutocompleteFromValue(): void {
+    if (this.config?.type !== 'autocomplete') {
+      return;
+    }
+    const value = this.group?.get(this.config.controlName)?.value;
+    this.autocompleteSearch.setValue(this.displayAutocompleteLabel(value), { emitEvent: false });
+    this.filterAutocomplete('');
+    if (this.config.disabled || this.group?.get(this.config.controlName)?.disabled) {
+      this.autocompleteSearch.disable({ emitEvent: false });
+    } else {
+      this.autocompleteSearch.enable({ emitEvent: false });
+    }
   }
 }

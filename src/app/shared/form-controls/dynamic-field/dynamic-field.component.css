@@ -15,6 +15,18 @@
   width: 100%;
 }
 
+.fo-datetime-field :host ::ng-deep,
+.fo-datetime-field ::ng-deep .p-datepicker,
+.fo-datetime-field ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
+.field-error {
+  color: var(--danger-color, #d32f2f);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
 .custom-field > label {
   font-size: 11px;
   color: var(--text-secondary);

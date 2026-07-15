@@ -4,7 +4,16 @@ import { Observable } from 'rxjs';
 import { AuditLogPagedResponse } from '../models/audit-history.model';
 import { ApiService } from './api.service';
 
-export type AuditHistoryEntityType = 'student' | 'employee' | 'class' | 'subject' | 'academic-year';
+export type AuditHistoryEntityType =
+  | 'student'
+  | 'employee'
+  | 'class'
+  | 'subject'
+  | 'academic-year'
+  | 'visitor'
+  | 'phone-log'
+  | 'complaint'
+  | 'admission-inquiry';
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {
@@ -35,6 +44,14 @@ export class AuditService {
         return `classes/${entityId}/history`;
       case 'academic-year':
         return `academicYears/${entityId}/history`;
+      case 'visitor':
+        return `front-office/visitors/${entityId}/history`;
+      case 'phone-log':
+        return `front-office/phone-logs/${entityId}/history`;
+      case 'complaint':
+        return `front-office/complaints/${entityId}/history`;
+      case 'admission-inquiry':
+        return `front-office/admission-inquiries/${entityId}/history`;
       default:
         return `${entityType}s/${entityId}/history`;
     }

@@ -241,6 +241,89 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'front-office/visitors',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.VisitorBook, permission: 'view' },
+        loadComponent: () =>
+          import('./features/front-office/visitors/visitors.component').then((m) => m.VisitorsComponent),
+      },
+      {
+        path: 'front-office/visitors/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.VisitorBook, permission: 'view', entityKind: 'visitor' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'front-office/phone-logs',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.PhoneLogs, permission: 'view' },
+        loadComponent: () =>
+          import('./features/front-office/phone-logs/phone-logs.component').then(
+            (m) => m.PhoneLogsComponent,
+          ),
+      },
+      {
+        path: 'front-office/phone-logs/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.PhoneLogs, permission: 'view', entityKind: 'phone-log' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'front-office/complaints',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Complaints, permission: 'view' },
+        loadComponent: () =>
+          import('./features/front-office/complaints/complaints.component').then(
+            (m) => m.ComplaintsComponent,
+          ),
+      },
+      {
+        path: 'front-office/complaints/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Complaints, permission: 'view', entityKind: 'complaint' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'front-office/admission-inquiries',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.AdmissionInquiries, permission: 'view' },
+        loadComponent: () =>
+          import('./features/front-office/admission-inquiries/admission-inquiries.component').then(
+            (m) => m.AdmissionInquiriesComponent,
+          ),
+      },
+      {
+        path: 'front-office/admission-inquiries/:id/history',
+        canActivate: [permissionGuard],
+        data: {
+          menuCode: MenuCodes.AdmissionInquiries,
+          permission: 'view',
+          entityKind: 'admission-inquiry',
+        },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'front-office/setup',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FrontOfficeSetup, permission: 'view' },
+        loadComponent: () =>
+          import('./features/front-office/setup/front-office-setup.component').then(
+            (m) => m.FrontOfficeSetupComponent,
+          ),
+      },
+      {
         path: 'notices',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Notices, permission: 'view' },

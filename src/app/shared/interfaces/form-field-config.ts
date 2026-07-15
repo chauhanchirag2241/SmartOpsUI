@@ -12,10 +12,21 @@ export interface ValidationConfig {
 }
 
 export interface FormFieldConfig {
-  type: 'input' | 'select' | 'datepicker' | 'textarea' | 'checkbox' | 'multi-checkbox' | 'number' | 'badges' | 'file';
+  type:
+    | 'input'
+    | 'select'
+    | 'autocomplete'
+    | 'datepicker'
+    | 'datetime'
+    | 'textarea'
+    | 'checkbox'
+    | 'multi-checkbox'
+    | 'number'
+    | 'badges'
+    | 'file';
   label: string;
   controlName: string;
-  inputType?: 'text' | 'email' | 'tel' | 'number' | 'password' | 'time';
+  inputType?: 'text' | 'email' | 'tel' | 'number' | 'password' | 'time' | 'datetime-local';
   /** Special input formatting: aadhaar, pan, name-only, or alphanumeric text. */
   inputFormat?: 'aadhaar' | 'pan' | 'name' | 'alphanumeric';
   placeholder?: string;

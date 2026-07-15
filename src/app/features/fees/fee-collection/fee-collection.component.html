@@ -254,22 +254,26 @@
               *ngFor="let a of collectForm.allocations"
               class="alloc-row"
               [class.is-selected]="a.checked"
+              [class.is-discount]="a.isDiscount"
               (click)="toggleAllocation(a)"
             >
               <span class="alloc-check">
                 <input
                   type="checkbox"
                   [(ngModel)]="a.checked"
-                  [disabled]="collectingInProgress || a.amount <= 0"
+                  [disabled]="collectingInProgress || a.isDiscount || a.amount <= 0"
                   (click)="$event.stopPropagation()"
                   (ngModelChange)="onAllocationCheckChange()"
                 />
               </span>
               <span class="alloc-name" [title]="a.label">
-                <span class="alloc-head">{{ a.feeTypeName }}</span>
+                <span class="alloc-head">
+                  {{ a.feeTypeName }}
+                  <span *ngIf="a.isDiscount" class="badge b-discount alloc-discount-tag">Discount</span>
+                </span>
                 <span class="alloc-period">{{ a.label }}</span>
               </span>
-              <span class="alloc-due">{{ formatInr(a.amount) }}</span>
+              <span class="alloc-due" [class.fee-amt-discount]="a.isDiscount || a.amount < 0">{{ formatInr(a.amount) }}</span>
             </div>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { APP_INITIALIZER, ApplicationConfig, provideBrowserGlobalErrorListeners 
 import { DateAdapter, MAT_DATE_FORMATS } from '@angular/material/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter, withRouterConfig } from '@angular/router';
+import Aura from '@primeuix/themes/aura';
+import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
 import { authInitializer } from './core/initializers/auth.initializer';
@@ -19,6 +21,14 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimations(),
+    providePrimeNG({
+      theme: {
+        preset: Aura,
+        options: {
+          darkModeSelector: false,
+        },
+      },
+    }),
     provideHttpClient(
       withInterceptors([
         academicYearScopeTransitionInterceptor,

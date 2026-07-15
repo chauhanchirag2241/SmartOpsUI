@@ -10,6 +10,7 @@ import { EmployeeService } from '../../../core/services/employee.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { FrontOfficeService } from '../../../core/services/front-office.service';
 import { ActionButtonComponent } from '../../components/action-button/action-button.component';
 import { AuditHistoryEntityType } from '../../../core/services/audit.service';
 import { AuditHistoryComponent } from '../../components/audit-history/audit-history.component';
@@ -30,6 +31,13 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   class: { listRoute: '/classes', entityType: 'class' },
   subject: { listRoute: '/subjects', entityType: 'subject' },
   'academic-year': { listRoute: '/academic-years', entityType: 'academic-year' },
+  visitor: { listRoute: '/front-office/visitors', entityType: 'visitor' },
+  'phone-log': { listRoute: '/front-office/phone-logs', entityType: 'phone-log' },
+  complaint: { listRoute: '/front-office/complaints', entityType: 'complaint' },
+  'admission-inquiry': {
+    listRoute: '/front-office/admission-inquiries',
+    entityType: 'admission-inquiry',
+  },
 };
 
 interface EntityHistoryHeader {
@@ -52,6 +60,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
   private readonly academicYearService = inject(AcademicYearService);
+  private readonly frontOfficeService = inject(FrontOfficeService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -155,6 +164,51 @@ export class EntityHistoryComponent implements OnInit {
             const subtitle = [start, end].filter(Boolean).join(' → ');
             return { title, subtitle };
           }),
+        );
+      case 'visitor':
+        return this.frontOfficeService.getVisitor(id).pipe(
+          map((data) => ({
+            title: String(data.name ?? 'Visitor').trim() || 'Visitor',
+            subtitle: [data.phone, data.purposeName]
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' · '),
+          })),
+        );
+      case 'phone-log':
+        return this.frontOfficeService.getPhoneLog(id).pipe(
+          map((data) => ({
+            title: String(data.callerName ?? 'Phone log').trim() || 'Phone log',
+            subtitle: [data.phone, data.callTypeLabel]
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' · '),
+          })),
+        );
+      case 'complaint':
+        return this.frontOfficeService.getComplaint(id).pipe(
+          map((data) => ({
+            title:
+              String(
+                data.isAnonymous
+                  ? 'Anonymous complaint'
+                  : (data.complainantName ?? data.complaintTypeName ?? 'Complaint'),
+              ).trim() || 'Complaint',
+            subtitle: [data.complaintTypeName, data.statusLabel]
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' · '),
+          })),
+        );
+      case 'admission-inquiry':
+        return this.frontOfficeService.getAdmissionInquiry(id).pipe(
+          map((data) => ({
+            title: String(data.studentName ?? data.parentName ?? 'Inquiry').trim() || 'Inquiry',
+            subtitle: [data.parentName, data.statusLabel, data.classLabel]
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' · '),
+          })),
         );
       case 'student':
       default:

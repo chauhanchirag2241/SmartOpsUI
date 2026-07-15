@@ -52,6 +52,33 @@
       </mat-form-field>
     </div>
   }
+  @case ('datetime') {
+    <div class="custom-field fo-datetime-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (isRequired) {
+          <span class="req">*</span>
+        }
+      </label>
+      <p-datepicker
+        [inputId]="controlId"
+        [formControlName]="config.controlName"
+        [showTime]="true"
+        hourFormat="12"
+        [showIcon]="true"
+        iconDisplay="input"
+        dateFormat="dd/mm/yy"
+        [placeholder]="getPlaceholder() || 'Select date and time'"
+        [disabled]="config.disabled ?? false"
+        appendTo="body"
+        styleClass="fo-datetime-picker"
+        fluid
+      />
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <div class="field-error">{{ getError() }}</div>
+      }
+    </div>
+  }
   @case ('select') {
     <div class="custom-field" [formGroup]="group">
       <label [attr.for]="controlId">
@@ -73,6 +100,38 @@
         </mat-select>
         <mat-error>{{ getError() }}</mat-error>
       </mat-form-field>
+    </div>
+  }
+  @case ('autocomplete') {
+    <div class="custom-field" [formGroup]="group">
+      <label [attr.for]="controlId">
+        {{ config.label }}
+        @if (isRequired) {
+          <span class="req">*</span>
+        }
+      </label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width compact-field">
+        <input
+          matInput
+          [id]="controlId"
+          [formControl]="autocompleteSearch"
+          [placeholder]="getPlaceholder()"
+          [matAutocomplete]="auto"
+          (input)="onAutocompleteInput(autocompleteSearch.value)"
+        />
+        <mat-autocomplete
+          #auto="matAutocomplete"
+          (optionSelected)="onAutocompleteSelected($event.option.value)"
+        >
+          @for (option of filteredOptions; track optionTrack($index, option)) {
+            <mat-option [value]="option">{{ option.label }}</mat-option>
+          }
+        </mat-autocomplete>
+        <mat-error>{{ getError() }}</mat-error>
+      </mat-form-field>
+      @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {
+        <span class="inline-error">{{ getError() }}</span>
+      }
     </div>
   }
   @case ('textarea') {

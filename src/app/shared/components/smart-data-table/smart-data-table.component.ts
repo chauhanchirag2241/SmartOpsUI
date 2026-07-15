@@ -27,6 +27,7 @@ import {
 import { AvatarColorService } from '../../services/avatar-color.service';
 import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filter-panel.util';
 import { naturalTextCompare } from '../../utils/natural-sort.util';
+import { DateRangeFilterComponent } from '../date-range-filter/date-range-filter.component';
 
 @Component({
   selector: 'app-smart-data-table',
@@ -37,6 +38,8 @@ import { naturalTextCompare } from '../../utils/natural-sort.util';
 })
 export class SmartDataTableComponent implements OnInit, OnChanges {
   private readonly avatarColor = inject(AvatarColorService);
+  /** Projected date-range filter inside the filter modal (optional). */
+  @ContentChild(DateRangeFilterComponent) dateRangeFilter?: DateRangeFilterComponent;
   /** Table configuration object */
   @Input() config!: DataTableConfig;
 
@@ -122,6 +125,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   columnVisibility: Record<string, boolean> = {};
   showColMenu = false;
   showFilterMenu = false;
+  /** Status chip selection while filter modal is open (committed on Apply). */
+  pendingFilter: DataTableFilter | null = null;
   private suppressFilterOutsideClose = false;
   private _pageSizeInitialized = false;
 
@@ -455,22 +460,51 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
     this.showFilterMenu = !this.showFilterMenu;
     if (this.showFilterMenu) {
       this.showColMenu = false;
+      this.pendingFilter = this.activeFilter;
+      this.dateRangeFilter?.beginEdit();
+    } else {
+      this.cancelFilterPanel();
     }
   }
 
-  closeFilterMenu(event?: Event): void {
+  selectPendingFilter(filter: DataTableFilter): void {
+    this.pendingFilter = filter;
+    this.dateRangeFilter?.closeList();
+  }
+
+  onFilterBodyClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('app-date-range-filter')) {
+      this.dateRangeFilter?.closeList();
+    }
+  }
+
+  /** Apply status + date range drafts, then close. */
+  commitFilterPanel(event?: Event): void {
     event?.stopPropagation();
+    if (this.pendingFilter && this.pendingFilter.value !== this.activeFilter?.value) {
+      this.setFilter(this.pendingFilter);
+    }
+    this.dateRangeFilter?.commit();
     this.showFilterMenu = false;
   }
 
+  /** Discard drafts and close. */
+  cancelFilterPanel(event?: Event): void {
+    event?.stopPropagation();
+    this.pendingFilter = this.activeFilter;
+    this.dateRangeFilter?.discard();
+    this.showFilterMenu = false;
+  }
+
+  closeFilterMenu(event?: Event): void {
+    this.cancelFilterPanel(event);
+  }
+
   clearAdvancedFilters(): void {
-    const first = this.config.filters?.[0];
-    if (first) {
-      this.setFilter(first);
-    } else {
-      this.activeFilter = null;
-      this.filterChanged.emit(null);
-    }
+    const first = this.config.filters?.[0] ?? null;
+    this.pendingFilter = first;
+    this.dateRangeFilter?.resetDraftToDefault();
     this.advancedFiltersCleared.emit();
   }
 
@@ -655,7 +689,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
       this.showColMenu = false;
     }
     if (this.showFilterMenu && !this.suppressFilterOutsideClose && !isInsideFilterDrop(event)) {
-      this.showFilterMenu = false;
+      this.cancelFilterPanel();
     }
   }
 }

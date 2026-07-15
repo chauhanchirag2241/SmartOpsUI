@@ -30,6 +30,7 @@ type CollectAllocRow = {
   feeTypeName: string;
   amount: number;
   checked: boolean;
+  isDiscount: boolean;
 };
 
 @Component({
@@ -231,12 +232,12 @@ export class FeeCollectionComponent {
   }
 
   get selectedAllocCount(): number {
-    return this.collectForm.allocations.filter((a) => a.checked).length;
+    return this.collectForm.allocations.filter((a) => a.checked && a.amount > 0).length;
   }
 
   get selectedAllocDue(): number {
     return this.collectForm.allocations
-      .filter((a) => a.checked)
+      .filter((a) => a.checked && a.amount > 0)
       .reduce((sum, a) => sum + (a.amount || 0), 0);
   }
 
@@ -263,7 +264,7 @@ export class FeeCollectionComponent {
   }
 
   toggleAllocation(row: CollectAllocRow): void {
-    if (this.collectingInProgress || row.amount <= 0) return;
+    if (this.collectingInProgress || row.isDiscount || row.amount <= 0) return;
     row.checked = !row.checked;
     this.syncCollectAmountToSelection();
   }
@@ -310,21 +311,26 @@ export class FeeCollectionComponent {
     const allocations: CollectAllocRow[] = [];
     for (const h of detail.feeHeads) {
       for (const inst of h.installments) {
-        if (inst.dueAmount <= 0) continue;
+        // Zero remaining: skip. Positive = payable. Negative = discount (show, not selectable).
+        if (inst.dueAmount === 0) continue;
+        const isDiscount = inst.dueAmount < 0 || inst.totalAmount < 0;
         allocations.push({
           installmentId: inst.installmentId,
           feeTypeId: inst.feeTypeId || h.feeTypeId,
           label: inst.periodLabel || h.feeTypeName,
           feeTypeName: h.feeTypeName,
           amount: inst.dueAmount,
-          checked: this.isCurrentPeriod(inst.periodLabel),
+          checked: !isDiscount && this.isCurrentPeriod(inst.periodLabel),
+          isDiscount,
         });
       }
     }
 
     if (!allocations.some((a) => a.checked)) {
       for (const a of allocations) {
-        a.checked = true;
+        if (!a.isDiscount && a.amount > 0) {
+          a.checked = true;
+        }
       }
     }
 
@@ -372,7 +378,7 @@ export class FeeCollectionComponent {
       return;
     }
 
-    const selected = this.collectForm.allocations.filter((a) => a.checked);
+    const selected = this.collectForm.allocations.filter((a) => a.checked && a.amount > 0 && !a.isDiscount);
     if (!selected.length) {
       this.toast('Select at least one installment', true);
       return;

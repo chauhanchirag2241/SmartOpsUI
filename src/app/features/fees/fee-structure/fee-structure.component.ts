@@ -351,14 +351,39 @@ export class FeeStructureComponent implements OnInit {
   }
 
   activateVersion(id: string): void {
-    if (!confirm('Activate this fee structure? Previous active structure for this year will be archived.')) return;
-    this.service.activateVersion(id).subscribe({
-      next: () => {
-        this.loadVersions();
-        if (this.selectedVersion?.id === id) this.openManagePanel(id);
-        this.toast('Activated');
+    const version = this.resolveVersion(id);
+    if (!version) {
+      this.toast('Version not found', true);
+      return;
+    }
+
+    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+      data: {
+        title: 'Activate fee structure?',
+        description:
+          'Previous active structure for this academic year will be archived.',
+        recordName: `${version.academicYearTitle} — ${version.versionLabel}`,
+        recordMeta: `Status: ${version.statusLabel}`,
+        initials: 'FS',
+        confirmButtonText: 'Yes, activate',
+        cancelButtonText: 'Cancel',
+        variant: 'primary',
+        headerIcon: 'check_circle',
       },
-      error: (e) => this.toast(extractApiError(e, 'Activate failed'), true),
+      panelClass: 'erp-dialog',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.service.activateVersion(id).subscribe({
+        next: () => {
+          this.loadVersions();
+          if (this.selectedVersion?.id === id) this.openManagePanel(id);
+          this.toast('Activated');
+        },
+        error: (e) => this.toast(extractApiError(e, 'Activate failed'), true),
+      });
     });
   }
 
@@ -452,15 +477,42 @@ export class FeeStructureComponent implements OnInit {
 
   deleteFeeType(ft: ReturnType<typeof normalizeFeeType>): void {
     if (!this.selectedVersion || this.selectedVersion.isLocked) return;
-    if (!confirm(`Delete fee head "${ft.name}"?`)) return;
-    this.service.deleteFeeType(ft.id).subscribe({
-      next: () => {
-        this.openManagePanel(this.selectedVersion!.id);
-        this.loadVersions();
-        this.toast('Fee head removed');
+
+    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+      data: {
+        title: 'Delete fee head?',
+        description: 'This fee head will be removed from the draft fee structure.',
+        recordName: ft.name,
+        recordMeta: String(ft.categoryLabel ?? ''),
+        initials: this.initialsFrom(ft.name),
+        warningMessage: 'This action cannot be undone for this draft version.',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
       },
-      error: (e) => this.toast(extractApiError(e, 'Delete failed'), true),
+      panelClass: 'erp-dialog',
+      disableClose: true,
     });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.service.deleteFeeType(ft.id).subscribe({
+        next: () => {
+          this.openManagePanel(this.selectedVersion!.id);
+          this.loadVersions();
+          this.toast('Fee head removed');
+        },
+        error: (e) => this.toast(extractApiError(e, 'Delete failed'), true),
+      });
+    });
+  }
+
+  private initialsFrom(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'FH';
+    return parts
+      .slice(0, 2)
+      .map((p) => p[0]!.toUpperCase())
+      .join('');
   }
 
   catClass = categoryBadgeClass;

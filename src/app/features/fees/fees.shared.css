@@ -110,6 +110,18 @@
 .alloc-row:last-child { border-bottom: none; }
 .alloc-row:hover { background: var(--hover); }
 .alloc-row.is-selected { background: var(--badge-bg); }
+.alloc-row.is-discount {
+  background: rgba(254, 242, 242, 0.45);
+  cursor: default;
+}
+.alloc-row.is-discount:hover { background: rgba(254, 242, 242, 0.55); }
+.alloc-discount-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
 .alloc-check {
   display: flex;
   align-items: center;

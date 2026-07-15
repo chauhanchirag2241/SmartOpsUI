@@ -97,46 +97,63 @@
             <mat-icon>filter_list</mat-icon>
             Filter
           </button>
-          <div
-            class="table-filter-menu"
-            [class.show]="showFilterMenu"
-            (mousedown)="$event.stopPropagation()"
-            (click)="$event.stopPropagation()"
-          >
-            <div class="table-filter-menu-head">
-              <span class="table-filter-menu-title">Filters</span>
-              <div class="table-filter-menu-actions">
-                <button type="button" class="table-filter-clear" (click)="clearAdvancedFilters()">Clear all</button>
-                <button
-                  type="button"
-                  class="table-filter-close"
-                  aria-label="Close filters"
-                  (click)="closeFilterMenu($event)"
-                >
-                  <mat-icon>close</mat-icon>
+          @if (showFilterMenu) {
+            <div class="table-filter-backdrop" (click)="cancelFilterPanel($event)"></div>
+            <div
+              class="table-filter-menu show table-filter-menu-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filters"
+              (mousedown)="$event.stopPropagation()"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="table-filter-menu-head">
+                <span class="table-filter-menu-title">Filters</span>
+                <div class="table-filter-menu-actions">
+                  <button type="button" class="table-filter-clear" (click)="clearAdvancedFilters()">
+                    Clear all
+                  </button>
+                  <button
+                    type="button"
+                    class="table-filter-close"
+                    aria-label="Close filters"
+                    (click)="cancelFilterPanel($event)"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div class="table-filter-menu-body" (click)="onFilterBodyClick($event)">
+                <ng-content select="[tableFilters]"></ng-content>
+                @if (config.filters?.length) {
+                  <div class="table-filter-section">
+                    <span class="table-filter-section-label">Status</span>
+                    <div class="table-filter-chips">
+                      @for (filter of config.filters; track filter.value) {
+                        <button
+                          type="button"
+                          class="filter-chip"
+                          [class.active]="pendingFilter?.value === filter.value"
+                          (click)="selectPendingFilter(filter)"
+                        >
+                          <mat-icon>{{ filter.icon }}</mat-icon>
+                          {{ filter.label }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="table-filter-menu-footer">
+                <button type="button" class="btn-secondary" (click)="cancelFilterPanel($event)">
+                  Close
+                </button>
+                <button type="button" class="btn-primary" (click)="commitFilterPanel($event)">
+                  Apply
                 </button>
               </div>
             </div>
-            <ng-content select="[tableFilters]"></ng-content>
-            @if (config.filters?.length) {
-              <div class="table-filter-section">
-                <span class="table-filter-section-label">Status</span>
-                <div class="table-filter-chips">
-                  @for (filter of config.filters; track filter.value) {
-                    <button
-                      type="button"
-                      class="filter-chip"
-                      [class.active]="activeFilter?.value === filter.value"
-                      (click)="setFilter(filter)"
-                    >
-                      <mat-icon>{{ filter.icon }}</mat-icon>
-                      {{ filter.label }}
-                    </button>
-                  }
-                </div>
-              </div>
-            }
-          </div>
+          }
         </div>
       }
     </div>

@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClassService } from '../../core/services/class.service';
 import { SubjectService } from '../../core/services/subject.service';
@@ -15,6 +16,7 @@ import {
 } from '../../core/services/homework.service';
 import { AddHomeworkComponent } from './add-homework/add-homework.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
+import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import {
   HomeworkListItem,
   asHomeworkArray,
@@ -31,6 +33,7 @@ import {
     FormsModule,
     MatIconModule,
     MatSnackBarModule,
+    MatDialogModule,
     PageToolbarComponent,
     AddHomeworkComponent,
   ],
@@ -42,6 +45,7 @@ export class HomeworkComponent implements OnInit {
   private subjectService = inject(SubjectService);
   private homeworkService = inject(HomeworkService);
   private snackBar = inject(NotificationService);
+  private dialog = inject(MatDialog);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
@@ -233,16 +237,43 @@ export class HomeworkComponent implements OnInit {
   deleteHomework(item: HomeworkListItem, event: Event): void {
     if (!this.canManageHomework) return;
     event.stopPropagation();
-    if (!confirm(`Delete "${item.title}"?`)) return;
-    this.homeworkService.delete(item.id).subscribe({
-      next: () => {
-        this.snackBar.open('Homework deleted', 'Close', { duration: 2500 });
-        this.loadList();
-        this.loadStats();
-        this.refreshView();
+
+    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+      data: {
+        title: 'Delete homework?',
+        description: 'This homework assignment will be permanently removed.',
+        recordName: item.title,
+        recordMeta: [item.className, item.subjectName].filter(Boolean).join(' · '),
+        initials: this.initialsFrom(item.title),
+        warningMessage: 'Submissions linked to this homework may also be affected.',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
       },
-      error: () => this.snackBar.open('Delete failed', 'Close', { duration: 3000 }),
+      panelClass: 'erp-dialog',
+      disableClose: true,
     });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.homeworkService.delete(item.id).subscribe({
+        next: () => {
+          this.snackBar.open('Homework deleted', 'Close', { duration: 2500 });
+          this.loadList();
+          this.loadStats();
+          this.refreshView();
+        },
+        error: () => this.snackBar.open('Delete failed', 'Close', { duration: 3000 }),
+      });
+    });
+  }
+
+  private initialsFrom(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'HW';
+    return parts
+      .slice(0, 2)
+      .map((p) => p[0]!.toUpperCase())
+      .join('');
   }
 
   openDetail(id: string): void {

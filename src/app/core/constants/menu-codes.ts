@@ -5,6 +5,7 @@ export const MenuCodes = {
   Roles: 'ROLES',
   Settings: 'SETTINGS',
   Academics: 'ACADEMICS',
+  AcademicSetup: 'ACADEMIC_SETUP',
   FeesManagement: 'FEES_MANAGEMENT',
   SalaryManagement: 'SALARY_MANAGEMENT',
   LeaveManagement: 'LEAVE_MANAGEMENT',
@@ -28,6 +29,12 @@ export const MenuCodes = {
   LeaveStaff: 'LEAVE_STAFF',
   LeaveStudent: 'LEAVE_STUDENT',
   MyActions: 'MY_ACTIONS',
+  FrontOffice: 'FRONT_OFFICE',
+  VisitorBook: 'VISITOR_BOOK',
+  PhoneLogs: 'PHONE_LOGS',
+  Complaints: 'COMPLAINTS',
+  AdmissionInquiries: 'ADMISSION_INQUIRIES',
+  FrontOfficeSetup: 'FRONT_OFFICE_SETUP',
   Notices: 'NOTICES',
 } as const;
 

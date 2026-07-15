@@ -43,28 +43,39 @@
             <mat-icon>filter_list</mat-icon>
             Filter
           </button>
-          <div
-            class="table-filter-menu"
-            [class.show]="showFilterMenu"
-            (mousedown)="$event.stopPropagation()"
-            (click)="$event.stopPropagation()"
-          >
-            <div class="table-filter-menu-head">
-              <span class="table-filter-menu-title">Filters</span>
-              <div class="table-filter-menu-actions">
-                <button type="button" class="table-filter-clear" (click)="clearFilters()">Clear all</button>
-                <button
-                  type="button"
-                  class="table-filter-close"
-                  aria-label="Close filters"
-                  (click)="closeFilterMenu($event)"
-                >
-                  <mat-icon>close</mat-icon>
-                </button>
+          @if (showFilterMenu) {
+            <div class="table-filter-backdrop" (click)="closeFilterMenu($event)"></div>
+            <div
+              class="table-filter-menu show table-filter-menu-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filters"
+              (mousedown)="$event.stopPropagation()"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="table-filter-menu-head">
+                <span class="table-filter-menu-title">Filters</span>
+                <div class="table-filter-menu-actions">
+                  <button type="button" class="table-filter-clear" (click)="clearFilters()">Clear all</button>
+                  <button
+                    type="button"
+                    class="table-filter-close"
+                    aria-label="Close filters"
+                    (click)="closeFilterMenu($event)"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div class="table-filter-menu-body">
+                <ng-content select="[toolbarFilters]" />
+              </div>
+              <div class="table-filter-menu-footer">
+                <button type="button" class="btn-secondary" (click)="closeFilterMenu($event)">Close</button>
+                <button type="button" class="btn-primary" (click)="closeFilterMenu($event)">Apply</button>
               </div>
             </div>
-            <ng-content select="[toolbarFilters]" />
-          </div>
+          }
         </div>
       }
 
