@@ -27,9 +27,14 @@ function resolveFilter(label: string): AcademicYearFilter {
     case 'Active':
       return AcademicYearFilter.Active;
     case 'Inactive':
+    case 'Deleted':
       return AcademicYearFilter.Inactive;
     case 'Current':
       return AcademicYearFilter.Current;
+    case 'Draft':
+      return AcademicYearFilter.Draft;
+    case 'Archived':
+      return AcademicYearFilter.Archived;
     default:
       return AcademicYearFilter.All;
   }

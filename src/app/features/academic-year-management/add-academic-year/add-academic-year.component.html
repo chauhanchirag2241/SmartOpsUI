@@ -3,7 +3,7 @@
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
-<div class="step-hint">Academic year details</div>
+<div class="step-hint">Academic year and semester details</div>
 
 <form [formGroup]="ayForm">
   @for (tab of tabs; track tab.stepIndex) {
@@ -20,76 +20,68 @@
             />
           }
         </div>
+        @if (ayForm.hasError('dateRange') && (ayForm.touched || ayForm.dirty)) {
+          <p class="inline-error">End date cannot be earlier than start date.</p>
+        }
       </div>
     }
   }
 </form>
 
-@if (showSemesters) {
-  <div class="card semester-card">
-    <div class="card-title">
-      <mat-icon>date_range</mat-icon> Semesters
-    </div>
-    <p class="semester-hint">Configure semester dates for semester-wise fee collection and overdue tracking.</p>
-    <table class="semester-table">
-      <thead>
-        <tr>
-          <th>Semester</th>
-          <th>Name</th>
-          <th>Start date</th>
-          <th>End date</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (sem of semesters; track sem.semesterIndex) {
-          <tr>
-            <td>Semester {{ sem.semesterIndex }}</td>
-            <td>
-              <input type="text" [(ngModel)]="sem.name" [disabled]="mode === 'view'" />
-            </td>
-            <td>
-              <input type="date" [(ngModel)]="sem.startDate" [disabled]="mode === 'view'" />
-            </td>
-            <td>
-              <input type="date" [(ngModel)]="sem.endDate" [disabled]="mode === 'view'" />
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+<div class="card semester-card">
+  <div class="card-title">
+    <mat-icon>date_range</mat-icon> Semesters
   </div>
-}
+  <p class="semester-hint">Semester dates must fall within the academic year start and end dates.</p>
+  <table class="semester-table">
+    <thead>
+      <tr>
+        <th>Semester</th>
+        <th>Name</th>
+        <th>Start date</th>
+        <th>End date</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (sem of semesters; track sem.semesterIndex) {
+        <tr>
+          <td>Semester {{ sem.semesterIndex }}</td>
+          <td>
+            <input type="text" [(ngModel)]="sem.name" [disabled]="mode === 'view'" />
+          </td>
+          <td>
+            <input type="date" [(ngModel)]="sem.startDate" [disabled]="mode === 'view'" />
+          </td>
+          <td>
+            <input type="date" [(ngModel)]="sem.endDate" [disabled]="mode === 'view'" />
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  @if (semesterError) {
+    <p class="inline-error">{{ semesterError }}</p>
+  }
+</div>
 
 <div class="footer-actions">
   <app-action-button type="back" style="visibility: hidden;"></app-action-button>
 
   <div class="footer-hint">
-    @if (showSemesters) {
-      Save semester dates for fee collection
+    @if (mode === 'add') {
+      New years are saved as Draft — set as Current from the list when ready
     } @else {
-      Set academic year title and date range
+      Update year title, dates, and semesters together
     }
   </div>
 
   @if (mode !== 'view') {
-    @if (!showSemesters) {
-      <app-action-button
-        type="save"
-        [label]="isSaving ? 'Confirming...' : (mode === 'edit' ? 'Update Year' : 'Confirm & Add')"
-        [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
-        [disabled]="isSaving"
-        (action)="saveYear()">
-      </app-action-button>
-    } @else {
-      <app-action-button
-        type="save"
-        label="Save semesters"
-        icon="check_circle"
-        (action)="saveSemesters()">
-      </app-action-button>
-      @if (mode === 'add') {
-        <button type="button" class="btn-link-skip" (click)="finishWithoutSemesters()">Skip for now</button>
-      }
-    }
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Save as Draft')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="saveAll()">
+    </app-action-button>
   }
 </div>

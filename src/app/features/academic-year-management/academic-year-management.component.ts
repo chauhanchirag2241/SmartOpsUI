@@ -129,6 +129,7 @@ export class AcademicYearManagementComponent implements OnInit {
         label: 'Status',
         cellType: 'badge',
         badgeMap: {
+          Draft: { cssClass: 'b-amber', label: 'Draft' },
           Current: { cssClass: 'b-green', label: 'Current' },
           Archived: { cssClass: 'b-blue', label: 'Archived' },
           Deleted: { cssClass: 'b-red', label: 'Deleted' },
@@ -139,7 +140,9 @@ export class AcademicYearManagementComponent implements OnInit {
     filters: [
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Active', icon: 'check_circle', value: 'Active' },
+      { label: 'Draft', icon: 'edit_note', value: 'Draft' },
       { label: 'Current', icon: 'star', value: 'Current' },
+      { label: 'Archived', icon: 'inventory_2', value: 'Archived' },
       { label: 'Deleted', icon: 'cancel', value: 'Inactive' },
     ],
     actions: [
@@ -175,12 +178,18 @@ export class AcademicYearManagementComponent implements OnInit {
       return action.label === 'View details' || action.label === 'Show history';
     }
 
+    const status = String(row['status'] ?? '');
+
     if (action.label === 'Set as current') {
-      return row['isCurrent'] !== true && this.permissionService.canEdit(MenuCodes.AcademicYears);
+      return status === 'Draft' && this.permissionService.canEdit(MenuCodes.AcademicYears);
     }
 
     if (action.label === 'Delete year') {
-      return row['isCurrent'] !== true;
+      return status !== 'Current' && row['isCurrent'] !== true;
+    }
+
+    if (action.label === 'Edit details') {
+      return status === 'Draft' || status === 'Current' || status === 'Archived';
     }
 
     return true;

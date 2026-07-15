@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -19,6 +19,16 @@ type SemesterFormRow = {
   startDate: string;
   endDate: string;
 };
+
+function dateRangeValidator(group: AbstractControl): ValidationErrors | null {
+  const start = group.get('startDate')?.value;
+  const end = group.get('endDate')?.value;
+  if (!start || !end) return null;
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null;
+  return e < s ? { dateRange: true } : null;
+}
 
 @Component({
   selector: 'app-add-academic-year',
@@ -41,7 +51,7 @@ export class AddAcademicYearComponent implements OnInit {
 
   ayForm: FormGroup;
   isSaving = false;
-  savedYearId?: string;
+  semesterError = '';
 
   semesters: SemesterFormRow[] = [
     { semesterIndex: 1, name: 'Semester 1', startDate: '', endDate: '' },
@@ -85,25 +95,20 @@ export class AddAcademicYearComponent implements OnInit {
   ];
 
   constructor() {
-    this.ayForm = this.fb.group({
-      title: ['', Validators.required],
-      startDate: ['', Validators.required],
-      endDate: ['', Validators.required],
-    });
+    this.ayForm = this.fb.group(
+      {
+        title: ['', Validators.required],
+        startDate: ['', Validators.required],
+        endDate: ['', Validators.required],
+      },
+      { validators: dateRangeValidator },
+    );
   }
 
   get pageTitle(): string {
     if (this.mode === 'edit') return 'Edit Academic Year';
     if (this.mode === 'view') return 'View Academic Year';
     return 'Add New Academic Year';
-  }
-
-  get showSemesters(): boolean {
-    return Boolean(this.savedYearId || this.yearId);
-  }
-
-  get activeYearId(): string | undefined {
-    return this.savedYearId ?? this.yearId;
   }
 
   ngOnInit(): void {
@@ -148,20 +153,42 @@ export class AddAcademicYearComponent implements OnInit {
     });
   }
 
-  saveYear(): void {
-    if (this.ayForm.invalid || this.mode === 'view') {
+  saveAll(): void {
+    if (this.mode === 'view') return;
+
+    this.semesterError = '';
+    if (this.ayForm.invalid) {
       this.ayForm.markAllAsTouched();
-      this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
+      if (this.ayForm.hasError('dateRange')) {
+        this.snackBar.open('Academic year end date cannot be earlier than start date', 'Close', {
+          duration: 3500,
+          panelClass: 'snack-error',
+        });
+      } else {
+        this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
+      }
+      return;
+    }
+
+    const semesterValidation = this.validateSemesters();
+    if (semesterValidation) {
+      this.semesterError = semesterValidation;
+      this.snackBar.open(semesterValidation, 'Close', { duration: 4000, panelClass: 'snack-error' });
       return;
     }
 
     this.isSaving = true;
     const raw = this.ayForm.getRawValue();
-
     const payload = {
-      ...raw,
+      title: String(raw.title ?? '').trim(),
       startDate: this.formatDate(raw.startDate),
       endDate: this.formatDate(raw.endDate),
+      semesters: this.semesters.map((s) => ({
+        semesterIndex: s.semesterIndex,
+        name: s.name.trim(),
+        startDate: s.startDate,
+        endDate: s.endDate,
+      })),
     };
 
     const request$ =
@@ -177,63 +204,48 @@ export class AddAcademicYearComponent implements OnInit {
         }),
       )
       .subscribe({
-        next: (res: any) => {
-          const newId = res?.academicYearId ?? res?.AcademicYearId;
-          if (newId) {
-            this.savedYearId = String(newId);
-          } else if (this.yearId) {
-            this.savedYearId = this.yearId;
-          }
+        next: () => {
           this.snackBar.open(
-            this.mode === 'edit' ? 'Academic year updated successfully' : 'Academic year added successfully',
+            this.mode === 'edit' ? 'Academic year updated successfully' : 'Academic year saved as Draft',
             'Close',
             { duration: 3000, panelClass: 'snack-success' },
           );
-          if (this.mode === 'edit' || this.savedYearId) {
-            this.cdr.detectChanges();
-          } else {
-            this.saved.emit();
-          }
+          this.saved.emit();
         },
-        error: () => {
-          this.snackBar.open('Failed to save academic year', 'Close', { duration: 3000, panelClass: 'snack-error' });
+        error: (err) => {
+          const msg =
+            err?.error?.message ||
+            (typeof err?.error === 'string' ? err.error : null) ||
+            'Failed to save academic year';
+          this.snackBar.open(msg, 'Close', { duration: 4500, panelClass: 'snack-error' });
         },
       });
   }
 
-  saveSemesters(): void {
-    const yearId = this.activeYearId;
-    if (!yearId || this.mode === 'view') return;
+  private validateSemesters(): string | null {
+    const raw = this.ayForm.getRawValue();
+    const yearStart = this.formatDate(raw.startDate);
+    const yearEnd = this.formatDate(raw.endDate);
 
-    if (!this.semesters.every((s) => s.name.trim() && s.startDate && s.endDate)) {
-      this.snackBar.open('Fill all semester fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
-      return;
+    for (const sem of this.semesters) {
+      if (!sem.name.trim() || !sem.startDate || !sem.endDate) {
+        return 'Fill all semester fields';
+      }
+      if (sem.endDate < sem.startDate) {
+        return `Semester '${sem.name.trim()}': end date cannot be earlier than start date`;
+      }
+      if (sem.startDate < yearStart || sem.endDate > yearEnd) {
+        return `Semester '${sem.name.trim()}': dates must fall within the academic year range`;
+      }
     }
-
-    const payload = this.semesters.map((s) => ({
-      semesterIndex: s.semesterIndex,
-      name: s.name.trim(),
-      startDate: s.startDate,
-      endDate: s.endDate,
-    }));
-
-    this.ayService.saveSemesters(yearId, payload).subscribe({
-      next: () => {
-        this.snackBar.open('Semesters saved', 'Close', { duration: 3000, panelClass: 'snack-success' });
-        this.saved.emit();
-      },
-      error: () => {
-        this.snackBar.open('Failed to save semesters', 'Close', { duration: 3000, panelClass: 'snack-error' });
-      },
-    });
-  }
-
-  finishWithoutSemesters(): void {
-    this.saved.emit();
+    return null;
   }
 
   private formatDate(date: any): string {
     if (!date) return '';
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+      return date.slice(0, 10);
+    }
     const d = new Date(date);
     const month = '' + (d.getMonth() + 1);
     const day = '' + d.getDate();
