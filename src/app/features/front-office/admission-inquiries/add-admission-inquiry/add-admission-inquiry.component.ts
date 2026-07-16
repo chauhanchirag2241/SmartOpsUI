@@ -22,6 +22,7 @@ import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
 import { streamGroupFromApiInt, streamGroupToApiInt } from '../../../../shared/utils/stream-group.util';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { parseInquiryStatus } from '../../../../shared/utils/front-office-enum.util';
 
 const CLASS_OPTIONS = [
   'Nursery',
@@ -299,7 +300,7 @@ export class AddAdmissionInquiryComponent implements OnInit {
             nextFollowUpDate: row.nextFollowUpDate ? new Date(row.nextFollowUpDate) : null,
             assignedToEmployeeId: row.assignedToEmployeeId ?? null,
             reference: row.reference ?? '',
-            status: row.status,
+            status: parseInquiryStatus(row.status),
             description: row.description ?? '',
             autoFollowUp: row.autoFollowUp,
           });
@@ -332,7 +333,7 @@ export class AddAdmissionInquiryComponent implements OnInit {
       nextFollowUpDate: this.toDateOnly(raw.nextFollowUpDate),
       assignedToEmployeeId: raw.assignedToEmployeeId ? String(raw.assignedToEmployeeId) : null,
       reference: raw.reference || null,
-      status: Number(raw.status ?? 0),
+      status: parseInquiryStatus(raw.status),
       description: raw.description || null,
       autoFollowUp: !!raw.autoFollowUp,
     };

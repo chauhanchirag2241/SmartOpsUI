@@ -17,6 +17,7 @@ import { SELECT_PLACEHOLDER } from '../../../../shared/constants/form.constants'
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { parseComplaintStatus } from '../../../../shared/utils/front-office-enum.util';
 
 @Component({
   selector: 'app-add-complaint',
@@ -216,7 +217,7 @@ export class AddComplaintComponent implements OnInit {
             phone: row.phone ?? '',
             description: row.description,
             assignedToEmployeeId: row.assignedToEmployeeId,
-            status: row.status,
+            status: parseComplaintStatus(row.status),
             actionTaken: row.actionTaken ?? '',
             note: row.note ?? '',
           });
@@ -241,8 +242,8 @@ export class AddComplaintComponent implements OnInit {
       complainantName: raw.isAnonymous ? null : raw.complainantName || null,
       phone: raw.phone || null,
       description: String(raw.description ?? '').trim(),
-      assignedToEmployeeId: String(raw.assignedToEmployeeId ?? ''),
-      status: Number(raw.status ?? 0),
+      assignedToEmployeeId: raw.assignedToEmployeeId,
+      status: parseComplaintStatus(raw.status),
       actionTaken: raw.actionTaken || null,
       note: raw.note || null,
     };

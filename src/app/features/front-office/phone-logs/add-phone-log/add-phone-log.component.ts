@@ -16,6 +16,7 @@ import { ActionButtonComponent } from '../../../../shared/components/action-butt
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { parseCallType } from '../../../../shared/utils/front-office-enum.util';
 
 @Component({
   selector: 'app-add-phone-log',
@@ -158,7 +159,7 @@ export class AddPhoneLogComponent implements OnInit {
           this.form.patchValue({
             callerName: row.callerName,
             phone: row.phone ?? '',
-            callType: row.callType,
+            callType: parseCallType(row.callType),
             callDate: row.callDate ? new Date(row.callDate) : null,
             duration: row.duration ?? '',
             description: row.description,
@@ -182,7 +183,7 @@ export class AddPhoneLogComponent implements OnInit {
     const body = {
       callerName: String(raw.callerName ?? '').trim(),
       phone: String(raw.phone ?? '').trim(),
-      callType: Number(raw.callType),
+      callType: parseCallType(raw.callType),
       callDate: this.toDateOnly(raw.callDate),
       duration: raw.duration || null,
       description: String(raw.description ?? '').trim(),

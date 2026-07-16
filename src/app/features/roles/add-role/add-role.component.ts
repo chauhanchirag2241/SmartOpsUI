@@ -23,6 +23,14 @@ import { SchoolUserDto, UserService } from '../../../core/services/user.service'
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
+import {
+  MenuPermissionDisplayRow,
+  MenuPermissionTreeNode,
+  buildMenuPermissionTree,
+  collectExpandableMenuIds,
+  collectMenuDescendants,
+  flattenVisibleMenuRows,
+} from '../menu-permission-tree.util';
 interface RoleUserRow {
   id: string;
   username: string;
@@ -60,6 +68,9 @@ export class AddRoleComponent implements OnInit {
   roleUserRows: RoleUserRow[] = [];
   loadingUsers = false;
   menuPermissions: IRoleMenuPermission[] = [];
+  menuPermissionTree: MenuPermissionTreeNode[] = [];
+  menuPermissionRows: MenuPermissionDisplayRow[] = [];
+  expandedMenuIds = new Set<string>();
   dashboardWidgetPermissions: IRoleDashboardWidgetPermission[] = [];
 
   readonly configs: Record<string, FormFieldConfig> = {
@@ -162,6 +173,7 @@ export class AddRoleComponent implements OnInit {
     }).subscribe({
       next: ({ menus, widgets }) => {
         this.menuPermissions = menus.map((m) => ({ ...m }));
+        this.rebuildMenuPermissionTree();
         this.dashboardWidgetPermissions = widgets.map((w) => ({ ...w }));
         if (this.roleId && this.mode !== 'add') {
           this.loadRole(this.roleId);
@@ -195,6 +207,35 @@ export class AddRoleComponent implements OnInit {
       return;
     }
     menu[field] = checked;
+    for (const child of collectMenuDescendants(this.menuPermissions, menu.menuId)) {
+      child[field] = checked;
+    }
+    this.cdr.markForCheck();
+  }
+
+  toggleMenuExpand(menuId: string): void {
+    if (this.expandedMenuIds.has(menuId)) {
+      this.expandedMenuIds.delete(menuId);
+    } else {
+      this.expandedMenuIds.add(menuId);
+    }
+    this.rebuildMenuPermissionRows();
+  }
+
+  isMenuExpanded(menuId: string): boolean {
+    return this.expandedMenuIds.has(menuId);
+  }
+
+  expandAllMenuGroups(): void {
+    collectExpandableMenuIds(this.menuPermissionTree).forEach((id) =>
+      this.expandedMenuIds.add(id),
+    );
+    this.rebuildMenuPermissionRows();
+  }
+
+  collapseAllMenuGroups(): void {
+    this.expandedMenuIds.clear();
+    this.rebuildMenuPermissionRows();
   }
 
   selectAllPermissions(checked: boolean): void {
@@ -206,6 +247,7 @@ export class AddRoleComponent implements OnInit {
       m.canDelete = checked;
       m.canExport = checked;
     });
+    this.cdr.markForCheck();
   }
 
   setWidgetPermission(widget: IRoleDashboardWidgetPermission, checked: boolean): void {
@@ -399,6 +441,24 @@ export class AddRoleComponent implements OnInit {
         canView: !!existing.canView,
       };
     });
+    this.rebuildMenuPermissionTree();
+  }
+
+  private rebuildMenuPermissionTree(): void {
+    this.menuPermissionTree = buildMenuPermissionTree(this.menuPermissions);
+    if (this.expandedMenuIds.size === 0) {
+      for (const id of collectExpandableMenuIds(this.menuPermissionTree)) {
+        this.expandedMenuIds.add(id);
+      }
+    }
+    this.rebuildMenuPermissionRows();
+  }
+
+  private rebuildMenuPermissionRows(): void {
+    this.menuPermissionRows = flattenVisibleMenuRows(
+      this.menuPermissionTree,
+      this.expandedMenuIds,
+    );
   }
 
   private saveRoleUsersAndFinish(): void {

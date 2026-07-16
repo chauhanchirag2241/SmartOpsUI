@@ -19,6 +19,8 @@ export interface IRoleMenuPermission {
   menuId: string;
   menuCode: string;
   menuName: string;
+  parentMenuId?: string | null;
+  displayOrder?: number;
   canView: boolean;
   canAdd: boolean;
   canEdit: boolean;

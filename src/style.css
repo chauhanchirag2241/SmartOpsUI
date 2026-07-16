@@ -2830,6 +2830,60 @@ tr.row-inactive:hover td {
   justify-content: center;
 }
 
+.menu-permission-name {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  padding-left: calc(var(--menu-depth, 0) * 18px);
+}
+
+.menu-permission-parent .menu-permission-label {
+  font-weight: 600;
+}
+
+.menu-permission-child .menu-permission-label {
+  color: var(--text-secondary);
+}
+
+.menu-expand-btn {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 24px;
+  height: 24px;
+  justify-content: center;
+  padding: 0;
+}
+
+.menu-expand-btn:hover {
+  background: rgba(99, 153, 34, 0.08);
+  color: var(--primary-color);
+}
+
+.menu-expand-btn mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.menu-expand-spacer {
+  display: inline-block;
+  flex: 0 0 24px;
+  width: 24px;
+}
+
+.menu-permission-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .link-btn {
   background: none;
   border: none;

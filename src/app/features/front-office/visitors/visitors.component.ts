@@ -87,8 +87,8 @@ export class VisitorsComponent implements OnInit {
       { key: 'phone', label: 'Phone' },
       { key: 'idCardType', label: 'ID type' },
       { key: 'purposeName', label: 'Purpose', sortable: true },
-      { key: 'inTime', label: 'In time', sortable: true },
-      { key: 'outTime', label: 'Out time' },
+      { key: 'inTime', label: 'In time', sortable: true, cellType: 'datetime' },
+      { key: 'outTime', label: 'Out time', cellType: 'datetime' },
       { key: 'note', label: 'Note' },
       {
         key: 'isActive',

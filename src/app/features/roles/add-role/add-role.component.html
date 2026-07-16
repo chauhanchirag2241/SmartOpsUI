@@ -81,6 +81,8 @@
           @if (canEdit) {
             <button type="button" class="link-btn" (click)="selectAllPermissions(true)">Select all</button>
             <button type="button" class="link-btn" (click)="selectAllPermissions(false)">Clear all</button>
+            <button type="button" class="link-btn" (click)="expandAllMenuGroups()">Expand all</button>
+            <button type="button" class="link-btn" (click)="collapseAllMenuGroups()">Collapse all</button>
           }
         </div>
         <div class="menu-permission-table">
@@ -92,14 +94,33 @@
             <span>Delete</span>
             <span>Export</span>
           </div>
-          @for (menu of menuPermissions; track trackMenu($index, menu)) {
-            <div class="menu-permission-row">
-              <span>{{ menu.menuName }}</span>
-              <label><input type="checkbox" [checked]="menu.canView" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canView', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="menu.canAdd" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canAdd', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="menu.canEdit" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canEdit', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="menu.canDelete" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canDelete', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="menu.canExport" [disabled]="!canEdit" (change)="setMenuPermission(menu, 'canExport', $any($event.target).checked)" /></label>
+          @for (row of menuPermissionRows; track trackMenu($index, row.menu)) {
+            <div
+              class="menu-permission-row"
+              [class.menu-permission-parent]="row.hasChildren"
+              [class.menu-permission-child]="row.depth > 0"
+            >
+              <div class="menu-permission-name" [style.--menu-depth]="row.depth">
+                @if (row.hasChildren) {
+                  <button
+                    type="button"
+                    class="menu-expand-btn"
+                    [attr.aria-expanded]="isMenuExpanded(row.menu.menuId)"
+                    [attr.aria-label]="isMenuExpanded(row.menu.menuId) ? 'Collapse ' + row.menu.menuName : 'Expand ' + row.menu.menuName"
+                    (click)="toggleMenuExpand(row.menu.menuId)"
+                  >
+                    <mat-icon>{{ isMenuExpanded(row.menu.menuId) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                  </button>
+                } @else {
+                  <span class="menu-expand-spacer" aria-hidden="true"></span>
+                }
+                <span class="menu-permission-label">{{ row.menu.menuName }}</span>
+              </div>
+              <label><input type="checkbox" [checked]="row.menu.canView" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canView', $any($event.target).checked)" /></label>
+              <label><input type="checkbox" [checked]="row.menu.canAdd" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canAdd', $any($event.target).checked)" /></label>
+              <label><input type="checkbox" [checked]="row.menu.canEdit" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canEdit', $any($event.target).checked)" /></label>
+              <label><input type="checkbox" [checked]="row.menu.canDelete" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canDelete', $any($event.target).checked)" /></label>
+              <label><input type="checkbox" [checked]="row.menu.canExport" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canExport', $any($event.target).checked)" /></label>
             </div>
           }
         </div>

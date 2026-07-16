@@ -9,6 +9,11 @@ import {
   SubjectType,
 } from '../enums/field-options.enum';
 import { formatStreamGroupDisplay, streamGroupFromApiInt } from './stream-group.util';
+import {
+  callTypeLabel,
+  complaintStatusLabel,
+  inquiryStatusLabel,
+} from './front-office-enum.util';
 
 /** Maps stored audit values (often 1-based ints) to UI labels. */
 export function formatAuditFieldValue(
@@ -47,6 +52,45 @@ function mapFieldValue(
     case 'student':
     case 'employee':
       return mapPersonField(field, value);
+    case 'phone-log':
+      return mapPhoneLogField(field, value);
+    case 'complaint':
+      return mapComplaintField(field, value);
+    case 'admission-inquiry':
+      return mapAdmissionInquiryField(field, value);
+    default:
+      return null;
+  }
+}
+
+function mapPhoneLogField(field: string, value: string): string | null {
+  switch (field) {
+    case 'calltype':
+      return callTypeLabel(value);
+    default:
+      return null;
+  }
+}
+
+function mapComplaintField(field: string, value: string): string | null {
+  switch (field) {
+    case 'status':
+      return complaintStatusLabel(value);
+    case 'isanonymous':
+      return mapBooleanLabel(value);
+    default:
+      return null;
+  }
+}
+
+function mapAdmissionInquiryField(field: string, value: string): string | null {
+  switch (field) {
+    case 'status':
+      return inquiryStatusLabel(value);
+    case 'autofollowup':
+      return mapBooleanLabel(value);
+    case 'streamgroup':
+      return mapStreamGroup(value);
     default:
       return null;
   }
