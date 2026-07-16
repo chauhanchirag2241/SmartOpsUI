@@ -39,6 +39,72 @@
     <span class="header-chip"><mat-icon>calendar_month</mat-icon>{{ academicYearLabel }}</span>
   }
 
+  @if (showBranchPicker) {
+  <div class="header-branch-picker">
+    @if (showBranchDropdown) {
+      <button
+        type="button"
+        class="header-branch-trigger"
+        (click)="toggleBranchMenu($event)"
+        [attr.aria-expanded]="branchMenuOpen"
+        aria-haspopup="listbox"
+        aria-label="Branch"
+      >
+        <mat-icon class="header-branch-trigger-icon">account_tree</mat-icon>
+        <span class="header-branch-trigger-label">{{ branchContext.activeBranchLabel() }}</span>
+        <mat-icon class="header-branch-trigger-chevron">{{ branchMenuOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
+      @if (branchMenuOpen) {
+        <div class="header-branch-menu" role="listbox" aria-label="Branches">
+          <div class="header-branch-search-wrap">
+            <mat-icon class="header-branch-search-icon">search</mat-icon>
+            <input
+              type="search"
+              class="header-branch-search"
+              placeholder="Search branches..."
+              [ngModel]="branchSearch"
+              (ngModelChange)="onBranchSearchChange($event)"
+              (click)="$event.stopPropagation()"
+              aria-label="Search branches"
+            />
+          </div>
+          @for (branch of branchContext.filteredBranches(); track branch.id) {
+            <div class="header-branch-row">
+              <button
+                type="button"
+                class="header-branch-option"
+                role="option"
+                [class.is-selected]="branch.id === branchContext.activeBranchId()"
+                (click)="pickBranch(branch.id, $event)"
+              >
+                <span>{{ branch.name }}</span>
+                @if (branch.isHeadOffice) {
+                  <span class="header-branch-option-tag">head</span>
+                }
+              </button>
+              <button
+                type="button"
+                class="header-branch-compare"
+                [class.is-on]="isBranchSelected(branch.id)"
+                (click)="toggleBranchSelection(branch.id, $event)"
+                [attr.aria-label]="'Compare ' + branch.name"
+                title="Include in dashboard/reports"
+              >
+                <mat-icon>{{ isBranchSelected(branch.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+              </button>
+            </div>
+          }
+          @if (branchContext.filteredBranches().length === 0) {
+            <div class="header-branch-empty">No branches match your search</div>
+          }
+        </div>
+      }
+    } @else {
+      <span class="header-chip"><mat-icon>account_tree</mat-icon>{{ branchContext.activeBranchLabel() }}</span>
+    }
+  </div>
+  }
+
   <span class="header-chip"><mat-icon>business</mat-icon>{{ schoolName }}</span>
 
   <button class="notification" mat-icon-button type="button" aria-label="Notifications">

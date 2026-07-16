@@ -110,3 +110,140 @@
 .header-year-option.is-selected .header-year-option-tag {
   background: var(--g600, #4a7c18);
 }
+
+.header-branch-picker {
+  position: relative;
+  display: inline-flex;
+  margin-right: 8px;
+}
+
+.header-branch-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1.5px solid #b8d4f0;
+  border-radius: var(--radius-pill, 999px);
+  background: #eef6fd;
+  color: #1e5a8a;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.header-branch-trigger-icon,
+.header-branch-trigger-chevron {
+  flex-shrink: 0;
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+
+.header-branch-trigger-label {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-branch-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1100;
+  width: 260px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid #b8d4f0;
+  border-radius: 9px;
+  background: var(--card, #fff);
+  box-shadow: 0 8px 22px rgba(30, 90, 138, 0.14);
+}
+
+.header-branch-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  border: 1px solid #d8e8f6;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.header-branch-search-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #5a8cb0;
+}
+
+.header-branch-search {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.header-branch-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.header-branch-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.header-branch-option.is-selected {
+  background: #dbeaf8;
+  font-weight: 600;
+}
+
+.header-branch-option-tag {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #1e5a8a;
+  color: #fff;
+  font-size: 10px;
+}
+
+.header-branch-compare {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: #7a9bb5;
+}
+
+.header-branch-compare.is-on {
+  color: #1e5a8a;
+}
+
+.header-branch-empty {
+  padding: 8px;
+  font-size: 12px;
+  color: #6b7c8f;
+  text-align: center;
+}

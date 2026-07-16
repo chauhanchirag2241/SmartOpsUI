@@ -8,6 +8,7 @@ import { FooterComponent } from '../../shared/components/footer/footer.component
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
+import { BranchContextService } from '../../core/services/branch-context.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { forkJoin, switchMap } from 'rxjs';
@@ -26,6 +27,7 @@ import { forkJoin, switchMap } from 'rxjs';
 export class AdminLayoutComponent implements OnInit {
   readonly layoutUi = inject(LayoutUiService);
   readonly ayContext = inject(AcademicYearContextService);
+  private readonly branchContext = inject(BranchContextService);
   private readonly auth = inject(AuthService);
   private readonly permissions = inject(PermissionService);
 
@@ -37,6 +39,9 @@ export class AdminLayoutComponent implements OnInit {
     forkJoin({
       session: this.permissions.loadSession(),
       year: this.ayContext.initialize().pipe(switchMap(() => this.ayContext.loadDropdown())),
-    }).subscribe({ error: () => undefined });
+    }).subscribe({
+      next: () => this.branchContext.loadBranches(),
+      error: () => undefined,
+    });
   }
 }

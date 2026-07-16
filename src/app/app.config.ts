@@ -14,6 +14,7 @@ import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { tenantInterceptor } from './core/interceptors/tenant.interceptor';
 import { academicYearInterceptor } from './core/interceptors/academic-year.interceptor';
 import { academicYearReadOnlyInterceptor } from './core/interceptors/academic-year-readonly.interceptor';
+import { branchInterceptor } from './core/interceptors/branch.interceptor';
 import { academicYearScopeTransitionInterceptor } from './core/interceptors/academic-year-scope-transition.interceptor';
 import { DD_MM_YYYY_DATE_FORMATS, DdMmYyyyDateAdapter } from './shared/date/dd-mm-yyyy-date-adapter';
 
@@ -35,6 +36,7 @@ export const appConfig: ApplicationConfig = {
         loadingInterceptor,
         tenantInterceptor,
         academicYearInterceptor,
+        branchInterceptor,
         academicYearReadOnlyInterceptor,
         authTokenInterceptor,
         authErrorInterceptor,
