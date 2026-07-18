@@ -16,6 +16,7 @@ export const MENU_ROUTE_BY_CODE: Record<string, string> = {
   [MenuCodes.ClassMappings]: '/class-subject-teacher-mapping',
   [MenuCodes.Subjects]: '/subjects',
   [MenuCodes.AcademicYears]: '/academic-years',
+  [MenuCodes.AcademicPeriods]: '/academic-periods',
   [MenuCodes.Attendance]: '/attendance',
   [MenuCodes.AttendanceReport]: '/attendance-report',
   [MenuCodes.Homework]: '/homework',

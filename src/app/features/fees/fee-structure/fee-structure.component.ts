@@ -73,7 +73,7 @@ export class FeeStructureComponent implements OnInit {
   feeTypeForm = {
     name: '',
     category: FeeCategory.Academic,
-    collectionType: FeeCollectionType.SemesterWise,
+    collectionType: FeeCollectionType.PeriodWise,
     isMandatory: true,
     isRefundable: false,
     studentWiseDifferentAmount: false,
@@ -450,7 +450,7 @@ export class FeeStructureComponent implements OnInit {
     this.feeTypeForm = {
       name: '',
       category: FeeCategory.Academic,
-      collectionType: FeeCollectionType.SemesterWise,
+      collectionType: FeeCollectionType.PeriodWise,
       isMandatory: true,
       isRefundable: false,
       studentWiseDifferentAmount: false,

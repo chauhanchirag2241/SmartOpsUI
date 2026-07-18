@@ -7,7 +7,7 @@ export enum FeeCategory {
 }
 
 export enum FeeCollectionType {
-  SemesterWise = 0,
+  PeriodWise = 0,
   OneTime = 1,
 }
 
@@ -36,7 +36,7 @@ export const FEE_CATEGORY_OPTIONS = [
 ];
 
 export const FEE_COLLECTION_TYPE_OPTIONS = [
-  { value: FeeCollectionType.SemesterWise, label: 'Semester wise' },
+  { value: FeeCollectionType.PeriodWise, label: 'Period wise' },
   { value: FeeCollectionType.OneTime, label: 'One time' },
 ];
 
@@ -57,20 +57,20 @@ export function resolveClassAmountsEditable(raw: unknown, versionStatusLabel: st
 
 export function resolveCollectionType(raw: unknown, label?: string): FeeCollectionType {
   if (typeof raw === 'number' && !Number.isNaN(raw)) {
-    return raw === FeeCollectionType.OneTime ? FeeCollectionType.OneTime : FeeCollectionType.SemesterWise;
+    return raw === FeeCollectionType.OneTime ? FeeCollectionType.OneTime : FeeCollectionType.PeriodWise;
   }
   if (typeof raw === 'string') {
     const s = raw.replace(/\s+/g, '').toLowerCase();
     if (s === 'onetime' || s === 'one_time' || s.includes('one')) {
       return FeeCollectionType.OneTime;
     }
-    return FeeCollectionType.SemesterWise;
+    return FeeCollectionType.PeriodWise;
   }
   const l = (label ?? '').toLowerCase();
   if (l.includes('one time') || l.includes('one-time') || l === 'onetime') {
     return FeeCollectionType.OneTime;
   }
-  return FeeCollectionType.SemesterWise;
+  return FeeCollectionType.PeriodWise;
 }
 
 export const FEE_PAYMENT_MODE_OPTIONS = [
@@ -94,7 +94,7 @@ export function categoryBadgeClass(cat: string): string {
 
 export function collectionTypeBadgeClass(type: string): string {
   const m: Record<string, string> = {
-    'Semester wise': 'b-blue',
+    'Period wise': 'b-blue',
     'One time': 'b-gray',
   };
   return m[type] ?? 'b-gray';
@@ -286,6 +286,12 @@ export function normalizeClassSummary(raw: any) {
 }
 
 export function normalizeClassAmounts(raw: any) {
+  const periods = asArray<any>(pick(raw, 'periods', 'Periods')).map((period) => ({
+    periodIndex: Number(pick(period, 'periodIndex', 'PeriodIndex') ?? 0),
+    name: String(pick(period, 'name', 'Name') ?? ''),
+    startDate: String(pick(period, 'startDate', 'StartDate') ?? ''),
+    endDate: String(pick(period, 'endDate', 'EndDate') ?? ''),
+  }));
   const items = asArray<any>(pick(raw, 'items', 'Items')).map((i) => {
     const collectionTypeLabel = String(
       pick(i, 'collectionTypeLabel', 'CollectionTypeLabel') ??
@@ -296,14 +302,18 @@ export function normalizeClassAmounts(raw: any) {
       pick(i, 'collectionType', 'CollectionType') ?? pick(i, 'frequency', 'Frequency'),
       collectionTypeLabel,
     );
-    const semester1 = Number(pick(i, 'semester1Amount', 'Semester1Amount') ?? 0);
-    const semester2 = Number(pick(i, 'semester2Amount', 'Semester2Amount') ?? 0);
+    const periodAmounts = asArray<any>(pick(i, 'periodAmounts', 'PeriodAmounts')).map((period) => ({
+      periodIndex: Number(pick(period, 'periodIndex', 'PeriodIndex') ?? 0),
+      amount: Number(pick(period, 'amount', 'Amount') ?? 0),
+    }));
     const amount = Number(pick(i, 'amount', 'Amount') ?? 0);
     const categoryLabel = String(pick(i, 'categoryLabel', 'CategoryLabel') ?? '');
     const category = resolveFeeCategory(pick(i, 'category', 'Category'), categoryLabel);
     const annualTotal = Number(
       pick(i, 'annualTotal', 'AnnualTotal') ??
-        (collectionType === FeeCollectionType.SemesterWise ? semester1 + semester2 : amount),
+        (collectionType === FeeCollectionType.PeriodWise
+          ? periodAmounts.reduce((sum, period) => sum + period.amount, 0)
+          : amount),
     );
     return {
       feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
@@ -313,8 +323,7 @@ export function normalizeClassAmounts(raw: any) {
       collectionType,
       collectionTypeLabel,
       amount,
-      semester1Amount: semester1,
-      semester2Amount: semester2,
+      periodAmounts,
       annualTotal,
       isMandatory: Boolean(pick(i, 'isMandatory', 'IsMandatory') ?? true),
       studentWiseDifferentAmount: Boolean(pick(i, 'studentWiseDifferentAmount', 'StudentWiseDifferentAmount')),
@@ -336,6 +345,7 @@ export function normalizeClassAmounts(raw: any) {
       String(pick(raw, 'versionStatusLabel', 'VersionStatusLabel') ?? ''),
     ),
     totalAmount,
+    periods,
     items,
   };
 }
@@ -397,9 +407,9 @@ export function normalizeStudentDetail(raw: any) {
       expanded: false,
     };
   });
-  const semesterStatuses = asArray<any>(pick(raw, 'semesterStatuses', 'SemesterStatuses')).map((s) => ({
-    semesterIndex: Number(pick(s, 'semesterIndex', 'SemesterIndex') ?? 0),
-    semesterName: String(pick(s, 'semesterName', 'SemesterName') ?? ''),
+  const periodStatuses = asArray<any>(pick(raw, 'periodStatuses', 'PeriodStatuses')).map((s) => ({
+    periodIndex: Number(pick(s, 'periodIndex', 'PeriodIndex') ?? 0),
+    periodName: String(pick(s, 'periodName', 'PeriodName') ?? ''),
     startDate: String(pick(s, 'startDate', 'StartDate') ?? ''),
     endDate: String(pick(s, 'endDate', 'EndDate') ?? ''),
     totalAmount: Number(pick(s, 'totalAmount', 'TotalAmount') ?? 0),
@@ -427,7 +437,7 @@ export function normalizeStudentDetail(raw: any) {
     paymentProgressPercent: Number(pick(raw, 'paymentProgressPercent', 'PaymentProgressPercent') ?? 0),
     paymentStatus: String(pick(raw, 'paymentStatus', 'PaymentStatus') ?? ''),
     feeHeads,
-    semesterStatuses,
+    periodStatuses,
     payments,
   };
 }

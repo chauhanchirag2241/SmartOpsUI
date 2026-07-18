@@ -17,6 +17,7 @@ export const MenuCodes = {
   ClassMappings: 'CLASS_MAPPINGS',
   Subjects: 'SUBJECTS',
   AcademicYears: 'ACADEMIC_YEARS',
+  AcademicPeriods: 'ACADEMIC_PERIODS',
   Attendance: 'ATTENDANCE',
   AttendanceReport: 'ATTENDANCE_REPORT',
   Homework: 'HOMEWORK',

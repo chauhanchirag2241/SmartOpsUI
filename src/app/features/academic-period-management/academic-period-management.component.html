@@ -1,0 +1,137 @@
+<section class="period-page">
+  <app-list-page-header
+    title="Academic Period Setup"
+    subtitle="Configure independent semesters, terms, quarters, or custom periods for every class"
+  />
+
+  <div class="period-toolbar">
+    <label>
+      <span>Academic year</span>
+      <select [(ngModel)]="academicYearId" (ngModelChange)="onYearChange()">
+        @for (year of academicYears; track year.id) {
+          <option [value]="year.id">{{ year.name }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="period-layout">
+    <aside class="class-panel">
+      <div class="panel-heading">
+        <strong>Classes</strong>
+        <span>{{ classes.length }}</span>
+      </div>
+      @if (!classes.length && !loading) {
+        <p class="empty-state">No classes are created for this academic year.</p>
+      }
+      @for (item of classes; track item.classId) {
+        <button
+          type="button"
+          class="class-item"
+          [class.active]="item.classId === selectedClassId"
+          (click)="selectClass(item.classId)">
+          <span>{{ item.className }}</span>
+          @if (item.periodCount > 0) {
+            <small class="configured">{{ item.periodCount }} configured</small>
+          } @else {
+            <small>Not configured</small>
+          }
+        </button>
+      }
+    </aside>
+
+    <main class="editor-card">
+      @if (selectedClass) {
+        <div class="editor-heading">
+          <div>
+            <h2>{{ selectedClass.className }}</h2>
+            <p>Each period must fall within the selected academic year and cannot overlap.</p>
+          </div>
+          <label class="type-field">
+            <span>Period type</span>
+            <select
+              [(ngModel)]="periodType"
+              (ngModelChange)="onPeriodTypeChange()"
+              [disabled]="!canEdit || loading">
+              @for (type of periodTypes; track type.value) {
+                <option [ngValue]="type.value">{{ type.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="period-table-wrap">
+          <table class="period-table">
+            <thead>
+              <tr>
+                <th class="order-column">#</th>
+                <th>Name</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th class="actions-column"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (period of periods; track $index; let index = $index) {
+                <tr>
+                  <td>{{ index + 1 }}</td>
+                  <td>
+                    <input
+                      type="text"
+                      [(ngModel)]="period.name"
+                      [disabled]="!canEdit"
+                      placeholder="Period name"
+                    />
+                  </td>
+                  <td><input type="date" [(ngModel)]="period.startDate" [disabled]="!canEdit" /></td>
+                  <td><input type="date" [(ngModel)]="period.endDate" [disabled]="!canEdit" /></td>
+                  <td>
+                    @if (canEdit) {
+                      <div class="row-actions">
+                        <button type="button" title="Move up" [disabled]="index === 0" (click)="movePeriod(index, -1)">
+                          <mat-icon>arrow_upward</mat-icon>
+                        </button>
+                        <button
+                          type="button"
+                          title="Move down"
+                          [disabled]="index === periods.length - 1"
+                          (click)="movePeriod(index, 1)">
+                          <mat-icon>arrow_downward</mat-icon>
+                        </button>
+                        <button type="button" class="remove" title="Remove" (click)="removePeriod(index)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (errorMessage) {
+          <p class="inline-error">{{ errorMessage }}</p>
+        }
+
+        <div class="editor-actions">
+          @if (canEdit) {
+            <button type="button" class="add-period" (click)="addPeriod()">
+              <mat-icon>add</mat-icon> Add period
+            </button>
+            <app-action-button
+              type="save"
+              [label]="saving ? 'Saving...' : 'Save periods'"
+              [disabled]="saving || loading"
+              (action)="save()"
+            />
+          } @else {
+            <span class="readonly-note">This academic year is view only.</span>
+          }
+        </div>
+      } @else {
+        <p class="empty-state">Select a class to configure its academic periods.</p>
+      }
+    </main>
+  </div>
+</section>

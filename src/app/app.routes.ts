@@ -206,6 +206,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'academic-periods',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.AcademicPeriods, permission: 'view' },
+        loadComponent: () =>
+          import('./features/academic-period-management/academic-period-management.component').then(
+            (m) => m.AcademicPeriodManagementComponent,
+          ),
+      },
+      {
         path: 'leave/staff',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.LeaveStaff, permission: 'view' },

@@ -3,7 +3,7 @@
   <div class="page-title">{{ pageTitle }}</div>
 </div>
 
-<div class="step-hint">Academic year and semester details</div>
+<div class="step-hint">Academic year details</div>
 
 <form [formGroup]="ayForm">
   @for (tab of tabs; track tab.stepIndex) {
@@ -28,42 +28,6 @@
   }
 </form>
 
-<div class="card semester-card">
-  <div class="card-title">
-    <mat-icon>date_range</mat-icon> Semesters
-  </div>
-  <p class="semester-hint">Semester dates must fall within the academic year start and end dates.</p>
-  <table class="semester-table">
-    <thead>
-      <tr>
-        <th>Semester</th>
-        <th>Name</th>
-        <th>Start date</th>
-        <th>End date</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (sem of semesters; track sem.semesterIndex) {
-        <tr>
-          <td>Semester {{ sem.semesterIndex }}</td>
-          <td>
-            <input type="text" [(ngModel)]="sem.name" [disabled]="mode === 'view'" />
-          </td>
-          <td>
-            <input type="date" [(ngModel)]="sem.startDate" [disabled]="mode === 'view'" />
-          </td>
-          <td>
-            <input type="date" [(ngModel)]="sem.endDate" [disabled]="mode === 'view'" />
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
-  @if (semesterError) {
-    <p class="inline-error">{{ semesterError }}</p>
-  }
-</div>
-
 <div class="footer-actions">
   <app-action-button type="back" style="visibility: hidden;"></app-action-button>
 
@@ -71,7 +35,7 @@
     @if (mode === 'add') {
       New years are saved as Draft — set as Current from the list when ready
     } @else {
-      Update year title, dates, and semesters together
+      Update year title and dates
     }
   </div>
 

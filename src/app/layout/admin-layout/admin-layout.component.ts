@@ -11,7 +11,7 @@ import { AcademicYearContextService } from '../../core/services/academic-year-co
 import { BranchContextService } from '../../core/services/branch-context.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PermissionService } from '../../core/services/permission.service';
-import { forkJoin, switchMap } from 'rxjs';
+import { catchError, forkJoin, of, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-admin-layout',
@@ -36,12 +36,16 @@ export class AdminLayoutComponent implements OnInit {
       return;
     }
 
+    // Branches must load even when no academic year exists yet.
     forkJoin({
-      session: this.permissions.loadSession(),
-      year: this.ayContext.initialize().pipe(switchMap(() => this.ayContext.loadDropdown())),
+      session: this.permissions.loadSession().pipe(catchError(() => of(null))),
+      year: this.ayContext.initialize().pipe(
+        switchMap(() => this.ayContext.loadDropdown()),
+        catchError(() => of(null)),
+      ),
     }).subscribe({
       next: () => this.branchContext.loadBranches(),
-      error: () => undefined,
+      error: () => this.branchContext.loadBranches(),
     });
   }
 }

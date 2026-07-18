@@ -119,15 +119,15 @@
       </div>
     </div>
 
-    <div class="card" *ngIf="detail.semesterStatuses?.length">
+    <div class="card" *ngIf="detail.periodStatuses?.length">
       <div class="card-header">
-        <div class="card-title"><mat-icon>calendar_month</mat-icon> Semester-wise status</div>
+        <div class="card-title"><mat-icon>calendar_month</mat-icon> Period-wise status</div>
       </div>
-      <div class="semester-status-grid">
-        <div *ngFor="let s of detail.semesterStatuses" class="semester-status-card">
-          <div class="semester-status-name">{{ s.semesterName }}</div>
-          <div class="semester-status-dates">{{ s.startDate }} — {{ s.endDate }}</div>
-          <div class="semester-status-amt">{{ formatInr(s.paidAmount) }} / {{ formatInr(s.totalAmount) }}</div>
+      <div class="period-status-grid">
+        <div *ngFor="let s of detail.periodStatuses" class="period-status-card">
+          <div class="period-status-name">{{ s.periodName }}</div>
+          <div class="period-status-dates">{{ s.startDate }} — {{ s.endDate }}</div>
+          <div class="period-status-amt">{{ formatInr(s.paidAmount) }} / {{ formatInr(s.totalAmount) }}</div>
           <span class="badge" [ngClass]="statusBadgeClass(s.status)">{{ s.status }}</span>
         </div>
       </div>

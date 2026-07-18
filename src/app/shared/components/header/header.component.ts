@@ -9,7 +9,6 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { BranchContextService } from '../../../core/services/branch-context.service';
 import { LayoutUiService } from '../../../core/services/layout-ui.service';
-import { TenantService } from '../../../core/services/tenant.service';
 
 @Component({
   selector: 'app-header',
@@ -27,18 +26,15 @@ import { TenantService } from '../../../core/services/tenant.service';
 export class HeaderComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly layoutUi = inject(LayoutUiService);
-  readonly tenant = inject(TenantService);
   readonly ayContext = inject(AcademicYearContextService);
   readonly branchContext = inject(BranchContextService);
 
-  schoolName = 'SmartOps';
   selectedYearId: string | null = null;
   yearMenuOpen = false;
   branchMenuOpen = false;
   branchSearch = '';
 
   ngOnInit(): void {
-    this.schoolName = this.tenant.displayName;
     this.selectedYearId = this.ayContext.effectiveYearId();
   }
 
@@ -60,7 +56,8 @@ export class HeaderComponent implements OnInit {
   }
 
   get showBranchDropdown(): boolean {
-    return this.branchContext.branches().length > 1;
+    // Always show picker when branches exist (including a single Main Campus).
+    return this.branchContext.branches().length > 0;
   }
 
   toggleYearMenu(event: MouseEvent): void {
@@ -89,6 +86,8 @@ export class HeaderComponent implements OnInit {
     event?.stopPropagation();
     this.branchContext.switchBranch(branchId);
     this.branchMenuOpen = false;
+    // Selected AY is branch-scoped; clear before reload so the new branch's current year is used.
+    this.ayContext.clear();
     window.location.reload();
   }
 

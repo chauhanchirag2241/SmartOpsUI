@@ -109,12 +109,11 @@
           <th>Collection</th>
           <th class="col-amounts">Amounts (₹)</th>
         </tr>
-        <tr *ngIf="canEditAmounts && hasSemesterWiseHeads" class="amount-subhead-row">
+        <tr *ngIf="hasPeriodWiseHeads && amountData.periods.length" class="amount-subhead-row">
           <th colspan="3"></th>
           <th class="col-amounts">
-            <div class="semester-amount-grid semester-amount-head">
-              <span>Sem 1</span>
-              <span>Sem 2</span>
+            <div class="period-amount-grid period-amount-head">
+              <span *ngFor="let period of amountData.periods">{{ period.name }}</span>
               <span>Annual</span>
             </div>
           </th>
@@ -129,9 +128,10 @@
           <td><span class="badge b-gray">{{ item.collectionTypeLabel }}</span></td>
           <td class="col-amounts">
             <ng-container *ngIf="!canEditAmounts">
-              <div *ngIf="isSemesterWise(item.collectionType)" class="semester-amount-grid">
-                <span class="amt-view">{{ formatInr(amountEditFor(item.feeTypeId).semester1Amount) }}</span>
-                <span class="amt-view">{{ formatInr(amountEditFor(item.feeTypeId).semester2Amount) }}</span>
+              <div *ngIf="isPeriodWise(item.collectionType)" class="period-amount-grid">
+                <span *ngFor="let period of amountData.periods" class="amt-view">
+                  {{ formatInr(amountEditFor(item.feeTypeId).periodAmounts[period.periodIndex] || 0) }}
+                </span>
                 <span class="amt-annual">{{ formatInr(annualTotalFor(item.feeTypeId, item.collectionType)) }}</span>
               </div>
               <div *ngIf="isOneTime(item.collectionType)" class="onetime-amount-wrap">
@@ -139,27 +139,22 @@
               </div>
             </ng-container>
             <ng-container *ngIf="canEditAmounts">
-              <div *ngIf="isSemesterWise(item.collectionType)" class="semester-amount-grid">
+              <div *ngIf="isPeriodWise(item.collectionType)" class="period-amount-grid">
                 <input
+                  *ngFor="let period of amountData.periods"
                   type="number"
                   class="amt-input"
                   min="0"
                   step="1"
                   inputmode="numeric"
-                  [(ngModel)]="amountEditFor(item.feeTypeId).semester1Amount"
-                  (ngModelChange)="onSemesterAmountChange(item.feeTypeId)"
-                />
-                <input
-                  type="number"
-                  class="amt-input"
-                  min="0"
-                  step="1"
-                  inputmode="numeric"
-                  [(ngModel)]="amountEditFor(item.feeTypeId).semester2Amount"
-                  (ngModelChange)="onSemesterAmountChange(item.feeTypeId)"
+                  [(ngModel)]="amountEditFor(item.feeTypeId).periodAmounts[period.periodIndex]"
+                  (ngModelChange)="onPeriodAmountChange(item.feeTypeId)"
                 />
                 <span class="amt-annual">{{ formatInr(annualTotalFor(item.feeTypeId, item.collectionType)) }}</span>
               </div>
+              <span *ngIf="isPeriodWise(item.collectionType) && !amountData.periods.length" class="period-missing">
+                Configure this class in Academic Period Setup first.
+              </span>
               <div *ngIf="isOneTime(item.collectionType)" class="onetime-amount-wrap">
                 <input
                   type="number"
@@ -178,11 +173,7 @@
         <tr style="background: var(--input-bg)">
           <td colspan="3" style="font-weight: 500; text-align: right; padding-right: 8px">Total annual fees</td>
           <td class="col-amounts">
-            <div class="semester-amount-grid total-amount-grid">
-              <span></span>
-              <span></span>
-              <span class="amt-annual" style="font-size: 14px">{{ formatInr(totalAmount) }}</span>
-            </div>
+            <span class="amt-annual" style="font-size: 14px">{{ formatInr(totalAmount) }}</span>
           </td>
         </tr>
       </tbody>

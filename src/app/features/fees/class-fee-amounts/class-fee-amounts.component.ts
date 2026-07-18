@@ -27,8 +27,7 @@ import {
 
 type AmountEdits = {
   amount: number;
-  semester1Amount: number;
-  semester2Amount: number;
+  periodAmounts: Record<number, number>;
 };
 
 @Component({
@@ -214,8 +213,12 @@ export class ClassFeeAmountsComponent implements OnInit {
         this.amountData.items.forEach((i) => {
           this.amountEdits[i.feeTypeId] = {
             amount: i.amount ?? 0,
-            semester1Amount: i.semester1Amount ?? 0,
-            semester2Amount: i.semester2Amount ?? 0,
+            periodAmounts: Object.fromEntries(
+              this.amountData!.periods.map((period) => [
+                period.periodIndex,
+                i.periodAmounts.find((value) => value.periodIndex === period.periodIndex)?.amount ?? 0,
+              ]),
+            ),
           };
         });
         this.loading = false;
@@ -231,8 +234,8 @@ export class ClassFeeAmountsComponent implements OnInit {
     });
   }
 
-  get hasSemesterWiseHeads(): boolean {
-    return this.amountData?.items.some((i) => this.isSemesterWise(i.collectionType)) ?? false;
+  get hasPeriodWiseHeads(): boolean {
+    return this.amountData?.items.some((i) => this.isPeriodWise(i.collectionType)) ?? false;
   }
 
   get totalAmount(): number {
@@ -251,13 +254,13 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   amountEditFor(feeTypeId: string): AmountEdits {
     if (!this.amountEdits[feeTypeId]) {
-      this.amountEdits[feeTypeId] = { amount: 0, semester1Amount: 0, semester2Amount: 0 };
+      this.amountEdits[feeTypeId] = { amount: 0, periodAmounts: {} };
     }
     return this.amountEdits[feeTypeId];
   }
 
-  isSemesterWise(collectionType: number): boolean {
-    return collectionType === FeeCollectionType.SemesterWise;
+  isPeriodWise(collectionType: number): boolean {
+    return collectionType === FeeCollectionType.PeriodWise;
   }
 
   isOneTime(collectionType: number): boolean {
@@ -269,8 +272,11 @@ export class ClassFeeAmountsComponent implements OnInit {
     if (!edits) return 0;
     const item = this.amountData?.items.find((i) => i.feeTypeId === feeTypeId);
     let annual = 0;
-    if (collectionType === FeeCollectionType.SemesterWise) {
-      annual = (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
+    if (collectionType === FeeCollectionType.PeriodWise) {
+      annual = Object.values(edits.periodAmounts).reduce(
+        (sum, amount) => sum + (Number(amount) || 0),
+        0,
+      );
     } else {
       annual = Number(edits.amount) || 0;
     }
@@ -286,10 +292,13 @@ export class ClassFeeAmountsComponent implements OnInit {
     this.refreshView();
   }
 
-  onSemesterAmountChange(feeTypeId: string): void {
+  onPeriodAmountChange(feeTypeId: string): void {
     const edits = this.amountEdits[feeTypeId];
     if (edits) {
-      edits.amount = (Number(edits.semester1Amount) || 0) + (Number(edits.semester2Amount) || 0);
+      edits.amount = Object.values(edits.periodAmounts).reduce(
+        (sum, amount) => sum + (Number(amount) || 0),
+        0,
+      );
     }
     this.syncClassSummaryTotal(this.selectedClassId);
     this.refreshView();
@@ -312,11 +321,21 @@ export class ClassFeeAmountsComponent implements OnInit {
 
   saveAmounts(): void {
     if (!this.selectedClassId || !this.canEditAmounts || this.saving || this.loading) return;
+    if (this.hasPeriodWiseHeads && !this.amountData?.periods.length) {
+      this.toast('Configure Academic Periods for this class before saving amounts', true);
+      return;
+    }
     const amounts = Object.entries(this.amountEdits).map(([feeTypeId, edits]) => ({
       feeTypeId,
       amount: Number(edits.amount) || 0,
-      semester1Amount: Number(edits.semester1Amount) || 0,
-      semester2Amount: Number(edits.semester2Amount) || 0,
+      periodAmounts: this.isPeriodWise(
+        this.amountData?.items.find((item) => item.feeTypeId === feeTypeId)?.collectionType ?? FeeCollectionType.OneTime,
+      )
+        ? Object.entries(edits.periodAmounts).map(([periodIndex, amount]) => ({
+            periodIndex: Number(periodIndex),
+            amount: Number(amount) || 0,
+          }))
+        : [],
     }));
     this.saving = true;
     this.refreshView();
@@ -334,8 +353,12 @@ export class ClassFeeAmountsComponent implements OnInit {
           this.amountData.items.forEach((i) => {
             this.amountEdits[i.feeTypeId] = {
               amount: i.amount ?? 0,
-              semester1Amount: i.semester1Amount ?? 0,
-              semester2Amount: i.semester2Amount ?? 0,
+              periodAmounts: Object.fromEntries(
+                this.amountData!.periods.map((period) => [
+                  period.periodIndex,
+                  i.periodAmounts.find((value) => value.periodIndex === period.periodIndex)?.amount ?? 0,
+                ]),
+              ),
             };
           });
           this.saving = false;
