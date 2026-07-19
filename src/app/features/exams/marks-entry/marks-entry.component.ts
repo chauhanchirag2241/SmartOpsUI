@@ -2,9 +2,12 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
+import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import {
   ExamService,
   ExamListItem,
@@ -31,14 +34,21 @@ interface StudentMarksDraft {
 @Component({
   selector: 'app-marks-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    ActionButtonComponent,
+  ],
   templateUrl: './marks-entry.component.html',
-  styleUrls: ['../exam-shared.css', './marks-entry.component.css'],
+  styleUrl: './marks-entry.component.css',
 })
 export class MarksEntryComponent implements OnInit {
   private examService = inject(ExamService);
   private snackBar = inject(NotificationService);
   private permissions = inject(PermissionService);
+  private dialog = inject(MatDialog);
   private cdr = inject(ChangeDetectorRef);
 
   exams: ExamListItem[] = [];
@@ -83,7 +93,11 @@ export class MarksEntryComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load exams', 'Close', { duration: 3000 }),
+      error: () =>
+        this.snackBar.open('Failed to load exams', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        }),
     });
   }
 
@@ -93,9 +107,9 @@ export class MarksEntryComponent implements OnInit {
   }
 
   onClassChange(): void {
-    this.subjectProgress = [];
     this.grid = null;
     this.rows = [];
+    this.subjectProgress = [];
     this.selectedScheduleId = '';
     this.dirty = false;
     if (!this.selectedExamId || !this.selectedClassId) {
@@ -105,19 +119,41 @@ export class MarksEntryComponent implements OnInit {
       next: (progress) => {
         this.subjectProgress = progress ?? [];
         if (this.subjectProgress.length > 0) {
-          this.selectSubject(this.subjectProgress[0]);
+          this.selectSubject(this.subjectProgress[0], true);
         }
         this.cdr.detectChanges();
       },
       error: () =>
         this.snackBar.open('Failed to load subjects for this exam/class', 'Close', {
           duration: 3000,
+          panelClass: 'snack-error',
         }),
     });
   }
 
-  selectSubject(subject: ExamSubjectProgress): void {
-    if (this.dirty && !confirm('You have unsaved marks. Discard changes?')) {
+  selectSubject(subject: ExamSubjectProgress, skipDirtyCheck = false): void {
+    if (!skipDirtyCheck && this.dirty) {
+      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+        data: {
+          title: 'Discard unsaved marks?',
+          description: 'You have unsaved changes for the current subject.',
+          recordName: this.grid?.subjectName ?? 'Current subject',
+          recordMeta: this.grid?.className ?? '',
+          initials: 'MK',
+          warningMessage: 'Unsaved marks will be lost.',
+          confirmButtonText: 'Discard',
+          cancelButtonText: 'Stay',
+          variant: 'danger',
+          headerIcon: 'warning',
+        },
+        panelClass: 'erp-dialog',
+        disableClose: true,
+      });
+      dialogRef.afterClosed().subscribe((confirmed) => {
+        if (!confirmed) return;
+        this.selectedScheduleId = subject.examScheduleId;
+        this.loadGrid();
+      });
       return;
     }
     this.selectedScheduleId = subject.examScheduleId;
@@ -147,7 +183,10 @@ export class MarksEntryComponent implements OnInit {
       },
       error: () => {
         this.loadingGrid = false;
-        this.snackBar.open('Failed to load marks grid', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load marks grid', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
         this.cdr.detectChanges();
       },
     });
@@ -229,7 +268,7 @@ export class MarksEntryComponent implements OnInit {
           this.snackBar.open(
             `${row.studentName}: marks exceed max for ${this.grid.components[i].name}`,
             'Close',
-            { duration: 3500 },
+            { duration: 3500, panelClass: 'snack-error' },
           );
           return;
         }
@@ -254,7 +293,10 @@ export class MarksEntryComponent implements OnInit {
       next: () => {
         this.saving = false;
         this.dirty = false;
-        this.snackBar.open('Marks saved', 'Close', { duration: 2500 });
+        this.snackBar.open('Marks saved', 'Close', {
+          duration: 2500,
+          panelClass: 'snack-success',
+        });
         this.refreshProgress();
       },
       error: (err) => {
@@ -262,7 +304,7 @@ export class MarksEntryComponent implements OnInit {
         this.snackBar.open(
           typeof err?.error === 'string' ? err.error : 'Failed to save marks',
           'Close',
-          { duration: 3500 },
+          { duration: 3500, panelClass: 'snack-error' },
         );
         this.cdr.detectChanges();
       },

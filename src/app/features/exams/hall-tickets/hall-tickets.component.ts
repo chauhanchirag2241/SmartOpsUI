@@ -17,7 +17,7 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './hall-tickets.component.html',
-  styleUrls: ['../exam-shared.css', './hall-tickets.component.css'],
+  styleUrl: './hall-tickets.component.css',
 })
 export class HallTicketsComponent implements OnInit {
   private examService = inject(ExamService);
@@ -59,7 +59,11 @@ export class HallTicketsComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load exams', 'Close', { duration: 3000 }),
+      error: () =>
+        this.snackBar.open('Failed to load exams', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        }),
     });
   }
 
@@ -80,7 +84,10 @@ export class HallTicketsComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.snackBar.open('Failed to load hall tickets', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load hall tickets', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
         this.cdr.detectChanges();
       },
     });
@@ -88,7 +95,10 @@ export class HallTicketsComponent implements OnInit {
 
   generate(): void {
     if (!this.selectedExamId || !this.selectedClassId) {
-      this.snackBar.open('Select an exam and class first', 'Close', { duration: 2500 });
+      this.snackBar.open('Select an exam and class first', 'Close', {
+        duration: 2500,
+        panelClass: 'snack-error',
+      });
       return;
     }
     this.generating = true;
@@ -98,6 +108,7 @@ export class HallTicketsComponent implements OnInit {
         this.generating = false;
         this.snackBar.open(`Generated hall tickets for ${this.tickets.length} student(s)`, 'Close', {
           duration: 2500,
+          panelClass: 'snack-success',
         });
         this.cdr.detectChanges();
       },
@@ -106,7 +117,7 @@ export class HallTicketsComponent implements OnInit {
         this.snackBar.open(
           typeof err?.error === 'string' ? err.error : 'Hall ticket generation failed',
           'Close',
-          { duration: 3500 },
+          { duration: 3500, panelClass: 'snack-error' },
         );
         this.cdr.detectChanges();
       },

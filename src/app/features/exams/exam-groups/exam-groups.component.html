@@ -1,137 +1,71 @@
-<div class="xm-container">
+<section class="exam-groups-page">
   @if (!showForm) {
-    <div class="topbar">
-      <div class="page-info">
-        <div class="page-title">Exam Groups</div>
-        <div class="page-sub">Group exams like "Term 1 Exams 2025-26" — each group holds multiple exams</div>
-      </div>
-      @if (canAdd) {
-        <button type="button" class="btn-primary" (click)="openCreate()">
-          <mat-icon>add</mat-icon>
-          New exam group
-        </button>
-      }
-    </div>
-
-    @if (!loading && !groups.length) {
-      <div class="empty">
-        <mat-icon>folder_special</mat-icon>
-        <div>No exam groups yet. Create one to start organizing exams.</div>
-      </div>
-    }
-
-    @if (groups.length) {
-      <div class="card">
-        <div class="xm-table-wrap">
-          <table class="xm-table">
-            <thead>
-              <tr>
-                <th>Group name</th>
-                <th>Academic year</th>
-                <th>Evaluation</th>
-                <th>Grade scale</th>
-                <th>Exams</th>
-                <th style="width: 130px">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (group of groups; track group.id) {
-                <tr>
-                  <td>
-                    <div class="cell-u">
-                      <div class="av"><mat-icon style="font-size: 13px; width: 13px; height: 13px">folder_special</mat-icon></div>
-                      <div>
-                        <div style="font-weight: 600">{{ group.name }}</div>
-                        @if (group.description) {
-                          <div class="page-sub">{{ group.description }}</div>
-                        }
-                      </div>
-                    </div>
-                  </td>
-                  <td><span class="badge b-gray">{{ group.academicYearTitle }}</span></td>
-                  <td><span class="badge b-b">{{ group.evaluationTypeLabel }}</span></td>
-                  <td>{{ group.gradeScaleName || '—' }}</td>
-                  <td><span class="badge b-g">{{ group.examCount }} exam{{ group.examCount === 1 ? '' : 's' }}</span></td>
-                  <td>
-                    <button type="button" class="act-btn" (click)="viewExams(group)" title="View exams">
-                      <mat-icon>visibility</mat-icon>
-                    </button>
-                    @if (canEdit) {
-                      <button type="button" class="act-btn" (click)="openEdit(group)" aria-label="Edit">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                    }
-                    @if (canDelete) {
-                      <button type="button" class="act-btn del" (click)="deleteGroup(group)" aria-label="Delete">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    }
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    }
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="rows"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
   } @else {
     <div class="topbar">
-      <div class="page-info">
-        <div class="page-title">{{ formMode === 'edit' ? 'Edit exam group' : 'New exam group' }}</div>
-        <div class="page-sub">Exams inside the group inherit its academic year and default grade scale</div>
-      </div>
+      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
+      <div class="page-title">{{ formMode === 'edit' ? 'Edit exam group' : 'New exam group' }}</div>
     </div>
+    <p class="form-hint">Exams inside the group inherit its academic year and default grade scale.</p>
 
     @if (formError) {
       <div class="error-banner">{{ formError }}</div>
     }
 
     <div class="card">
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-field">
-            <label>Group name <span class="req">*</span></label>
-            <input type="text" [(ngModel)]="formName" placeholder="e.g. Term 1 Exams 2025-26" />
-          </div>
-          <div class="form-field">
-            <label>Academic year <span class="req">*</span></label>
-            <select [(ngModel)]="formAcademicYearId">
-              <option value="">Select year</option>
-              @for (year of academicYears; track year.id) {
-                <option [value]="year.id">{{ year.name }}</option>
-              }
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Evaluation type</label>
-            <select [(ngModel)]="formEvaluationType">
-              <option [ngValue]="ExamEvaluationType.Marks">Marks</option>
-              <option [ngValue]="ExamEvaluationType.Grade">Grade</option>
-              <option [ngValue]="ExamEvaluationType.Both">Marks &amp; Grade</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Default grade scale</label>
-            <select [(ngModel)]="formGradeScaleId">
-              <option value="">None</option>
-              @for (scale of gradeScales; track scale.id) {
-                <option [value]="scale.id">{{ scale.name }}</option>
-              }
-            </select>
-          </div>
-          <div class="form-field" style="grid-column: 1 / -1">
-            <label>Description</label>
-            <textarea rows="2" [(ngModel)]="formDescription" placeholder="Optional description"></textarea>
-          </div>
+      <div class="card-title"><mat-icon>folder_special</mat-icon> Group details</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Group name <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="formName" placeholder="e.g. Term 1 Exams 2025-26" />
         </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn-outline" (click)="closeForm()">Cancel</button>
-          <button type="button" class="btn-primary" [disabled]="saving" (click)="save()">
-            {{ saving ? 'Saving…' : formMode === 'edit' ? 'Update group' : 'Create group' }}
-          </button>
+        <div class="field">
+          <label>Academic year <span class="req">*</span></label>
+          <select [(ngModel)]="formAcademicYearId">
+            <option value="">Select year</option>
+            @for (year of academicYears; track year.id) {
+              <option [value]="year.id">{{ year.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Evaluation type</label>
+          <select [(ngModel)]="formEvaluationType">
+            <option [ngValue]="ExamEvaluationType.Marks">Marks</option>
+            <option [ngValue]="ExamEvaluationType.Grade">Grade</option>
+            <option [ngValue]="ExamEvaluationType.Both">Marks &amp; Grade</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Default grade scale</label>
+          <select [(ngModel)]="formGradeScaleId">
+            <option value="">None</option>
+            @for (scale of gradeScales; track scale.id) {
+              <option [value]="scale.id">{{ scale.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field full">
+          <label>Description</label>
+          <textarea rows="2" [(ngModel)]="formDescription" placeholder="Optional description"></textarea>
         </div>
       </div>
     </div>
+
+    <div class="footer-actions">
+      <div class="footer-hint">Save the group, then add exams from the Exams screen.</div>
+      <app-action-button
+        type="save"
+        [label]="saving ? 'Saving...' : formMode === 'edit' ? 'Update group' : 'Create group'"
+        [icon]="saving ? 'hourglass_empty' : 'check_circle'"
+        [disabled]="saving"
+        (action)="save()"
+      />
+    </div>
   }
-</div>
+</section>

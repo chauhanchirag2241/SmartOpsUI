@@ -1,268 +1,150 @@
-<div class="xm-container">
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Exams</div>
-      <div class="page-sub">Create exams inside a group, assign classes and mark components</div>
-    </div>
-    <button class="btn-primary" *ngIf="canAdd && !showForm" (click)="openCreate()">
-      <mat-icon>add</mat-icon> Create Exam
-    </button>
-  </div>
-
-  <!-- Stat cards -->
-  <div class="stats" *ngIf="!showForm">
-    <div class="sc">
-      <div class="si si-g"><mat-icon>library_books</mat-icon></div>
-      <div>
-        <div class="sv">{{ stats.total }}</div>
-        <div class="sl">Total Exams</div>
-      </div>
-    </div>
-    <div class="sc">
-      <div class="si si-a"><mat-icon>pending_actions</mat-icon></div>
-      <div>
-        <div class="sv">{{ stats.ongoing }}</div>
-        <div class="sl">Ongoing</div>
-      </div>
-    </div>
-    <div class="sc">
-      <div class="si si-b"><mat-icon>task_alt</mat-icon></div>
-      <div>
-        <div class="sv">{{ stats.completed }}</div>
-        <div class="sl">Completed</div>
-      </div>
-    </div>
-    <div class="sc">
-      <div class="si si-r"><mat-icon>upcoming</mat-icon></div>
-      <div>
-        <div class="sv">{{ stats.upcoming }}</div>
-        <div class="sl">Upcoming</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="filter-bar" *ngIf="!showForm">
-    <select class="xm-select" [(ngModel)]="filterGroupId" (change)="loadList()">
-      <option value="">All Groups</option>
-      <option *ngFor="let g of groups" [value]="g.id">{{ g.name }}</option>
-    </select>
-    <select class="xm-select" [(ngModel)]="filterClassId" (change)="loadList()">
-      <option value="">All Classes</option>
-      <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
-    </select>
-    <select class="xm-select" [(ngModel)]="filterStatus" (change)="loadList()">
-      <option value="">All Status</option>
-      <option [value]="ExamStatus.Draft">Draft</option>
-      <option [value]="ExamStatus.Scheduled">Scheduled</option>
-      <option [value]="ExamStatus.Ongoing">Ongoing</option>
-      <option [value]="ExamStatus.Completed">Completed</option>
-      <option [value]="ExamStatus.ResultDeclared">Result Declared</option>
-    </select>
-    <input
-      class="xm-input"
-      type="text"
-      placeholder="Search exam..."
-      [(ngModel)]="searchQuery"
-      (keyup.enter)="loadList()"
-    />
-    <button class="btn-outline" (click)="loadList()"><mat-icon>search</mat-icon> Search</button>
-  </div>
-
-  <!-- Exam cards -->
-  <ng-container *ngIf="!showForm">
-    <div class="empty" *ngIf="!loading && exams.length === 0">
-      <mat-icon>library_books</mat-icon>
-      <div>No exams found. Create your first exam to get started.</div>
-    </div>
-
-    <div class="exam-grid" *ngIf="exams.length > 0">
-      <div class="exam-card" *ngFor="let exam of exams">
-        <div class="ec-icon"><mat-icon>edit_note</mat-icon></div>
-        <div class="ec-main">
-          <div class="ec-name">{{ exam.name }}</div>
-          <div class="ec-sub">
-            <span>{{ exam.examGroupName }}</span>
-            <span>{{ exam.examType }}</span>
-          </div>
-          <div class="ec-sub">
-            <span>
-              <mat-icon
-                style="font-size: 11px; width: 11px; height: 11px; vertical-align: middle"
-                >calendar_today</mat-icon
-              >
-              {{ exam.startDate | date: 'dd MMM' }} – {{ exam.endDate | date: 'dd MMM yyyy' }}
-            </span>
-          </div>
-          <div class="ec-sub">
-            <span>{{ classNames(exam) || 'No classes' }}</span>
-            <span>{{ exam.subjectCount }} subject(s)</span>
-            <span>Max {{ exam.totalMaxMarks }}</span>
-          </div>
+<section class="exam-list-page">
+  @if (!showForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="rows"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    >
+      <div tableFilters class="st-table-filters">
+        <div class="filter-field">
+          <label>Group</label>
+          <select [(ngModel)]="filterGroupId" (ngModelChange)="loadList()">
+            <option value="">All groups</option>
+            @for (g of groups; track g.id) {
+              <option [value]="g.id">{{ g.name }}</option>
+            }
+          </select>
         </div>
-        <div class="ec-side">
-          <span class="badge" [ngClass]="statusBadgeClass(exam.status)">{{
-            exam.statusLabel
-          }}</span>
-          <div class="ec-actions">
-            <button
-              class="act-btn"
-              *ngIf="canEdit && exam.status === ExamStatus.Draft"
-              title="Mark as Scheduled"
-              (click)="setStatus(exam, ExamStatus.Scheduled)"
-            >
-              <mat-icon>event_available</mat-icon>
-            </button>
-            <button
-              class="act-btn"
-              *ngIf="canEdit && exam.status === ExamStatus.Scheduled"
-              title="Mark as Ongoing"
-              (click)="setStatus(exam, ExamStatus.Ongoing)"
-            >
-              <mat-icon>play_circle</mat-icon>
-            </button>
-            <button
-              class="act-btn"
-              *ngIf="canEdit && exam.status === ExamStatus.Ongoing"
-              title="Mark as Completed"
-              (click)="setStatus(exam, ExamStatus.Completed)"
-            >
-              <mat-icon>task_alt</mat-icon>
-            </button>
-            <button
-              class="act-btn"
-              *ngIf="canEdit && !exam.resultDeclared"
-              title="Edit"
-              (click)="openEdit(exam)"
-            >
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button
-              class="act-btn del"
-              *ngIf="canDelete && !exam.resultDeclared"
-              title="Delete"
-              (click)="deleteExam(exam)"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
+        <div class="filter-field">
+          <label>Class</label>
+          <select [(ngModel)]="filterClassId" (ngModelChange)="loadList()">
+            <option value="">All classes</option>
+            @for (c of classOptions; track c.id) {
+              <option [value]="c.id">{{ c.name }}</option>
+            }
+          </select>
         </div>
       </div>
+    </app-smart-data-table>
+  } @else {
+    <div class="topbar">
+      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
+      <div class="page-title">{{ formMode === 'edit' ? 'Edit exam' : 'Create exam' }}</div>
     </div>
-  </ng-container>
+    <p class="form-hint">Assign classes and define mark components for this exam.</p>
 
-  <!-- Add/Edit form -->
-  <div class="card" *ngIf="showForm">
-    <div class="card-header">
-      <div class="card-title">
-        <mat-icon>edit_note</mat-icon>
-        {{ formMode === 'edit' ? 'Edit Exam' : 'Create Exam' }}
-      </div>
-      <button class="btn-outline" (click)="closeForm()"><mat-icon>close</mat-icon> Cancel</button>
-    </div>
-    <div class="card-body">
-      <div class="error-banner" *ngIf="formError">{{ formError }}</div>
+    @if (formError) {
+      <div class="error-banner">{{ formError }}</div>
+    }
 
-      <div class="form-grid">
-        <div class="form-field">
-          <label>Exam Group <span class="req">*</span></label>
+    <div class="card">
+      <div class="card-title"><mat-icon>edit_note</mat-icon> Exam details</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Exam group <span class="req">*</span></label>
           <select [(ngModel)]="formGroupId">
             <option value="">Select group</option>
-            <option *ngFor="let g of groups" [value]="g.id">{{ g.name }}</option>
+            @for (g of groups; track g.id) {
+              <option [value]="g.id">{{ g.name }}</option>
+            }
           </select>
         </div>
-        <div class="form-field">
-          <label>Exam Name <span class="req">*</span></label>
+        <div class="field">
+          <label>Exam name <span class="req">*</span></label>
           <input type="text" [(ngModel)]="formName" placeholder="e.g. Mid Term Examination" />
         </div>
-        <div class="form-field">
-          <label>Exam Type</label>
+        <div class="field">
+          <label>Exam type</label>
           <select [(ngModel)]="formExamType">
-            <option *ngFor="let t of examTypes" [value]="t">{{ t }}</option>
+            @for (t of examTypes; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
           </select>
         </div>
-        <div class="form-field">
-          <label>Start Date <span class="req">*</span></label>
+        <div class="field">
+          <label>Start date <span class="req">*</span></label>
           <input type="date" [(ngModel)]="formStartDate" />
         </div>
-        <div class="form-field">
-          <label>End Date <span class="req">*</span></label>
+        <div class="field">
+          <label>End date <span class="req">*</span></label>
           <input type="date" [(ngModel)]="formEndDate" />
         </div>
-        <div class="form-field">
-          <label>Min Pass %</label>
+        <div class="field">
+          <label>Min pass %</label>
           <input type="number" min="0" max="100" [(ngModel)]="formMinPassPercent" />
         </div>
-        <div class="form-field">
-          <label>Grade Scale (override)</label>
+        <div class="field">
+          <label>Grade scale (override)</label>
           <select [(ngModel)]="formGradeScaleId">
             <option value="">Use group default</option>
-            <option *ngFor="let s of gradeScales" [value]="s.id">{{ s.name }}</option>
+            @for (s of gradeScales; track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
           </select>
         </div>
-        <div class="form-field">
+        <div class="field full">
           <label>Description</label>
           <input type="text" [(ngModel)]="formDescription" placeholder="Optional notes" />
         </div>
-      </div>
-
-      <div class="form-field" style="margin-top: 14px">
-        <label>Classes <span class="req">*</span></label>
-        <div class="chip-row">
-          <button
-            type="button"
-            class="chip"
-            *ngFor="let c of classes"
-            [class.selected]="formClassIds.includes(c.id)"
-            (click)="toggleClass(c.id)"
-          >
-            {{ c.name }}
-          </button>
+        <div class="field full">
+          <label>Classes <span class="req">*</span></label>
+          <app-multi-select-chips
+            [options]="classOptions"
+            [(selectedIds)]="formClassIds"
+            placeholder="Select classes"
+            searchPlaceholder="Search class"
+          />
         </div>
       </div>
+    </div>
 
-      <div class="form-field" style="margin-top: 14px">
-        <label>
-          Mark Components <span class="req">*</span>
-          <span style="font-weight: 400"> — total max: {{ totalMaxMarks }}</span>
-        </label>
-        <div class="dyn-rows">
-          <div class="dyn-row" *ngFor="let row of componentRows; let i = index">
-            <div class="form-field">
-              <label>Component Name</label>
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>tune</mat-icon>
+        Mark components
+        <span class="card-title-meta">Total max: {{ totalMaxMarks }}</span>
+      </div>
+      <div class="component-rows">
+        @for (row of componentRows; track $index; let i = $index) {
+          <div class="component-row">
+            <div class="field">
+              <label>Name</label>
               <input type="text" [(ngModel)]="row.name" placeholder="e.g. Theory" />
             </div>
-            <div class="form-field">
-              <label>Max Marks</label>
+            <div class="field">
+              <label>Max marks</label>
               <input type="number" min="1" [(ngModel)]="row.maxMarks" />
             </div>
-            <div class="form-field">
-              <label>Passing Marks</label>
+            <div class="field">
+              <label>Passing marks</label>
               <input type="number" min="0" [(ngModel)]="row.passingMarks" />
             </div>
             <button
               type="button"
-              class="dyn-remove"
+              class="row-remove"
               title="Remove component"
               (click)="removeComponentRow(i)"
             >
               <mat-icon>delete_outline</mat-icon>
             </button>
           </div>
-        </div>
-        <button type="button" class="btn-outline dyn-add" (click)="addComponentRow()">
-          <mat-icon>add</mat-icon> Add Component
-        </button>
+        }
       </div>
-
-      <div class="form-actions">
-        <button class="btn-outline" (click)="closeForm()">Cancel</button>
-        <button class="btn-primary" [disabled]="saving" (click)="save()">
-          <mat-icon>save</mat-icon>
-          {{ saving ? 'Saving...' : formMode === 'edit' ? 'Update Exam' : 'Create Exam' }}
-        </button>
-      </div>
+      <button type="button" class="btn-outline add-row" (click)="addComponentRow()">
+        <mat-icon>add</mat-icon> Add component
+      </button>
     </div>
-  </div>
-</div>
+
+    <div class="footer-actions">
+      <div class="footer-hint">Components define how marks are entered for this exam.</div>
+      <app-action-button
+        type="save"
+        [label]="saving ? 'Saving...' : formMode === 'edit' ? 'Update exam' : 'Create exam'"
+        [icon]="saving ? 'hourglass_empty' : 'check_circle'"
+        [disabled]="saving"
+        (action)="save()"
+      />
+    </div>
+  }
+</section>

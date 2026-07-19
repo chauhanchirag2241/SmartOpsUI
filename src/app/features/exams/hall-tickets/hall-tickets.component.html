@@ -1,89 +1,115 @@
-<div class="xm-container">
+<section class="hall-tickets-page">
   <div class="topbar no-print">
     <div class="page-info">
       <div class="page-title">Hall Tickets</div>
       <div class="page-sub">Auto-generate and print hall tickets for an exam</div>
     </div>
-    <button class="btn-outline" [disabled]="tickets.length === 0" (click)="printAll()">
-      <mat-icon>print</mat-icon> Print All
+    <button type="button" class="btn-outline" [disabled]="tickets.length === 0" (click)="printAll()">
+      <mat-icon>print</mat-icon> Print all
     </button>
-    <button class="btn-primary" *ngIf="canGenerate" [disabled]="generating" (click)="generate()">
+    @if (canGenerate) {
+      <button type="button" class="btn-primary" [disabled]="generating" (click)="generate()">
+        <mat-icon>confirmation_number</mat-icon>
+        {{ generating ? 'Generating...' : 'Generate hall tickets' }}
+      </button>
+    }
+  </div>
+
+  <div class="filter-row no-print">
+    <div class="filter-field">
+      <label>Exam</label>
+      <select [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
+        <option value="">Select exam</option>
+        @for (e of exams; track e.id) {
+          <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
+        }
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Class</label>
+      <select [(ngModel)]="selectedClassId" (ngModelChange)="loadTickets()">
+        <option value="">Select class</option>
+        @for (c of examClasses; track c.classId) {
+          <option [value]="c.classId">{{ c.className }}</option>
+        }
+      </select>
+    </div>
+    @if (tickets.length > 0) {
+      <span class="badge b-green">{{ tickets.length }} ticket(s)</span>
+    }
+  </div>
+
+  @if (!loading && tickets.length === 0) {
+    <div class="empty-panel no-print">
       <mat-icon>confirmation_number</mat-icon>
-      {{ generating ? 'Generating...' : 'Generate Hall Tickets' }}
-    </button>
-  </div>
+      No hall tickets yet. Select an exam and class, then click "Generate hall tickets".
+    </div>
+  }
 
-  <div class="filter-bar no-print">
-    <label>Exam</label>
-    <select class="xm-select" [(ngModel)]="selectedExamId" (change)="onExamChange()">
-      <option value="">Select exam</option>
-      <option *ngFor="let e of exams" [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-    </select>
-    <label>Class</label>
-    <select class="xm-select" [(ngModel)]="selectedClassId" (change)="loadTickets()">
-      <option value="">Select class</option>
-      <option *ngFor="let c of examClasses" [value]="c.classId">{{ c.className }}</option>
-    </select>
-    <span class="badge b-g" *ngIf="tickets.length > 0">{{ tickets.length }} ticket(s)</span>
-  </div>
-
-  <div class="card empty no-print" *ngIf="!loading && tickets.length === 0">
-    <mat-icon>confirmation_number</mat-icon>
-    <div>No hall tickets yet. Select an exam and class, then click "Generate Hall Tickets".</div>
-  </div>
-
-  <div class="ticket-grid" *ngIf="tickets.length > 0">
-    <div class="ticket" *ngFor="let ticket of tickets">
-      <div class="ticket-head">
-        <span class="ticket-title">Hall Ticket</span>
-        <span class="ticket-no">{{ ticket.ticketNo }}</span>
-      </div>
-      <div class="ticket-body">
-        <div class="ticket-student">
-          <div class="ticket-photo">{{ initials(ticket.studentName) }}</div>
-          <div>
-            <div class="ticket-name">{{ ticket.studentName }}</div>
-            <div class="ticket-meta">
-              <span>Roll: <b>{{ ticket.rollNo }}</b></span>
-              <span>Class: <b>{{ ticket.className }}</b></span>
-              <span *ngIf="ticket.seatNo">Seat: <b>{{ ticket.seatNo }}</b></span>
+  @if (tickets.length > 0) {
+    <div class="ticket-grid">
+      @for (ticket of tickets; track ticket.ticketNo) {
+        <div class="ticket">
+          <div class="ticket-head">
+            <span class="ticket-title">Hall Ticket</span>
+            <span class="ticket-no">{{ ticket.ticketNo }}</span>
+          </div>
+          <div class="ticket-body">
+            <div class="ticket-student">
+              <div class="ticket-photo">{{ initials(ticket.studentName) }}</div>
+              <div>
+                <div class="ticket-name">{{ ticket.studentName }}</div>
+                <div class="ticket-meta">
+                  <span>Roll: <b>{{ ticket.rollNo }}</b></span>
+                  <span>Class: <b>{{ ticket.className }}</b></span>
+                  @if (ticket.seatNo) {
+                    <span>Seat: <b>{{ ticket.seatNo }}</b></span>
+                  }
+                </div>
+                <div class="ticket-meta">
+                  <span>{{ ticket.examName }}</span>
+                  <span>
+                    {{ ticket.startDate | date: 'dd MMM' }} –
+                    {{ ticket.endDate | date: 'dd MMM yyyy' }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div class="ticket-meta">
-              <span>{{ ticket.examName }}</span>
-              <span>
-                {{ ticket.startDate | date: 'dd MMM' }} – {{ ticket.endDate | date: 'dd MMM yyyy' }}
-              </span>
+
+            <table class="ticket-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Subject</th>
+                  <th>Time</th>
+                  <th>Room</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (slot of ticket.schedule; track slot.subjectName + slot.examDate) {
+                  <tr>
+                    <td>{{ slot.examDate | date: 'EEE, dd MMM' }}</td>
+                    <td>{{ slot.subjectName }}</td>
+                    <td>
+                      {{ slot.startTime || '—' }}
+                      @if (slot.endTime) {
+                        – {{ slot.endTime }}
+                      }
+                    </td>
+                    <td>{{ slot.roomNo || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <div class="ticket-instructions">
+              <b>Instructions:</b> Carry this hall ticket to every exam. Reach the exam hall 15
+              minutes before the start time. Mobile phones and smart devices are not allowed inside
+              the exam hall.
             </div>
           </div>
         </div>
-
-        <table class="ticket-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Subject</th>
-              <th>Time</th>
-              <th>Room</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let slot of ticket.schedule">
-              <td>{{ slot.examDate | date: 'EEE, dd MMM' }}</td>
-              <td>{{ slot.subjectName }}</td>
-              <td>
-                {{ slot.startTime || '—' }}<ng-container *ngIf="slot.endTime"> – {{ slot.endTime }}</ng-container>
-              </td>
-              <td>{{ slot.roomNo || '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="ticket-instructions">
-          <b>Instructions:</b> Carry this hall ticket to every exam. Reach the exam hall 15 minutes
-          before the start time. Mobile phones and smart devices are not allowed inside the exam
-          hall.
-        </div>
-      </div>
+      }
     </div>
-  </div>
-</div>
+  }
+</section>

@@ -2,9 +2,18 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
+import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import type {
+  DataTableAction,
+  DataTableColumn,
+  DataTableConfig,
+} from '../../../shared/components/smart-data-table';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import {
   ExamService,
   ExamListItem,
@@ -18,14 +27,22 @@ import {
 @Component({
   selector: 'app-exam-results',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    SmartDataTableComponent,
+    ActionButtonComponent,
+  ],
   templateUrl: './exam-results.component.html',
-  styleUrls: ['../exam-shared.css', './exam-results.component.css'],
+  styleUrl: './exam-results.component.css',
 })
 export class ExamResultsComponent implements OnInit {
   private examService = inject(ExamService);
   private snackBar = inject(NotificationService);
   private permissions = inject(PermissionService);
+  private dialog = inject(MatDialog);
   private cdr = inject(ChangeDetectorRef);
 
   ExamResultStatus = ExamResultStatus;
@@ -38,7 +55,9 @@ export class ExamResultsComponent implements OnInit {
   selectedExamId = '';
   selectedClassId = '';
 
-  loading = false;
+  rows: Record<string, unknown>[] = [];
+  tableConfig!: DataTableConfig;
+
   calculating = false;
   declaring = false;
   loadingCard = false;
@@ -55,7 +74,14 @@ export class ExamResultsComponent implements OnInit {
     return this.selectedExam?.classes ?? [];
   }
 
+  get sheetSubtitle(): string {
+    if (!this.sheet) return 'Calculate, review and declare results; print report cards';
+    const declared = this.sheet.resultDeclared ? ' · Declared' : '';
+    return `${this.sheet.examName} — ${this.sheet.className}${declared}`;
+  }
+
   ngOnInit(): void {
+    this.tableConfig = this.buildTableConfig([]);
     this.examService.getExams().subscribe({
       next: (exams) => {
         this.exams = exams ?? [];
@@ -65,7 +91,11 @@ export class ExamResultsComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load exams', 'Close', { duration: 3000 }),
+      error: () =>
+        this.snackBar.open('Failed to load exams', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        }),
     });
   }
 
@@ -76,22 +106,100 @@ export class ExamResultsComponent implements OnInit {
 
   loadSheet(): void {
     this.sheet = null;
+    this.rows = [];
     this.reportCard = null;
     this.activeTab = 'sheet';
+    this.tableConfig = this.buildTableConfig([]);
     if (!this.selectedExamId || !this.selectedClassId) return;
-    this.loading = true;
     this.examService.getResultSheet(this.selectedExamId, this.selectedClassId).subscribe({
       next: (sheet) => {
-        this.sheet = sheet;
-        this.loading = false;
+        this.applySheet(sheet);
         this.cdr.detectChanges();
       },
       error: () => {
-        this.loading = false;
-        this.snackBar.open('Failed to load result sheet', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load result sheet', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private applySheet(sheet: ExamResultSheet | null): void {
+    this.sheet = sheet;
+    const subjects = sheet?.subjects ?? [];
+    this.tableConfig = this.buildTableConfig(subjects);
+    this.rows = (sheet?.rows ?? []).map((row) => {
+      const mapped: Record<string, unknown> = {
+        ...row,
+        student: row.studentName,
+        percentageLabel: `${row.percentage}%`,
+        gradeLabel: row.grade || '—',
+      };
+      for (const subject of subjects) {
+        mapped[`subj_${subject.subjectId}`] = this.subjectMark(row, subject.subjectId);
+      }
+      return mapped;
+    });
+  }
+
+  private buildTableConfig(
+    subjects: { subjectId: string; subjectName: string; maxMarks: number }[],
+  ): DataTableConfig {
+    const subjectColumns: DataTableColumn[] = subjects.map((s) => ({
+      key: `subj_${s.subjectId}`,
+      label: `${s.subjectName} (${s.maxMarks})`,
+      align: 'center',
+    }));
+
+    return {
+      header: {
+        title: 'Exam Results',
+        subtitle: this.sheetSubtitle,
+        showAddButton: false,
+      },
+      columns: [
+        { key: 'rank', label: 'Rank', sortable: true, align: 'center', width: '70px' },
+        { key: 'rollNo', label: 'Roll', sortable: true },
+        {
+          key: 'student',
+          label: 'Student',
+          sortable: true,
+          cellType: 'avatar',
+          toggleable: false,
+          avatarConfig: { nameKey: 'studentName' },
+        },
+        ...subjectColumns,
+        {
+          key: 'totalMarks',
+          label: sheetMaxLabel(this.sheet),
+          sortable: true,
+          align: 'center',
+        },
+        { key: 'percentageLabel', label: '%', align: 'center' },
+        { key: 'gradeLabel', label: 'Grade', align: 'center' },
+        {
+          key: 'resultLabel',
+          label: 'Result',
+          cellType: 'badge',
+          badgeMap: {
+            Pass: { cssClass: 'b-green', label: 'Pass' },
+            Fail: { cssClass: 'b-red', label: 'Fail' },
+            Absent: { cssClass: 'b-amber', label: 'Absent' },
+          },
+        },
+      ],
+      actions: [{ label: 'Report card', icon: 'description', iconColor: '#639922' }],
+      filtersInPanel: true,
+      searchPlaceholder: 'Search students...',
+      searchKeys: ['studentName', 'rollNo', 'resultLabel', 'grade'],
+      itemLabel: 'students',
+      defaultPageSize: 50,
+      pageSizeOptions: [25, 50, 100],
+      selectable: false,
+      showExport: true,
+    };
   }
 
   calculate(): void {
@@ -99,9 +207,12 @@ export class ExamResultsComponent implements OnInit {
     this.calculating = true;
     this.examService.calculateResults(this.selectedExamId, this.selectedClassId).subscribe({
       next: (sheet) => {
-        this.sheet = sheet;
+        this.applySheet(sheet);
         this.calculating = false;
-        this.snackBar.open('Results calculated', 'Close', { duration: 2500 });
+        this.snackBar.open('Results calculated', 'Close', {
+          duration: 2500,
+          panelClass: 'snack-success',
+        });
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -109,7 +220,7 @@ export class ExamResultsComponent implements OnInit {
         this.snackBar.open(
           typeof err?.error === 'string' ? err.error : 'Result calculation failed',
           'Close',
-          { duration: 3500 },
+          { duration: 3500, panelClass: 'snack-error' },
         );
         this.cdr.detectChanges();
       },
@@ -118,26 +229,46 @@ export class ExamResultsComponent implements OnInit {
 
   declare(): void {
     if (!this.selectedExamId || !this.selectedClassId) return;
-    if (!confirm('Declare results? Declared results are locked and cannot be recalculated.')) {
-      return;
-    }
-    this.declaring = true;
-    this.examService.declareResults(this.selectedExamId, this.selectedClassId).subscribe({
-      next: (sheet) => {
-        this.sheet = sheet;
-        this.declaring = false;
-        this.snackBar.open('Results declared', 'Close', { duration: 2500 });
-        this.cdr.detectChanges();
+    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
+      data: {
+        title: 'Declare results?',
+        description: 'Declared results are locked and cannot be recalculated.',
+        recordName: this.sheet?.examName ?? 'Exam',
+        recordMeta: this.sheet?.className ?? '',
+        initials: 'RS',
+        warningMessage: 'Students and parents will see the declared results.',
+        confirmButtonText: 'Yes, declare',
+        cancelButtonText: 'Cancel',
+        variant: 'primary',
+        headerIcon: 'campaign',
       },
-      error: (err) => {
-        this.declaring = false;
-        this.snackBar.open(
-          typeof err?.error === 'string' ? err.error : 'Failed to declare results',
-          'Close',
-          { duration: 3500 },
-        );
-        this.cdr.detectChanges();
-      },
+      panelClass: 'erp-dialog',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.declaring = true;
+      this.examService.declareResults(this.selectedExamId, this.selectedClassId).subscribe({
+        next: (sheet) => {
+          this.applySheet(sheet);
+          this.declaring = false;
+          this.snackBar.open('Results declared', 'Close', {
+            duration: 2500,
+            panelClass: 'snack-success',
+          });
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.declaring = false;
+          this.snackBar.open(
+            typeof err?.error === 'string' ? err.error : 'Failed to declare results',
+            'Close',
+            { duration: 3500, panelClass: 'snack-error' },
+          );
+          this.cdr.detectChanges();
+        },
+      });
     });
   }
 
@@ -148,29 +279,27 @@ export class ExamResultsComponent implements OnInit {
     return mark.marks !== null && mark.marks !== undefined ? String(mark.marks) : '—';
   }
 
-  subjectMarkFailed(row: ExamResultRow, subjectId: string): boolean {
-    const mark = row.subjectMarks?.find((m) => m.subjectId === subjectId);
-    return !!mark && !mark.pass;
-  }
-
   resultBadgeClass(status: ExamResultStatus): string {
     switch (status) {
       case ExamResultStatus.Pass:
-        return 'b-g';
+        return 'b-green';
       case ExamResultStatus.Fail:
-        return 'b-r';
+        return 'b-red';
       case ExamResultStatus.Absent:
-        return 'b-a';
+        return 'b-amber';
       default:
         return 'b-gray';
     }
   }
 
-  medal(rank: number): string {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return '';
+  onActionClicked(event: {
+    action: DataTableAction;
+    row: Record<string, unknown>;
+    rowIndex: number;
+  }): void {
+    if (event.action.label === 'Report card') {
+      this.openReportCard(event.row as unknown as ExamResultRow);
+    }
   }
 
   openReportCard(row: ExamResultRow): void {
@@ -188,7 +317,7 @@ export class ExamResultsComponent implements OnInit {
         this.snackBar.open(
           typeof err?.error === 'string' ? err.error : 'Failed to load report card',
           'Close',
-          { duration: 3500 },
+          { duration: 3500, panelClass: 'snack-error' },
         );
         this.cdr.detectChanges();
       },
@@ -238,4 +367,8 @@ export class ExamResultsComponent implements OnInit {
     a.click();
     URL.revokeObjectURL(url);
   }
+}
+
+function sheetMaxLabel(sheet: ExamResultSheet | null): string {
+  return sheet ? `Total (${sheet.maxMarks})` : 'Total';
 }

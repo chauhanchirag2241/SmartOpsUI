@@ -7,6 +7,14 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import type {
+  DataTableAction,
+  DataTableConfig,
+} from '../../../shared/components/smart-data-table';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SubjectService } from '../../../core/services/subject.service';
 import { EmployeeService, EmployeeDropdownItem } from '../../../core/services/employee.service';
 import {
@@ -19,9 +27,16 @@ import {
 @Component({
   selector: 'app-exam-schedule',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    SmartDataTableComponent,
+    ActionButtonComponent,
+  ],
   templateUrl: './exam-schedule.component.html',
-  styleUrls: ['../exam-shared.css'],
+  styleUrl: './exam-schedule.component.css',
 })
 export class ExamScheduleComponent implements OnInit {
   private examService = inject(ExamService);
@@ -30,13 +45,14 @@ export class ExamScheduleComponent implements OnInit {
   private snackBar = inject(NotificationService);
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
+  private ayContext = inject(AcademicYearContextService);
   private cdr = inject(ChangeDetectorRef);
 
   exams: ExamListItem[] = [];
   subjects: any[] = [];
   employees: EmployeeDropdownItem[] = [];
-  schedules: ExamScheduleItem[] = [];
-  loading = false;
+  rows: Record<string, unknown>[] = [];
+  tableConfig!: DataTableConfig;
 
   selectedExamId = '';
   selectedClassId = '';
@@ -54,15 +70,54 @@ export class ExamScheduleComponent implements OnInit {
   formRoomNo = '';
   formInvigilatorId = '';
 
-  get canAdd(): boolean {
-    return this.permissions.canAdd(MenuCodes.ExamSchedule);
-  }
-  get canEdit(): boolean {
-    return this.permissions.canEdit(MenuCodes.ExamSchedule);
-  }
-  get canDelete(): boolean {
-    return this.permissions.canDelete(MenuCodes.ExamSchedule);
-  }
+  private readonly baseTableConfig: DataTableConfig = {
+    header: {
+      title: 'Exam Schedule',
+      subtitle: 'Subject & class wise exam timetable',
+      showAddButton: true,
+      addButtonText: 'Add slot',
+      addButtonIcon: 'add',
+      addButtonClass: 'btn-primary',
+    },
+    columns: [
+      { key: 'examDate', label: 'Date', sortable: true, cellType: 'date' },
+      { key: 'className', label: 'Class', sortable: true },
+      {
+        key: 'subject',
+        label: 'Subject',
+        sortable: true,
+        cellType: 'avatar',
+        toggleable: false,
+        avatarConfig: { nameKey: 'subjectName' },
+      },
+      { key: 'timeLabel', label: 'Time' },
+      { key: 'roomNo', label: 'Room' },
+      { key: 'invigilatorName', label: 'Invigilator' },
+      { key: 'maxMarks', label: 'Max marks' },
+      {
+        key: 'status',
+        label: 'Status',
+        cellType: 'badge',
+        badgeMap: {
+          Today: { cssClass: 'b-amber', label: 'Today' },
+          Completed: { cssClass: 'b-green', label: 'Completed' },
+          Upcoming: { cssClass: 'b-blue', label: 'Upcoming' },
+        },
+      },
+    ],
+    actions: [
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
+    ],
+    filtersInPanel: true,
+    searchPlaceholder: 'Search schedule...',
+    searchKeys: ['subjectName', 'className', 'roomNo', 'invigilatorName'],
+    itemLabel: 'slots',
+    defaultPageSize: 25,
+    pageSizeOptions: [10, 25, 50],
+    selectable: false,
+    showExport: false,
+  };
 
   get selectedExam(): ExamListItem | undefined {
     return this.exams.find((e) => e.id === this.selectedExamId);
@@ -73,6 +128,12 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissions,
+      MenuCodes.ExamSchedule,
+      this.ayContext.isReadOnlyScope(),
+    );
     this.examService.getExams().subscribe({
       next: (exams) => {
         this.exams = exams ?? [];
@@ -82,7 +143,11 @@ export class ExamScheduleComponent implements OnInit {
         }
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load exams', 'Close', { duration: 3000 }),
+      error: () =>
+        this.snackBar.open('Failed to load exams', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        }),
     });
     this.subjectService.getSubjectDropdown().subscribe({
       next: (subjects) => {
@@ -106,36 +171,30 @@ export class ExamScheduleComponent implements OnInit {
 
   loadSchedules(): void {
     if (!this.selectedExamId) {
-      this.schedules = [];
+      this.rows = [];
       return;
     }
-    this.loading = true;
     this.examService.getSchedules(this.selectedExamId, this.selectedClassId || undefined).subscribe({
       next: (schedules) => {
-        this.schedules = schedules ?? [];
-        this.loading = false;
+        this.rows = (schedules ?? []).map((item: ExamScheduleItem) => ({
+          ...item,
+          subject: item.subjectName,
+          timeLabel: this.timeRange(item),
+          roomNo: item.roomNo || '—',
+          invigilatorName: item.invigilatorName || '—',
+          status: item.status || 'Upcoming',
+        }));
         this.cdr.detectChanges();
       },
       error: () => {
-        this.schedules = [];
-        this.loading = false;
-        this.snackBar.open('Failed to load schedule', 'Close', { duration: 3000 });
+        this.rows = [];
+        this.snackBar.open('Failed to load schedule', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
         this.cdr.detectChanges();
       },
     });
-  }
-
-  statusBadgeClass(status: string): string {
-    switch ((status || '').toLowerCase()) {
-      case 'today':
-        return 'b-a';
-      case 'completed':
-        return 'b-g';
-      case 'upcoming':
-        return 'b-b';
-      default:
-        return 'b-gray';
-    }
   }
 
   timeRange(item: ExamScheduleItem): string {
@@ -143,9 +202,12 @@ export class ExamScheduleComponent implements OnInit {
     return `${item.startTime ?? '?'} – ${item.endTime ?? '?'}`;
   }
 
-  openCreate(): void {
+  onAddButtonClicked(): void {
     if (!this.selectedExamId || !this.selectedClassId) {
-      this.snackBar.open('Select an exam and class first', 'Close', { duration: 2500 });
+      this.snackBar.open('Select an exam and class first', 'Close', {
+        duration: 2500,
+        panelClass: 'snack-error',
+      });
       return;
     }
     this.formMode = 'add';
@@ -160,17 +222,26 @@ export class ExamScheduleComponent implements OnInit {
     this.showForm = true;
   }
 
-  openEdit(item: ExamScheduleItem): void {
-    this.formMode = 'edit';
-    this.editingId = item.id;
-    this.formSubjectId = item.subjectId;
-    this.formExamDate = item.examDate?.substring(0, 10) ?? '';
-    this.formStartTime = item.startTime ?? '';
-    this.formEndTime = item.endTime ?? '';
-    this.formRoomNo = item.roomNo ?? '';
-    this.formInvigilatorId = item.invigilatorId ?? '';
-    this.formError = '';
-    this.showForm = true;
+  onActionClicked(event: {
+    action: DataTableAction;
+    row: Record<string, unknown>;
+    rowIndex: number;
+  }): void {
+    const item = event.row as unknown as ExamScheduleItem;
+    if (event.action.label === 'Edit') {
+      this.formMode = 'edit';
+      this.editingId = item.id;
+      this.formSubjectId = item.subjectId;
+      this.formExamDate = item.examDate?.substring(0, 10) ?? '';
+      this.formStartTime = item.startTime ?? '';
+      this.formEndTime = item.endTime ?? '';
+      this.formRoomNo = item.roomNo ?? '';
+      this.formInvigilatorId = item.invigilatorId ?? '';
+      this.formError = '';
+      this.showForm = true;
+    } else if (event.action.label === 'Delete') {
+      this.deleteSchedule(item);
+    }
   }
 
   closeForm(): void {
@@ -216,7 +287,7 @@ export class ExamScheduleComponent implements OnInit {
         this.snackBar.open(
           this.formMode === 'edit' ? 'Schedule updated' : 'Schedule slot added',
           'Close',
-          { duration: 2500 },
+          { duration: 2500, panelClass: 'snack-success' },
         );
         this.closeForm();
         this.loadSchedules();
@@ -249,20 +320,19 @@ export class ExamScheduleComponent implements OnInit {
       if (!confirmed) return;
       this.examService.deleteSchedule(item.id).subscribe({
         next: () => {
-          this.snackBar.open('Schedule slot deleted', 'Close', { duration: 2500 });
+          this.snackBar.open('Schedule slot deleted', 'Close', {
+            duration: 2500,
+            panelClass: 'snack-success',
+          });
           this.loadSchedules();
         },
         error: (err) =>
           this.snackBar.open(
             typeof err?.error === 'string' ? err.error : 'Delete failed',
             'Close',
-            { duration: 3500 },
+            { duration: 3500, panelClass: 'snack-error' },
           ),
       });
     });
-  }
-
-  print(): void {
-    window.print();
   }
 }

@@ -8,13 +8,22 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import type {
+  DataTableAction,
+  DataTableConfig,
+} from '../../../shared/components/smart-data-table';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ClassService } from '../../../core/services/class.service';
+import { MappingOption } from '../../../shared/mapping/mapping.types';
 import {
   ExamService,
   ExamGroup,
   ExamGradeScale,
   ExamListItem,
-  ExamStats,
   ExamStatus,
   ExamMarkComponent,
 } from '../../../core/services/exam.service';
@@ -40,9 +49,17 @@ const EXAM_TYPES = [
 @Component({
   selector: 'app-exam-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    SmartDataTableComponent,
+    ActionButtonComponent,
+    MultiSelectChipsComponent,
+  ],
   templateUrl: './exam-list.component.html',
-  styleUrls: ['../exam-shared.css'],
+  styleUrl: './exam-list.component.css',
 })
 export class ExamListComponent implements OnInit {
   private examService = inject(ExamService);
@@ -50,23 +67,21 @@ export class ExamListComponent implements OnInit {
   private snackBar = inject(NotificationService);
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
+  private ayContext = inject(AcademicYearContextService);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
 
   ExamStatus = ExamStatus;
   examTypes = EXAM_TYPES;
 
-  exams: ExamListItem[] = [];
+  rows: Record<string, unknown>[] = [];
   groups: ExamGroup[] = [];
   gradeScales: ExamGradeScale[] = [];
-  classes: any[] = [];
-  stats: ExamStats = { total: 0, ongoing: 0, completed: 0, upcoming: 0 };
-  loading = false;
+  classOptions: MappingOption[] = [];
+  tableConfig!: DataTableConfig;
 
   filterGroupId = '';
   filterClassId = '';
-  filterStatus = '';
-  searchQuery = '';
 
   showForm = false;
   formMode: 'add' | 'edit' = 'add';
@@ -85,23 +100,108 @@ export class ExamListComponent implements OnInit {
   formClassIds: string[] = [];
   componentRows: ComponentRowDraft[] = [];
 
-  get canAdd(): boolean {
-    return this.permissions.canAdd(MenuCodes.Exams);
-  }
-  get canEdit(): boolean {
-    return this.permissions.canEdit(MenuCodes.Exams);
-  }
-  get canDelete(): boolean {
-    return this.permissions.canDelete(MenuCodes.Exams);
+  private readonly baseTableConfig: DataTableConfig = {
+    header: {
+      title: 'Exams',
+      subtitle: 'Create exams inside a group, assign classes and mark components',
+      showAddButton: true,
+      addButtonText: 'Create exam',
+      addButtonIcon: 'add',
+      addButtonClass: 'btn-primary',
+    },
+    columns: [
+      {
+        key: 'exam',
+        label: 'Exam',
+        sortable: true,
+        cellType: 'avatar',
+        toggleable: false,
+        avatarConfig: { nameKey: 'name', subtitleKey: 'examType' },
+      },
+      { key: 'examGroupName', label: 'Group', sortable: true },
+      { key: 'classesLabel', label: 'Classes' },
+      { key: 'dateRange', label: 'Dates', sortable: true },
+      { key: 'totalMaxMarks', label: 'Max marks', sortable: true },
+      {
+        key: 'statusLabel',
+        label: 'Status',
+        cellType: 'badge',
+        badgeMap: {
+          Draft: { cssClass: 'b-gray', label: 'Draft' },
+          Scheduled: { cssClass: 'b-purple', label: 'Scheduled' },
+          Ongoing: { cssClass: 'b-amber', label: 'Ongoing' },
+          Completed: { cssClass: 'b-blue', label: 'Completed' },
+          'Result Declared': { cssClass: 'b-green', label: 'Result Declared' },
+        },
+      },
+    ],
+    filtersInPanel: true,
+    filters: [
+      { label: 'All', icon: 'list', value: 'All' },
+      {
+        label: 'Draft',
+        icon: 'edit_note',
+        value: 'Draft',
+        filterFn: (row) => row['status'] === ExamStatus.Draft,
+      },
+      {
+        label: 'Scheduled',
+        icon: 'event_available',
+        value: 'Scheduled',
+        filterFn: (row) => row['status'] === ExamStatus.Scheduled,
+      },
+      {
+        label: 'Ongoing',
+        icon: 'play_circle',
+        value: 'Ongoing',
+        filterFn: (row) => row['status'] === ExamStatus.Ongoing,
+      },
+      {
+        label: 'Completed',
+        icon: 'task_alt',
+        value: 'Completed',
+        filterFn: (row) => row['status'] === ExamStatus.Completed,
+      },
+      {
+        label: 'Results',
+        icon: 'verified',
+        value: 'Result Declared',
+        filterFn: (row) => row['status'] === ExamStatus.ResultDeclared,
+      },
+    ],
+    actions: [
+      { label: 'Mark scheduled', icon: 'event_available', iconColor: '#639922' },
+      { label: 'Mark ongoing', icon: 'play_circle', iconColor: '#B45309' },
+      { label: 'Mark completed', icon: 'task_alt', iconColor: '#1E40AF' },
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
+    ],
+    actionVisibleFn: (action, row) => this.isExamActionVisible(action, row),
+    searchPlaceholder: 'Search exams...',
+    searchKeys: ['name', 'examType', 'examGroupName', 'classesLabel'],
+    itemLabel: 'exams',
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+    selectable: false,
+    showExport: false,
+  };
+
+  get totalMaxMarks(): number {
+    return this.componentRows.reduce((sum, row) => sum + (row.maxMarks ?? 0), 0);
   }
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissions,
+      MenuCodes.Exams,
+      this.ayContext.isReadOnlyScope(),
+    );
     const groupId = this.route.snapshot.queryParamMap.get('groupId');
     if (groupId) {
       this.filterGroupId = groupId;
     }
     this.loadDropdowns();
-    this.loadStats();
     this.loadList();
   }
 
@@ -120,65 +220,71 @@ export class ExamListComponent implements OnInit {
     });
     this.classService.getClassDropdown().subscribe({
       next: (classes) => {
-        this.classes = classes ?? [];
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  loadStats(): void {
-    this.examService.getExamStats().subscribe({
-      next: (stats) => {
-        this.stats = stats ?? this.stats;
+        this.classOptions = (classes ?? []).map((c: { id: string; name: string }) => ({
+          id: c.id,
+          name: c.name,
+        }));
         this.cdr.detectChanges();
       },
     });
   }
 
   loadList(): void {
-    this.loading = true;
     this.examService
       .getExams({
         groupId: this.filterGroupId || undefined,
         classId: this.filterClassId || undefined,
-        status: this.filterStatus === '' ? undefined : Number(this.filterStatus),
-        search: this.searchQuery || undefined,
       })
       .subscribe({
         next: (exams) => {
-          this.exams = exams ?? [];
-          this.loading = false;
+          this.rows = (exams ?? []).map((exam: ExamListItem) => ({
+            ...exam,
+            exam: exam.name,
+            classesLabel: this.classNames(exam) || '—',
+            dateRange: this.formatDateRange(exam.startDate, exam.endDate),
+          }));
           this.cdr.detectChanges();
         },
         error: () => {
-          this.exams = [];
-          this.loading = false;
-          this.snackBar.open('Failed to load exams', 'Close', { duration: 3000 });
+          this.rows = [];
+          this.snackBar.open('Failed to load exams', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          });
           this.cdr.detectChanges();
         },
       });
-  }
-
-  statusBadgeClass(status: ExamStatus): string {
-    switch (status) {
-      case ExamStatus.Ongoing:
-        return 'b-a';
-      case ExamStatus.Completed:
-        return 'b-b';
-      case ExamStatus.ResultDeclared:
-        return 'b-g';
-      case ExamStatus.Scheduled:
-        return 'b-p';
-      default:
-        return 'b-gray';
-    }
   }
 
   classNames(exam: ExamListItem): string {
     return (exam.classes ?? []).map((c) => c.className).join(', ');
   }
 
-  openCreate(): void {
+  formatDateRange(start: string, end: string): string {
+    const fmt = (d: string) => {
+      if (!d) return '—';
+      const date = new Date(d);
+      if (Number.isNaN(date.getTime())) return d.substring(0, 10);
+      return date.toLocaleDateString(undefined, {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    };
+    return `${fmt(start)} – ${fmt(end)}`;
+  }
+
+  isExamActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+    const status = row['status'] as ExamStatus;
+    const resultDeclared = !!row['resultDeclared'];
+    if (action.label === 'Mark scheduled') return status === ExamStatus.Draft;
+    if (action.label === 'Mark ongoing') return status === ExamStatus.Scheduled;
+    if (action.label === 'Mark completed') return status === ExamStatus.Ongoing;
+    if (action.label === 'Edit' || action.label === 'Delete') return !resultDeclared;
+    return true;
+  }
+
+  onAddButtonClicked(): void {
     this.formMode = 'add';
     this.editingId = null;
     this.formGroupId = this.filterGroupId || this.groups[0]?.id || '';
@@ -199,6 +305,31 @@ export class ExamListComponent implements OnInit {
     this.showForm = true;
   }
 
+  onActionClicked(event: {
+    action: DataTableAction;
+    row: Record<string, unknown>;
+    rowIndex: number;
+  }): void {
+    const exam = event.row as unknown as ExamListItem;
+    switch (event.action.label) {
+      case 'Edit':
+        this.openEdit(exam);
+        break;
+      case 'Delete':
+        this.deleteExam(exam);
+        break;
+      case 'Mark scheduled':
+        this.setStatus(exam, ExamStatus.Scheduled);
+        break;
+      case 'Mark ongoing':
+        this.setStatus(exam, ExamStatus.Ongoing);
+        break;
+      case 'Mark completed':
+        this.setStatus(exam, ExamStatus.Completed);
+        break;
+    }
+  }
+
   openEdit(exam: ExamListItem): void {
     this.examService.getExam(exam.id).subscribe({
       next: (detail) => {
@@ -207,8 +338,8 @@ export class ExamListComponent implements OnInit {
         this.formGroupId = detail.examGroupId;
         this.formName = detail.name;
         this.formExamType = detail.examType;
-        this.formStartDate = detail.startDate;
-        this.formEndDate = detail.endDate;
+        this.formStartDate = detail.startDate?.substring(0, 10) ?? '';
+        this.formEndDate = detail.endDate?.substring(0, 10) ?? '';
         this.formMinPassPercent = detail.minPassPercent;
         this.formGradeScaleId = detail.gradeScaleId ?? '';
         this.formDescription = detail.description ?? '';
@@ -223,7 +354,11 @@ export class ExamListComponent implements OnInit {
         this.showForm = true;
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load exam', 'Close', { duration: 3000 }),
+      error: () =>
+        this.snackBar.open('Failed to load exam', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        }),
     });
   }
 
@@ -233,25 +368,12 @@ export class ExamListComponent implements OnInit {
     this.formError = '';
   }
 
-  toggleClass(classId: string): void {
-    const index = this.formClassIds.indexOf(classId);
-    if (index >= 0) {
-      this.formClassIds.splice(index, 1);
-    } else {
-      this.formClassIds.push(classId);
-    }
-  }
-
   addComponentRow(): void {
     this.componentRows.push({ name: '', maxMarks: null, passingMarks: null });
   }
 
   removeComponentRow(index: number): void {
     this.componentRows.splice(index, 1);
-  }
-
-  get totalMaxMarks(): number {
-    return this.componentRows.reduce((sum, row) => sum + (row.maxMarks ?? 0), 0);
   }
 
   private validate(): string | null {
@@ -270,7 +392,11 @@ export class ExamListComponent implements OnInit {
         return `Component '${row.name}' passing marks cannot exceed max marks.`;
       }
     }
-    if (this.formMinPassPercent === null || this.formMinPassPercent < 0 || this.formMinPassPercent > 100) {
+    if (
+      this.formMinPassPercent === null ||
+      this.formMinPassPercent < 0 ||
+      this.formMinPassPercent > 100
+    ) {
       return 'Minimum pass percent must be between 0 and 100.';
     }
     return null;
@@ -314,10 +440,10 @@ export class ExamListComponent implements OnInit {
         this.saving = false;
         this.snackBar.open(this.formMode === 'edit' ? 'Exam updated' : 'Exam created', 'Close', {
           duration: 2500,
+          panelClass: 'snack-success',
         });
         this.closeForm();
         this.loadList();
-        this.loadStats();
         this.loadDropdowns();
       },
       error: (err) => {
@@ -331,15 +457,17 @@ export class ExamListComponent implements OnInit {
   setStatus(exam: ExamListItem, status: ExamStatus): void {
     this.examService.updateExamStatus(exam.id, status).subscribe({
       next: () => {
-        this.snackBar.open('Exam status updated', 'Close', { duration: 2500 });
+        this.snackBar.open('Exam status updated', 'Close', {
+          duration: 2500,
+          panelClass: 'snack-success',
+        });
         this.loadList();
-        this.loadStats();
       },
       error: (err) =>
         this.snackBar.open(
           typeof err?.error === 'string' ? err.error : 'Status update failed',
           'Close',
-          { duration: 3000 },
+          { duration: 3000, panelClass: 'snack-error' },
         ),
     });
   }
@@ -364,15 +492,17 @@ export class ExamListComponent implements OnInit {
       if (!confirmed) return;
       this.examService.deleteExam(exam.id).subscribe({
         next: () => {
-          this.snackBar.open('Exam deleted', 'Close', { duration: 2500 });
+          this.snackBar.open('Exam deleted', 'Close', {
+            duration: 2500,
+            panelClass: 'snack-success',
+          });
           this.loadList();
-          this.loadStats();
         },
         error: (err) =>
           this.snackBar.open(
             typeof err?.error === 'string' ? err.error : 'Delete failed',
             'Close',
-            { duration: 3500 },
+            { duration: 3500, panelClass: 'snack-error' },
           ),
       });
     });

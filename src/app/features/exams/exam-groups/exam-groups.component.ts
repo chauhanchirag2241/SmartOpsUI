@@ -8,6 +8,14 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import type {
+  DataTableAction,
+  DataTableConfig,
+} from '../../../shared/components/smart-data-table';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import {
   AcademicYearService,
   AcademicYearDropdownItem,
@@ -22,9 +30,16 @@ import {
 @Component({
   selector: 'app-exam-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    SmartDataTableComponent,
+    ActionButtonComponent,
+  ],
   templateUrl: './exam-groups.component.html',
-  styleUrls: ['../exam-shared.css'],
+  styleUrl: './exam-groups.component.css',
 })
 export class ExamGroupsComponent implements OnInit {
   private examService = inject(ExamService);
@@ -32,15 +47,16 @@ export class ExamGroupsComponent implements OnInit {
   private snackBar = inject(NotificationService);
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
+  private ayContext = inject(AcademicYearContextService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
   ExamEvaluationType = ExamEvaluationType;
 
-  groups: ExamGroup[] = [];
+  rows: Record<string, unknown>[] = [];
   academicYears: AcademicYearDropdownItem[] = [];
   gradeScales: ExamGradeScale[] = [];
-  loading = false;
+  tableConfig!: DataTableConfig;
 
   showForm = false;
   formMode: 'add' | 'edit' = 'add';
@@ -54,17 +70,60 @@ export class ExamGroupsComponent implements OnInit {
   formGradeScaleId = '';
   formEvaluationType: ExamEvaluationType = ExamEvaluationType.Marks;
 
-  get canAdd(): boolean {
-    return this.permissions.canAdd(MenuCodes.ExamGroups);
-  }
-  get canEdit(): boolean {
-    return this.permissions.canEdit(MenuCodes.ExamGroups);
-  }
-  get canDelete(): boolean {
-    return this.permissions.canDelete(MenuCodes.ExamGroups);
-  }
+  private readonly baseTableConfig: DataTableConfig = {
+    header: {
+      title: 'Exam Groups',
+      subtitle: 'Group exams like "Term 1 Exams 2025-26" — each group holds multiple exams',
+      showAddButton: true,
+      addButtonText: 'New exam group',
+      addButtonIcon: 'add',
+      addButtonClass: 'btn-primary',
+    },
+    columns: [
+      {
+        key: 'group',
+        label: 'Group',
+        sortable: true,
+        cellType: 'avatar',
+        toggleable: false,
+        avatarConfig: { nameKey: 'name', subtitleKey: 'description' },
+      },
+      { key: 'academicYearTitle', label: 'Academic year', sortable: true },
+      {
+        key: 'evaluationTypeLabel',
+        label: 'Evaluation',
+        cellType: 'badge',
+        badgeMap: {
+          Marks: { cssClass: 'b-blue', label: 'Marks' },
+          Grade: { cssClass: 'b-purple', label: 'Grade' },
+          'Marks & Grade': { cssClass: 'b-teal', label: 'Marks & Grade' },
+          Both: { cssClass: 'b-teal', label: 'Marks & Grade' },
+        },
+      },
+      { key: 'gradeScaleName', label: 'Grade scale' },
+      { key: 'examCountLabel', label: 'Exams', sortable: true },
+    ],
+    actions: [
+      { label: 'View exams', icon: 'visibility', iconColor: '#639922' },
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
+    ],
+    searchPlaceholder: 'Search exam groups...',
+    searchKeys: ['name', 'description', 'academicYearTitle', 'gradeScaleName'],
+    itemLabel: 'groups',
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+    selectable: false,
+    showExport: false,
+  };
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissions,
+      MenuCodes.ExamGroups,
+      this.ayContext.isReadOnlyScope(),
+    );
     this.load();
     this.academicYearService.getAcademicYearDropdown('switcher').subscribe({
       next: (years) => {
@@ -81,22 +140,29 @@ export class ExamGroupsComponent implements OnInit {
   }
 
   load(): void {
-    this.loading = true;
     this.examService.getGroups().subscribe({
       next: (groups) => {
-        this.groups = groups ?? [];
-        this.loading = false;
+        this.rows = (groups ?? []).map((g: ExamGroup) => ({
+          ...g,
+          group: g.name,
+          description: g.description || '—',
+          gradeScaleName: g.gradeScaleName || '—',
+          evaluationTypeLabel: g.evaluationTypeLabel || 'Marks',
+          examCountLabel: `${g.examCount} exam${g.examCount === 1 ? '' : 's'}`,
+        }));
         this.cdr.detectChanges();
       },
       error: () => {
-        this.loading = false;
-        this.snackBar.open('Failed to load exam groups', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load exam groups', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
         this.cdr.detectChanges();
       },
     });
   }
 
-  openCreate(): void {
+  onAddButtonClicked(): void {
     this.formMode = 'add';
     this.editingId = null;
     this.formName = '';
@@ -109,22 +175,33 @@ export class ExamGroupsComponent implements OnInit {
     this.showForm = true;
   }
 
-  openEdit(group: ExamGroup): void {
-    this.formMode = 'edit';
-    this.editingId = group.id;
-    this.formName = group.name;
-    this.formDescription = group.description ?? '';
-    this.formAcademicYearId = group.academicYearId;
-    this.formGradeScaleId = group.gradeScaleId ?? '';
-    this.formEvaluationType = group.evaluationType;
-    this.formError = '';
-    this.showForm = true;
-  }
-
   closeForm(): void {
     this.showForm = false;
     this.editingId = null;
     this.formError = '';
+  }
+
+  onActionClicked(event: {
+    action: DataTableAction;
+    row: Record<string, unknown>;
+    rowIndex: number;
+  }): void {
+    const group = event.row as unknown as ExamGroup;
+    if (event.action.label === 'View exams') {
+      this.router.navigate(['/exams/list'], { queryParams: { groupId: group.id } });
+    } else if (event.action.label === 'Edit') {
+      this.formMode = 'edit';
+      this.editingId = group.id;
+      this.formName = group.name;
+      this.formDescription = group.description ?? '';
+      this.formAcademicYearId = group.academicYearId;
+      this.formGradeScaleId = group.gradeScaleId ?? '';
+      this.formEvaluationType = group.evaluationType;
+      this.formError = '';
+      this.showForm = true;
+    } else if (event.action.label === 'Delete') {
+      this.deleteGroup(group);
+    }
   }
 
   save(): void {
@@ -157,7 +234,7 @@ export class ExamGroupsComponent implements OnInit {
         this.snackBar.open(
           this.formMode === 'edit' ? 'Exam group updated' : 'Exam group created',
           'Close',
-          { duration: 2500 },
+          { duration: 2500, panelClass: 'snack-success' },
         );
         this.closeForm();
         this.load();
@@ -190,20 +267,19 @@ export class ExamGroupsComponent implements OnInit {
       if (!confirmed) return;
       this.examService.deleteGroup(group.id).subscribe({
         next: () => {
-          this.snackBar.open('Exam group deleted', 'Close', { duration: 2500 });
+          this.snackBar.open('Exam group deleted', 'Close', {
+            duration: 2500,
+            panelClass: 'snack-success',
+          });
           this.load();
         },
         error: (err) =>
           this.snackBar.open(
             typeof err?.error === 'string' ? err.error : 'Delete failed',
             'Close',
-            { duration: 3500 },
+            { duration: 3500, panelClass: 'snack-error' },
           ),
       });
     });
-  }
-
-  viewExams(group: ExamGroup): void {
-    this.router.navigate(['/exams/list'], { queryParams: { groupId: group.id } });
   }
 }

@@ -1,4 +1,4 @@
-<div class="xm-container">
+<section class="marks-entry-page">
   <div class="topbar">
     <div class="page-info">
       <div class="page-title">Marks Entry</div>
@@ -6,162 +6,190 @@
     </div>
   </div>
 
-  <div class="filter-bar">
-    <label>Exam</label>
-    <select class="xm-select" [(ngModel)]="selectedExamId" (change)="onExamChange()">
-      <option value="">Select exam</option>
-      <option *ngFor="let e of exams" [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-    </select>
-    <label>Class</label>
-    <select class="xm-select" [(ngModel)]="selectedClassId" (change)="onClassChange()">
-      <option value="">Select class</option>
-      <option *ngFor="let c of examClasses" [value]="c.classId">{{ c.className }}</option>
-    </select>
+  <div class="filter-row">
+    <div class="filter-field">
+      <label>Exam</label>
+      <select [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
+        <option value="">Select exam</option>
+        @for (e of exams; track e.id) {
+          <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
+        }
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Class</label>
+      <select [(ngModel)]="selectedClassId" (ngModelChange)="onClassChange()">
+        <option value="">Select class</option>
+        @for (c of examClasses; track c.classId) {
+          <option [value]="c.classId">{{ c.className }}</option>
+        }
+      </select>
+    </div>
   </div>
 
-  <div class="empty card" *ngIf="subjectProgress.length === 0">
-    <mat-icon>rule</mat-icon>
-    <div>No exam schedule found for this exam/class. Create the schedule first.</div>
-  </div>
+  @if (subjectProgress.length === 0) {
+    <div class="empty-panel">
+      <mat-icon>rule</mat-icon>
+      No exam schedule found for this exam/class. Create the schedule first.
+    </div>
+  }
 
-  <div class="me-layout" *ngIf="subjectProgress.length > 0">
-    <!-- Subject sidebar -->
-    <div class="card">
-      <div class="card-header">
+  @if (subjectProgress.length > 0) {
+    <div class="me-layout">
+      <div class="card">
         <div class="card-title"><mat-icon>menu_book</mat-icon> Subjects</div>
-      </div>
-      <div class="subject-list">
-        <button
-          type="button"
-          class="subject-item"
-          *ngFor="let subject of subjectProgress"
-          [class.active]="subject.examScheduleId === selectedScheduleId"
-          (click)="selectSubject(subject)"
-        >
-          <div class="subject-item-top">
-            <span class="subject-name">{{ subject.subjectName }}</span>
-            <span
-              class="badge"
-              [ngClass]="subject.entered >= subject.total && subject.total > 0 ? 'b-g' : 'b-a'"
+        <div class="subject-list">
+          @for (subject of subjectProgress; track subject.examScheduleId) {
+            <button
+              type="button"
+              class="subject-item"
+              [class.active]="subject.examScheduleId === selectedScheduleId"
+              (click)="selectSubject(subject)"
             >
-              {{ subject.entered }}/{{ subject.total }}
-            </span>
+              <div class="subject-item-top">
+                <span class="subject-name">{{ subject.subjectName }}</span>
+                <span
+                  class="badge"
+                  [ngClass]="
+                    subject.entered >= subject.total && subject.total > 0 ? 'b-green' : 'b-amber'
+                  "
+                >
+                  {{ subject.entered }}/{{ subject.total }}
+                </span>
+              </div>
+              <div class="prog">
+                <div class="prog-fill" [style.width.%]="progressPercent(subject)"></div>
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (grid) {
+        <div class="card grid-card">
+          <div class="card-title">
+            <mat-icon>edit</mat-icon>
+            {{ grid.subjectName }} — {{ grid.className }}
+            <span class="badge b-green">Max {{ maxTotal }}</span>
+            <span class="badge b-amber">{{ enteredCount }}/{{ rows.length }} entered</span>
           </div>
-          <div class="prog">
-            <div class="prog-fill" [style.width.%]="progressPercent(subject)"></div>
+
+          <div class="table-scroll">
+            <table class="data-table marks-table">
+              <thead>
+                <tr>
+                  <th>Roll</th>
+                  <th>Student</th>
+                  @for (comp of grid.components; track comp.id) {
+                    <th class="center">
+                      {{ comp.name }}
+                      <span class="th-sub">({{ comp.maxMarks }})</span>
+                    </th>
+                  }
+                  <th class="center">Total</th>
+                  <th class="center">%</th>
+                  <th class="center">Result</th>
+                  <th class="center">Absent</th>
+                  <th>Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of rows; track row.studentId) {
+                  <tr>
+                    <td>{{ row.rollNo }}</td>
+                    <td>
+                      <div class="cell-user">
+                        <div class="av av-g">{{ row.studentName.substring(0, 2).toUpperCase() }}</div>
+                        {{ row.studentName }}
+                      </div>
+                    </td>
+                    @for (cell of row.cells; track cell.componentId; let i = $index) {
+                      <td class="center">
+                        <input
+                          type="number"
+                          class="marks-input"
+                          [class.over]="isOverMax(row, i)"
+                          [(ngModel)]="cell.value"
+                          [disabled]="row.isAbsent || !canEdit"
+                          (ngModelChange)="markDirty()"
+                        />
+                      </td>
+                    }
+                    <td class="center strong">
+                      @if (row.isAbsent) {
+                        <span class="badge b-red">AB</span>
+                      } @else {
+                        {{ total(row) ?? '—' }}
+                      }
+                    </td>
+                    <td class="center">
+                      {{ percent(row) !== null ? percent(row) + '%' : '—' }}
+                    </td>
+                    <td class="center">
+                      @if (isPass(row) === true) {
+                        <span class="badge b-green">Pass</span>
+                      } @else if (isPass(row) === false) {
+                        <span class="badge b-red">{{ row.isAbsent ? 'Absent' : 'Fail' }}</span>
+                      } @else {
+                        —
+                      }
+                    </td>
+                    <td class="center">
+                      <input
+                        type="checkbox"
+                        class="absent-check"
+                        [(ngModel)]="row.isAbsent"
+                        [disabled]="!canEdit"
+                        (ngModelChange)="toggleAbsent(row)"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        class="remark-input"
+                        placeholder="Remark"
+                        [(ngModel)]="row.remark"
+                        [disabled]="!canEdit"
+                        (ngModelChange)="markDirty()"
+                      />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
-        </button>
-      </div>
-    </div>
 
-    <!-- Marks grid -->
-    <div class="card" *ngIf="grid">
-      <div class="card-header">
-        <div class="card-title">
-          <mat-icon>edit</mat-icon>
-          {{ grid.subjectName }} — {{ grid.className }}
-          <span class="badge b-g">Max {{ maxTotal }}</span>
-          <span class="badge b-b">{{ enteredCount }}/{{ rows.length }} entered</span>
+          <div class="save-bar">
+            <div class="summary-row">
+              @if (summary; as s) {
+                <span>Avg: <b>{{ s.avg }}</b></span>
+                <span>High: <b>{{ s.high }}</b></span>
+                <span>Low: <b>{{ s.low }}</b></span>
+                <span>Pass: <b>{{ s.pass }}</b></span>
+                <span>Fail: <b>{{ s.fail }}</b></span>
+              } @else {
+                <span>No marks entered yet</span>
+              }
+            </div>
+            @if (canEdit) {
+              <app-action-button
+                type="save"
+                [label]="saving ? 'Saving...' : 'Save marks'"
+                [icon]="saving ? 'hourglass_empty' : 'save'"
+                [disabled]="saving || !dirty"
+                (action)="save()"
+              />
+            }
+          </div>
         </div>
-      </div>
+      }
 
-      <div class="xm-table-wrap">
-        <table class="xm-table">
-          <thead>
-            <tr>
-              <th>Roll</th>
-              <th>Student</th>
-              <th *ngFor="let comp of grid.components" style="text-align: center">
-                {{ comp.name }}<br />
-                <span style="font-weight: 400">({{ comp.maxMarks }})</span>
-              </th>
-              <th style="text-align: center">Total</th>
-              <th style="text-align: center">%</th>
-              <th style="text-align: center">Result</th>
-              <th style="text-align: center">Absent</th>
-              <th>Remark</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of rows">
-              <td>{{ row.rollNo }}</td>
-              <td>
-                <div class="cell-u">
-                  <div class="av">{{ row.studentName.substring(0, 2).toUpperCase() }}</div>
-                  {{ row.studentName }}
-                </div>
-              </td>
-              <td *ngFor="let cell of row.cells; let i = index" style="text-align: center">
-                <input
-                  type="number"
-                  class="marks-input"
-                  [class.over]="isOverMax(row, i)"
-                  [(ngModel)]="cell.value"
-                  [disabled]="row.isAbsent || !canEdit"
-                  (ngModelChange)="markDirty()"
-                />
-              </td>
-              <td style="text-align: center; font-weight: 600">
-                <ng-container *ngIf="row.isAbsent; else totalValue">
-                  <span class="badge b-r">AB</span>
-                </ng-container>
-                <ng-template #totalValue>{{ total(row) ?? '—' }}</ng-template>
-              </td>
-              <td style="text-align: center">
-                {{ percent(row) !== null ? percent(row) + '%' : '—' }}
-              </td>
-              <td style="text-align: center">
-                <span class="badge b-g" *ngIf="isPass(row) === true">Pass</span>
-                <span class="badge b-r" *ngIf="isPass(row) === false">{{
-                  row.isAbsent ? 'Absent' : 'Fail'
-                }}</span>
-                <span *ngIf="isPass(row) === null">—</span>
-              </td>
-              <td style="text-align: center">
-                <input
-                  type="checkbox"
-                  class="absent-check"
-                  [(ngModel)]="row.isAbsent"
-                  [disabled]="!canEdit"
-                  (ngModelChange)="toggleAbsent(row)"
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  class="remark-input"
-                  placeholder="Remark"
-                  [(ngModel)]="row.remark"
-                  [disabled]="!canEdit"
-                  (ngModelChange)="markDirty()"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="save-bar">
-        <div class="summary-row" *ngIf="summary as s">
-          <span>Avg: <b>{{ s.avg }}</b></span>
-          <span>High: <b>{{ s.high }}</b></span>
-          <span>Low: <b>{{ s.low }}</b></span>
-          <span>Pass: <b>{{ s.pass }}</b></span>
-          <span>Fail: <b>{{ s.fail }}</b></span>
+      @if (!grid && loadingGrid) {
+        <div class="empty-panel">
+          <mat-icon>hourglass_top</mat-icon>
+          Loading marks grid...
         </div>
-        <div class="summary-row" *ngIf="!summary">
-          <span>No marks entered yet</span>
-        </div>
-        <button class="btn-primary" *ngIf="canEdit" [disabled]="saving || !dirty" (click)="save()">
-          <mat-icon>save</mat-icon>
-          {{ saving ? 'Saving...' : 'Save Marks' }}
-        </button>
-      </div>
+      }
     </div>
-
-    <div class="card empty" *ngIf="!grid && loadingGrid">
-      <mat-icon>hourglass_top</mat-icon>
-      <div>Loading marks grid...</div>
-    </div>
-  </div>
-</div>
+  }
+</section>

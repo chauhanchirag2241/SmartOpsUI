@@ -7,6 +7,14 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import type {
+  DataTableAction,
+  DataTableConfig,
+} from '../../../shared/components/smart-data-table';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import {
   ExamService,
   ExamGradeScale,
@@ -25,19 +33,28 @@ interface GradeRowDraft {
 @Component({
   selector: 'app-grade-setup',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatDialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    SmartDataTableComponent,
+    ActionButtonComponent,
+  ],
   templateUrl: './grade-setup.component.html',
-  styleUrls: ['../exam-shared.css', './grade-setup.component.css'],
+  styleUrl: './grade-setup.component.css',
 })
 export class GradeSetupComponent implements OnInit {
   private examService = inject(ExamService);
   private snackBar = inject(NotificationService);
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
+  private ayContext = inject(AcademicYearContextService);
   private cdr = inject(ChangeDetectorRef);
 
   scales: ExamGradeScale[] = [];
-  loading = false;
+  rows: Record<string, unknown>[] = [];
+  tableConfig!: DataTableConfig;
 
   showForm = false;
   formMode: 'add' | 'edit' = 'add';
@@ -50,37 +67,82 @@ export class GradeSetupComponent implements OnInit {
   formIsDefault = false;
   gradeRows: GradeRowDraft[] = [];
 
-  get canAdd(): boolean {
-    return this.permissions.canAdd(MenuCodes.ExamGradeSetup);
-  }
-  get canEdit(): boolean {
-    return this.permissions.canEdit(MenuCodes.ExamGradeSetup);
-  }
-  get canDelete(): boolean {
-    return this.permissions.canDelete(MenuCodes.ExamGradeSetup);
-  }
+  private readonly baseTableConfig: DataTableConfig = {
+    header: {
+      title: 'Grade Setup',
+      subtitle: 'Dynamic grading scales with percentage bands for exam results',
+      showAddButton: true,
+      addButtonText: 'New grade scale',
+      addButtonIcon: 'add',
+      addButtonClass: 'btn-primary',
+    },
+    columns: [
+      {
+        key: 'scale',
+        label: 'Scale',
+        sortable: true,
+        cellType: 'avatar',
+        toggleable: false,
+        avatarConfig: { nameKey: 'name', subtitleKey: 'description' },
+      },
+      {
+        key: 'defaultLabel',
+        label: 'Default',
+        cellType: 'badge',
+        badgeMap: {
+          Yes: { cssClass: 'b-green', label: 'Default' },
+          No: { cssClass: 'b-gray', label: '—' },
+        },
+      },
+      { key: 'bandCountLabel', label: 'Grade bands', sortable: true },
+    ],
+    actions: [
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
+    ],
+    searchPlaceholder: 'Search grade scales...',
+    searchKeys: ['name', 'description'],
+    itemLabel: 'scales',
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+    selectable: false,
+    showExport: false,
+  };
 
   ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissions,
+      MenuCodes.ExamGradeSetup,
+      this.ayContext.isReadOnlyScope(),
+    );
     this.load();
   }
 
   load(): void {
-    this.loading = true;
     this.examService.getGradeScales().subscribe({
       next: (scales) => {
         this.scales = scales ?? [];
-        this.loading = false;
+        this.rows = this.scales.map((s) => ({
+          ...s,
+          scale: s.name,
+          description: s.description || '—',
+          defaultLabel: s.isDefault ? 'Yes' : 'No',
+          bandCountLabel: `${s.grades?.length ?? 0} band${(s.grades?.length ?? 0) === 1 ? '' : 's'}`,
+        }));
         this.cdr.detectChanges();
       },
       error: () => {
-        this.loading = false;
-        this.snackBar.open('Failed to load grade scales', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load grade scales', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
         this.cdr.detectChanges();
       },
     });
   }
 
-  openCreate(): void {
+  onAddButtonClicked(): void {
     this.formMode = 'add';
     this.editingId = null;
     this.formName = '';
@@ -100,22 +162,31 @@ export class GradeSetupComponent implements OnInit {
     this.showForm = true;
   }
 
-  openEdit(scale: ExamGradeScale): void {
-    this.formMode = 'edit';
-    this.editingId = scale.id;
-    this.formName = scale.name;
-    this.formDescription = scale.description ?? '';
-    this.formIsDefault = scale.isDefault;
-    this.formError = '';
-    this.gradeRows = (scale.grades ?? []).map((g) => ({
-      id: g.id,
-      grade: g.grade,
-      minPercent: g.minPercent,
-      maxPercent: g.maxPercent,
-      gradePoint: g.gradePoint ?? null,
-      description: g.description ?? '',
-    }));
-    this.showForm = true;
+  onActionClicked(event: {
+    action: DataTableAction;
+    row: Record<string, unknown>;
+    rowIndex: number;
+  }): void {
+    const scale = event.row as unknown as ExamGradeScale;
+    if (event.action.label === 'Edit') {
+      this.formMode = 'edit';
+      this.editingId = scale.id;
+      this.formName = scale.name;
+      this.formDescription = scale.description ?? '';
+      this.formIsDefault = scale.isDefault;
+      this.formError = '';
+      this.gradeRows = (scale.grades ?? []).map((g) => ({
+        id: g.id,
+        grade: g.grade,
+        minPercent: g.minPercent,
+        maxPercent: g.maxPercent,
+        gradePoint: g.gradePoint ?? null,
+        description: g.description ?? '',
+      }));
+      this.showForm = true;
+    } else if (event.action.label === 'Delete') {
+      this.deleteScale(scale);
+    }
   }
 
   closeForm(): void {
@@ -125,7 +196,13 @@ export class GradeSetupComponent implements OnInit {
   }
 
   addGradeRow(): void {
-    this.gradeRows.push({ grade: '', minPercent: null, maxPercent: null, gradePoint: null, description: '' });
+    this.gradeRows.push({
+      grade: '',
+      minPercent: null,
+      maxPercent: null,
+      gradePoint: null,
+      description: '',
+    });
   }
 
   removeGradeRow(index: number): void {
@@ -146,7 +223,7 @@ export class GradeSetupComponent implements OnInit {
     }
     const ordered = [...this.gradeRows].sort((a, b) => (a.minPercent ?? 0) - (b.minPercent ?? 0));
     for (let i = 1; i < ordered.length; i++) {
-      if ((ordered[i].minPercent ?? 0) < (ordered[i - 1].maxPercent ?? 0)) {
+      if ((ordered[i].minPercent ?? 0) <= (ordered[i - 1].maxPercent ?? 0)) {
         return `Grades '${ordered[i - 1].grade}' and '${ordered[i].grade}' have overlapping ranges.`;
       }
     }
@@ -189,7 +266,7 @@ export class GradeSetupComponent implements OnInit {
         this.snackBar.open(
           this.formMode === 'edit' ? 'Grade scale updated' : 'Grade scale created',
           'Close',
-          { duration: 2500 },
+          { duration: 2500, panelClass: 'snack-success' },
         );
         this.closeForm();
         this.load();
@@ -222,14 +299,17 @@ export class GradeSetupComponent implements OnInit {
       if (!confirmed) return;
       this.examService.deleteGradeScale(scale.id).subscribe({
         next: () => {
-          this.snackBar.open('Grade scale deleted', 'Close', { duration: 2500 });
+          this.snackBar.open('Grade scale deleted', 'Close', {
+            duration: 2500,
+            panelClass: 'snack-success',
+          });
           this.load();
         },
         error: (err) =>
           this.snackBar.open(
             typeof err?.error === 'string' ? err.error : 'Delete failed',
             'Close',
-            { duration: 3500 },
+            { duration: 3500, panelClass: 'snack-error' },
           ),
       });
     });

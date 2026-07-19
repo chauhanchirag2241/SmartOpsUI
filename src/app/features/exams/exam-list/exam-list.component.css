@@ -8,11 +8,37 @@
   margin-bottom: 10px;
 }
 
+.st-table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.filter-field label {
+  font-size: 11px;
+  color: var(--text-secondary, #6b7280);
+  font-weight: 500;
+}
+
+.filter-field select {
+  background: var(--input-bg, #fff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 0;
 }
 
 .field label {
@@ -26,44 +52,38 @@
 }
 
 .field input,
-.field select,
-.field textarea {
-  width: 100%;
-  box-sizing: border-box;
+.field select {
   background: var(--input-bg, #f9fafb);
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   border-radius: 7px;
   padding: 7px 10px;
   font-size: 12px;
-  color: inherit;
   font-family: inherit;
   outline: none;
 }
 
-.check-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  font-size: 12px;
-  cursor: pointer;
+.field.full {
+  grid-column: 1 / -1;
 }
 
-.band-rows {
+.card-title-meta {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+}
+
+.component-rows {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.band-row {
+.component-row {
   display: grid;
-  grid-template-columns: 72px 72px 72px 88px minmax(120px, 1fr) auto;
+  grid-template-columns: 1.4fr 1fr 1fr auto;
   gap: 10px;
   align-items: end;
-}
-
-.band-row .field.remark {
-  min-width: 0;
 }
 
 .row-remove {
@@ -86,41 +106,19 @@
   height: 18px;
 }
 
-.row-remove:hover {
-  background: #fcebeb;
+.add-row {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-@media (max-width: 900px) {
-  .band-row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .band-row .field.remark {
-    grid-column: 1 / -1;
+@media (max-width: 720px) {
+  .component-row {
+    grid-template-columns: 1fr;
   }
 
   .row-remove {
     width: 100%;
-    grid-column: 1 / -1;
   }
-}
-
-.add-row-btn {
-  margin-top: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--badge-bg, #eaf3de);
-  border: 1px dashed var(--primary-color, #639922);
-  color: var(--secondary-color, #3b6d11);
-  border-radius: 7px;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.add-row-btn mat-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
 }
