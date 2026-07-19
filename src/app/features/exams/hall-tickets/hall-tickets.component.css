@@ -1,0 +1,116 @@
+.ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.ticket {
+  background: #fff;
+  border: 1px solid var(--xm-border);
+  border-radius: 10px;
+  overflow: hidden;
+  break-inside: avoid;
+}
+.ticket-head {
+  background: var(--g400);
+  color: #fff;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ticket-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ticket-no {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+.ticket-body {
+  padding: 12px 14px;
+}
+.ticket-student {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ticket-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--xm-badge-bg);
+  color: var(--g600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ticket-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ticket-meta {
+  font-size: 10px;
+  color: var(--xm-muted);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.ticket-meta b {
+  color: var(--xm-text);
+}
+
+.ticket-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+.ticket-table th {
+  background: var(--xm-input-bg);
+  color: var(--xm-muted);
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--xm-border);
+}
+.ticket-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--xm-border);
+}
+
+.ticket-instructions {
+  margin-top: 8px;
+  font-size: 9.5px;
+  color: var(--xm-muted);
+  line-height: 1.5;
+}
+.ticket-instructions b {
+  color: var(--xm-text);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .ticket-grid {
+    grid-template-columns: 1fr;
+  }
+  .ticket {
+    page-break-inside: avoid;
+    margin-bottom: 14px;
+  }
+}

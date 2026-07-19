@@ -37,6 +37,14 @@ export const MenuCodes = {
   AdmissionInquiries: 'ADMISSION_INQUIRIES',
   FrontOfficeSetup: 'FRONT_OFFICE_SETUP',
   Notices: 'NOTICES',
+  ExamManagement: 'EXAM_MANAGEMENT',
+  ExamGroups: 'EXAM_GROUPS',
+  Exams: 'EXAMS',
+  ExamSchedule: 'EXAM_SCHEDULE',
+  ExamMarksEntry: 'EXAM_MARKS_ENTRY',
+  ExamResults: 'EXAM_RESULTS',
+  ExamHallTickets: 'EXAM_HALL_TICKETS',
+  ExamGradeSetup: 'EXAM_GRADE_SETUP',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

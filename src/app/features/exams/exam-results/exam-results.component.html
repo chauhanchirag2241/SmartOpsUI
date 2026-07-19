@@ -1,0 +1,276 @@
+<div class="xm-container">
+  <div class="topbar no-print">
+    <div class="page-info">
+      <div class="page-title">Exam Results</div>
+      <div class="page-sub">Calculate, review and declare results; print report cards</div>
+    </div>
+    <ng-container *ngIf="activeTab === 'sheet'">
+      <button class="btn-outline" [disabled]="!sheet || sheet.rows.length === 0" (click)="exportCsv()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+      <button
+        class="btn-outline"
+        *ngIf="canEdit"
+        [disabled]="calculating || !selectedClassId || sheet?.resultDeclared"
+        (click)="calculate()"
+      >
+        <mat-icon>calculate</mat-icon>
+        {{ calculating ? 'Calculating...' : 'Calculate Result' }}
+      </button>
+      <button
+        class="btn-primary"
+        *ngIf="canEdit"
+        [disabled]="declaring || !sheet || sheet.rows.length === 0 || sheet.resultDeclared"
+        (click)="declare()"
+      >
+        <mat-icon>campaign</mat-icon>
+        {{ declaring ? 'Declaring...' : sheet?.resultDeclared ? 'Declared' : 'Declare Result' }}
+      </button>
+    </ng-container>
+    <ng-container *ngIf="activeTab === 'report-card'">
+      <button class="btn-outline" (click)="backToSheet()">
+        <mat-icon>arrow_back</mat-icon> Back to Sheet
+      </button>
+      <button class="btn-primary" [disabled]="!reportCard" (click)="print()">
+        <mat-icon>print</mat-icon> Print / PDF
+      </button>
+    </ng-container>
+  </div>
+
+  <div class="filter-bar no-print" *ngIf="activeTab === 'sheet'">
+    <label>Exam</label>
+    <select class="xm-select" [(ngModel)]="selectedExamId" (change)="onExamChange()">
+      <option value="">Select exam</option>
+      <option *ngFor="let e of exams" [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
+    </select>
+    <label>Class</label>
+    <select class="xm-select" [(ngModel)]="selectedClassId" (change)="loadSheet()">
+      <option value="">Select class</option>
+      <option *ngFor="let c of examClasses" [value]="c.classId">{{ c.className }}</option>
+    </select>
+    <span class="badge b-g" *ngIf="sheet?.resultDeclared">
+      <mat-icon style="font-size: 11px; width: 11px; height: 11px">lock</mat-icon>
+      Result Declared
+    </span>
+  </div>
+
+  <!-- Result sheet -->
+  <ng-container *ngIf="activeTab === 'sheet'">
+    <div class="stats" *ngIf="sheet && sheet.rows.length > 0">
+      <div class="sc">
+        <div class="si si-g"><mat-icon>groups</mat-icon></div>
+        <div>
+          <div class="sv">{{ sheet.totalStudents }}</div>
+          <div class="sl">Students</div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="si si-g"><mat-icon>check_circle</mat-icon></div>
+        <div>
+          <div class="sv">{{ sheet.passCount }}</div>
+          <div class="sl">Pass</div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="si si-r"><mat-icon>cancel</mat-icon></div>
+        <div>
+          <div class="sv">{{ sheet.failCount }}</div>
+          <div class="sl">Fail</div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="si si-a"><mat-icon>person_off</mat-icon></div>
+        <div>
+          <div class="sv">{{ sheet.absentCount }}</div>
+          <div class="sl">Absent</div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="si si-b"><mat-icon>percent</mat-icon></div>
+        <div>
+          <div class="sv">{{ sheet.classAveragePercent }}%</div>
+          <div class="sl">Class Average</div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="si si-b"><mat-icon>emoji_events</mat-icon></div>
+        <div>
+          <div class="sv">{{ sheet.topScore }}</div>
+          <div class="sl">Top Score</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <mat-icon>leaderboard</mat-icon>
+          Result Sheet
+          <span class="badge b-b" *ngIf="sheet">{{ sheet.examName }} — {{ sheet.className }}</span>
+        </div>
+      </div>
+
+      <div class="empty" *ngIf="!loading && (!sheet || sheet.rows.length === 0)">
+        <mat-icon>analytics</mat-icon>
+        <div>No results yet. Enter marks and click "Calculate Result".</div>
+      </div>
+
+      <div class="xm-table-wrap" *ngIf="sheet && sheet.rows.length > 0">
+        <table class="xm-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Roll</th>
+              <th>Student</th>
+              <th *ngFor="let subject of sheet.subjects" style="text-align: center">
+                {{ subject.subjectName }}<br />
+                <span style="font-weight: 400">({{ subject.maxMarks }})</span>
+              </th>
+              <th style="text-align: center">Total ({{ sheet.maxMarks }})</th>
+              <th style="text-align: center">%</th>
+              <th style="text-align: center">Grade</th>
+              <th style="text-align: center">Result</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of sheet.rows">
+              <td style="font-weight: 600; white-space: nowrap">
+                {{ medal(row.rank) }} {{ row.rank }}
+              </td>
+              <td>{{ row.rollNo }}</td>
+              <td>
+                <div class="cell-u">
+                  <div class="av">{{ row.studentName.substring(0, 2).toUpperCase() }}</div>
+                  {{ row.studentName }}
+                </div>
+              </td>
+              <td
+                *ngFor="let subject of sheet.subjects"
+                style="text-align: center"
+                [class.fail-mark]="subjectMarkFailed(row, subject.subjectId)"
+              >
+                {{ subjectMark(row, subject.subjectId) }}
+              </td>
+              <td style="text-align: center; font-weight: 600">{{ row.totalMarks }}</td>
+              <td style="text-align: center">{{ row.percentage }}%</td>
+              <td style="text-align: center">
+                <span
+                  class="grade-circle"
+                  *ngIf="row.grade"
+                  [class.fail]="row.result === ExamResultStatus.Fail"
+                  >{{ row.grade }}</span
+                >
+                <span *ngIf="!row.grade">—</span>
+              </td>
+              <td style="text-align: center">
+                <span class="badge" [ngClass]="resultBadgeClass(row.result)">{{
+                  row.resultLabel
+                }}</span>
+              </td>
+              <td class="no-print" style="text-align: right">
+                <button class="act-btn" title="Report card" (click)="openReportCard(row)">
+                  <mat-icon>description</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Report card -->
+  <ng-container *ngIf="activeTab === 'report-card'">
+    <div class="card empty" *ngIf="loadingCard">
+      <mat-icon>hourglass_top</mat-icon>
+      <div>Loading report card...</div>
+    </div>
+
+    <div class="report-card" *ngIf="reportCard as card">
+      <div class="rc-header">
+        <div class="rc-school">Progress Report Card</div>
+        <div class="rc-exam">
+          {{ card.examName }} ({{ card.examType }}) — {{ card.academicYearTitle }}
+        </div>
+      </div>
+
+      <div class="rc-info">
+        <div>
+          <div class="k">Student Name</div>
+          <div class="v">{{ card.studentName }}</div>
+        </div>
+        <div>
+          <div class="k">Roll No</div>
+          <div class="v">{{ card.rollNo }}</div>
+        </div>
+        <div>
+          <div class="k">Class</div>
+          <div class="v">{{ card.className }}</div>
+        </div>
+        <div>
+          <div class="k">Rank</div>
+          <div class="v">{{ card.rank }} of {{ card.totalStudents }}</div>
+        </div>
+      </div>
+
+      <div class="xm-table-wrap">
+        <table class="xm-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th style="text-align: center">Max Marks</th>
+              <th style="text-align: center">Marks Obtained</th>
+              <th style="text-align: center">%</th>
+              <th style="text-align: center">Grade</th>
+              <th style="text-align: center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let subject of card.subjects">
+              <td>{{ subject.subjectName }}</td>
+              <td style="text-align: center">{{ subject.maxMarks }}</td>
+              <td style="text-align: center">
+                {{ subject.isAbsent ? 'AB' : (subject.marksObtained ?? '—') }}
+              </td>
+              <td style="text-align: center">{{ subject.percentage }}%</td>
+              <td style="text-align: center">{{ subject.grade || '—' }}</td>
+              <td style="text-align: center">
+                <span class="badge" [ngClass]="subject.pass ? 'b-g' : 'b-r'">
+                  {{ subject.isAbsent ? 'Absent' : subject.pass ? 'Pass' : 'Fail' }}
+                </span>
+              </td>
+            </tr>
+            <tr class="rc-total-row">
+              <td>Grand Total</td>
+              <td style="text-align: center">{{ card.maxMarks }}</td>
+              <td style="text-align: center">{{ card.totalMarks }}</td>
+              <td style="text-align: center">{{ card.percentage }}%</td>
+              <td style="text-align: center">{{ card.grade || '—' }}</td>
+              <td style="text-align: center">
+                <span class="badge rc-result-badge" [ngClass]="resultBadgeClass(card.result)">
+                  {{ card.resultLabel }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rc-footer">
+        <div class="rc-sign">
+          <div class="line"></div>
+          Class Teacher
+        </div>
+        <div class="rc-sign">
+          <div class="line"></div>
+          Principal
+        </div>
+        <div class="rc-sign">
+          <div class="line"></div>
+          Parent / Guardian
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

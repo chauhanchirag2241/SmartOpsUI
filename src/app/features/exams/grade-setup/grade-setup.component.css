@@ -1,0 +1,4 @@
+/* Grade Setup — screen-specific tweaks (shared styles in ../exam-shared.css) */
+.card .xm-table td:first-child {
+  width: 70px;
+}

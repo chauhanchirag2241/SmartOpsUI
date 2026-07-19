@@ -1,0 +1,156 @@
+<div class="xm-container">
+  @if (!showForm) {
+    <div class="topbar">
+      <div class="page-info">
+        <div class="page-title">Grade Setup</div>
+        <div class="page-sub">Dynamic grading scales with percentage bands for exam results</div>
+      </div>
+      @if (canAdd) {
+        <button type="button" class="btn-primary" (click)="openCreate()">
+          <mat-icon>add</mat-icon>
+          New grade scale
+        </button>
+      }
+    </div>
+
+    @if (!loading && !scales.length) {
+      <div class="empty">
+        <mat-icon>grade</mat-icon>
+        <div>No grade scales yet. Create one to use grades in results.</div>
+      </div>
+    }
+
+    @for (scale of scales; track scale.id) {
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <mat-icon>grade</mat-icon>
+            {{ scale.name }}
+            @if (scale.isDefault) {
+              <span class="badge b-g">Default</span>
+            }
+            @if (scale.description) {
+              <span class="page-sub">— {{ scale.description }}</span>
+            }
+          </div>
+          <div>
+            @if (canEdit) {
+              <button type="button" class="act-btn" (click)="openEdit(scale)" aria-label="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            @if (canDelete) {
+              <button type="button" class="act-btn del" (click)="deleteScale(scale)" aria-label="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
+        </div>
+        <div class="xm-table-wrap">
+          <table class="xm-table">
+            <thead>
+              <tr>
+                <th>Grade</th>
+                <th>Min %</th>
+                <th>Max %</th>
+                <th>Grade point</th>
+                <th>Remark</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (g of scale.grades; track $index) {
+                <tr>
+                  <td><span class="grade-circle" [class.fail]="g.minPercent === 0 && g.maxPercent < 40">{{ g.grade }}</span></td>
+                  <td>{{ g.minPercent }}%</td>
+                  <td>{{ g.maxPercent }}%</td>
+                  <td>{{ g.gradePoint ?? '—' }}</td>
+                  <td>{{ g.description || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  } @else {
+    <div class="topbar">
+      <div class="page-info">
+        <div class="page-title">{{ formMode === 'edit' ? 'Edit grade scale' : 'New grade scale' }}</div>
+        <div class="page-sub">Define grade bands — add or remove rows as needed</div>
+      </div>
+    </div>
+
+    @if (formError) {
+      <div class="error-banner">{{ formError }}</div>
+    }
+
+    <div class="card">
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Scale name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="formName" placeholder="e.g. CBSE 10-point scale" />
+          </div>
+          <div class="form-field">
+            <label>Description</label>
+            <input type="text" [(ngModel)]="formDescription" placeholder="Optional description" />
+          </div>
+          <div class="form-field">
+            <label>Default scale</label>
+            <label class="chip" [class.selected]="formIsDefault" (click)="formIsDefault = !formIsDefault" style="align-self: flex-start">
+              {{ formIsDefault ? 'Yes — used when exams have no scale' : 'No' }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>format_list_numbered</mat-icon> Grade bands</div>
+      </div>
+      <div class="card-body">
+        <div class="dyn-rows">
+          @for (row of gradeRows; track $index; let i = $index) {
+            <div class="dyn-row">
+              <div class="form-field">
+                <label>Grade</label>
+                <input type="text" [(ngModel)]="row.grade" placeholder="A1" />
+              </div>
+              <div class="form-field">
+                <label>Min %</label>
+                <input type="number" [(ngModel)]="row.minPercent" min="0" max="100" />
+              </div>
+              <div class="form-field">
+                <label>Max %</label>
+                <input type="number" [(ngModel)]="row.maxPercent" min="0" max="100" />
+              </div>
+              <div class="form-field">
+                <label>Grade point</label>
+                <input type="number" [(ngModel)]="row.gradePoint" min="0" />
+              </div>
+              <div class="form-field" style="flex: 2">
+                <label>Remark</label>
+                <input type="text" [(ngModel)]="row.description" placeholder="Outstanding" />
+              </div>
+              <button type="button" class="dyn-remove" (click)="removeGradeRow(i)" aria-label="Remove grade">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+        <button type="button" class="btn-outline dyn-add" (click)="addGradeRow()">
+          <mat-icon>add</mat-icon>
+          Add grade row
+        </button>
+
+        <div class="form-actions">
+          <button type="button" class="btn-outline" (click)="closeForm()">Cancel</button>
+          <button type="button" class="btn-primary" [disabled]="saving" (click)="save()">
+            {{ saving ? 'Saving…' : formMode === 'edit' ? 'Update scale' : 'Create scale' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

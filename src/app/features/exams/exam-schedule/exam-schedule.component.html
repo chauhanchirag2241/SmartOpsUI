@@ -1,0 +1,144 @@
+<div class="xm-container">
+  <div class="topbar">
+    <div class="page-info">
+      <div class="page-title">Exam Schedule</div>
+      <div class="page-sub">Subject &amp; class wise exam timetable</div>
+    </div>
+    <button class="btn-outline" (click)="print()"><mat-icon>print</mat-icon> Print</button>
+    <button class="btn-primary" *ngIf="canAdd && !showForm" (click)="openCreate()">
+      <mat-icon>add</mat-icon> Add Slot
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <label>Exam</label>
+    <select class="xm-select" [(ngModel)]="selectedExamId" (change)="onExamChange()">
+      <option value="">Select exam</option>
+      <option *ngFor="let e of exams" [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
+    </select>
+    <label>Class</label>
+    <select class="xm-select" [(ngModel)]="selectedClassId" (change)="loadSchedules()">
+      <option value="">All Classes</option>
+      <option *ngFor="let c of examClasses" [value]="c.classId">{{ c.className }}</option>
+    </select>
+  </div>
+
+  <!-- Add/Edit slot form -->
+  <div class="card" *ngIf="showForm">
+    <div class="card-header">
+      <div class="card-title">
+        <mat-icon>event</mat-icon>
+        {{ formMode === 'edit' ? 'Edit Schedule Slot' : 'Add Schedule Slot' }}
+      </div>
+      <button class="btn-outline" (click)="closeForm()"><mat-icon>close</mat-icon> Cancel</button>
+    </div>
+    <div class="card-body">
+      <div class="error-banner" *ngIf="formError">{{ formError }}</div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Subject <span class="req">*</span></label>
+          <select [(ngModel)]="formSubjectId">
+            <option value="">Select subject</option>
+            <option *ngFor="let s of subjects" [value]="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Exam Date <span class="req">*</span></label>
+          <input type="date" [(ngModel)]="formExamDate" />
+        </div>
+        <div class="form-field">
+          <label>Start Time</label>
+          <input type="time" [(ngModel)]="formStartTime" />
+        </div>
+        <div class="form-field">
+          <label>End Time</label>
+          <input type="time" [(ngModel)]="formEndTime" />
+        </div>
+        <div class="form-field">
+          <label>Room / Hall</label>
+          <input type="text" [(ngModel)]="formRoomNo" placeholder="e.g. Hall A / Room 12" />
+        </div>
+        <div class="form-field">
+          <label>Invigilator</label>
+          <select [(ngModel)]="formInvigilatorId">
+            <option value="">Not assigned</option>
+            <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.name }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-outline" (click)="closeForm()">Cancel</button>
+        <button class="btn-primary" [disabled]="saving" (click)="save()">
+          <mat-icon>save</mat-icon>
+          {{ saving ? 'Saving...' : formMode === 'edit' ? 'Update Slot' : 'Add Slot' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule table -->
+  <div class="card" *ngIf="!showForm">
+    <div class="card-header">
+      <div class="card-title">
+        <mat-icon>calendar_month</mat-icon>
+        Timetable
+        <span class="badge b-g" *ngIf="selectedExam">{{ selectedExam.name }}</span>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="!loading && schedules.length === 0">
+      <mat-icon>event_busy</mat-icon>
+      <div>No schedule slots yet. Add subjects to build the timetable.</div>
+    </div>
+
+    <div class="xm-table-wrap" *ngIf="schedules.length > 0">
+      <table class="xm-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Time</th>
+            <th>Room</th>
+            <th>Invigilator</th>
+            <th>Max Marks</th>
+            <th>Status</th>
+            <th style="text-align: right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of schedules">
+            <td>{{ item.examDate | date: 'EEE, dd MMM yyyy' }}</td>
+            <td>{{ item.className }}</td>
+            <td>
+              <div class="cell-u">
+                <div class="av">{{ item.subjectName.substring(0, 2).toUpperCase() }}</div>
+                {{ item.subjectName }}
+              </div>
+            </td>
+            <td>{{ timeRange(item) }}</td>
+            <td>{{ item.roomNo || '—' }}</td>
+            <td>{{ item.invigilatorName || '—' }}</td>
+            <td>{{ item.maxMarks }}</td>
+            <td>
+              <span class="badge" [ngClass]="statusBadgeClass(item.status)">{{ item.status }}</span>
+            </td>
+            <td style="text-align: right; white-space: nowrap">
+              <button class="act-btn" *ngIf="canEdit" title="Edit" (click)="openEdit(item)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                class="act-btn del"
+                *ngIf="canDelete"
+                title="Delete"
+                (click)="deleteSchedule(item)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

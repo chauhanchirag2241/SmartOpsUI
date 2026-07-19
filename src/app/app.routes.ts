@@ -340,6 +340,69 @@ export const routes: Routes = [
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
       },
       {
+        path: 'exams/groups',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ExamGroups, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/exam-groups/exam-groups.component').then(
+            (m) => m.ExamGroupsComponent,
+          ),
+      },
+      {
+        path: 'exams/list',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Exams, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/exam-list/exam-list.component').then(
+            (m) => m.ExamListComponent,
+          ),
+      },
+      {
+        path: 'exams/schedule',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ExamSchedule, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/exam-schedule/exam-schedule.component').then(
+            (m) => m.ExamScheduleComponent,
+          ),
+      },
+      {
+        path: 'exams/marks-entry',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ExamMarksEntry, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/marks-entry/marks-entry.component').then(
+            (m) => m.MarksEntryComponent,
+          ),
+      },
+      {
+        path: 'exams/results',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ExamResults, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/exam-results/exam-results.component').then(
+            (m) => m.ExamResultsComponent,
+          ),
+      },
+      {
+        path: 'exams/hall-tickets',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ExamHallTickets, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/hall-tickets/hall-tickets.component').then(
+            (m) => m.HallTicketsComponent,
+          ),
+      },
+      {
+        path: 'exams/grade-setup',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ExamGradeSetup, permission: 'view' },
+        loadComponent: () =>
+          import('./features/exams/grade-setup/grade-setup.component').then(
+            (m) => m.GradeSetupComponent,
+          ),
+      },
+      {
         path: 'configuration/users',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Users, permission: 'view' },
