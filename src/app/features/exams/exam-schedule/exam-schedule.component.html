@@ -5,6 +5,7 @@
       [data]="rows"
       (actionClicked)="onActionClicked($event)"
       (addButtonClicked)="onAddButtonClicked()"
+      (exportClicked)="onExportClicked()"
     >
       <div tableFilters class="st-table-filters">
         <div class="filter-field">
@@ -34,7 +35,7 @@
         {{ formMode === 'edit' ? 'Edit schedule slot' : 'Add schedule slot' }}
       </div>
     </div>
-    <p class="form-hint">Date, subject and time for one class under the selected exam.</p>
+    <p class="form-hint">Pick exam and class, then set date, subject and time for this slot.</p>
 
     @if (formError) {
       <div class="error-banner">{{ formError }}</div>
@@ -43,6 +44,24 @@
     <div class="card">
       <div class="card-title"><mat-icon>event</mat-icon> Slot details</div>
       <div class="grid2">
+        <div class="field">
+          <label>Exam <span class="req">*</span></label>
+          <select [(ngModel)]="formExamId" (ngModelChange)="onFormExamChange()">
+            <option value="">Select exam</option>
+            @for (e of exams; track e.id) {
+              <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Class <span class="req">*</span></label>
+          <select [(ngModel)]="formClassId" [disabled]="!formExamId">
+            <option value="">Select class</option>
+            @for (c of formExamClasses; track c.classId) {
+              <option [value]="c.classId">{{ c.className }}</option>
+            }
+          </select>
+        </div>
         <div class="field">
           <label>Subject <span class="req">*</span></label>
           <select [(ngModel)]="formSubjectId">

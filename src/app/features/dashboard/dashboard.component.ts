@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/services/auth.service';
+import { BranchContextService } from '../../core/services/branch-context.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { DashboardWidgetCodes } from '../../core/constants/dashboard-widget-codes';
@@ -53,6 +54,7 @@ export class DashboardComponent implements OnInit {
   readonly auth = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly permissionService = inject(PermissionService);
+  private readonly branchContext = inject(BranchContextService);
 
   readonly W = DashboardWidgetCodes;
   readonly loading = signal(true);
@@ -69,6 +71,28 @@ export class DashboardComponent implements OnInit {
     direction: 'asc',
   });
   readonly classOverviewPageSize = 5;
+
+  private branchWatchReady = false;
+  private lastBranchWatchKey = '';
+
+  readonly activeBranchLabel = computed(() => this.branchContext.activeBranchLabel());
+
+  /** Reload dashboard when active/compare branch selection changes (header picker). */
+  private readonly reloadOnBranchChange = effect(() => {
+    const key = `${this.branchContext.activeBranchId() ?? ''}|${this.branchContext.selectedBranchIds().join(',')}`;
+    untracked(() => {
+      if (!this.branchWatchReady) {
+        this.branchWatchReady = true;
+        this.lastBranchWatchKey = key;
+        return;
+      }
+      if (key === this.lastBranchWatchKey) {
+        return;
+      }
+      this.lastBranchWatchKey = key;
+      this.loadDashboard();
+    });
+  });
 
   readonly visibleWidgets = computed(() => {
     const hidden = this.hiddenWidgets();

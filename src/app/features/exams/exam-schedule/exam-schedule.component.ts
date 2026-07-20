@@ -63,6 +63,8 @@ export class ExamScheduleComponent implements OnInit {
   formError = '';
   saving = false;
 
+  formExamId = '';
+  formClassId = '';
   formSubjectId = '';
   formExamDate = '';
   formStartTime = '';
@@ -116,7 +118,7 @@ export class ExamScheduleComponent implements OnInit {
     defaultPageSize: 25,
     pageSizeOptions: [10, 25, 50],
     selectable: false,
-    showExport: false,
+    showExport: true,
   };
 
   get selectedExam(): ExamListItem | undefined {
@@ -125,6 +127,14 @@ export class ExamScheduleComponent implements OnInit {
 
   get examClasses(): ExamClassInfo[] {
     return this.selectedExam?.classes ?? [];
+  }
+
+  get formExam(): ExamListItem | undefined {
+    return this.exams.find((e) => e.id === this.formExamId);
+  }
+
+  get formExamClasses(): ExamClassInfo[] {
+    return this.formExam?.classes ?? [];
   }
 
   ngOnInit(): void {
@@ -164,9 +174,14 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   onExamChange(): void {
-    const classes = this.examClasses;
-    this.selectedClassId = classes[0]?.classId ?? '';
+    this.selectedClassId = '';
     this.loadSchedules();
+  }
+
+  onFormExamChange(): void {
+    const classes = this.formExamClasses;
+    this.formClassId = classes[0]?.classId ?? '';
+    this.formExamDate = this.formExam?.startDate?.substring(0, 10) ?? this.formExamDate;
   }
 
   loadSchedules(): void {
@@ -202,9 +217,152 @@ export class ExamScheduleComponent implements OnInit {
     return `${item.startTime ?? '?'} – ${item.endTime ?? '?'}`;
   }
 
+  onExportClicked(): void {
+    if (!this.selectedExamId) {
+      this.snackBar.open('Select an exam first', 'Close', {
+        duration: 2500,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+    if (!this.rows.length) {
+      this.snackBar.open('No schedule slots to export', 'Close', {
+        duration: 2500,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+
+    const exam = this.selectedExam;
+    const examTitle = exam
+      ? `${exam.name} (${exam.examGroupName})`
+      : 'Exam Schedule';
+    const dateRange =
+      exam?.startDate && exam?.endDate
+        ? `${this.formatExportDate(exam.startDate)} – ${this.formatExportDate(exam.endDate)}`
+        : '';
+
+    const byClass = new Map<string, ExamScheduleItem[]>();
+    for (const row of this.rows) {
+      const item = row as unknown as ExamScheduleItem;
+      const key = item.className || 'Class';
+      const list = byClass.get(key) ?? [];
+      list.push(item);
+      byClass.set(key, list);
+    }
+
+    const sections = [...byClass.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([className, slots]) => {
+        const sorted = [...slots].sort((a, b) => {
+          const dateCmp = (a.examDate || '').localeCompare(b.examDate || '');
+          if (dateCmp !== 0) return dateCmp;
+          return (a.startTime || '').localeCompare(b.startTime || '');
+        });
+        const rowsHtml = sorted
+          .map(
+            (s) => `
+          <tr>
+            <td>${this.escapeHtml(this.formatExportDate(s.examDate))}</td>
+            <td>${this.escapeHtml(s.subjectName || '—')}</td>
+            <td>${this.escapeHtml(this.timeRange(s))}</td>
+            <td>${this.escapeHtml(s.roomNo || '—')}</td>
+            <td>${this.escapeHtml(s.invigilatorName || '—')}</td>
+            <td>${this.escapeHtml(String(s.maxMarks ?? '—'))}</td>
+          </tr>`,
+          )
+          .join('');
+        return `
+        <section class="class-block">
+          <h2>Class: ${this.escapeHtml(className)}</h2>
+          <p class="meta">${sorted.length} subject(s)${dateRange ? ` · ${this.escapeHtml(dateRange)}` : ''}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Subject</th>
+                <th>Time</th>
+                <th>Room</th>
+                <th>Invigilator</th>
+                <th>Max marks</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </section>`;
+      })
+      .join('');
+
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
+    if (!printWindow) {
+      this.snackBar.open('Pop-up blocked. Allow pop-ups to export PDF.', 'Close', {
+        duration: 3500,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${this.escapeHtml(examTitle)} — Timetable</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24px; font-size: 12px; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #555; margin: 0 0 18px; font-size: 12px; }
+    .class-block { margin-bottom: 28px; page-break-inside: avoid; }
+    h2 { font-size: 14px; margin: 0 0 4px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+    .meta { color: #666; margin: 0 0 8px; font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f3f4f6; font-weight: 600; }
+    @media print {
+      body { margin: 12mm; }
+      .class-block { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>${this.escapeHtml(examTitle)}</h1>
+  <p class="sub">Class-wise exam timetable${dateRange ? ` · ${this.escapeHtml(dateRange)}` : ''}</p>
+  ${sections}
+  <script>
+    window.onload = function () {
+      window.focus();
+      window.print();
+    };
+  </script>
+</body>
+</html>`);
+    printWindow.document.close();
+  }
+
+  private formatExportDate(value?: string | null): string {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value.substring(0, 10);
+    return d.toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   onAddButtonClicked(): void {
-    if (!this.selectedExamId || !this.selectedClassId) {
-      this.snackBar.open('Select an exam and class first', 'Close', {
+    if (!this.exams.length) {
+      this.snackBar.open('No exams available. Create an exam first.', 'Close', {
         duration: 2500,
         panelClass: 'snack-error',
       });
@@ -212,8 +370,14 @@ export class ExamScheduleComponent implements OnInit {
     }
     this.formMode = 'add';
     this.editingId = null;
+    this.formExamId = this.selectedExamId || this.exams[0]?.id || '';
+    const classes = this.formExamClasses;
+    this.formClassId =
+      (this.selectedClassId && classes.some((c) => c.classId === this.selectedClassId)
+        ? this.selectedClassId
+        : classes[0]?.classId) ?? '';
     this.formSubjectId = '';
-    this.formExamDate = this.selectedExam?.startDate?.substring(0, 10) ?? '';
+    this.formExamDate = this.formExam?.startDate?.substring(0, 10) ?? '';
     this.formStartTime = '10:00';
     this.formEndTime = '13:00';
     this.formRoomNo = '';
@@ -231,6 +395,8 @@ export class ExamScheduleComponent implements OnInit {
     if (event.action.label === 'Edit') {
       this.formMode = 'edit';
       this.editingId = item.id;
+      this.formExamId = item.examId;
+      this.formClassId = item.classId;
       this.formSubjectId = item.subjectId;
       this.formExamDate = item.examDate?.substring(0, 10) ?? '';
       this.formStartTime = item.startTime ?? '';
@@ -251,6 +417,14 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   save(): void {
+    if (!this.formExamId) {
+      this.formError = 'Exam is required.';
+      return;
+    }
+    if (!this.formClassId) {
+      this.formError = 'Class is required.';
+      return;
+    }
     if (!this.formSubjectId) {
       this.formError = 'Subject is required.';
       return;
@@ -265,8 +439,8 @@ export class ExamScheduleComponent implements OnInit {
     }
 
     const payload = {
-      examId: this.selectedExamId,
-      classId: this.selectedClassId,
+      examId: this.formExamId,
+      classId: this.formClassId,
       subjectId: this.formSubjectId,
       examDate: this.formExamDate,
       startTime: this.formStartTime || null,
