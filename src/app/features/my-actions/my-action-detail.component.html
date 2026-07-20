@@ -1,6 +1,6 @@
 @if (loading) {
   <div class="topbar">
-    <div class="page-title">Loading action…</div>
+    <span [appPageChrome]="'Loading action…'"></span>
     <app-action-button type="back" style="order: 2; margin-left: auto" (action)="goBack()"></app-action-button>
   </div>
   <div class="card">
@@ -12,7 +12,7 @@
 } @else if (detail) {
   <div class="topbar">
     <app-action-button type="back" style="order: 2; margin-left: auto" (action)="goBack()"></app-action-button>
-    <div class="page-title">{{ detail.title }}</div>
+    <span [appPageChrome]="detail.title"></span>
   </div>
 
   <p class="form-hint">

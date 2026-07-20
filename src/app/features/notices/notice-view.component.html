@@ -1,6 +1,6 @@
 <div class="topbar">
   <app-action-button type="back" style="order: 2; margin-left: auto" (action)="close.emit()"></app-action-button>
-  <div class="page-title">View notice</div>
+  <span [appPageChrome]="'View notice'"></span>
 </div>
 
 @if (loading) {

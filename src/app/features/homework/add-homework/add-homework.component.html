@@ -1,6 +1,6 @@
 <div class="topbar">
   <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="closeForm()"></app-action-button>
-  <div class="page-title">{{ mode === 'edit' ? 'Edit Homework' : 'Create New Homework' }}</div>
+  <span [appPageChrome]="mode === 'edit' ? 'Edit Homework' : 'Create New Homework'"></span>
 </div>
 
 <p class="form-hint">Fill in the details below to {{ mode === 'edit' ? 'update the' : 'assign new' }} homework.</p>

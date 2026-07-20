@@ -81,7 +81,7 @@ export class FeeStructureComponent implements OnInit {
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
-      title: 'Fees Management — Fee Structure',
+      title: 'Fee Structure',
       subtitle: 'Academic year wise versions · Draft → Publish → Activate',
       showAddButton: true,
       addButtonText: 'New structure',

@@ -1,16 +1,10 @@
 <section class="settings-page">
-  <header class="page-header">
-    <div>
-      <h1>Settings</h1>
-      <p>
-        @if (selectedSchoolName) {
-          School configuration for <strong>{{ selectedSchoolName }}</strong>
-        } @else {
-          Loading school configuration…
-        }
-      </p>
-    </div>
-  </header>
+  <header class="page-header page-header-actions-only">
+  <span
+    [appPageChrome]="'Settings'"
+    [pageChromeSubtitle]="settingsChromeSubtitle"
+  ></span>
+</header>
 
   @if (!schoolReady) {
     <div class="alert alert-warn">

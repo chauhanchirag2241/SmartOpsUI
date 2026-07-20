@@ -4,7 +4,7 @@
     style="order: 2; margin-left: auto"
     (action)="onCancel()"
   />
-  <div class="page-title">{{ pageTitle }}</div>
+  <span [appPageChrome]="pageTitle"></span>
 </div>
 
 @if (errorMessage) {

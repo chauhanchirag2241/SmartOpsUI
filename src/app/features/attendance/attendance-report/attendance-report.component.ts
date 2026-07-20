@@ -1,13 +1,12 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { ClassService } from '../../../core/services/class.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
-import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { AcademicYearService, AcademicYearDropdownItem } from '../../../core/services/academic-year.service';
@@ -15,7 +14,7 @@ import { AcademicYearService, AcademicYearDropdownItem } from '../../../core/ser
 @Component({
   selector: 'app-attendance-report',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatIconModule, AvatarComponent, ActionButtonComponent, MatFormFieldModule, MatSelectModule],
+  imports: [CommonModule, FormsModule, MatIconModule, AvatarComponent, MatFormFieldModule, MatSelectModule, PageChromeDirective],
   templateUrl: './attendance-report.component.html',
   styleUrls: ['./attendance-report.component.css']
 })

@@ -1,13 +1,5 @@
 @if (config.header) {
-  <header class="page-header" [class.page-header-actions-only]="!config.header.title?.trim()">
-    @if (config.header.title?.trim()) {
-      <div class="header-info">
-        <h1>{{ config.header.title }}</h1>
-        @if (config.header.subtitle) {
-          <span>{{ config.header.subtitle }}</span>
-        }
-      </div>
-    }
+  <header class="page-header page-header-actions-only">
     <div class="page-header-actions">
       <ng-content select="[headerActions]" />
       @if (config.header.showAddButton) {

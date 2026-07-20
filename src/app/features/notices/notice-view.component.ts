@@ -11,13 +11,14 @@ import {
 } from '../../core/services/notices.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
 
 @Component({
   selector: 'app-notice-view',
   standalone: true,
   host: { class: 'notice-view-page form-page-shell' },
-  imports: [CommonModule, MatIconModule, ActionButtonComponent],
+  imports: [CommonModule, MatIconModule, ActionButtonComponent, PageChromeDirective],
   templateUrl: './notice-view.component.html',
   styleUrl: './notice-view.component.css',
 })

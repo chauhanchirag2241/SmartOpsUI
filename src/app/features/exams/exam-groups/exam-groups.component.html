@@ -9,7 +9,7 @@
   } @else {
     <div class="topbar">
       <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <div class="page-title">{{ formMode === 'edit' ? 'Edit exam group' : 'New exam group' }}</div>
+      <span [appPageChrome]="formMode === 'edit' ? 'Edit exam group' : 'New exam group'"></span>
     </div>
     <p class="form-hint">Exams inside the group inherit its academic year and default grade scale.</p>
 

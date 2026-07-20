@@ -16,6 +16,7 @@ import {
 } from '../../core/services/homework.service';
 import { AddHomeworkComponent } from './add-homework/add-homework.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import {
   HomeworkListItem,
@@ -36,6 +37,7 @@ import {
     MatDialogModule,
     PageToolbarComponent,
     AddHomeworkComponent,
+    PageChromeDirective,
   ],
   templateUrl: './homework.component.html',
   styleUrl: './homework.component.css',

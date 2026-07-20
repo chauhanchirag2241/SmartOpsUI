@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { EMPTY, switchMap, catchError, timeout } from 'rxjs';
 import {
@@ -27,7 +28,7 @@ const GUID_REGEX =
 @Component({
   selector: 'app-homework-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ActionButtonComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ActionButtonComponent, PageChromeDirective],
   templateUrl: './homework-detail.component.html',
   styleUrl: './homework-detail.component.css',
 })

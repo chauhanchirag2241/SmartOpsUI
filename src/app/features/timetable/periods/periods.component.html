@@ -1,0 +1,23 @@
+<section class="periods-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="periods"
+      [serverSide]="true"
+      [totalRecords]="totalPeriods"
+      [rowClassFn]="periodRowClass"
+      [initialFilterValue]="currentFilter"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-period
+      [mode]="formMode"
+      [periodId]="selectedPeriodId"
+      (cancel)="closeAddForm()"
+      (saved)="onPeriodSaved()"
+    />
+  }
+</section>

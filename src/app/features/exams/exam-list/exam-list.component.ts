@@ -15,6 +15,7 @@ import type {
 } from '../../../shared/components/smart-data-table';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ClassService } from '../../../core/services/class.service';
@@ -57,6 +58,7 @@ const EXAM_TYPES = [
     SmartDataTableComponent,
     ActionButtonComponent,
     MultiSelectChipsComponent,
+    PageChromeDirective,
   ],
   templateUrl: './exam-list.component.html',
   styleUrl: './exam-list.component.css',

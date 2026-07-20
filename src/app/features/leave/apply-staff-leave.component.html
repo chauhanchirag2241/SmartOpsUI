@@ -3,7 +3,7 @@
 @if (readOnly) {
   <div class="topbar">
     <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
-    <div class="page-title">Apply staff leave</div>
+    <span [appPageChrome]="'Apply staff leave'"></span>
   </div>
   <div class="card">
     <div class="empty-panel">
@@ -14,7 +14,7 @@
 } @else {
   <div class="topbar">
     <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()"></app-action-button>
-    <div class="page-title">Apply staff leave</div>
+    <span [appPageChrome]="'Apply staff leave'"></span>
   </div>
 
   <p class="form-hint">Enter leave details and submit for approval</p>

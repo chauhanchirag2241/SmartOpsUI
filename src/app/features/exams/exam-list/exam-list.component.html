@@ -30,7 +30,7 @@
   } @else {
     <div class="topbar">
       <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <div class="page-title">{{ formMode === 'edit' ? 'Edit exam' : 'Create exam' }}</div>
+      <span [appPageChrome]="formMode === 'edit' ? 'Edit exam' : 'Create exam'"></span>
     </div>
     <p class="form-hint">Assign classes and define mark components for this exam.</p>
 

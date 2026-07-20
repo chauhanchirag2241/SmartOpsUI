@@ -45,6 +45,10 @@ export const MenuCodes = {
   ExamResults: 'EXAM_RESULTS',
   ExamHallTickets: 'EXAM_HALL_TICKETS',
   ExamGradeSetup: 'EXAM_GRADE_SETUP',
+  Timetable: 'TIMETABLE',
+  PeriodMaster: 'PERIOD_MASTER',
+  ClassTimetable: 'CLASS_TIMETABLE',
+  MyTimetable: 'MY_TIMETABLE',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

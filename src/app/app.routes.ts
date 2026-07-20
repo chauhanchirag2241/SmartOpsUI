@@ -101,6 +101,40 @@ export const routes: Routes = [
           import('./features/subjects/subjects.component').then((m) => m.SubjectsComponent),
       },
       {
+        path: 'timetable/periods',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.PeriodMaster, permission: 'view' },
+        loadComponent: () =>
+          import('./features/timetable/periods/periods.component').then((m) => m.PeriodsComponent),
+      },
+      {
+        path: 'timetable/periods/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.PeriodMaster, permission: 'view', entityKind: 'period' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'timetable/grid',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.ClassTimetable, permission: 'view' },
+        loadComponent: () =>
+          import('./features/timetable/class-timetable/class-timetable.component').then(
+            (m) => m.ClassTimetableComponent,
+          ),
+      },
+      {
+        path: 'timetable/my',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.MyTimetable, permission: 'view' },
+        loadComponent: () =>
+          import('./features/timetable/my-timetable/my-timetable.component').then(
+            (m) => m.MyTimetableComponent,
+          ),
+      },
+      {
         path: 'attendance',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Attendance, permission: 'view' },

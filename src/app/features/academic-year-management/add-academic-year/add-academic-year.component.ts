@@ -8,6 +8,7 @@ import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 
@@ -26,7 +27,7 @@ function dateRangeValidator(group: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-add-academic-year',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent, ActionButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   templateUrl: './add-academic-year.component.html',
   styleUrl: './add-academic-year.component.css',
 })

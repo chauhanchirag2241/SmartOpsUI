@@ -9,6 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { BranchContextService } from '../../../core/services/branch-context.service';
 import { LayoutUiService } from '../../../core/services/layout-ui.service';
+import { PageChromeService } from '../../../core/services/page-chrome.service';
 
 @Component({
   selector: 'app-header',
@@ -28,6 +29,7 @@ export class HeaderComponent implements OnInit {
   readonly layoutUi = inject(LayoutUiService);
   readonly ayContext = inject(AcademicYearContextService);
   readonly branchContext = inject(BranchContextService);
+  readonly pageChrome = inject(PageChromeService);
 
   selectedYearId: string | null = null;
   yearMenuOpen = false;

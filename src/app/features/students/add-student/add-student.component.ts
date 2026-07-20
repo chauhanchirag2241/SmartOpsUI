@@ -33,6 +33,7 @@ import { finalize, firstValueFrom } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import {
   FileUploadComponent,
   SelectedUploadFile,
@@ -105,6 +106,7 @@ type ReviewSection = {
     DynamicArrayFieldComponent,
     FileUploadComponent,
     ActionButtonComponent,
+    PageChromeDirective,
   ],
   templateUrl: './add-student.component.html',
   styleUrl: './add-student.component.css',

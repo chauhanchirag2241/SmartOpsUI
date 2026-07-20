@@ -16,6 +16,7 @@ import {
 } from '../../../../core/services/front-office.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ActionButtonComponent } from '../../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../../shared/directives/page-chrome.directive';
 import { SELECT_PLACEHOLDER } from '../../../../shared/constants/form.constants';
 import { StreamGroup, enumToOptions } from '../../../../shared/enums/field-options.enum';
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
@@ -46,11 +47,11 @@ const CLASS_OPTIONS = [
   selector: 'app-add-admission-inquiry',
   standalone: true,
   host: { class: 'form-page-shell' },
-  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
+  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   template: `
     <div class="topbar">
       <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()" />
-      <div class="page-title">{{ pageTitle }}</div>
+      <span [appPageChrome]="pageTitle"></span>
     </div>
     <form [formGroup]="form" (ngSubmit)="save()">
       <div class="card">

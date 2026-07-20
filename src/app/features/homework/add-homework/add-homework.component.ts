@@ -13,6 +13,7 @@ import {
 } from '../../../core/services/homework.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { FormTab } from '../../../shared/interfaces/form-layout';
@@ -21,7 +22,7 @@ import { enumToOptions } from '../../../shared/enums/field-options.enum';
 @Component({
   selector: 'app-add-homework',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, ActionButtonComponent, DynamicFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, ActionButtonComponent, DynamicFieldComponent, PageChromeDirective],
   templateUrl: './add-homework.component.html',
   styleUrl: './add-homework.component.css',
 })

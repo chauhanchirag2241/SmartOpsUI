@@ -16,6 +16,7 @@ import {
 } from '../../core/services/notices.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { MultiSelectChipsComponent } from '../../shared/components/multi-select-chips/multi-select-chips.component';
 import { ScopeReadonlyLockComponent } from '../../shared/components/scope-readonly-lock/scope-readonly-lock.component';
 import { MappingOption } from '../../shared/mapping/mapping.types';
@@ -33,6 +34,7 @@ import { isReadOnlyYear } from '../leave/workflow-page.util';
     ActionButtonComponent,
     MultiSelectChipsComponent,
     ScopeReadonlyLockComponent,
+    PageChromeDirective,
   ],
   templateUrl: './add-notice.component.html',
   styleUrl: './add-notice.component.css',

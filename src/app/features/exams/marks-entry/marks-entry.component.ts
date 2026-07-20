@@ -1,13 +1,17 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Subscription } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
   ExamService,
   ExamListItem,
@@ -37,19 +41,24 @@ interface StudentMarksDraft {
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     MatIconModule,
     MatDialogModule,
     ActionButtonComponent,
+    PageChromeDirective,
+    DynamicFieldComponent,
   ],
   templateUrl: './marks-entry.component.html',
   styleUrl: './marks-entry.component.css',
 })
-export class MarksEntryComponent implements OnInit {
+export class MarksEntryComponent implements OnInit, OnDestroy {
   private examService = inject(ExamService);
   private snackBar = inject(NotificationService);
   private permissions = inject(PermissionService);
   private dialog = inject(MatDialog);
   private cdr = inject(ChangeDetectorRef);
+  private fb = inject(FormBuilder);
+  private readonly subs = new Subscription();
 
   exams: ExamListItem[] = [];
   subjectProgress: ExamSubjectProgress[] = [];
@@ -57,18 +66,45 @@ export class MarksEntryComponent implements OnInit {
   rows: StudentMarksDraft[] = [];
   dirty = false;
 
-  selectedExamId = '';
-  selectedClassId = '';
   selectedScheduleId = '';
 
   loadingGrid = false;
   saving = false;
+
+  readonly filterForm = this.fb.group({
+    selectedExamId: [''],
+    selectedClassId: [''],
+  });
+
+  examConfig: FormFieldConfig = {
+    type: 'select',
+    controlName: 'selectedExamId',
+    label: 'Exam',
+    placeholder: 'Select exam',
+    options: [{ label: 'Select exam', value: '' }],
+  };
+
+  classConfig: FormFieldConfig = {
+    type: 'select',
+    controlName: 'selectedClassId',
+    label: 'Class',
+    placeholder: 'Select class',
+    options: [{ label: 'Select class', value: '' }],
+  };
 
   get canEdit(): boolean {
     return (
       this.permissions.canEdit(MenuCodes.ExamMarksEntry) ||
       this.permissions.canAdd(MenuCodes.ExamMarksEntry)
     );
+  }
+
+  get selectedExamId(): string {
+    return String(this.filterForm.get('selectedExamId')?.value ?? '');
+  }
+
+  get selectedClassId(): string {
+    return String(this.filterForm.get('selectedClassId')?.value ?? '');
   }
 
   get selectedExam(): ExamListItem | undefined {
@@ -84,11 +120,28 @@ export class MarksEntryComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.subs.add(
+      this.filterForm.get('selectedExamId')!.valueChanges.subscribe(() => this.onExamChange()),
+    );
+    this.subs.add(
+      this.filterForm.get('selectedClassId')!.valueChanges.subscribe(() => this.onClassChange()),
+    );
+
     this.examService.getExams().subscribe({
       next: (exams) => {
         this.exams = exams ?? [];
+        this.examConfig = {
+          ...this.examConfig,
+          options: [
+            { label: 'Select exam', value: '' },
+            ...this.exams.map((e) => ({
+              label: `${e.name} (${e.examGroupName})`,
+              value: e.id,
+            })),
+          ],
+        };
         if (this.exams.length > 0) {
-          this.selectedExamId = this.exams[0].id;
+          this.filterForm.patchValue({ selectedExamId: this.exams[0].id }, { emitEvent: false });
           this.onExamChange();
         }
         this.cdr.detectChanges();
@@ -101,8 +154,21 @@ export class MarksEntryComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+  }
+
   onExamChange(): void {
-    this.selectedClassId = this.examClasses[0]?.classId ?? '';
+    const classes = this.examClasses;
+    this.classConfig = {
+      ...this.classConfig,
+      options: [
+        { label: 'Select class', value: '' },
+        ...classes.map((c) => ({ label: c.className, value: c.classId })),
+      ],
+    };
+    const nextClassId = classes[0]?.classId ?? '';
+    this.filterForm.patchValue({ selectedClassId: nextClassId }, { emitEvent: false });
     this.onClassChange();
   }
 

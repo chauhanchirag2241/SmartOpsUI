@@ -1,4 +1,12 @@
 <mat-toolbar class="app-header">
+  @if (pageChrome.title()) {
+    <div class="header-page-chrome">
+      <div class="header-page-title">{{ pageChrome.title() }}</div>
+      @if (pageChrome.subtitle()) {
+        <div class="header-page-subtitle">{{ pageChrome.subtitle() }}</div>
+      }
+    </div>
+  }
   <span class="spacer"></span>
 
   @if (ayContext.canSwitchYear() && ayContext.dropdownYears().length > 0) {

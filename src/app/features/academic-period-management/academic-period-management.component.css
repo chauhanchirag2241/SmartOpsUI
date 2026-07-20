@@ -16,25 +16,7 @@
   padding: 14px 16px;
 }
 
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-select,
-input {
-  min-height: 38px;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface, #fff);
-  color: inherit;
-}
-
-.period-toolbar select {
+.toolbar-field {
   width: min(320px, 100%);
 }
 
@@ -74,13 +56,14 @@ input {
   cursor: pointer;
 }
 
-.class-item:hover,
-.class-item.active {
-  background: var(--surface-hover, #f4f7fb);
+.class-item:hover {
+  background: var(--hover, #f0f7e8);
 }
 
 .class-item.active {
-  box-shadow: inset 3px 0 var(--primary, #2563eb);
+  background: var(--g50, #eaf3de);
+  box-shadow: inset 3px 0 var(--primary-color, #639922);
+  color: var(--g600, #3b6d11);
   font-weight: 600;
 }
 
@@ -89,8 +72,12 @@ input {
   white-space: nowrap;
 }
 
+.class-item.active small {
+  color: var(--g600, #3b6d11);
+}
+
 .class-item .configured {
-  color: #237a45;
+  color: var(--g600, #3b6d11);
 }
 
 .editor-card {
@@ -118,7 +105,7 @@ input {
 }
 
 .type-field {
-  min-width: 180px;
+  min-width: 200px;
 }
 
 .period-table-wrap {
@@ -136,15 +123,20 @@ input {
   border-bottom: 1px solid var(--border);
   text-align: left;
   font-size: 12px;
+  vertical-align: top;
 }
 
-.period-table input {
+.period-table ::ng-deep .custom-field > label {
+  display: none;
+}
+
+.period-table ::ng-deep .compact-field {
   width: 100%;
-  box-sizing: border-box;
 }
 
 .order-column {
   width: 34px;
+  vertical-align: middle;
 }
 
 .actions-column {
@@ -154,10 +146,13 @@ input {
 .row-actions {
   display: flex;
   gap: 4px;
+  padding-top: 6px;
 }
 
-.row-actions button,
-.add-period {
+.row-actions button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -168,10 +163,15 @@ input {
   cursor: pointer;
 }
 
-.row-actions button {
-  width: 30px;
-  height: 30px;
-  padding: 0;
+.row-actions button:hover:not(:disabled) {
+  border-color: var(--primary-color, #639922);
+  color: var(--g600, #3b6d11);
+  background: var(--hover, #f0f7e8);
+}
+
+.row-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .row-actions mat-icon {
@@ -184,23 +184,18 @@ input {
   color: #a32d2d;
 }
 
+.row-actions .remove:hover:not(:disabled) {
+  border-color: #a32d2d;
+  background: #fcebeb;
+  color: #a32d2d;
+}
+
 .editor-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   margin-top: 16px;
-}
-
-.add-period {
-  gap: 5px;
-  padding: 8px 12px;
-}
-
-.add-period mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
 }
 
 .inline-error {
@@ -224,5 +219,10 @@ input {
   .editor-heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .type-field {
+    min-width: 0;
+    width: 100%;
   }
 }

@@ -11,21 +11,9 @@
   flex-wrap: wrap;
 }
 
-.dash-topbar-titles {
+.dash-topbar-spacer {
   flex: 1;
-  min-width: 120px;
-}
-
-.dash-topbar h1 {
-  font-size: 1.25rem;
-  font-weight: 500;
-  margin: 0;
-}
-
-.dash-branch-hint {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--text-secondary, #6b7280);
+  min-width: 0;
 }
 
 .dash-branch-hint strong {

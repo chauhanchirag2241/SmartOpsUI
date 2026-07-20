@@ -9,7 +9,7 @@
   } @else {
     <div class="topbar">
       <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <div class="page-title">{{ formMode === 'edit' ? 'Edit grade scale' : 'New grade scale' }}</div>
+      <span [appPageChrome]="formMode === 'edit' ? 'Edit grade scale' : 'New grade scale'"></span>
     </div>
     <p class="form-hint">Define grade bands — add or remove rows as needed.</p>
 

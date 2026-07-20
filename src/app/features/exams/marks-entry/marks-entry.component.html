@@ -1,29 +1,17 @@
 <section class="marks-entry-page">
   <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Marks Entry</div>
-      <div class="page-sub">Enter marks per component; mark absentees with AB</div>
-    </div>
+    <span
+      [appPageChrome]="'Marks Entry'"
+      [pageChromeSubtitle]="'Enter marks per component; mark absentees with AB'"
+    ></span>
   </div>
 
   <div class="filter-row">
     <div class="filter-field">
-      <label>Exam</label>
-      <select [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
-        <option value="">Select exam</option>
-        @for (e of exams; track e.id) {
-          <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-        }
-      </select>
+      <app-dynamic-field [config]="examConfig" [group]="filterForm" />
     </div>
     <div class="filter-field">
-      <label>Class</label>
-      <select [(ngModel)]="selectedClassId" (ngModelChange)="onClassChange()">
-        <option value="">Select class</option>
-        @for (c of examClasses; track c.classId) {
-          <option [value]="c.classId">{{ c.className }}</option>
-        }
-      </select>
+      <app-dynamic-field [config]="classConfig" [group]="filterForm" />
     </div>
   </div>
 

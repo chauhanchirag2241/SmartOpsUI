@@ -9,11 +9,13 @@ import { StudentService } from '../../../core/services/student.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
+import { PeriodService } from '../../../core/services/period.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { FrontOfficeService } from '../../../core/services/front-office.service';
 import { ActionButtonComponent } from '../../components/action-button/action-button.component';
 import { AuditHistoryEntityType } from '../../../core/services/audit.service';
 import { AuditHistoryComponent } from '../../components/audit-history/audit-history.component';
+import { PageChromeDirective } from '../../directives/page-chrome.directive';
 
 const GUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -30,6 +32,7 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   employee: { listRoute: '/employees', entityType: 'employee' },
   class: { listRoute: '/classes', entityType: 'class' },
   subject: { listRoute: '/subjects', entityType: 'subject' },
+  period: { listRoute: '/timetable/periods', entityType: 'period' },
   'academic-year': { listRoute: '/academic-years', entityType: 'academic-year' },
   visitor: { listRoute: '/front-office/visitors', entityType: 'visitor' },
   'phone-log': { listRoute: '/front-office/phone-logs', entityType: 'phone-log' },
@@ -48,7 +51,7 @@ interface EntityHistoryHeader {
 @Component({
   selector: 'app-entity-history',
   standalone: true,
-  imports: [CommonModule, MatIconModule, ActionButtonComponent, AuditHistoryComponent],
+  imports: [CommonModule, MatIconModule, ActionButtonComponent, AuditHistoryComponent, PageChromeDirective],
   templateUrl: './entity-history.component.html',
   styleUrl: './entity-history.component.css',
 })
@@ -59,6 +62,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
+  private readonly periodService = inject(PeriodService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly frontOfficeService = inject(FrontOfficeService);
   private readonly snackBar = inject(NotificationService);
@@ -71,6 +75,13 @@ export class EntityHistoryComponent implements OnInit {
   recordTitle = '';
   recordSubtitle = '';
   loadingHeader = true;
+
+  get historyChromeSubtitle(): string {
+    if (this.loadingHeader || !this.recordTitle) {
+      return '';
+    }
+    return this.recordSubtitle ? `${this.recordTitle} · ${this.recordSubtitle}` : this.recordTitle;
+  }
 
   ngOnInit(): void {
     const kind = (this.route.snapshot.data['entityKind'] as EntityHistoryKind) ?? 'student';
@@ -152,6 +163,16 @@ export class EntityHistoryComponent implements OnInit {
           map((data) => ({
             title: String(data.subjectName ?? 'Subject').trim() || 'Subject',
             subtitle: String(data.subjectCode ?? '').trim(),
+          })),
+        );
+      case 'period':
+        return this.periodService.getPeriod(id).pipe(
+          map((data) => ({
+            title: String(data.name ?? 'Period').trim() || 'Period',
+            subtitle: [data.shortName, data.startTime && data.endTime ? `${data.startTime} – ${data.endTime}` : '']
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' · '),
           })),
         );
       case 'academic-year':

@@ -4,3 +4,9 @@
   flex-shrink: 0;
   gap: 8px;
 }
+
+:host :ng-deep .page-header-actions-only:not(:has(.page-header-actions > *)) {
+  display: none;
+  margin: 0;
+  padding: 0;
+}

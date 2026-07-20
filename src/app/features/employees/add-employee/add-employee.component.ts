@@ -19,6 +19,7 @@ import { UserTypeDto, UserTypeService } from '../../../core/services/user-type.s
 import { NotificationService } from '../../../core/services/notification.service';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
   BANK_NAME_MAX_LENGTH,
@@ -72,6 +73,7 @@ const STAFF_USER_TYPE_CODES = new Set(['TEACHER', 'ACCOUNTANT', 'STAFF']);
     DynamicFieldComponent,
     ActionButtonComponent,
     MultiSelectChipsComponent,
+    PageChromeDirective,
   ],
   templateUrl: './add-employee.component.html',
   styleUrl: './add-employee.component.css',

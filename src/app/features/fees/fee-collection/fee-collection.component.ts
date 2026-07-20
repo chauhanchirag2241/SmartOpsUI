@@ -1,7 +1,7 @@
 import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -10,6 +10,8 @@ import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
   FEE_PAYMENT_MODE_OPTIONS,
   FeePaymentMode,
@@ -36,7 +38,16 @@ type CollectAllocRow = {
 @Component({
   selector: 'app-fee-collection',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    ListPageHeaderComponent,
+    PageToolbarComponent,
+    DynamicFieldComponent,
+  ],
   templateUrl: './fee-collection.component.html',
   styleUrl: '../fees.shared.css',
 })
@@ -46,19 +57,45 @@ export class FeeCollectionComponent {
   readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly fb = inject(FormBuilder);
   private readonly studentsQuery$ = new Subject<string>();
 
   students: ReturnType<typeof normalizeStudentListItem>[] = [];
   classes: { id: string; name: string }[] = [];
   academicYearId = '';
-  classFilter = '';
-  statusFilter = '';
   searchQuery = '';
   selectedStudentId = '';
   detail: ReturnType<typeof normalizeStudentDetail> | null = null;
   expandedHeadIds = new Set<string>();
   showCollectModal = false;
   collectingInProgress = false;
+
+  readonly filterForm = this.fb.group({
+    classFilter: [''],
+    statusFilter: [''],
+  });
+
+  classConfig: FormFieldConfig = {
+    type: 'select',
+    controlName: 'classFilter',
+    label: 'Class',
+    placeholder: 'Select class',
+    options: [{ label: 'Select class', value: '' }],
+  };
+
+  statusConfig: FormFieldConfig = {
+    type: 'select',
+    controlName: 'statusFilter',
+    label: 'Fee status',
+    placeholder: 'All students',
+    options: [
+      { label: 'All students', value: '' },
+      { label: 'Fully paid', value: 'paid' },
+      { label: 'Partial', value: 'partial' },
+      { label: 'Overdue', value: 'unpaid' },
+    ],
+    disabled: true,
+  };
 
   paymentModes = FEE_PAYMENT_MODE_OPTIONS;
   collectForm = {
@@ -73,9 +110,27 @@ export class FeeCollectionComponent {
   private lastYearKey = '';
   private lastStudentQueryKey = '';
   private studentsRequestSeq = 0;
-  private suppressClassFilterChange = false;
+
+  get classFilter(): string {
+    return String(this.filterForm.get('classFilter')?.value ?? '');
+  }
+
+  get statusFilter(): string {
+    return String(this.filterForm.get('statusFilter')?.value ?? '');
+  }
 
   constructor() {
+    this.filterForm.get('statusFilter')?.disable({ emitEvent: false });
+
+    this.filterForm
+      .get('classFilter')!
+      .valueChanges.pipe(takeUntilDestroyed())
+      .subscribe(() => this.onClassFilterChange());
+    this.filterForm
+      .get('statusFilter')!
+      .valueChanges.pipe(takeUntilDestroyed())
+      .subscribe(() => this.onListFiltersChange());
+
     toObservable(this.ayContext.effectiveYearKey)
       .pipe(
         filter((key): key is string => !!key && key !== 'none'),
@@ -138,11 +193,9 @@ export class FeeCollectionComponent {
     this.lastYearKey = yearKey;
     this.lastStudentQueryKey = '';
     this.academicYearId = yearKey;
-    this.suppressClassFilterChange = true;
-    this.classFilter = '';
-    this.statusFilter = '';
+    this.filterForm.patchValue({ classFilter: '', statusFilter: '' }, { emitEvent: false });
+    this.syncStatusDisabled();
     this.searchQuery = '';
-    this.suppressClassFilterChange = false;
     this.students = [];
     this.selectedStudentId = '';
     this.detail = null;
@@ -158,16 +211,33 @@ export class FeeCollectionComponent {
       id: String(pick(x, 'id', 'Id') ?? ''),
       name: String(pick(x, 'name', 'Name') ?? ''),
     }));
+    this.classConfig = {
+      ...this.classConfig,
+      options: [
+        { label: 'Select class', value: '' },
+        ...this.classes.map((c) => ({ label: c.name, value: c.id })),
+      ],
+    };
     if (this.classFilter && !this.classes.some((cls) => cls.id === this.classFilter)) {
-      this.suppressClassFilterChange = true;
-      this.classFilter = '';
-      this.suppressClassFilterChange = false;
+      this.filterForm.patchValue({ classFilter: '' }, { emitEvent: false });
+      this.syncStatusDisabled();
       this.students = [];
       this.selectedStudentId = '';
       this.detail = null;
       this.lastStudentQueryKey = '';
     }
     this.cdr.markForCheck();
+  }
+
+  private syncStatusDisabled(): void {
+    const control = this.filterForm.get('statusFilter');
+    const disabled = !this.classFilter;
+    this.statusConfig = { ...this.statusConfig, disabled };
+    if (disabled) {
+      control?.disable({ emitEvent: false });
+    } else {
+      control?.enable({ emitEvent: false });
+    }
   }
 
   onToolbarSearchSubmit(q: string): void {
@@ -178,9 +248,7 @@ export class FeeCollectionComponent {
   }
 
   onClassFilterChange(): void {
-    if (this.suppressClassFilterChange) {
-      return;
-    }
+    this.syncStatusDisabled();
     this.selectedStudentId = '';
     this.detail = null;
     this.closeCollectModal();

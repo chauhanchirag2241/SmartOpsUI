@@ -4,7 +4,7 @@
     style="order: 2; margin-left: auto"
     (action)="cancel.emit()"
   ></app-action-button>
-  <div class="page-title">{{ pageTitle }}</div>
+  <span [appPageChrome]="pageTitle"></span>
 </div>
 
 <div class="progress-bar">

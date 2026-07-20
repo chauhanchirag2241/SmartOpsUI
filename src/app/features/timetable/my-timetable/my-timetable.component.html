@@ -1,0 +1,91 @@
+<div class="tt-page list-page-shell">
+  <app-list-page-header
+    title="My Timetable"
+    subtitle="Your weekly schedule based on linked teacher or student profile"
+  >
+    <div headerActions class="header-actions">
+      <label class="table-filter-section-label" for="my-tt-year">Academic year</label>
+      <select
+        id="my-tt-year"
+        class="sel-filter sel-filter-lg"
+        [(ngModel)]="selectedAcademicYearId"
+        (ngModelChange)="loadMy()"
+      >
+        @for (year of academicYears; track year.id) {
+          <option [value]="year.id">{{ year.name }}</option>
+        }
+      </select>
+      @if (canExport && grid) {
+        <button type="button" class="btn-outline" (click)="printGrid()">
+          <mat-icon>print</mat-icon> Print / PDF
+        </button>
+      }
+    </div>
+  </app-list-page-header>
+
+  @if (message) {
+    <div class="empty-panel">{{ message }}</div>
+  }
+
+  @if (loading) {
+    <div class="empty-panel">Loading…</div>
+  } @else if (grid && periods.length && response?.persona !== 'none') {
+    <div class="tt-meta">
+      @if (response?.persona === 'teacher') {
+        <span class="b-blue">Teacher view</span>
+      }
+      @if (response?.persona === 'student') {
+        <span class="b-green">Student view</span>
+      }
+      @if (response?.className) {
+        <span>{{ response?.className }}</span>
+      }
+    </div>
+
+    <div class="tt-grid-wrap card">
+      <table class="tt-grid">
+        <thead>
+          <tr>
+            <th class="tt-period-col">Period</th>
+            @for (d of days; track d.day) {
+              <th>{{ d.label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of periods; track p.id) {
+            <tr [class.tt-break-row]="p.isBreak">
+              <th class="tt-period-col">
+                <div class="tt-period-name">{{ p.shortName || p.name }}</div>
+                <div class="tt-period-time">{{ p.startTime }} – {{ p.endTime }}</div>
+              </th>
+              @for (d of days; track d.day) {
+                <td>
+                  @if (p.isBreak) {
+                    <div class="tt-break-cell">Break</div>
+                  } @else {
+                    @let cell = getCell(d.day, p.id);
+                    <div class="tt-cell tt-cell-readonly" [class.tt-cell-filled]="!!cell?.subjectName || !!cell?.className">
+                      @if (cell?.subjectName || cell?.className) {
+                        @if (response?.persona === 'teacher') {
+                          <span class="tt-cell-main">{{ cell?.className }}</span>
+                          <span class="tt-cell-sub">{{ cell?.subjectName }}</span>
+                        } @else {
+                          <span class="tt-cell-main">{{ cell?.subjectName }}</span>
+                          <span class="tt-cell-sub">{{ cell?.employeeName }}</span>
+                        }
+                        @if (cell?.roomNo) {
+                          <span class="tt-cell-room">Rm {{ cell?.roomNo }}</span>
+                        }
+                      }
+                    </div>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

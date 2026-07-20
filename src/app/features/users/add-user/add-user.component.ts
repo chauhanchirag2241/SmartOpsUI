@@ -18,6 +18,7 @@ import { RoleDto, RoleService } from '../../../core/services/role.service';
 import { UserService } from '../../../core/services/user.service';
 import { UserTypeDto, UserTypeService } from '../../../core/services/user-type.service';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
@@ -28,7 +29,7 @@ const FALLBACK_ROLES = ['Admin'];
   selector: 'app-add-user',
   standalone: true,
   host: { class: 'add-user-page form-page-shell' },
-  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
+  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   templateUrl: './add-user.component.html',
   styleUrl: './add-user.component.css',
 })

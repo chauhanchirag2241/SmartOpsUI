@@ -21,6 +21,7 @@ import { TenantService } from '../../../core/services/tenant.service';
 import { RoleDto, RoleService } from '../../../core/services/role.service';
 import { SchoolUserDto, UserService } from '../../../core/services/user.service';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
@@ -42,7 +43,7 @@ interface RoleUserRow {
   selector: 'app-add-role',
   standalone: true,
   host: { class: 'add-role-page form-page-shell role-page' },
-  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
+  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   templateUrl: './add-role.component.html',
   styleUrl: './add-role.component.css',
 })

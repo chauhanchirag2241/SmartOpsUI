@@ -1,12 +1,11 @@
 <div class="attendance-container">
   <!-- Topbar -->
   <div class="topbar">
-    <div class="page-info" style="flex:1">
-      <div class="page-title">Attendance</div>
-      <div class="page-sub">
-        {{ selectedClassName }} &middot; {{ displaySelectedDate }}
-      </div>
-    </div>
+    <span
+      style="flex:1"
+      [appPageChrome]="'Attendance'"
+      [pageChromeSubtitle]="selectedClassName + ' · ' + displaySelectedDate"
+    ></span>
     <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
       <mat-icon>keyboard</mat-icon>
       <span>Shortcuts</span>

@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { Subscription } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
 import { FeeStructureService } from '../../../core/services/fee-structure.service';
@@ -10,6 +11,8 @@ import { AcademicYearService } from '../../../core/services/academic-year.servic
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
   asArray,
   extractApiError,
@@ -33,11 +36,20 @@ type AmountEdits = {
 @Component({
   selector: 'app-class-fee-amounts',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    ListPageHeaderComponent,
+    PageToolbarComponent,
+    DynamicFieldComponent,
+  ],
   templateUrl: './class-fee-amounts.component.html',
   styleUrl: '../fees.shared.css',
 })
-export class ClassFeeAmountsComponent implements OnInit {
+export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   private readonly service = inject(ClassFeeAmountService);
   private readonly feeStructureService = inject(FeeStructureService);
   private readonly academicYearService = inject(AcademicYearService);
@@ -45,13 +57,13 @@ export class ClassFeeAmountsComponent implements OnInit {
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
+  private readonly fb = inject(FormBuilder);
+  private readonly subs = new Subscription();
 
   readonly FeeCollectionType = FeeCollectionType;
 
   academicYears: ReturnType<typeof normalizeDropdownItem>[] = [];
   versions: ReturnType<typeof normalizeFeeStructureVersion>[] = [];
-  academicYearId = '';
-  feeStructureVersionId = '';
   classes: ReturnType<typeof normalizeClassSummary>[] = [];
   selectedClassId = '';
   amountData: ReturnType<typeof normalizeClassAmounts> | null = null;
@@ -63,17 +75,60 @@ export class ClassFeeAmountsComponent implements OnInit {
   showInstallmentPreview = false;
   loadingInstallments = false;
 
+  readonly filterForm = this.fb.group({
+    academicYearId: [''],
+    feeStructureVersionId: [''],
+  });
+
+  yearConfig: FormFieldConfig = {
+    type: 'select',
+    controlName: 'academicYearId',
+    label: 'Academic year',
+    placeholder: 'Select academic year',
+    options: [],
+  };
+
+  versionConfig: FormFieldConfig = {
+    type: 'select',
+    controlName: 'feeStructureVersionId',
+    label: 'Fee structure',
+    placeholder: 'Select fee structure',
+    options: [],
+    disabled: true,
+  };
+
+  get academicYearId(): string {
+    return String(this.filterForm.get('academicYearId')?.value ?? '');
+  }
+
+  get feeStructureVersionId(): string {
+    return String(this.filterForm.get('feeStructureVersionId')?.value ?? '');
+  }
+
   ngOnInit(): void {
+    this.subs.add(
+      this.filterForm.get('academicYearId')!.valueChanges.subscribe(() => this.onYearChange()),
+    );
+    this.subs.add(
+      this.filterForm
+        .get('feeStructureVersionId')!
+        .valueChanges.subscribe(() => this.onVersionChange()),
+    );
+
     this.academicYearService.getAcademicYearDropdown().subscribe({
       next: (years) => {
         this.academicYears = asArray(years).map(normalizeDropdownItem);
+        this.yearConfig = {
+          ...this.yearConfig,
+          options: this.academicYears.map((y) => ({ label: y.name, value: y.id })),
+        };
         const effective = this.ayContext.effectiveYearId();
         const pick =
           effective && this.academicYears.some((y) => y.id === effective)
             ? effective
             : this.academicYears[0]?.id;
         if (pick) {
-          this.academicYearId = pick;
+          this.filterForm.patchValue({ academicYearId: pick }, { emitEvent: false });
           this.loadVersions();
         }
         this.refreshView();
@@ -83,6 +138,10 @@ export class ClassFeeAmountsComponent implements OnInit {
         this.refreshView();
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   /** Draft/Published: always edit all classes. Active: only classes without saved amounts. */
@@ -102,7 +161,7 @@ export class ClassFeeAmountsComponent implements OnInit {
   onYearChange(): void {
     this.selectedClassId = '';
     this.amountData = null;
-    this.feeStructureVersionId = '';
+    this.filterForm.patchValue({ feeStructureVersionId: '' }, { emitEvent: false });
     this.loadVersions();
   }
 
@@ -115,6 +174,7 @@ export class ClassFeeAmountsComponent implements OnInit {
   loadVersions(): void {
     if (!this.academicYearId) return;
     this.loadingVersions = true;
+    this.syncVersionConfig([], true);
     this.refreshView();
     this.feeStructureService.getVersions(this.academicYearId).subscribe({
       next: (list) => {
@@ -122,8 +182,13 @@ export class ClassFeeAmountsComponent implements OnInit {
         const draft = this.versions.find((v) => v.statusLabel === 'Draft');
         const published = this.versions.find((v) => v.statusLabel === 'Published');
         const active = this.versions.find((v) => v.statusLabel === 'Active');
-        this.feeStructureVersionId =
+        const nextVersionId =
           draft?.id || published?.id || active?.id || this.versions[0]?.id || '';
+        this.syncVersionConfig(this.versions, !this.versions.length);
+        this.filterForm.patchValue(
+          { feeStructureVersionId: nextVersionId },
+          { emitEvent: false },
+        );
         this.loadingVersions = false;
         this.loadClasses();
         this.refreshView();
@@ -131,10 +196,31 @@ export class ClassFeeAmountsComponent implements OnInit {
       error: () => {
         this.loadingVersions = false;
         this.versions = [];
+        this.syncVersionConfig([], true);
         this.toast('Failed to load fee structure versions', true);
         this.refreshView();
       },
     });
+  }
+
+  private syncVersionConfig(
+    versions: ReturnType<typeof normalizeFeeStructureVersion>[],
+    disabled: boolean,
+  ): void {
+    this.versionConfig = {
+      ...this.versionConfig,
+      disabled,
+      options: versions.map((v) => ({
+        label: `${v.versionLabel} — ${v.statusLabel}`,
+        value: v.id,
+      })),
+    };
+    const control = this.filterForm.get('feeStructureVersionId');
+    if (disabled) {
+      control?.disable({ emitEvent: false });
+    } else {
+      control?.enable({ emitEvent: false });
+    }
   }
 
   get selectedVersion(): ReturnType<typeof normalizeFeeStructureVersion> | undefined {

@@ -7,6 +7,7 @@ import { CreateLeaveRequest, LeaveService, LeaveType } from '../../core/services
 import { NotificationService } from '../../core/services/notification.service';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { ScopeReadonlyLockComponent } from '../../shared/components/scope-readonly-lock/scope-readonly-lock.component';
 import { asApproverArray, LeaveApprover } from './leave.shared';
 import { isReadOnlyYear } from './workflow-page.util';
@@ -15,7 +16,7 @@ import { isReadOnlyYear } from './workflow-page.util';
   selector: 'app-apply-staff-leave',
   standalone: true,
   host: { class: 'apply-staff-leave-page form-page-shell' },
-  imports: [CommonModule, FormsModule, MatIconModule, ActionButtonComponent, ScopeReadonlyLockComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, ActionButtonComponent, ScopeReadonlyLockComponent, PageChromeDirective],
   templateUrl: './apply-staff-leave.component.html',
   styleUrl: './apply-staff-leave.component.css',
 })

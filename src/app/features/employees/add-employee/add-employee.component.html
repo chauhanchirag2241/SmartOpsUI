@@ -1,8 +1,6 @@
 <div class="topbar">
   <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="onCancel()"></app-action-button>
-  <div class="page-title">
-    {{ mode === 'edit' ? 'Edit employee' : mode === 'view' ? 'Employee details' : 'Add new employee' }}
-  </div>
+  <span [appPageChrome]="mode === 'edit' ? 'Edit employee' : mode === 'view' ? 'Employee details' : 'Add new employee'"></span>
 </div>
 
 <div class="progress-bar">

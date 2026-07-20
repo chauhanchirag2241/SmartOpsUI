@@ -8,6 +8,7 @@ import { EMPTY, finalize, switchMap } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
@@ -19,10 +20,11 @@ import {
 } from '../../../shared/utils/stream-group.util';
 import { ClassService } from '../../../core/services/class.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
+import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
 @Component({
   selector: 'app-add-class',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent, ActionButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, MatSnackBarModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   templateUrl: './add-class.component.html',
   styleUrl: './add-class.component.css',
 })
@@ -198,11 +200,21 @@ export class AddClassComponent implements OnInit {
       return;
     }
 
+    const academicYearId = this.ayContext.effectiveYearId();
+    if (!academicYearId) {
+      this.snackBar.open(
+        'Please create an academic year first before adding a class.',
+        'Close',
+        { duration: 4000, panelClass: 'snack-error' },
+      );
+      return;
+    }
+
     this.isSaving = true;
     const payloadRaw = this.classForm.getRawValue();
-    payloadRaw.academicYearId = this.ayContext.effectiveYearKey();
-    payloadRaw.academicYear = this.ayContext.effectiveYearKey();
-    
+    payloadRaw.academicYearId = academicYearId;
+    payloadRaw.academicYear = academicYearId;
+
     this.classService
       .getClasses(1, 2000, '', null, null, 'All')
       .pipe(
@@ -237,8 +249,12 @@ export class AddClassComponent implements OnInit {
           );
           this.saved.emit();
         },
-        error: () =>
-          this.snackBar.open('Failed to save class', 'Close', { duration: 3000, panelClass: 'snack-error' }),
+        error: (err) =>
+          this.snackBar.open(
+            getUserFacingApiError(err, 'Failed to save class'),
+            'Close',
+            { duration: 3000, panelClass: 'snack-error' },
+          ),
       });
   }
 

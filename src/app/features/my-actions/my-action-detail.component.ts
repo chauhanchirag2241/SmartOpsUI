@@ -11,13 +11,14 @@ import {
 import { NotificationService } from '../../core/services/notification.service';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
 import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { ActionDetailView, mapActionDetail } from './my-actions.shared';
 
 @Component({
   selector: 'app-my-action-detail',
   standalone: true,
   host: { class: 'my-action-detail-page form-page-shell' },
-  imports: [CommonModule, FormsModule, MatIconModule, ActionButtonComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, ActionButtonComponent, PageChromeDirective],
   templateUrl: './my-action-detail.component.html',
   styleUrls: ['../leave/workflow-page.shared.css', './my-action-detail.component.css'],
 })

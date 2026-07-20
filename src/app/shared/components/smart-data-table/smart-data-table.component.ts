@@ -7,6 +7,7 @@ import {
   HostListener,
   Input,
   OnChanges,
+  OnDestroy,
   OnInit,
   Output,
   SimpleChanges,
@@ -28,6 +29,7 @@ import { AvatarColorService } from '../../services/avatar-color.service';
 import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filter-panel.util';
 import { naturalTextCompare } from '../../utils/natural-sort.util';
 import { DateRangeFilterComponent } from '../date-range-filter/date-range-filter.component';
+import { PageChromeService } from '../../../core/services/page-chrome.service';
 
 @Component({
   selector: 'app-smart-data-table',
@@ -36,8 +38,9 @@ import { DateRangeFilterComponent } from '../date-range-filter/date-range-filter
   templateUrl: './smart-data-table.component.html',
   styleUrl: './smart-data-table.component.css',
 })
-export class SmartDataTableComponent implements OnInit, OnChanges {
+export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   private readonly avatarColor = inject(AvatarColorService);
+  private readonly pageChrome = inject(PageChromeService);
   /** Projected date-range filter inside the filter modal (optional). */
   @ContentChild(DateRangeFilterComponent) dateRangeFilter?: DateRangeFilterComponent;
   /** Table configuration object */
@@ -212,6 +215,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.initDefaults();
     this.applyFilters();
+    this.syncPageChrome();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -226,6 +230,22 @@ export class SmartDataTableComponent implements OnInit, OnChanges {
         this.applyFilters();
       }
     }
+    if (changes['config']) {
+      this.syncPageChrome();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.pageChrome.clear(this);
+  }
+
+  private syncPageChrome(): void {
+    const header = this.config?.header;
+    if (!header?.title?.trim()) {
+      this.pageChrome.clear(this);
+      return;
+    }
+    this.pageChrome.set(header.title, header.subtitle ?? '', this);
   }
 
   private initDefaults(): void {

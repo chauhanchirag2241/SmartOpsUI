@@ -53,7 +53,7 @@
   } @else {
     <div class="topbar no-print">
       <app-action-button type="back" style="order: 2; margin-left: auto" (action)="backToSheet()" />
-      <div class="page-title">Report card</div>
+      <span [appPageChrome]="'Report card'"></span>
       <button type="button" class="btn-primary" [disabled]="!reportCard" (click)="print()">
         <mat-icon>print</mat-icon> Print / PDF
       </button>

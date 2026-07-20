@@ -5,14 +5,9 @@
   />
 
   <div class="period-toolbar">
-    <label>
-      <span>Academic year</span>
-      <select [(ngModel)]="academicYearId" (ngModelChange)="onYearChange()">
-        @for (year of academicYears; track year.id) {
-          <option [value]="year.id">{{ year.name }}</option>
-        }
-      </select>
-    </label>
+    <div class="toolbar-field">
+      <app-dynamic-field [config]="yearConfig" [group]="filterForm" />
+    </div>
   </div>
 
   <div class="period-layout">
@@ -47,17 +42,9 @@
             <h2>{{ selectedClass.className }}</h2>
             <p>Each period must fall within the selected academic year and cannot overlap.</p>
           </div>
-          <label class="type-field">
-            <span>Period type</span>
-            <select
-              [(ngModel)]="periodType"
-              (ngModelChange)="onPeriodTypeChange()"
-              [disabled]="!canEdit || loading">
-              @for (type of periodTypes; track type.value) {
-                <option [ngValue]="type.value">{{ type.label }}</option>
-              }
-            </select>
-          </label>
+          <div class="type-field">
+            <app-dynamic-field [config]="periodTypeConfig" [group]="editorForm" />
+          </div>
         </div>
 
         <div class="period-table-wrap">
@@ -72,19 +59,18 @@
               </tr>
             </thead>
             <tbody>
-              @for (period of periods; track $index; let index = $index) {
+              @for (period of periodsArray.controls; track $index; let index = $index) {
                 <tr>
                   <td>{{ index + 1 }}</td>
                   <td>
-                    <input
-                      type="text"
-                      [(ngModel)]="period.name"
-                      [disabled]="!canEdit"
-                      placeholder="Period name"
-                    />
+                    <app-dynamic-field [config]="periodNameConfig" [group]="$any(period)" />
                   </td>
-                  <td><input type="date" [(ngModel)]="period.startDate" [disabled]="!canEdit" /></td>
-                  <td><input type="date" [(ngModel)]="period.endDate" [disabled]="!canEdit" /></td>
+                  <td>
+                    <app-dynamic-field [config]="startDateConfig" [group]="$any(period)" />
+                  </td>
+                  <td>
+                    <app-dynamic-field [config]="endDateConfig" [group]="$any(period)" />
+                  </td>
                   <td>
                     @if (canEdit) {
                       <div class="row-actions">
@@ -94,7 +80,7 @@
                         <button
                           type="button"
                           title="Move down"
-                          [disabled]="index === periods.length - 1"
+                          [disabled]="index === periodsArray.length - 1"
                           (click)="movePeriod(index, 1)">
                           <mat-icon>arrow_downward</mat-icon>
                         </button>
@@ -116,9 +102,13 @@
 
         <div class="editor-actions">
           @if (canEdit) {
-            <button type="button" class="add-period" (click)="addPeriod()">
-              <mat-icon>add</mat-icon> Add period
-            </button>
+            <app-action-button
+              type="next"
+              label="Add period"
+              icon="add"
+              [disabled]="loading"
+              (action)="addPeriod()"
+            />
             <app-action-button
               type="save"
               [label]="saving ? 'Saving...' : 'Save periods'"

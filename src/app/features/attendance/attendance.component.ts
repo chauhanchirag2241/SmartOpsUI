@@ -11,6 +11,7 @@ import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { AttendanceStatus } from '../../modules/school/attendance/enums/attendance-status.enum';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import { DeleteDialogData } from '../../shared/interfaces/delete-dialog.interface';
@@ -34,7 +35,7 @@ interface AttendanceNote {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MatDialogModule, AvatarComponent, PageToolbarComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MatDialogModule, AvatarComponent, PageToolbarComponent, PageChromeDirective],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css'
 })

@@ -1,10 +1,4 @@
-<header class="page-header">
-  <div class="header-info">
-    <h1>{{ title }}</h1>
-    @if (subtitle) {
-      <span>{{ subtitle }}</span>
-    }
-  </div>
+<header class="page-header page-header-actions-only">
   <div class="page-header-actions">
     <ng-content select="[headerActions]" />
     @if (showPrimary && primaryLabel) {

@@ -801,7 +801,7 @@ app-sidebar.rail-mode .sidebar-footer {
   border-bottom: 1px solid rgba(0, 0, 0, 0.07);
   color: var(--text-primary);
   flex-shrink: 0;
-  height: 52px;
+  height: 56px;
   z-index: 20;
 }
 
@@ -1758,6 +1758,16 @@ input[type='checkbox'] {
   margin-bottom: 4px;
 }
 
+.page-header.page-header-actions-only:not(:has(.page-header-actions > *)) {
+  display: none;
+  margin: 0;
+  padding: 0;
+}
+
+.page-chrome-anchor {
+  display: none !important;
+}
+
 .header-info {
   flex: 1;
   min-width: 0;
@@ -1818,6 +1828,11 @@ input[type='checkbox'] {
 
 .page-toolbar-wrap .table-filter-menu {
   z-index: 40;
+}
+
+/* Modal filter must stay above its backdrop (1200); the rule above must not win. */
+.page-toolbar-wrap .table-filter-menu.table-filter-menu-modal {
+  z-index: 1201;
 }
 
 .list-page-shell {

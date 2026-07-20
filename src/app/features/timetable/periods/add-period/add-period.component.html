@@ -1,0 +1,40 @@
+<div class="topbar">
+  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
+  <span [appPageChrome]="pageTitle"></span>
+</div>
+
+<p class="form-hint">Periods define the school-day bell schedule used by the class timetable grid.</p>
+
+<form [formGroup]="periodForm">
+  @for (tab of tabs; track tab.stepIndex) {
+    @for (section of tab.sections; track section.title) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}
+        </div>
+        <div [class]="section.layout">
+          @for (field of section.fields; track field) {
+            <app-dynamic-field
+              [config]="configs[field]"
+              [group]="periodForm"
+              [full]="field === 'isBreak'"
+            />
+          }
+        </div>
+      </div>
+    }
+  }
+</form>
+
+<div class="footer-actions">
+  <div class="footer-hint">Save periods before building class timetables.</div>
+  @if (mode !== 'view') {
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Period' : 'Confirm & Add')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="savePeriod()">
+    </app-action-button>
+  }
+</div>

@@ -12,29 +12,12 @@
   (searchSubmitted)="onToolbarSearchSubmit($event)"
 >
   <div toolbarInline class="fee-toolbar-inline">
-    <select
-      id="fee-class-filter"
-      class="sel-filter"
-      [(ngModel)]="classFilter"
-      (ngModelChange)="onClassFilterChange()"
-      aria-label="Class"
-    >
-      <option value="">Select class</option>
-      <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
-    </select>
-    <select
-      id="fee-status-filter"
-      class="sel-filter"
-      [(ngModel)]="statusFilter"
-      (ngModelChange)="onListFiltersChange()"
-      [disabled]="!classFilter"
-      aria-label="Fee status"
-    >
-      <option value="">All students</option>
-      <option value="paid">Fully paid</option>
-      <option value="partial">Partial</option>
-      <option value="unpaid">Overdue</option>
-    </select>
+    <div class="fee-filter-field">
+      <app-dynamic-field [config]="classConfig" [group]="filterForm" />
+    </div>
+    <div class="fee-filter-field">
+      <app-dynamic-field [config]="statusConfig" [group]="filterForm" />
+    </div>
   </div>
   <span toolbarRight class="fee-filter-count">{{ classFilter ? students.length + ' students' : 'Select a class' }}</span>
 </app-page-toolbar>

@@ -13,6 +13,7 @@ import type {
   DataTableConfig,
 } from '../../../shared/components/smart-data-table';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import {
@@ -40,6 +41,7 @@ interface GradeRowDraft {
     MatDialogModule,
     SmartDataTableComponent,
     ActionButtonComponent,
+    PageChromeDirective,
   ],
   templateUrl: './grade-setup.component.html',
   styleUrl: './grade-setup.component.css',

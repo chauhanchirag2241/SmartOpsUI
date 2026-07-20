@@ -1,11 +1,10 @@
 <section class="dashboard-page" [class.editing]="editing()">
   <header class="dash-topbar">
-    <div class="dash-topbar-titles">
-      <h1>Dashboard</h1>
-      @if (activeBranchLabel()) {
-        <p class="dash-branch-hint">Showing data for <strong>{{ activeBranchLabel() }}</strong></p>
-      }
-    </div>
+    <span
+      [appPageChrome]="'Dashboard'"
+      [pageChromeSubtitle]="activeBranchLabel() ? ('Showing data for ' + activeBranchLabel()) : ''"
+    ></span>
+    <div class="dash-topbar-spacer"></div>
     <button type="button" class="dbtn" [class.active]="editing()" (click)="toggleEdit()">
       <mat-icon>dashboard_customize</mat-icon>
       {{ editing() ? 'Done' : 'Customize' }}

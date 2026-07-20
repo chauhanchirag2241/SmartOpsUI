@@ -1,9 +1,9 @@
 <div class="hw-detail-page" *ngIf="detail">
   <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">{{ detail.title }}</div>
-      <div class="page-sub">Student submission status</div>
-    </div>
+    <span
+      [appPageChrome]="detail.title"
+      [pageChromeSubtitle]="'Student submission status'"
+    ></span>
     <app-action-button type="back" class="topbar-back" (action)="goBack()"></app-action-button>
     <button
       *ngIf="canEditSubmissions"

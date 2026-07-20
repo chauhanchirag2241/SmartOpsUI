@@ -1,6 +1,6 @@
 <div class="fees-page list-page-shell">
 <app-list-page-header
-  title="Fees Management — Class-wise Amounts"
+  title="Class-wise Amounts"
   subtitle="Set fee amounts per class for each fee head"
 />
 
@@ -9,27 +9,12 @@
   [showFilter]="false"
 >
   <div toolbarInline class="fee-toolbar-inline">
-    <select
-      id="cfa-academic-year"
-      class="sel-filter"
-      [(ngModel)]="academicYearId"
-      (ngModelChange)="onYearChange()"
-      aria-label="Academic year"
-    >
-      <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-    </select>
-    <select
-      id="cfa-version"
-      class="sel-filter"
-      [(ngModel)]="feeStructureVersionId"
-      (ngModelChange)="onVersionChange()"
-      [disabled]="loadingVersions || !versions.length"
-      aria-label="Fee structure"
-    >
-      <option *ngFor="let v of versions" [value]="v.id">
-        {{ v.versionLabel }} — {{ v.statusLabel }}
-      </option>
-    </select>
+    <div class="fee-filter-field">
+      <app-dynamic-field [config]="yearConfig" [group]="filterForm" />
+    </div>
+    <div class="fee-filter-field fee-filter-field-wide">
+      <app-dynamic-field [config]="versionConfig" [group]="filterForm" />
+    </div>
   </div>
   <span
     toolbarRight

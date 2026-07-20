@@ -1,16 +1,9 @@
 <section class="entity-history-page">
   <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Change history</div>
-      @if (!loadingHeader && recordTitle) {
-        <div class="page-sub">
-          {{ recordTitle }}
-          @if (recordSubtitle) {
-            <span> · {{ recordSubtitle }}</span>
-          }
-        </div>
-      }
-    </div>
+    <span
+      [appPageChrome]="'Change history'"
+      [pageChromeSubtitle]="historyChromeSubtitle"
+    ></span>
     <app-action-button type="back" class="topbar-back" (action)="goBack()"></app-action-button>
   </div>
 

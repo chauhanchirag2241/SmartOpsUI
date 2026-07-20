@@ -7,6 +7,7 @@ import { finalize } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
@@ -22,7 +23,7 @@ import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
 @Component({
   selector: 'app-add-subject',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   templateUrl: './add-subject.component.html',
   styleUrl: './add-subject.component.css',
 })

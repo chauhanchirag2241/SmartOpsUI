@@ -9,6 +9,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { DashboardWidgetCodes } from '../../core/constants/dashboard-widget-codes';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { naturalTextCompare } from '../../shared/utils/natural-sort.util';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import type {
   IAttendanceToday,
   IClassOverview,
@@ -46,7 +47,7 @@ const DONUT_START_OFFSET = -DONUT_CIRCUMFERENCE * 0.25;
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, RouterLink],
+  imports: [CommonModule, MatIconModule, RouterLink, PageChromeDirective],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })

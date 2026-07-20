@@ -1,6 +1,6 @@
 <div class="topbar">
   <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
-  <div class="page-title">{{ pageTitle }}</div>
+  <span [appPageChrome]="pageTitle"></span>
 </div>
 
 <p class="form-hint">Class and employee assignments are managed from the Class Mapping screen.</p>

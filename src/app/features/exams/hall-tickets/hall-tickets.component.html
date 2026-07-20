@@ -1,9 +1,9 @@
 <section class="hall-tickets-page">
   <div class="topbar no-print">
-    <div class="page-info">
-      <div class="page-title">Hall Tickets</div>
-      <div class="page-sub">Auto-generate and print hall tickets for an exam</div>
-    </div>
+    <span
+      [appPageChrome]="'Hall Tickets'"
+      [pageChromeSubtitle]="'Auto-generate and print hall tickets for an exam'"
+    ></span>
     <button type="button" class="btn-outline" [disabled]="tickets.length === 0" (click)="printAll()">
       <mat-icon>print</mat-icon> Print all
     </button>
@@ -17,22 +17,10 @@
 
   <div class="filter-row no-print">
     <div class="filter-field">
-      <label>Exam</label>
-      <select [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
-        <option value="">Select exam</option>
-        @for (e of exams; track e.id) {
-          <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-        }
-      </select>
+      <app-dynamic-field [config]="examConfig" [group]="filterForm" />
     </div>
     <div class="filter-field">
-      <label>Class</label>
-      <select [(ngModel)]="selectedClassId" (ngModelChange)="loadTickets()">
-        <option value="">Select class</option>
-        @for (c of examClasses; track c.classId) {
-          <option [value]="c.classId">{{ c.className }}</option>
-        }
-      </select>
+      <app-dynamic-field [config]="classConfig" [group]="filterForm" />
     </div>
     @if (tickets.length > 0) {
       <span class="badge b-green">{{ tickets.length }} ticket(s)</span>

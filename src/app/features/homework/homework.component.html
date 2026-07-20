@@ -1,10 +1,10 @@
 <div class="homework-container">
   @if (!showAddForm) {
     <div class="topbar">
-    <div class="page-info">
-      <div class="page-title">Homework</div>
-      <div class="page-sub">Create and manage homework for your classes</div>
-    </div>
+    <span
+      [appPageChrome]="'Homework'"
+      [pageChromeSubtitle]="'Create and manage homework for your classes'"
+    ></span>
     <div class="view-toggle">
       <button type="button" class="vt-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')" title="Grid view">
         <mat-icon>grid_view</mat-icon>

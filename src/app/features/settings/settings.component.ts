@@ -8,6 +8,7 @@ import { PermissionService } from '../../core/services/permission.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { TenantService } from '../../core/services/tenant.service';
 import { UserTypeDto, UserTypeService } from '../../core/services/user-type.service';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 
 const LEAVE_KEYS = {
   staffApprovalMode: 'leave.staff.approvalMode',
@@ -21,7 +22,7 @@ const LEAVE_KEYS = {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatIconModule, PageChromeDirective],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css',
 })
@@ -52,6 +53,12 @@ export class SettingsComponent implements OnInit {
 
   get selectedSchoolName(): string {
     return this.tenant.school?.name ?? '';
+  }
+
+  get settingsChromeSubtitle(): string {
+    return this.selectedSchoolName
+      ? `School configuration for ${this.selectedSchoolName}`
+      : 'Loading school configuration…';
   }
 
   ngOnInit(): void {
