@@ -1,11 +1,4 @@
-<div class="topbar">
-  <app-action-button
-    type="back"
-    style="order: 2; margin-left: auto"
-    (action)="onCancel()"
-  />
-  <span [appPageChrome]="pageTitle"></span>
-</div>
+<span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="onCancel()"></span>
 
 @if (errorMessage) {
   <p class="error-banner">{{ errorMessage }}</p>

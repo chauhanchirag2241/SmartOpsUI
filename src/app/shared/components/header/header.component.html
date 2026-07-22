@@ -1,10 +1,23 @@
 <mat-toolbar class="app-header">
   @if (pageChrome.title()) {
-    <div class="header-page-chrome">
-      <div class="header-page-title">{{ pageChrome.title() }}</div>
-      @if (pageChrome.subtitle()) {
-        <div class="header-page-subtitle">{{ pageChrome.subtitle() }}</div>
+    <div class="header-page-chrome" [class.has-back]="!!pageChrome.onBack()">
+      @if (pageChrome.onBack()) {
+        <button
+          type="button"
+          class="header-back-btn"
+          (click)="pageChrome.goBack()"
+          aria-label="Back"
+        >
+          <mat-icon>arrow_back</mat-icon>
+          <span>Back</span>
+        </button>
       }
+      <div class="header-page-text">
+        <div class="header-page-title">{{ pageChrome.title() }}</div>
+        @if (pageChrome.subtitle()) {
+          <div class="header-page-subtitle">{{ pageChrome.subtitle() }}</div>
+        }
+      </div>
     </div>
   }
   <span class="spacer"></span>

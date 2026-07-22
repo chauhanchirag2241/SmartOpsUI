@@ -1,7 +1,4 @@
-<div class="topbar">
-  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="onCancel()"></app-action-button>
-  <span [appPageChrome]="mode === 'edit' ? 'Edit employee' : mode === 'view' ? 'Employee details' : 'Add new employee'"></span>
-</div>
+<span [appPageChrome]="mode === 'edit' ? 'Edit employee' : mode === 'view' ? 'Employee details' : 'Add new employee'" [pageChromeShowBack]="true" (pageChromeBack)="onCancel()"></span>
 
 <div class="progress-bar">
   <div class="progress-fill" [style.width]="progressPercent + '%'"></div>

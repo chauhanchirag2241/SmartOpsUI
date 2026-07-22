@@ -7,10 +7,7 @@
       (addButtonClicked)="onAddButtonClicked()"
     />
   } @else {
-    <div class="topbar">
-      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <span [appPageChrome]="formMode === 'edit' ? 'Edit grade scale' : 'New grade scale'"></span>
-    </div>
+    <span [appPageChrome]="formMode === 'edit' ? 'Edit grade scale' : 'New grade scale'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
     <p class="form-hint">Define grade bands — add or remove rows as needed.</p>
 
     @if (formError) {

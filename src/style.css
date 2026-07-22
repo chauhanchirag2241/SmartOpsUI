@@ -1298,6 +1298,13 @@ textarea.form-control.native-textarea {
   border-top: 0.5px solid var(--border-color);
 }
 
+.footer-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .footer-actions.view-mode-footer {
   margin-bottom: 28px;
   padding-bottom: 20px;

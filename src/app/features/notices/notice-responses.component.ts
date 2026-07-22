@@ -4,7 +4,6 @@ import { MatIconModule } from '@angular/material/icon';
 import type { NoticeDetail, NoticeFormQuestion, NoticeResponseItem } from '../../core/services/notices.service';
 import { NoticesService } from '../../core/services/notices.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
 import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
 
@@ -20,7 +19,7 @@ interface ResponseRow {
   selector: 'app-notice-responses',
   standalone: true,
   host: { class: 'notice-responses-page form-page-shell' },
-  imports: [CommonModule, MatIconModule, ActionButtonComponent, PageChromeDirective],
+  imports: [CommonModule, MatIconModule, PageChromeDirective],
   templateUrl: './notice-responses.component.html',
   styleUrl: './notice-responses.component.css',
 })

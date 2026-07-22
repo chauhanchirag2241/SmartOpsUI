@@ -1,7 +1,4 @@
-<div class="topbar">
-  <app-action-button type="back" style="order: 2; margin-left: auto;" (action)="cancel.emit()"></app-action-button>
-  <span [appPageChrome]="pageTitle"></span>
-</div>
+<span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
 
 <div class="step-hint">Academic year details</div>
 
@@ -29,8 +26,6 @@
 </form>
 
 <div class="footer-actions">
-  <app-action-button type="back" style="visibility: hidden;"></app-action-button>
-
   <div class="footer-hint">
     @if (mode === 'add') {
       New years are saved as Draft — set as Current from the list when ready
@@ -40,12 +35,15 @@
   </div>
 
   @if (mode !== 'view') {
-    <app-action-button
-      type="save"
-      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Save as Draft')"
-      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
-      [disabled]="isSaving"
-      (action)="saveAll()">
-    </app-action-button>
+    <div class="footer-actions-right">
+      <app-action-button type="cancel" (action)="cancel.emit()" />
+      <app-action-button
+        type="save"
+        [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Save as Draft')"
+        [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+        [disabled]="isSaving"
+        (action)="saveAll()">
+      </app-action-button>
+    </div>
   }
 </div>

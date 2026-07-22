@@ -29,10 +29,7 @@
       </div>
     </app-smart-data-table>
   } @else {
-    <div class="topbar">
-      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <span [appPageChrome]="formMode === 'edit' ? 'Edit schedule slot' : 'Add schedule slot'"></span>
-    </div>
+    <span [appPageChrome]="formMode === 'edit' ? 'Edit schedule slot' : 'Add schedule slot'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
     <p class="form-hint">Pick exam and class, then set date, subject and time for this slot.</p>
 
     @if (formError) {

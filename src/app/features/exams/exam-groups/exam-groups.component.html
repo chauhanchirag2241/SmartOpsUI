@@ -7,10 +7,7 @@
       (addButtonClicked)="onAddButtonClicked()"
     />
   } @else {
-    <div class="topbar">
-      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <span [appPageChrome]="formMode === 'edit' ? 'Edit exam group' : 'New exam group'"></span>
-    </div>
+    <span [appPageChrome]="formMode === 'edit' ? 'Edit exam group' : 'New exam group'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
     <p class="form-hint">Exams inside the group inherit its academic year and default grade scale.</p>
 
     @if (formError) {

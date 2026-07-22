@@ -3,8 +3,9 @@
     <span
       [appPageChrome]="detail.title"
       [pageChromeSubtitle]="'Student submission status'"
+      [pageChromeShowBack]="true"
+      (pageChromeBack)="goBack()"
     ></span>
-    <app-action-button type="back" class="topbar-back" (action)="goBack()"></app-action-button>
     <button
       *ngIf="canEditSubmissions"
       type="button"

@@ -34,12 +34,12 @@
 .topbar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
 .topbar .page-info { flex: 1; min-width: 200px; }
-.topbar-back { margin-left: auto; }
 .back-btn {
   background: var(--card);
   border: 1.5px solid #e2e8f0;

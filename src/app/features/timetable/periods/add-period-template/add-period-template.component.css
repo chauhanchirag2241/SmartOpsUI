@@ -1,0 +1,67 @@
+.tt-add-period {
+  margin-left: auto;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tt-period-table-wrap {
+  overflow: auto;
+}
+
+.tt-period-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tt-period-table th,
+.tt-period-table td {
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  padding: 8px 6px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.tt-period-table th {
+  color: var(--secondary-color, #3b6d11);
+  font-weight: 700;
+  background: var(--g50, #f8faf6);
+}
+
+.tt-period-table input[type='text'],
+.tt-period-table input[type='time'] {
+  width: 100%;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary, #1a1a1a);
+  background: var(--card, #fff);
+}
+
+.tt-period-table input[type='text']:focus,
+.tt-period-table input[type='time']:focus {
+  outline: none;
+  border-color: var(--g400, #639922);
+  box-shadow: 0 0 0 2px rgba(99, 153, 34, 0.18);
+}
+
+.tt-short {
+  max-width: 80px;
+}
+
+.tt-center {
+  text-align: center;
+}
+
+.tt-break-row {
+  background: var(--g50, #fafafa);
+}
+
+.icon-btn.danger {
+  color: #dc2626;
+}

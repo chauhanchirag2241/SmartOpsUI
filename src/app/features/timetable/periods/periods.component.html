@@ -2,10 +2,10 @@
   @if (!showAddForm) {
     <app-smart-data-table
       [config]="tableConfig"
-      [data]="periods"
+      [data]="templates"
       [serverSide]="true"
-      [totalRecords]="totalPeriods"
-      [rowClassFn]="periodRowClass"
+      [totalRecords]="totalTemplates"
+      [rowClassFn]="rowClass"
       [initialFilterValue]="currentFilter"
       (pageChange)="onPageChange($event)"
       (filterChanged)="onFilterChanged($event)"
@@ -13,11 +13,11 @@
       (addButtonClicked)="onAddButtonClicked()"
     />
   } @else {
-    <app-add-period
+    <app-add-period-template
       [mode]="formMode"
-      [periodId]="selectedPeriodId"
+      [templateId]="selectedTemplateId"
       (cancel)="closeAddForm()"
-      (saved)="onPeriodSaved()"
+      (saved)="onSaved()"
     />
   }
 </section>

@@ -1,12 +1,64 @@
 .header-page-chrome {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: min(520px, 52vw);
+  padding-right: 12px;
+  margin-right: 4px;
+}
+
+.header-page-chrome.has-back {
+  max-width: min(560px, 58vw);
+}
+
+.header-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--g100, #c0dd97);
+  border-radius: 8px;
+  background: var(--g50, #eaf3de);
+  color: var(--secondary-color, #3b6d11);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.header-back-btn mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s ease;
+}
+
+.header-back-btn:hover {
+  background: #e2f0d4;
+  border-color: var(--g400, #639922);
+  color: var(--g600, #4a7c18);
+}
+
+.header-back-btn:hover mat-icon {
+  transform: translateX(-2px);
+}
+
+.header-back-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 153, 34, 0.28);
+}
+
+.header-page-text {
+  display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 1px;
   min-width: 0;
-  max-width: min(420px, 42vw);
-  padding-right: 12px;
-  margin-right: 4px;
 }
 
 .header-page-title {

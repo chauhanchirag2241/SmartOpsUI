@@ -13,7 +13,6 @@ import type {
   DataTableColumn,
   DataTableConfig,
 } from '../../../shared/components/smart-data-table';
-import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import {
   ExamService,
@@ -34,7 +33,6 @@ import {
     MatIconModule,
     MatDialogModule,
     SmartDataTableComponent,
-    ActionButtonComponent,
     PageChromeDirective,
   ],
   templateUrl: './exam-results.component.html',

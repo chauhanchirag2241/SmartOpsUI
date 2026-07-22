@@ -1,0 +1,87 @@
+<span
+  [appPageChrome]="pageTitle"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+<p class="form-hint">
+  Ek template ma periods define karo. Class Timetable create karte vakhte template select karso —
+  Class 1–2 mate short template, biji classes mate full-day template.
+</p>
+
+<form [formGroup]="form">
+  <div class="card">
+    <div class="card-title"><mat-icon>view_day</mat-icon> Template</div>
+    <div class="grid2">
+      <app-dynamic-field [config]="configs['name']" [group]="form" />
+      <app-dynamic-field [config]="configs['description']" [group]="form" />
+    </div>
+  </div>
+
+  <div class="card" formArrayName="periods">
+    <div class="card-title">
+      <mat-icon>schedule</mat-icon> Periods in this template
+      @if (mode !== 'view') {
+        <app-action-button
+          type="add"
+          label="Add period"
+          class="tt-add-period"
+          (action)="addPeriodRow()"
+        />
+      }
+    </div>
+
+    <div class="tt-period-table-wrap">
+      <table class="tt-period-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Short</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Break</th>
+            @if (mode !== 'view') {
+              <th></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (ctrl of periods.controls; track $index; let i = $index) {
+            <tr [formGroupName]="i" [class.tt-break-row]="ctrl.get('isBreak')?.value">
+              <td>{{ ctrl.get('periodOrder')?.value }}</td>
+              <td><input type="text" formControlName="name" /></td>
+              <td><input type="text" formControlName="shortName" class="tt-short" /></td>
+              <td><input type="time" formControlName="startTime" /></td>
+              <td><input type="time" formControlName="endTime" /></td>
+              <td class="tt-center"><input type="checkbox" formControlName="isBreak" /></td>
+              @if (mode !== 'view') {
+                <td>
+                  <button type="button" class="icon-btn danger" (click)="removePeriodRow(i)" aria-label="Remove">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</form>
+
+<div class="footer-actions">
+  <div class="footer-hint">Save template, then pick it when creating a class timetable version.</div>
+  @if (mode !== 'view') {
+    <div class="footer-actions-right">
+      <app-action-button type="cancel" (action)="cancel.emit()" />
+      <app-action-button
+        type="save"
+        [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Template' : 'Confirm & Add')"
+        [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+        [disabled]="isSaving"
+        (action)="save()">
+      </app-action-button>
+    </div>
+  }
+</div>

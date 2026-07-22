@@ -10,7 +10,6 @@ import {
   NoticesService,
 } from '../../core/services/notices.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
 import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
 
@@ -18,7 +17,7 @@ import { refreshUi } from '../../core/utils/ui-refresh.util';
   selector: 'app-notice-view',
   standalone: true,
   host: { class: 'notice-view-page form-page-shell' },
-  imports: [CommonModule, MatIconModule, ActionButtonComponent, PageChromeDirective],
+  imports: [CommonModule, MatIconModule, PageChromeDirective],
   templateUrl: './notice-view.component.html',
   styleUrl: './notice-view.component.css',
 })

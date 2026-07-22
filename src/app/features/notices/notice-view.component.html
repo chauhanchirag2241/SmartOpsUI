@@ -1,7 +1,4 @@
-<div class="topbar">
-  <app-action-button type="back" style="order: 2; margin-left: auto" (action)="close.emit()"></app-action-button>
-  <span [appPageChrome]="'View notice'"></span>
-</div>
+<span [appPageChrome]="'View notice'" [pageChromeShowBack]="true" (pageChromeBack)="close.emit()"></span>
 
 @if (loading) {
   <div class="card">

@@ -28,10 +28,7 @@
       </div>
     </app-smart-data-table>
   } @else {
-    <div class="topbar">
-      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="closeForm()" />
-      <span [appPageChrome]="formMode === 'edit' ? 'Edit exam' : 'Create exam'"></span>
-    </div>
+    <span [appPageChrome]="formMode === 'edit' ? 'Edit exam' : 'Create exam'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
     <p class="form-hint">Assign classes and define mark components for this exam.</p>
 
     @if (formError) {

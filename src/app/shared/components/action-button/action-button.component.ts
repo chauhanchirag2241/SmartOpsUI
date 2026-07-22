@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
-export type ActionButtonType = 'back' | 'cancel' | 'next' | 'save' | 'submit';
+export type ActionButtonType = 'back' | 'cancel' | 'next' | 'save' | 'submit' | 'add';
 
 @Component({
   selector: 'app-action-button',
@@ -26,6 +26,7 @@ export class ActionButtonComponent {
       case 'next': return 'Next';
       case 'save': return 'Save';
       case 'submit': return 'Submit';
+      case 'add': return 'Add';
       default: return 'Submit';
     }
   }
@@ -37,12 +38,14 @@ export class ActionButtonComponent {
       case 'next': return 'arrow_forward';
       case 'save': return 'save';
       case 'submit': return 'check';
+      case 'add': return 'add';
       default: return '';
     }
   }
 
   get buttonClass(): string {
     if (this.type === 'back' || this.type === 'cancel') return 'btn-back';
+    if (this.type === 'add') return 'btn-add';
     return 'btn-next';
   }
 

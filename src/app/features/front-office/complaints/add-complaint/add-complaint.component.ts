@@ -26,10 +26,7 @@ import { parseComplaintStatus } from '../../../../shared/utils/front-office-enum
   host: { class: 'form-page-shell' },
   imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
   template: `
-    <div class="topbar">
-      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="cancel.emit()" />
-      <span [appPageChrome]="pageTitle"></span>
-    </div>
+    <span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
     <form [formGroup]="form" (ngSubmit)="save()">
       <div class="card">
         <div class="card-title"><mat-icon>report_problem</mat-icon> Complaint details</div>

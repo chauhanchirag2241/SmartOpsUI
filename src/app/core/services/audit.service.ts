@@ -43,6 +43,8 @@ export class AuditService {
     switch (entityType) {
       case 'class':
         return `classes/${entityId}/history`;
+      case 'period':
+        return `period-templates/${entityId}/history`;
       case 'academic-year':
         return `academicYears/${entityId}/history`;
       case 'visitor':

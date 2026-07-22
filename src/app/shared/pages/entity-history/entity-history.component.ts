@@ -9,10 +9,9 @@ import { StudentService } from '../../../core/services/student.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
-import { PeriodService } from '../../../core/services/period.service';
+import { PeriodTemplateService } from '../../../core/services/period-template.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { FrontOfficeService } from '../../../core/services/front-office.service';
-import { ActionButtonComponent } from '../../components/action-button/action-button.component';
 import { AuditHistoryEntityType } from '../../../core/services/audit.service';
 import { AuditHistoryComponent } from '../../components/audit-history/audit-history.component';
 import { PageChromeDirective } from '../../directives/page-chrome.directive';
@@ -51,7 +50,7 @@ interface EntityHistoryHeader {
 @Component({
   selector: 'app-entity-history',
   standalone: true,
-  imports: [CommonModule, MatIconModule, ActionButtonComponent, AuditHistoryComponent, PageChromeDirective],
+  imports: [CommonModule, MatIconModule, AuditHistoryComponent, PageChromeDirective],
   templateUrl: './entity-history.component.html',
   styleUrl: './entity-history.component.css',
 })
@@ -62,7 +61,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
-  private readonly periodService = inject(PeriodService);
+  private readonly periodTemplateService = inject(PeriodTemplateService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly frontOfficeService = inject(FrontOfficeService);
   private readonly snackBar = inject(NotificationService);
@@ -166,13 +165,10 @@ export class EntityHistoryComponent implements OnInit {
           })),
         );
       case 'period':
-        return this.periodService.getPeriod(id).pipe(
+        return this.periodTemplateService.get(id).pipe(
           map((data) => ({
-            title: String(data.name ?? 'Period').trim() || 'Period',
-            subtitle: [data.shortName, data.startTime && data.endTime ? `${data.startTime} – ${data.endTime}` : '']
-              .map((p) => String(p ?? '').trim())
-              .filter(Boolean)
-              .join(' · '),
+            title: String(data.name ?? 'Period template').trim() || 'Period template',
+            subtitle: `${(data.periods || []).length} periods`,
           })),
         );
       case 'academic-year':

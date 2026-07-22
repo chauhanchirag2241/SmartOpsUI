@@ -1,8 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { Subscription } from 'rxjs';
+
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
+import { FormFieldConfig, SelectOption } from '../../../shared/interfaces/form-field-config';
+import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 
 export interface TimetableSlotDialogData {
   dayLabel: string;
@@ -23,88 +29,214 @@ export interface TimetableSlotDialogResult {
 @Component({
   selector: 'app-timetable-slot-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatIconModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatIconModule,
+    DynamicFieldComponent,
+    ActionButtonComponent,
+  ],
   template: `
-    <h2 mat-dialog-title>Assign slot — {{ data.dayLabel }} / {{ data.periodName }}</h2>
-    <div mat-dialog-content class="slot-dialog-body">
-      <label class="field-label" for="slot-subject">Subject</label>
-      <select id="slot-subject" class="sel-filter sel-filter-lg" [(ngModel)]="subjectId" (ngModelChange)="onSubjectChange()">
-        <option value="">Select subject</option>
-        @for (s of data.subjects; track s.id) {
-          <option [value]="s.id">{{ s.name }}@if (s.code) { ({{ s.code }}) }</option>
-        }
-      </select>
+    <div class="slot-dialog">
+      <div class="dialog-header">
+        <div class="dialog-header-text">
+          <div class="dialog-eyebrow">Assign slot</div>
+          <h2 class="dialog-title">{{ data.dayLabel }} / {{ data.periodName }}</h2>
+        </div>
+        <button type="button" class="dialog-close" mat-dialog-close aria-label="Close">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
 
-      <label class="field-label" for="slot-teacher">Teacher</label>
-      <select id="slot-teacher" class="sel-filter sel-filter-lg" [(ngModel)]="employeeId">
-        <option value="">Select teacher</option>
-        @for (e of employees; track e.id) {
-          <option [value]="e.id">{{ e.name }}</option>
-        }
-      </select>
+      <form class="dialog-body" [formGroup]="form" (ngSubmit)="save()">
+        <div class="card">
+          <div class="card-title"><mat-icon>event_available</mat-icon> Slot details</div>
+          <div class="grid1">
+            <app-dynamic-field [config]="configs['subjectId']" [group]="form" [full]="true" />
+            <app-dynamic-field [config]="configs['employeeId']" [group]="form" [full]="true" />
+            <app-dynamic-field [config]="configs['roomNo']" [group]="form" [full]="true" />
+          </div>
+          @if (!data.subjects.length) {
+            <p class="form-hint">
+              No subjects available. Add subjects in Subject Master first.
+            </p>
+          }
+        </div>
 
-      <label class="field-label" for="slot-room">Room no.</label>
-      <input id="slot-room" class="text-input" type="text" [(ngModel)]="roomNo" placeholder="e.g. Lab-2" />
-    </div>
-    <div mat-dialog-actions align="end" class="slot-dialog-actions">
-      <button type="button" class="btn-outline" (click)="clear()">Clear</button>
-      <button type="button" class="btn-outline" (click)="ref.close()">Cancel</button>
-      <button type="button" class="btn-primary" [disabled]="!subjectId" (click)="save()">Apply</button>
+        <div class="footer-actions">
+          <app-action-button type="cancel" label="Clear" icon="delete_outline" (action)="clear()" />
+          <div class="footer-actions-right">
+            <app-action-button type="cancel" (action)="ref.close()" />
+            <app-action-button
+              type="save"
+              label="Apply"
+              icon="check_circle"
+              [disabled]="form.invalid"
+              (action)="save()"
+            />
+          </div>
+        </div>
+      </form>
     </div>
   `,
   styles: [
     `
-      .slot-dialog-body {
+      .slot-dialog {
+        min-width: min(420px, 92vw);
+        max-width: 480px;
+      }
+
+      .dialog-header {
         display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-width: 320px;
-        padding-top: 4px;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 16px 0;
       }
-      .field-label {
-        font-size: 12px;
+
+      .dialog-eyebrow {
+        font-size: 11px;
         font-weight: 600;
-        color: #4b5563;
-        margin-top: 6px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--g600, #4a7c18);
+        margin-bottom: 2px;
       }
-      .text-input {
-        border: 1px solid #d1d5db;
+
+      .dialog-title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--text-heading, #1a1a1a);
+        line-height: 1.3;
+      }
+
+      .dialog-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: none;
         border-radius: 8px;
-        padding: 8px 10px;
-        font-size: 14px;
+        background: transparent;
+        color: var(--text-secondary, #6b7280);
+        cursor: pointer;
       }
-      .slot-dialog-actions {
-        gap: 8px;
-        padding: 12px 16px 16px;
+
+      .dialog-close:hover {
+        background: var(--g50, #eaf3de);
+        color: var(--g600, #4a7c18);
+      }
+
+      .dialog-body {
+        padding: 12px 16px 4px;
+      }
+
+      .dialog-body .card {
+        margin-bottom: 0;
+      }
+
+      .grid1 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .footer-actions {
+        margin-top: 8px;
+        margin-bottom: 8px;
+        border-top: none;
+        padding-top: 8px;
       }
     `,
   ],
 })
-export class TimetableSlotDialogComponent {
+export class TimetableSlotDialogComponent implements OnDestroy {
   readonly data = inject<TimetableSlotDialogData>(MAT_DIALOG_DATA);
   readonly ref = inject(MatDialogRef<TimetableSlotDialogComponent, TimetableSlotDialogResult | 'clear'>);
+  private readonly fb = inject(FormBuilder);
 
-  subjectId = this.data.subjectId || '';
-  employeeId = this.data.employeeId || '';
-  roomNo = this.data.roomNo || '';
-  employees = this.data.employeesForSubject(this.subjectId);
+  private subjectSub?: Subscription;
 
-  onSubjectChange(): void {
-    this.employees = this.data.employeesForSubject(this.subjectId);
-    if (!this.employees.some((e) => e.id === this.employeeId)) {
-      this.employeeId = this.employees[0]?.id || '';
-    }
+  readonly form = this.fb.group({
+    subjectId: [this.data.subjectId || '', Validators.required],
+    employeeId: [this.data.employeeId || ''],
+    roomNo: [this.data.roomNo || ''],
+  });
+
+  readonly configs: Record<string, FormFieldConfig> = {
+    subjectId: {
+      type: 'select',
+      controlName: 'subjectId',
+      label: 'Subject',
+      placeholder: SELECT_PLACEHOLDER,
+      options: this.toSubjectOptions(this.data.subjects),
+      validations: [{ name: 'required', message: 'Subject is required', validator: Validators.required }],
+    },
+    employeeId: {
+      type: 'select',
+      controlName: 'employeeId',
+      label: 'Teacher',
+      placeholder: SELECT_PLACEHOLDER,
+      options: this.toEmployeeOptions(this.data.employeesForSubject(this.data.subjectId || '')),
+    },
+    roomNo: {
+      type: 'input',
+      controlName: 'roomNo',
+      label: 'Room no.',
+      placeholder: 'e.g. Lab-2',
+    },
+  };
+
+  constructor() {
+    this.subjectSub = this.form.get('subjectId')!.valueChanges.subscribe((subjectId) => {
+      this.refreshTeachers(subjectId || '');
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.subjectSub?.unsubscribe();
   }
 
   save(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const raw = this.form.getRawValue();
     this.ref.close({
-      subjectId: this.subjectId,
-      employeeId: this.employeeId,
-      roomNo: this.roomNo.trim(),
+      subjectId: String(raw.subjectId ?? '').trim(),
+      employeeId: String(raw.employeeId ?? '').trim(),
+      roomNo: String(raw.roomNo ?? '').trim(),
     });
   }
 
   clear(): void {
     this.ref.close('clear');
+  }
+
+  private refreshTeachers(subjectId: string): void {
+    const employees = this.data.employeesForSubject(subjectId);
+    this.configs['employeeId'] = {
+      ...this.configs['employeeId'],
+      options: this.toEmployeeOptions(employees),
+    };
+    const current = this.form.get('employeeId')?.value;
+    if (!employees.some((e) => e.id === current)) {
+      this.form.patchValue({ employeeId: employees[0]?.id || '' }, { emitEvent: false });
+    }
+  }
+
+  private toSubjectOptions(subjects: { id: string; name: string; code?: string }[]): SelectOption[] {
+    return subjects.map((s) => ({
+      value: s.id,
+      label: s.code ? `${s.name} (${s.code})` : s.name,
+    }));
+  }
+
+  private toEmployeeOptions(employees: { id: string; name: string }[]): SelectOption[] {
+    return employees.map((e) => ({ value: e.id, label: e.name }));
   }
 }

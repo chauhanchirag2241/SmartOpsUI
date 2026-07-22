@@ -52,8 +52,11 @@
     </app-smart-data-table>
   } @else {
     <div class="topbar no-print">
-      <app-action-button type="back" style="order: 2; margin-left: auto" (action)="backToSheet()" />
-      <span [appPageChrome]="'Report card'"></span>
+      <span
+        [appPageChrome]="'Report card'"
+        [pageChromeShowBack]="true"
+        (pageChromeBack)="backToSheet()"
+      ></span>
       <button type="button" class="btn-primary" [disabled]="!reportCard" (click)="print()">
         <mat-icon>print</mat-icon> Print / PDF
       </button>

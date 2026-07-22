@@ -1,11 +1,4 @@
-<div class="topbar">
-  <app-action-button
-    type="back"
-    style="order: 2; margin-left: auto"
-    (action)="cancel.emit()"
-  ></app-action-button>
-  <span [appPageChrome]="pageTitle"></span>
-</div>
+<span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
 
 <div class="progress-bar">
   <div class="progress-fill" [style.width.%]="progressWidthPercent"></div>

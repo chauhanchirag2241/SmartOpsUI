@@ -1,238 +1,168 @@
-<div class="tt-page list-page-shell">
-  <app-list-page-header
-    title="Class Timetable"
-    subtitle="Build weekly grids with subject–teacher mapping, conflict checks, and print"
+@if (!showDetail) {
+  <app-smart-data-table
+    [config]="tableConfig"
+    [data]="versionRows"
+    [serverSide]="false"
+    (actionClicked)="onActionClicked($event)"
+    (addButtonClicked)="onAddButtonClicked()"
   >
-    <div headerActions class="header-actions">
-      @if (canEdit && isDirty) {
-        <button type="button" class="btn-primary" [disabled]="saving" (click)="saveGrid()">
-          <mat-icon>save</mat-icon> {{ saving ? 'Saving…' : 'Save timetable' }}
-        </button>
-      }
-      @if (canExport) {
-        <button type="button" class="btn-outline" [disabled]="!grid" (click)="printGrid()">
-          <mat-icon>print</mat-icon> Print / PDF
-        </button>
-      }
-    </div>
-  </app-list-page-header>
-
-  @if (errorMessage) {
-    <div class="mapping-error-banner">{{ errorMessage }}</div>
-  }
-
-  <div class="tt-controls card">
-    <div class="tt-toolbar st-table-filters">
-      <div class="tt-field">
-        <label class="table-filter-section-label" for="tt-year">Academic year</label>
-        <select
-          id="tt-year"
-          class="sel-filter sel-filter-lg"
-          [(ngModel)]="selectedAcademicYearId"
-          (ngModelChange)="onAcademicYearChange()"
-        >
-          @for (year of academicYears; track year.id) {
-            <option [value]="year.id">{{ year.name }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="tt-field">
-        <span class="table-filter-section-label">View</span>
-        <div class="table-filter-chips">
-          <button type="button" class="filter-chip" [class.active]="viewMode === 'class'" (click)="setViewMode('class')">
-            Class
-          </button>
-          <button type="button" class="filter-chip" [class.active]="viewMode === 'teacher'" (click)="setViewMode('teacher')">
-            Teacher
-          </button>
-          <button type="button" class="filter-chip" [class.active]="viewMode === 'student'" (click)="setViewMode('student')">
-            Student
-          </button>
+    <div tableFilters class="st-table-filters">
+      <div class="tt-list-filters">
+        <div class="tt-filter-field tt-filter-field-wide">
+          <span class="table-filter-section-label">Class</span>
+          <app-multi-select-chips
+            [options]="classFilterOptions"
+            [selectedIds]="selectedClassIds"
+            placeholder="All classes"
+            searchPlaceholder="Search class"
+            (selectedIdsChange)="onSelectedClassesChange($event)"
+          />
         </div>
       </div>
-
-      @if (viewMode === 'class') {
-        <div class="tt-field">
-          <label class="table-filter-section-label" for="tt-class">Class</label>
-          <select
-            id="tt-class"
-            class="sel-filter sel-filter-lg"
-            [(ngModel)]="selectedClassId"
-            (ngModelChange)="onClassChange()"
-          >
-            <option value="">Select class</option>
-            @for (c of classes; track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="tt-field tt-field-grow">
-          <label class="table-filter-section-label" for="tt-version">Saved versions (this class)</label>
-          <select
-            id="tt-version"
-            class="sel-filter sel-filter-lg"
-            [(ngModel)]="selectedVersionId"
-            (ngModelChange)="onVersionChange()"
-          >
-            <option value="">No version yet — create below</option>
-            @for (v of versions; track v.id) {
-              <option [value]="v.id">Effective {{ v.effectiveFrom | date: 'mediumDate' }}</option>
-            }
-          </select>
-        </div>
-      }
-
-      @if (viewMode === 'teacher') {
-        <div class="tt-field">
-          <label class="table-filter-section-label" for="tt-teacher">Teacher</label>
-          <select
-            id="tt-teacher"
-            class="sel-filter sel-filter-lg"
-            [(ngModel)]="selectedTeacherId"
-            (ngModelChange)="loadTeacherGrid()"
-          >
-            <option value="">Select teacher</option>
-            @for (e of employees; track e.id) {
-              <option [value]="e.id">{{ e.name }}</option>
-            }
-          </select>
-        </div>
-      }
-
-      @if (viewMode === 'student') {
-        <div class="tt-field">
-          <label class="table-filter-section-label" for="tt-student-class">Class</label>
-          <select
-            id="tt-student-class"
-            class="sel-filter sel-filter-lg"
-            [(ngModel)]="selectedStudentClassId"
-            (ngModelChange)="loadStudentGrid()"
-          >
-            <option value="">Select class</option>
-            @for (c of classes; track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
-            }
-          </select>
-        </div>
-      }
+      <p class="form-hint" style="margin: 8px 0 0">
+        Class filter list mate j che. Top nav bar nu academic year use thase. Navi timetable mate Add timetable use karo.
+      </p>
     </div>
+  </app-smart-data-table>
+} @else {
+  <div class="tt-page list-page-shell">
+    <span
+      [appPageChrome]="detailTitle"
+      [pageChromeShowBack]="true"
+      (pageChromeBack)="closeDetail()"
+    ></span>
 
-    @if (viewMode === 'class' && versions.length) {
-      <div class="tt-version-list">
-        <div class="tt-version-list-label">Versions for selected class</div>
-        <div class="tt-version-chips">
-          @for (v of versions; track v.id) {
-            <button
-              type="button"
-              class="filter-chip"
-              [class.active]="selectedVersionId === v.id"
-              (click)="selectVersion(v.id)"
-            >
-              {{ v.effectiveFrom | date: 'mediumDate' }}
-            </button>
+    @if (errorMessage) {
+      <div class="mapping-error-banner">{{ errorMessage }}</div>
+    }
+
+    @if (formMode === 'add') {
+      <div class="tt-version-bar card">
+        <div class="card-title"><mat-icon>event</mat-icon> New timetable version</div>
+        <form class="tt-version-form" [formGroup]="versionForm">
+          <div class="grid3">
+            <app-dynamic-field [config]="versionConfigs['classId']" [group]="versionForm" />
+            <app-dynamic-field [config]="versionConfigs['periodTemplateId']" [group]="versionForm" />
+            <app-dynamic-field [config]="versionConfigs['effectiveFrom']" [group]="versionForm" />
+            <app-dynamic-field [config]="versionConfigs['copyFromPrevious']" [group]="versionForm" />
+          </div>
+          <div class="tt-version-actions">
+            <app-action-button
+              type="add"
+              [label]="draftLoading ? 'Loading…' : draftReady ? 'Refresh grid' : 'Show grid'"
+              [icon]="draftLoading ? 'hourglass_empty' : 'grid_on'"
+              [disabled]="versionForm.invalid || draftLoading"
+              (action)="openDraftGrid()"
+            />
+          </div>
+        </form>
+        @if (draftReady) {
+          <p class="form-hint">{{ detailVersionLabel }}</p>
+        }
+        @if (!periodTemplates.length) {
+          <p class="form-hint">Pehla Period Templates ma template banao.</p>
+        }
+      </div>
+    } @else {
+      <p class="form-hint">
+        {{ detailClassLabel }}
+        @if (detailVersionLabel) {
+          · {{ detailVersionLabel }}
+        }
+      </p>
+    }
+
+    @if (conflicts.length) {
+      <div class="tt-conflicts card">
+        <div class="card-title"><mat-icon>warning</mat-icon> Conflicts</div>
+        <ul>
+          @for (c of conflicts; track c.message) {
+            <li>{{ c.message }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (draftLoading || (loading && formMode !== 'add')) {
+      <div class="empty-panel">Loading timetable grid…</div>
+    } @else if (formMode === 'add' && !draftReady) {
+      <div class="empty-panel">Class / template / date set kari ne <strong>Show grid</strong> dabao — grid niche ahiya j open thase. Save timetable dabavya pachi j entry create thase.</div>
+    } @else if (!grid || !periods.length) {
+      <div class="empty-panel">No periods found. Add periods in Period Master first.</div>
+    } @else {
+      <ng-container *ngTemplateOutlet="gridTable" />
+    }
+
+    @if (canSaveTimetable) {
+      <div class="footer-actions">
+        <div class="footer-hint">
+          @if (formMode === 'add') {
+            Version ane grid ek sathe save thase — top nav bar nu academic year use thase.
+          } @else {
+            Slot changes save karva Save timetable dabao.
           }
         </div>
+        <app-action-button
+          type="save"
+          [label]="saving ? 'Saving…' : 'Save timetable'"
+          [icon]="saving ? 'hourglass_empty' : 'check_circle'"
+          [disabled]="saving || !canClickSave"
+          (action)="saveTimetable()"
+        />
       </div>
     }
   </div>
+}
 
-  @if (viewMode === 'class' && canEdit) {
-    <div class="tt-version-bar card">
-      <div class="card-title"><mat-icon>event</mat-icon> New version for selected class</div>
-      <div class="tt-version-row">
-        <label for="tt-eff">Effective from</label>
-        <input id="tt-eff" type="date" class="text-input" [(ngModel)]="newEffectiveFrom" />
-        <label class="tt-check">
-          <input type="checkbox" [(ngModel)]="copyFromPrevious" /> Copy slots from previous version
-        </label>
-        <button type="button" class="btn-outline" [disabled]="!selectedClassId" (click)="createVersion()">
-          <mat-icon>add</mat-icon> Create version
-        </button>
-      </div>
-      @if (!selectedClassId) {
-        <p class="form-hint">Pehla upar Class select karo — timetable ae class mate create thase.</p>
-      }
-    </div>
-  }
-
-  @if (conflicts.length) {
-    <div class="tt-conflicts card">
-      <div class="card-title"><mat-icon>warning</mat-icon> Conflicts</div>
-      <ul>
-        @for (c of conflicts; track c.message) {
-          <li>{{ c.message }}</li>
-        }
-      </ul>
-    </div>
-  }
-
-  @if (loading) {
-    <div class="empty-panel">Loading timetable…</div>
-  } @else if (!grid || !periods.length) {
-    <div class="empty-panel">
-      @if (viewMode === 'class' && !selectedVersionId) {
-        Create a timetable version with an effective-from date to start editing.
-      } @else {
-        No periods found. Add periods in Period Master first.
-      }
-    </div>
-  } @else {
-    <div class="tt-grid-wrap card">
-      <table class="tt-grid">
-        <thead>
-          <tr>
-            <th class="tt-period-col">Period</th>
+<ng-template #gridTable>
+  <div class="tt-grid-wrap card">
+    <table class="tt-grid">
+      <thead>
+        <tr>
+          <th class="tt-period-col">Period</th>
+          @for (d of days; track d.day) {
+            <th>{{ d.label }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of periods; track p.id) {
+          <tr [class.tt-break-row]="p.isBreak">
+            <th class="tt-period-col">
+              <div class="tt-period-name">{{ p.shortName || p.name }}</div>
+              <div class="tt-period-time">{{ p.startTime }} – {{ p.endTime }}</div>
+            </th>
             @for (d of days; track d.day) {
-              <th>{{ d.label }}</th>
+              <td>
+                @if (p.isBreak) {
+                  <div class="tt-break-cell">Break</div>
+                } @else {
+                  @let cell = getCell(d.day, p.id);
+                  <button
+                    type="button"
+                    class="tt-cell"
+                    [class.tt-cell-filled]="!!cell?.subjectName || !!cell?.className"
+                    [class.tt-cell-conflict]="cell?.hasTeacherConflict || cell?.hasRoomConflict"
+                    [class.tt-cell-readonly]="!canEditGrid"
+                    [disabled]="!canEditGrid"
+                    (click)="openCell(d.day, p)"
+                  >
+                    @if (cell?.subjectName || cell?.className) {
+                      <span class="tt-cell-main">{{ cell?.subjectName }}</span>
+                      <span class="tt-cell-sub">{{ cell?.employeeName }}</span>
+                      @if (cell?.roomNo) {
+                        <span class="tt-cell-room">Rm {{ cell?.roomNo }}</span>
+                      }
+                    } @else if (canEditGrid) {
+                      <span class="tt-cell-empty">+ Assign</span>
+                    }
+                  </button>
+                }
+              </td>
             }
           </tr>
-        </thead>
-        <tbody>
-          @for (p of periods; track p.id) {
-            <tr [class.tt-break-row]="p.isBreak">
-              <th class="tt-period-col">
-                <div class="tt-period-name">{{ p.shortName || p.name }}</div>
-                <div class="tt-period-time">{{ p.startTime }} – {{ p.endTime }}</div>
-              </th>
-              @for (d of days; track d.day) {
-                <td>
-                  @if (p.isBreak) {
-                    <div class="tt-break-cell">Break</div>
-                  } @else {
-                    @let cell = getCell(d.day, p.id);
-                    <button
-                      type="button"
-                      class="tt-cell"
-                      [class.tt-cell-filled]="!!cell?.subjectName || !!cell?.className"
-                      [class.tt-cell-conflict]="cell?.hasTeacherConflict || cell?.hasRoomConflict"
-                      [class.tt-cell-readonly]="!canEdit"
-                      [disabled]="!canEdit"
-                      (click)="openCell(d.day, p)"
-                    >
-                      @if (cell?.subjectName || cell?.className) {
-                        @if (viewMode === 'teacher') {
-                          <span class="tt-cell-main">{{ cell?.className }}</span>
-                          <span class="tt-cell-sub">{{ cell?.subjectName }}</span>
-                        } @else {
-                          <span class="tt-cell-main">{{ cell?.subjectName }}</span>
-                          <span class="tt-cell-sub">{{ cell?.employeeName }}</span>
-                        }
-                        @if (cell?.roomNo) {
-                          <span class="tt-cell-room">Rm {{ cell?.roomNo }}</span>
-                        }
-                      } @else if (canEdit) {
-                        <span class="tt-cell-empty">+ Assign</span>
-                      }
-                    </button>
-                  }
-                </td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-</div>
+        }
+      </tbody>
+    </table>
+  </div>
+</ng-template>

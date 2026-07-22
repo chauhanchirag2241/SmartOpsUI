@@ -8,6 +8,8 @@ export interface TimetableVersion {
   academicYearId: string;
   classId: string;
   className?: string;
+  periodTemplateId: string;
+  periodTemplateName?: string;
   effectiveFrom: string;
   notes?: string;
   isActive: boolean;
@@ -91,6 +93,7 @@ export class TimetableService {
   createVersion(body: {
     academicYearId: string;
     classId: string;
+    periodTemplateId: string;
     effectiveFrom: string;
     notes?: string;
     copyFromPrevious?: boolean;

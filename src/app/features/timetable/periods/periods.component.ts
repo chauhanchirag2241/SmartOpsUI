@@ -6,8 +6,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
-import { AddPeriodComponent } from './add-period/add-period.component';
-import { PeriodService } from '../../../core/services/period.service';
+import { AddPeriodTemplateComponent } from './add-period-template/add-period-template.component';
+import { PeriodTemplateService } from '../../../core/services/period-template.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 
@@ -30,7 +30,7 @@ import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.u
     MatIconModule,
     MatSnackBarModule,
     MatDialogModule,
-    AddPeriodComponent,
+    AddPeriodTemplateComponent,
   ],
   templateUrl: './periods.component.html',
   styleUrl: './periods.component.css',
@@ -42,35 +42,26 @@ export class PeriodsComponent implements OnInit {
 
   showAddForm = false;
   formMode: 'add' | 'edit' | 'view' = 'add';
-  selectedPeriodId?: string;
-  totalPeriods = 0;
+  selectedTemplateId?: string;
+  totalTemplates = 0;
   currentFilter = 'All';
-  periods: Record<string, unknown>[] = [];
+  templates: Record<string, unknown>[] = [];
   tableConfig!: DataTableConfig;
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
-      title: 'Period Master',
-      subtitle: 'Define teaching periods and breaks for the school day',
+      title: 'Period Templates',
+      subtitle: 'Create bell-schedule templates (e.g. 2 periods for Class 1–2, full day for others)',
       showAddButton: true,
-      addButtonText: 'Add period',
+      addButtonText: 'Add template',
       addButtonIcon: 'add',
       addButtonClass: 'btn-primary',
     },
     columns: [
-      { key: 'periodOrder', label: 'Order', sortable: true },
-      { key: 'name', label: 'Period', sortable: true },
-      { key: 'shortName', label: 'Short', sortable: true },
-      { key: 'timeLabel', label: 'Time' },
-      {
-        key: 'isBreak',
-        label: 'Type',
-        cellType: 'badge',
-        badgeMap: {
-          true: { cssClass: 'b-amber', label: 'Break' },
-          false: { cssClass: 'b-blue', label: 'Teaching' },
-        },
-      },
+      { key: 'name', label: 'Template', sortable: true },
+      { key: 'description', label: 'Description' },
+      { key: 'periodCount', label: 'Periods', sortable: true },
+      { key: 'teachingPeriodCount', label: 'Teaching', sortable: true },
       {
         key: 'isActive',
         label: 'Status',
@@ -86,8 +77,6 @@ export class PeriodsComponent implements OnInit {
       { label: 'All', icon: 'list', value: 'All' },
       { label: 'Active', icon: 'check_circle', value: 'Active' },
       { label: 'Inactive', icon: 'cancel', value: 'Inactive' },
-      { label: 'Teaching', icon: 'school', value: 'Teaching' },
-      { label: 'Break', icon: 'coffee', value: 'Break' },
     ],
     actions: [
       { label: 'View details', icon: 'visibility', iconColor: '#639922' },
@@ -95,26 +84,26 @@ export class PeriodsComponent implements OnInit {
       { label: 'Show history', icon: 'history', iconColor: '#639922' },
       { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
-    actionVisibleFn: (action, row) => this.isPeriodActionVisible(action, row),
-    searchPlaceholder: 'Search by name...',
-    searchKeys: ['name', 'shortName'],
-    itemLabel: 'periods',
+    actionVisibleFn: (action, row) => this.isActionVisible(action, row),
+    searchPlaceholder: 'Search templates...',
+    searchKeys: ['name', 'description'],
+    itemLabel: 'templates',
     defaultPageSize: 10,
   };
 
   constructor(
     private snackBar: NotificationService,
-    private periodService: PeriodService,
+    private templateService: PeriodTemplateService,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
     this.tableConfig = this.buildTableConfig();
-    this.loadPeriods();
+    this.loadTemplates();
   }
 
-  loadPeriods(
+  loadTemplates(
     pageIndex = 1,
     pageSize = 10,
     searchQuery = '',
@@ -122,14 +111,17 @@ export class PeriodsComponent implements OnInit {
     sortDirection: string | null = null,
     filter: string = this.currentFilter,
   ): void {
-    this.periodService.getPeriods(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
+    this.templateService.getList(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter).subscribe({
       next: (res: any) => {
-        this.periods = res?.items || [];
-        this.totalPeriods = res?.totalCount || 0;
+        this.templates = res?.items || [];
+        this.totalTemplates = res?.totalCount || 0;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.snackBar.open('Failed to load periods', 'Close', { duration: 3000, panelClass: 'snack-error' });
+        this.snackBar.open('Failed to load period templates', 'Close', {
+          duration: 3000,
+          panelClass: 'snack-error',
+        });
       },
     });
   }
@@ -137,7 +129,7 @@ export class PeriodsComponent implements OnInit {
   onAddButtonClicked(): void {
     if (!this.permissionService.canAdd(MenuCodes.PeriodMaster)) return;
     this.formMode = 'add';
-    this.selectedPeriodId = undefined;
+    this.selectedTemplateId = undefined;
     this.showAddForm = true;
   }
 
@@ -145,13 +137,13 @@ export class PeriodsComponent implements OnInit {
     this.showAddForm = false;
   }
 
-  onPeriodSaved(): void {
+  onSaved(): void {
     this.showAddForm = false;
-    this.loadPeriods();
+    this.loadTemplates();
   }
 
   onPageChange(event: any): void {
-    this.loadPeriods(
+    this.loadTemplates(
       event.pageIndex,
       event.pageSize,
       event.searchQuery,
@@ -175,12 +167,12 @@ export class PeriodsComponent implements OnInit {
     if (event.action.label === 'View details') {
       if (!this.permissionService.canView(MenuCodes.PeriodMaster)) return;
       this.formMode = 'view';
-      this.selectedPeriodId = id;
+      this.selectedTemplateId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit details') {
       if (!this.permissionService.canEdit(MenuCodes.PeriodMaster)) return;
       this.formMode = 'edit';
-      this.selectedPeriodId = id;
+      this.selectedTemplateId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Show history') {
       if (!this.permissionService.canView(MenuCodes.PeriodMaster)) return;
@@ -189,12 +181,12 @@ export class PeriodsComponent implements OnInit {
       if (!this.permissionService.canDelete(MenuCodes.PeriodMaster)) return;
       const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
         data: {
-          title: 'Delete period?',
-          description: 'This will remove the period from the master list.',
+          title: 'Delete period template?',
+          description: 'This removes the template and its periods.',
           recordName: event.row['name'] as string,
-          recordMeta: `Order: ${event.row['periodOrder']}`,
-          initials: String(event.row['shortName'] || event.row['name'] || 'P').substring(0, 2).toUpperCase(),
-          warningMessage: 'Existing timetable slots using this period may be affected.',
+          recordMeta: `${event.row['periodCount'] ?? 0} periods`,
+          initials: String(event.row['name'] || 'T').substring(0, 2).toUpperCase(),
+          warningMessage: 'Class timetables using this template may be affected.',
         },
         panelClass: 'erp-dialog',
         disableClose: true,
@@ -202,27 +194,22 @@ export class PeriodsComponent implements OnInit {
 
       dialogRef.afterClosed().subscribe((confirmed: any) => {
         if (confirmed) {
-          this.periodService.deletePeriod(id).subscribe({
+          this.templateService.delete(id).subscribe({
             next: () => {
-              this.snackBar.open('Period deleted successfully', 'Close', {
-                duration: 3000,
-                panelClass: 'snack-success',
-              });
-              this.loadPeriods();
+              this.snackBar.open('Template deleted', 'Close', { duration: 3000, panelClass: 'snack-success' });
+              this.loadTemplates();
             },
             error: () =>
-              this.snackBar.open('Failed to delete period', 'Close', { duration: 3000, panelClass: 'snack-error' }),
+              this.snackBar.open('Failed to delete template', 'Close', { duration: 3000, panelClass: 'snack-error' }),
           });
         }
       });
     }
   }
 
-  periodRowClass = (row: Record<string, unknown>): string => {
-    return row['isActive'] === false ? 'row-inactive' : '';
-  };
+  rowClass = (row: Record<string, unknown>): string => (row['isActive'] === false ? 'row-inactive' : '');
 
-  private isPeriodActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
+  private isActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
     if (row['isActive'] !== false) return true;
     return action.label === 'View details' || action.label === 'Show history';
   }

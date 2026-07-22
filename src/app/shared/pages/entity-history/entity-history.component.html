@@ -1,11 +1,10 @@
 <section class="entity-history-page">
-  <div class="topbar">
-    <span
-      [appPageChrome]="'Change history'"
-      [pageChromeSubtitle]="historyChromeSubtitle"
-    ></span>
-    <app-action-button type="back" class="topbar-back" (action)="goBack()"></app-action-button>
-  </div>
+  <span
+    [appPageChrome]="'Change history'"
+    [pageChromeSubtitle]="historyChromeSubtitle"
+    [pageChromeShowBack]="true"
+    (pageChromeBack)="goBack()"
+  ></span>
 
   <div class="card">
     <div class="card-title">
