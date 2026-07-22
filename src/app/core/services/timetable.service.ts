@@ -23,6 +23,7 @@ export interface PeriodGridRow {
   startTime: string;
   endTime: string;
   isBreak: boolean;
+  dayOfWeek?: number | null;
 }
 
 export interface TimetableSlotCell {
@@ -58,6 +59,8 @@ export interface TimetableConflict {
 export interface TimetableGrid {
   version?: TimetableVersion | null;
   periods: PeriodGridRow[];
+  /** Keys may be numbers or stringified numbers from JSON. */
+  periodsByDay?: Record<string | number, PeriodGridRow[]>;
   slots: TimetableSlotCell[];
   conflicts?: TimetableConflict[];
 }

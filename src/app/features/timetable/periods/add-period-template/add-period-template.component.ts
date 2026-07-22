@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { finalize } from 'rxjs';
@@ -9,14 +9,24 @@ import { ActionButtonComponent } from '../../../../shared/components/action-butt
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { PageChromeDirective } from '../../../../shared/directives/page-chrome.directive';
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
-import { PeriodTemplateService } from '../../../../core/services/period-template.service';
+import { PeriodLineDto, PeriodTemplateService } from '../../../../core/services/period-template.service';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+
+const WEEK_DAYS = [
+  { day: 1, label: 'Monday' },
+  { day: 2, label: 'Tuesday' },
+  { day: 3, label: 'Wednesday' },
+  { day: 4, label: 'Thursday' },
+  { day: 5, label: 'Friday' },
+  { day: 6, label: 'Saturday' },
+];
 
 @Component({
   selector: 'app-add-period-template',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     MatIconModule,
     ActionButtonComponent,
@@ -34,6 +44,8 @@ export class AddPeriodTemplateComponent implements OnInit {
 
   form: FormGroup;
   isSaving = false;
+  readonly weekDays = WEEK_DAYS;
+  newOverrideDay: number | '' = 6;
 
   readonly configs: Record<string, FormFieldConfig> = {
     name: {
@@ -64,11 +76,16 @@ export class AddPeriodTemplateComponent implements OnInit {
       description: [''],
       isActive: [true],
       periods: this.fb.array([]),
+      dayOverrides: this.fb.array([]),
     });
   }
 
   get periods(): FormArray {
     return this.form.get('periods') as FormArray;
+  }
+
+  get dayOverrides(): FormArray {
+    return this.form.get('dayOverrides') as FormArray;
   }
 
   get pageTitle(): string {
@@ -77,25 +94,48 @@ export class AddPeriodTemplateComponent implements OnInit {
     return 'Add period template';
   }
 
+  get availableOverrideDays(): { day: number; label: string }[] {
+    const used = new Set(this.dayOverrides.controls.map((c) => Number(c.get('dayOfWeek')?.value)));
+    return this.weekDays.filter((d) => !used.has(d.day));
+  }
+
   ngOnInit(): void {
     if (this.templateId && this.mode !== 'add') {
       this.load(this.templateId);
     } else {
       this.addPeriodRow();
-      this.addPeriodRow({ name: 'Break', shortName: 'Br', isBreak: true, startTime: '09:00', endTime: '09:15' });
+      this.addPeriodRow({
+        name: 'Break',
+        shortName: 'Br',
+        isBreak: true,
+        startTime: '09:00',
+        endTime: '09:15',
+      });
     }
   }
 
-  addPeriodRow(defaults?: {
-    name?: string;
-    shortName?: string;
-    startTime?: string;
-    endTime?: string;
-    isBreak?: boolean;
-    id?: string;
-  }): void {
-    const order = this.periods.length + 1;
-    this.periods.push(
+  dayLabel(day: number): string {
+    return this.weekDays.find((d) => d.day === day)?.label || `Day ${day}`;
+  }
+
+  overridePeriods(index: number): FormArray {
+    return this.dayOverrides.at(index).get('periods') as FormArray;
+  }
+
+  addPeriodRow(
+    defaults?: {
+      name?: string;
+      shortName?: string;
+      startTime?: string;
+      endTime?: string;
+      isBreak?: boolean;
+      id?: string;
+    },
+    target?: FormArray,
+  ): void {
+    const arr = target ?? this.periods;
+    const order = arr.length + 1;
+    arr.push(
       this.fb.group({
         id: [defaults?.id || ''],
         name: [defaults?.name || `Period ${order}`, Validators.required],
@@ -108,20 +148,92 @@ export class AddPeriodTemplateComponent implements OnInit {
     );
   }
 
-  removePeriodRow(index: number): void {
-    if (this.periods.length <= 1) {
-      this.snackBar.open('Template needs at least one period', 'Close', {
+  removePeriodRow(index: number, target?: FormArray): void {
+    const arr = target ?? this.periods;
+    if (arr.length <= 1) {
+      this.snackBar.open('Schedule needs at least one period', 'Close', {
         duration: 3000,
         panelClass: 'snack-error',
       });
       return;
     }
-    this.periods.removeAt(index);
-    this.reindexOrders();
+    arr.removeAt(index);
+    this.reindexOrders(arr);
   }
 
-  private reindexOrders(): void {
-    this.periods.controls.forEach((ctrl, i) => ctrl.get('periodOrder')?.setValue(i + 1));
+  addDayOverride(): void {
+    const day = Number(this.newOverrideDay);
+    if (!day || day < 1 || day > 6) {
+      this.snackBar.open('Select a day for the override', 'Close', {
+        duration: 3000,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+    if (this.dayOverrides.controls.some((c) => Number(c.get('dayOfWeek')?.value) === day)) {
+      this.snackBar.open('Override for this day already exists', 'Close', {
+        duration: 3000,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+
+    const periods = this.fb.array([]);
+    this.addPeriodRow(
+      { name: 'Period 1', shortName: 'P1', startTime: '08:00', endTime: '08:45' },
+      periods,
+    );
+    this.addPeriodRow(
+      { name: 'Period 2', shortName: 'P2', startTime: '08:45', endTime: '09:30' },
+      periods,
+    );
+    this.addPeriodRow(
+      { name: 'Period 3', shortName: 'P3', startTime: '09:30', endTime: '10:15' },
+      periods,
+    );
+    this.addPeriodRow(
+      { name: 'Period 4', shortName: 'P4', startTime: '10:15', endTime: '11:00' },
+      periods,
+    );
+
+    this.dayOverrides.push(
+      this.fb.group({
+        dayOfWeek: [day, Validators.required],
+        periods,
+      }),
+    );
+
+    const next = this.availableOverrideDays[0]?.day;
+    this.newOverrideDay = next ?? '';
+    this.cdr.detectChanges();
+  }
+
+  removeDayOverride(index: number): void {
+    this.dayOverrides.removeAt(index);
+    const next = this.availableOverrideDays[0]?.day;
+    this.newOverrideDay = next ?? '';
+  }
+
+  private reindexOrders(arr: FormArray): void {
+    arr.controls.forEach((ctrl, i) => ctrl.get('periodOrder')?.setValue(i + 1));
+  }
+
+  private pushPeriodLines(arr: FormArray, lines: PeriodLineDto[]): void {
+    arr.clear();
+    for (const p of lines) {
+      arr.push(
+        this.fb.group({
+          id: [p.id || ''],
+          name: [p.name, Validators.required],
+          shortName: [p.shortName, Validators.required],
+          periodOrder: [p.periodOrder, Validators.required],
+          startTime: [p.startTime, Validators.required],
+          endTime: [p.endTime, Validators.required],
+          isBreak: [p.isBreak ?? false],
+        }),
+      );
+    }
+    if (arr.length === 0) this.addPeriodRow(undefined, arr);
   }
 
   load(id: string): void {
@@ -132,26 +244,54 @@ export class AddPeriodTemplateComponent implements OnInit {
           description: data.description || '',
           isActive: data.isActive ?? true,
         });
-        this.periods.clear();
-        for (const p of data.periods || []) {
-          this.periods.push(
+
+        const all = data.periods || [];
+        const defaults = all.filter((p) => p.dayOfWeek == null);
+        this.pushPeriodLines(this.periods, defaults);
+
+        this.dayOverrides.clear();
+        const byDay = new Map<number, PeriodLineDto[]>();
+        for (const p of all) {
+          if (p.dayOfWeek == null) continue;
+          const list = byDay.get(p.dayOfWeek) || [];
+          list.push(p);
+          byDay.set(p.dayOfWeek, list);
+        }
+        for (const [day, lines] of [...byDay.entries()].sort((a, b) => a[0] - b[0])) {
+          const periods = this.fb.array([]);
+          this.pushPeriodLines(
+            periods,
+            lines.slice().sort((a, b) => a.periodOrder - b.periodOrder),
+          );
+          this.dayOverrides.push(
             this.fb.group({
-              id: [p.id || ''],
-              name: [p.name, Validators.required],
-              shortName: [p.shortName, Validators.required],
-              periodOrder: [p.periodOrder, Validators.required],
-              startTime: [p.startTime, Validators.required],
-              endTime: [p.endTime, Validators.required],
-              isBreak: [p.isBreak ?? false],
+              dayOfWeek: [day, Validators.required],
+              periods,
             }),
           );
         }
-        if (this.periods.length === 0) this.addPeriodRow();
+
+        const next = this.availableOverrideDays[0]?.day;
+        this.newOverrideDay = next ?? '';
+
         if (this.mode === 'view') this.form.disable();
         this.cdr.detectChanges();
       },
       error: () => this.snackBar.open('Error loading template', 'Close', { duration: 3000 }),
     });
+  }
+
+  private mapPeriodRows(rawPeriods: any[], dayOfWeek: number | null): PeriodLineDto[] {
+    return (rawPeriods || []).map((p: any, i: number) => ({
+      id: p.id || undefined,
+      name: String(p.name ?? '').trim(),
+      shortName: String(p.shortName ?? '').trim(),
+      periodOrder: Number(p.periodOrder) || i + 1,
+      startTime: String(p.startTime ?? '').trim(),
+      endTime: String(p.endTime ?? '').trim(),
+      isBreak: !!p.isBreak,
+      dayOfWeek,
+    }));
   }
 
   save(): void {
@@ -166,19 +306,18 @@ export class AddPeriodTemplateComponent implements OnInit {
 
     this.isSaving = true;
     const raw = this.form.getRawValue();
+    const periods: PeriodLineDto[] = [
+      ...this.mapPeriodRows(raw.periods, null),
+      ...(raw.dayOverrides || []).flatMap((ov: any) =>
+        this.mapPeriodRows(ov.periods, Number(ov.dayOfWeek)),
+      ),
+    ];
+
     const payload = {
       name: String(raw.name ?? '').trim(),
       description: String(raw.description ?? '').trim() || null,
       isActive: raw.isActive ?? true,
-      periods: (raw.periods || []).map((p: any, i: number) => ({
-        id: p.id || undefined,
-        name: String(p.name ?? '').trim(),
-        shortName: String(p.shortName ?? '').trim(),
-        periodOrder: Number(p.periodOrder) || i + 1,
-        startTime: String(p.startTime ?? '').trim(),
-        endTime: String(p.endTime ?? '').trim(),
-        isBreak: !!p.isBreak,
-      })),
+      periods,
     };
 
     const done = () => {

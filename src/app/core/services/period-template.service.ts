@@ -11,6 +11,8 @@ export interface PeriodLineDto {
   startTime: string;
   endTime: string;
   isBreak: boolean;
+  /** Null = default schedule; 1–6 = Mon–Sat day override. */
+  dayOfWeek?: number | null;
 }
 
 export interface PeriodTemplateDto {

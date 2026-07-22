@@ -87,7 +87,7 @@
       <div class="empty-panel">Loading timetable grid…</div>
     } @else if (formMode === 'add' && !draftReady) {
       <div class="empty-panel">Class / template / date set kari ne <strong>Show grid</strong> dabao — grid niche ahiya j open thase. Save timetable dabavya pachi j entry create thase.</div>
-    } @else if (!grid || !periods.length) {
+    } @else if (!grid || !hasGridPeriods) {
       <div class="empty-panel">No periods found. Add periods in Period Master first.</div>
     } @else {
       <ng-container *ngTemplateOutlet="gridTable" />
@@ -97,9 +97,9 @@
       <div class="footer-actions">
         <div class="footer-hint">
           @if (formMode === 'add') {
-            Version ane grid ek sathe save thase — top nav bar nu academic year use thase.
+            Version and Grid Will Save together on click of save timetable.
           } @else {
-            Slot changes save karva Save timetable dabao.
+            Slot changes .
           }
         </div>
         <app-action-button
@@ -116,53 +116,47 @@
 
 <ng-template #gridTable>
   <div class="tt-grid-wrap card">
-    <table class="tt-grid">
-      <thead>
-        <tr>
-          <th class="tt-period-col">Period</th>
-          @for (d of days; track d.day) {
-            <th>{{ d.label }}</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (p of periods; track p.id) {
-          <tr [class.tt-break-row]="p.isBreak">
-            <th class="tt-period-col">
-              <div class="tt-period-name">{{ p.shortName || p.name }}</div>
-              <div class="tt-period-time">{{ p.startTime }} – {{ p.endTime }}</div>
-            </th>
-            @for (d of days; track d.day) {
-              <td>
-                @if (p.isBreak) {
-                  <div class="tt-break-cell">Break</div>
-                } @else {
-                  @let cell = getCell(d.day, p.id);
-                  <button
-                    type="button"
-                    class="tt-cell"
-                    [class.tt-cell-filled]="!!cell?.subjectName || !!cell?.className"
-                    [class.tt-cell-conflict]="cell?.hasTeacherConflict || cell?.hasRoomConflict"
-                    [class.tt-cell-readonly]="!canEditGrid"
-                    [disabled]="!canEditGrid"
-                    (click)="openCell(d.day, p)"
-                  >
-                    @if (cell?.subjectName || cell?.className) {
-                      <span class="tt-cell-main">{{ cell?.subjectName }}</span>
-                      <span class="tt-cell-sub">{{ cell?.employeeName }}</span>
-                      @if (cell?.roomNo) {
-                        <span class="tt-cell-room">Rm {{ cell?.roomNo }}</span>
-                      }
-                    } @else if (canEditGrid) {
-                      <span class="tt-cell-empty">+ Assign</span>
+    <div class="tt-day-grid">
+      @for (d of days; track d.day) {
+        <div class="tt-day-col">
+          <div class="tt-day-head">{{ d.label }}</div>
+          <div class="tt-day-body">
+            @for (p of periodsForDay(d.day); track p.id) {
+              @if (p.isBreak) {
+                <div class="tt-break-cell tt-day-slot">
+                  <span class="tt-slot-meta">{{ p.shortName || p.name }} · {{ p.startTime }} – {{ p.endTime }}</span>
+                  <span>Break</span>
+                </div>
+              } @else {
+                @let cell = getCell(d.day, p.id);
+                <button
+                  type="button"
+                  class="tt-cell tt-day-slot"
+                  [class.tt-cell-filled]="!!cell?.subjectName || !!cell?.className"
+                  [class.tt-cell-conflict]="cell?.hasTeacherConflict || cell?.hasRoomConflict"
+                  [class.tt-cell-readonly]="!canEditGrid"
+                  [disabled]="!canEditGrid"
+                  (click)="openCell(d.day, p)"
+                >
+                  <span class="tt-slot-meta">{{ p.shortName || p.name }} · {{ p.startTime }} – {{ p.endTime }}</span>
+                  @if (cell?.subjectName || cell?.className) {
+                    <span class="tt-cell-main">{{ cell?.subjectName }}</span>
+                    <span class="tt-cell-sub">{{ cell?.employeeName }}</span>
+                    @if (cell?.roomNo) {
+                      <span class="tt-cell-room">Rm {{ cell?.roomNo }}</span>
                     }
-                  </button>
-                }
-              </td>
+                  } @else if (canEditGrid) {
+                    <span class="tt-cell-empty">+ Assign</span>
+                  }
+                </button>
+              }
             }
-          </tr>
-        }
-      </tbody>
-    </table>
+            @if (!periodsForDay(d.day).length) {
+              <div class="tt-day-empty">No periods</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
   </div>
 </ng-template>

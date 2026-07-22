@@ -224,6 +224,19 @@ export class ClassTimetableComponent implements OnInit {
     return this.grid?.periods ?? [];
   }
 
+  get hasGridPeriods(): boolean {
+    return this.days.some((d) => this.periodsForDay(d.day).length > 0);
+  }
+
+  periodsForDay(day: number): PeriodGridRow[] {
+    const byDay = this.grid?.periodsByDay;
+    if (byDay) {
+      const rows = byDay[day] ?? (byDay as Record<string, PeriodGridRow[]>)[String(day)];
+      return rows || [];
+    }
+    return this.grid?.periods ?? [];
+  }
+
   get conflicts() {
     return this.grid?.conflicts ?? [];
   }
@@ -368,20 +381,8 @@ export class ClassTimetableComponent implements OnInit {
       )
       .subscribe({
         next: (template) => {
-          const periods: PeriodGridRow[] = (template.periods || [])
-            .slice()
-            .sort((a, b) => a.periodOrder - b.periodOrder)
-            .map((p) => ({
-              id: p.id || `${p.periodOrder}-${p.shortName}`,
-              name: p.name,
-              shortName: p.shortName,
-              periodOrder: p.periodOrder,
-              startTime: p.startTime,
-              endTime: p.endTime,
-              isBreak: !!p.isBreak,
-            }));
-
-          if (!periods.length) {
+          const built = this.buildPeriodsByDayFromTemplate(template.periods || []);
+          if (!Object.values(built.periodsByDay).some((rows) => rows.length)) {
             this.snackBar.open('Selected template has no periods', 'Close', {
               duration: 3500,
               panelClass: 'snack-error',
@@ -389,15 +390,30 @@ export class ClassTimetableComponent implements OnInit {
             return;
           }
 
-          this.grid = { periods, slots: [], conflicts: [] };
+          this.grid = {
+            periods: built.periods,
+            periodsByDay: built.periodsByDay,
+            slots: [],
+            conflicts: [],
+          };
           this.slotMap.clear();
           this.selectedVersionId = '';
           this.draftReady = true;
           this.isDirty = true;
           this.loadMappingsForClass(classId, academicYearId);
 
+          const allPeriodIds = Object.values(built.periodsByDay)
+            .flat()
+            .map((p) => p.id);
+
           if (raw.copyFromPrevious) {
-            this.copyDraftSlotsFromPrevious(classId, academicYearId, templateId, effectiveFrom, periods);
+            this.copyDraftSlotsFromPrevious(
+              classId,
+              academicYearId,
+              templateId,
+              effectiveFrom,
+              allPeriodIds,
+            );
           } else {
             this.dirtySlots = this.slotsFromMap();
             this.cdr.detectChanges();
@@ -539,7 +555,7 @@ export class ClassTimetableComponent implements OnInit {
     academicYearId: string,
     templateId: string,
     effectiveFrom: string,
-    periods: PeriodGridRow[],
+    allowedPeriodIds: string[],
   ): void {
     this.timetableService
       .getVersions(classId, academicYearId)
@@ -565,7 +581,7 @@ export class ClassTimetableComponent implements OnInit {
             .pipe(catchError(() => of(null)))
             .subscribe({
               next: (prevGrid) => {
-                const allowed = new Set(periods.map((p) => p.id));
+                const allowed = new Set(allowedPeriodIds);
                 for (const slot of prevGrid?.slots || []) {
                   if (!allowed.has(slot.periodId)) continue;
                   this.slotMap.set(this.cellKey(slot.dayOfWeek, slot.periodId), {
@@ -851,7 +867,11 @@ export class ClassTimetableComponent implements OnInit {
 
   private applyGrid(g: TimetableGrid): void {
     this.errorMessage = '';
-    this.grid = g;
+    const periodsByDay =
+      g.periodsByDay && Object.keys(g.periodsByDay).length
+        ? g.periodsByDay
+        : this.buildPeriodsByDayFromFlat(g.periods || []);
+    this.grid = { ...g, periodsByDay };
     this.slotMap.clear();
     for (const slot of g.slots || []) {
       this.slotMap.set(this.cellKey(slot.dayOfWeek, slot.periodId), slot);
@@ -859,6 +879,62 @@ export class ClassTimetableComponent implements OnInit {
     this.isDirty = false;
     this.dirtySlots = this.slotsFromMap();
     this.cdr.detectChanges();
+  }
+
+  private buildPeriodsByDayFromTemplate(lines: {
+    id?: string;
+    name: string;
+    shortName: string;
+    periodOrder: number;
+    startTime: string;
+    endTime: string;
+    isBreak: boolean;
+    dayOfWeek?: number | null;
+  }[]): { periods: PeriodGridRow[]; periodsByDay: Record<number, PeriodGridRow[]> } {
+    const toRow = (p: (typeof lines)[number]): PeriodGridRow => ({
+      id: p.id || `${p.dayOfWeek ?? 'd'}-${p.periodOrder}-${p.shortName}`,
+      name: p.name,
+      shortName: p.shortName,
+      periodOrder: p.periodOrder,
+      startTime: p.startTime,
+      endTime: p.endTime,
+      isBreak: !!p.isBreak,
+      dayOfWeek: p.dayOfWeek ?? null,
+    });
+
+    return this.splitPeriodsByDay((lines || []).map(toRow));
+  }
+
+  private buildPeriodsByDayFromFlat(periods: PeriodGridRow[]): Record<number, PeriodGridRow[]> {
+    return this.splitPeriodsByDay(periods).periodsByDay;
+  }
+
+  private splitPeriodsByDay(all: PeriodGridRow[]): {
+    periods: PeriodGridRow[];
+    periodsByDay: Record<number, PeriodGridRow[]>;
+  } {
+    const defaults = all
+      .filter((p) => p.dayOfWeek == null)
+      .slice()
+      .sort((a, b) => a.periodOrder - b.periodOrder);
+    const overrideDays = new Set(
+      all.filter((p) => p.dayOfWeek != null).map((p) => Number(p.dayOfWeek)),
+    );
+    const periodsByDay: Record<number, PeriodGridRow[]> = {};
+    for (let day = 1; day <= 6; day++) {
+      if (overrideDays.has(day)) {
+        periodsByDay[day] = all
+          .filter((p) => Number(p.dayOfWeek) === day)
+          .slice()
+          .sort((a, b) => a.periodOrder - b.periodOrder);
+      } else {
+        periodsByDay[day] = defaults.map((p) => ({ ...p }));
+      }
+    }
+    return {
+      periods: defaults.length ? defaults : all,
+      periodsByDay,
+    };
   }
 
   private syncClassFilterOptions(): void {

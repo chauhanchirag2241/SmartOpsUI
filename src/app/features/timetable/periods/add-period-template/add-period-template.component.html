@@ -5,8 +5,8 @@
 ></span>
 
 <p class="form-hint">
-  Ek template ma periods define karo. Class Timetable create karte vakhte template select karso —
-  Class 1–2 mate short template, biji classes mate full-day template.
+  Default schedule Mon–Fri (ane bija days) mate use thase. Saturday jem half-day mate
+  <strong>Day override</strong> add kari alag periods ane times set kari shako.
 </p>
 
 <form [formGroup]="form">
@@ -20,7 +20,7 @@
 
   <div class="card" formArrayName="periods">
     <div class="card-title">
-      <mat-icon>schedule</mat-icon> Periods in this template
+      <mat-icon>schedule</mat-icon> Default schedule
       @if (mode !== 'view') {
         <app-action-button
           type="add"
@@ -30,6 +30,7 @@
         />
       }
     </div>
+    <p class="form-hint" style="margin-top: 0">Days without an override use these periods.</p>
 
     <div class="tt-period-table-wrap">
       <table class="tt-period-table">
@@ -68,6 +69,99 @@
       </table>
     </div>
   </div>
+
+  <div class="card">
+    <div class="card-title"><mat-icon>event</mat-icon> Day overrides</div>
+    <p class="form-hint" style="margin-top: 0">
+      Example: Saturday — 4 morning periods with different times.
+    </p>
+
+    @if (mode !== 'view' && availableOverrideDays.length) {
+      <div class="tt-override-add">
+        <select [(ngModel)]="newOverrideDay" [ngModelOptions]="{ standalone: true }">
+          @for (d of availableOverrideDays; track d.day) {
+            <option [ngValue]="d.day">{{ d.label }}</option>
+          }
+        </select>
+        <app-action-button type="add" label="Add day override" (action)="addDayOverride()" />
+      </div>
+    }
+
+    <div formArrayName="dayOverrides">
+      @for (ov of dayOverrides.controls; track $index; let oi = $index) {
+        <div class="tt-override-block" [formGroupName]="oi">
+          <div class="tt-override-head">
+            <strong>{{ dayLabel(ov.get('dayOfWeek')?.value) }}</strong>
+            @if (mode !== 'view') {
+              <div class="tt-override-actions">
+                <app-action-button
+                  type="add"
+                  label="Add period"
+                  (action)="addPeriodRow(undefined, overridePeriods(oi))"
+                />
+                <button
+                  type="button"
+                  class="icon-btn danger"
+                  (click)="removeDayOverride(oi)"
+                  aria-label="Remove day"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+
+          <div formArrayName="periods">
+            <div class="tt-period-table-wrap">
+              <table class="tt-period-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Short</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Break</th>
+                    @if (mode !== 'view') {
+                      <th></th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (ctrl of overridePeriods(oi).controls; track $index; let i = $index) {
+                    <tr [formGroupName]="i" [class.tt-break-row]="ctrl.get('isBreak')?.value">
+                      <td>{{ ctrl.get('periodOrder')?.value }}</td>
+                      <td><input type="text" formControlName="name" /></td>
+                      <td><input type="text" formControlName="shortName" class="tt-short" /></td>
+                      <td><input type="time" formControlName="startTime" /></td>
+                      <td><input type="time" formControlName="endTime" /></td>
+                      <td class="tt-center"><input type="checkbox" formControlName="isBreak" /></td>
+                      @if (mode !== 'view') {
+                        <td>
+                          <button
+                            type="button"
+                            class="icon-btn danger"
+                            (click)="removePeriodRow(i, overridePeriods(oi))"
+                            aria-label="Remove"
+                          >
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (!dayOverrides.length) {
+      <p class="form-hint">No day overrides — all weekdays use the default schedule.</p>
+    }
+  </div>
 </form>
 
 <div class="footer-actions">
@@ -77,11 +171,11 @@
       <app-action-button type="cancel" (action)="cancel.emit()" />
       <app-action-button
         type="save"
-        [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Template' : 'Confirm & Add')"
+        [label]="isSaving ? 'Saving...' : mode === 'edit' ? 'Update Template' : 'Confirm & Add'"
         [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
         [disabled]="isSaving"
-        (action)="save()">
-      </app-action-button>
+        (action)="save()"
+      />
     </div>
   }
 </div>

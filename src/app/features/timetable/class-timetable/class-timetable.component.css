@@ -59,58 +59,70 @@
 
 .tt-grid-wrap {
   margin-top: 0;
-  padding: 0;
+  padding: 12px;
   overflow: auto;
 }
 
-.tt-grid {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 760px;
+.tt-day-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 10px;
+  min-width: 900px;
 }
 
-.tt-grid th,
-.tt-grid td {
+.tt-day-col {
   border: 1px solid var(--border-color, #e5e7eb);
-  padding: 6px;
-  vertical-align: stretch;
+  border-radius: 10px;
+  background: #fff;
+  min-height: 120px;
+  overflow: hidden;
 }
 
-.tt-grid thead th {
+.tt-day-head {
   background: var(--g50, #f3f6ef);
-  font-size: 13px;
-  font-weight: 700;
   color: var(--secondary-color, #3b6d11);
-  text-align: center;
-}
-
-.tt-period-col {
-  width: 110px;
-  background: var(--g50, #f8faf6);
-  text-align: left !important;
-}
-
-.tt-period-name {
   font-size: 13px;
   font-weight: 700;
+  text-align: center;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
 }
 
-.tt-period-time {
-  font-size: 11px;
+.tt-day-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.tt-day-slot {
+  width: 100%;
+}
+
+.tt-slot-meta {
+  font-size: 10px;
   color: var(--text-secondary, #6b7280);
-  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
-.tt-break-row td,
-.tt-break-row th {
-  background: #fafafa;
+.tt-day-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 16px 4px;
 }
 
 .tt-break-cell {
   text-align: center;
   color: #9ca3af;
   font-size: 12px;
-  padding: 12px 4px;
+  padding: 10px 8px;
+  border: 1px dashed var(--border-color, #d1d5db);
+  border-radius: 8px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .tt-cell {
