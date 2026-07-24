@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { finalize } from 'rxjs/operators';
 
@@ -30,7 +31,7 @@ const DAYS = [
 @Component({
   selector: 'app-my-timetable',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, ListPageHeaderComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, ListPageHeaderComponent, RouterLink],
   templateUrl: './my-timetable.component.html',
   styleUrl: './my-timetable.component.css',
 })
@@ -60,6 +61,10 @@ export class MyTimetableComponent implements OnInit {
 
   get canExport(): boolean {
     return this.permissions.canExport(MenuCodes.MyTimetable) || this.permissions.canView(MenuCodes.MyTimetable);
+  }
+
+  get canOpenTeacherReport(): boolean {
+    return this.permissions.canView(MenuCodes.TeacherTimetableReport);
   }
 
   ngOnInit(): void {

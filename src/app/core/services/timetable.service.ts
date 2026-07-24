@@ -74,6 +74,31 @@ export interface MyTimetableResponse {
   grid: TimetableGrid;
 }
 
+export interface TeacherWorkloadRow {
+  employeeId: string;
+  employeeName: string;
+  periodsPerWeek: number;
+  classCount: number;
+  subjectCount: number;
+  daysActive: number;
+  roomCount: number;
+  conflictCount: number;
+  estimatedFreeSlots: number;
+}
+
+export interface TeacherReportDetail {
+  employeeId: string;
+  employeeName: string;
+  grid: TimetableGrid;
+}
+
+export interface TeacherTimetableReport {
+  academicYearId: string;
+  asOf: string;
+  summary: TeacherWorkloadRow[];
+  teachers: TeacherReportDetail[];
+}
+
 export interface TimetableSlotInput {
   dayOfWeek: number;
   periodId: string;
@@ -149,5 +174,24 @@ export class TimetableService {
     let params = new HttpParams().set('academicYearId', academicYearId);
     if (asOf) params = params.set('asOf', asOf);
     return this.api.get<MyTimetableResponse>('timetables/my', params);
+  }
+
+  getTeacherReport(opts: {
+    academicYearId: string;
+    asOf?: string;
+    employeeIds?: string[];
+    classIds?: string[];
+    subjectIds?: string[];
+    daysOfWeek?: number[];
+    includeGrids?: boolean;
+  }): Observable<TeacherTimetableReport> {
+    let params = new HttpParams().set('academicYearId', opts.academicYearId);
+    if (opts.asOf) params = params.set('asOf', opts.asOf);
+    if (opts.employeeIds?.length) params = params.set('employeeIds', opts.employeeIds.join(','));
+    if (opts.classIds?.length) params = params.set('classIds', opts.classIds.join(','));
+    if (opts.subjectIds?.length) params = params.set('subjectIds', opts.subjectIds.join(','));
+    if (opts.daysOfWeek?.length) params = params.set('daysOfWeek', opts.daysOfWeek.join(','));
+    params = params.set('includeGrids', String(opts.includeGrids !== false));
+    return this.api.get<TeacherTimetableReport>('timetables/teacher-report', params);
   }
 }

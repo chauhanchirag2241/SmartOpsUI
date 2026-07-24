@@ -149,6 +149,15 @@ export const routes: Routes = [
           import('./features/attendance/attendance-report/attendance-report.component').then((m) => m.AttendanceReportComponent),
       },
       {
+        path: 'teacher-timetable-report',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.TeacherTimetableReport, permission: 'view' },
+        loadComponent: () =>
+          import('./features/timetable/teacher-report/teacher-report.component').then(
+            (m) => m.TeacherReportComponent,
+          ),
+      },
+      {
         path: 'homework',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Homework, permission: 'view' },

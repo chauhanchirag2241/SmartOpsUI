@@ -49,6 +49,7 @@ export const MenuCodes = {
   PeriodMaster: 'PERIOD_MASTER',
   ClassTimetable: 'CLASS_TIMETABLE',
   MyTimetable: 'MY_TIMETABLE',
+  TeacherTimetableReport: 'TEACHER_TIMETABLE_REPORT',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

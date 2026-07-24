@@ -1,0 +1,146 @@
+<span
+  [appPageChrome]="'Teacher Timetable Report'"
+  [pageChromeSubtitle]="'Principal / admin analysis — workload, conflicts and weekly grids by teacher'"
+></span>
+
+<div class="tr-filters card">
+  <div class="tr-filters-grid">
+    <div class="tr-field">
+      <label class="table-filter-section-label" for="tr-asof">As of</label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field full-width">
+        <input id="tr-asof" matInput [matDatepicker]="asOfPicker" [(ngModel)]="asOfDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="asOfPicker"></mat-datepicker-toggle>
+        <mat-datepicker #asOfPicker></mat-datepicker>
+      </mat-form-field>
+    </div>
+
+    <div class="tr-field tr-field-span">
+      <label class="table-filter-section-label">Teachers</label>
+      <app-multi-select-chips
+        [options]="teacherOptions"
+        [(selectedIds)]="selectedTeacherIds"
+        placeholder="All teachers with slots"
+        searchPlaceholder="Search teachers..."
+      />
+    </div>
+
+    <div class="tr-field">
+      <label class="table-filter-section-label">Classes</label>
+      <app-multi-select-chips
+        [options]="classOptions"
+        [(selectedIds)]="selectedClassIds"
+        placeholder="All classes"
+        searchPlaceholder="Search classes..."
+      />
+    </div>
+
+    <div class="tr-field">
+      <label class="table-filter-section-label">Subjects</label>
+      <app-multi-select-chips
+        [options]="subjectOptions"
+        [(selectedIds)]="selectedSubjectIds"
+        placeholder="All subjects"
+        searchPlaceholder="Search subjects..."
+      />
+    </div>
+
+    <div class="tr-field">
+      <label class="table-filter-section-label">Days</label>
+      <app-multi-select-chips
+        [options]="dayOptions"
+        [(selectedIds)]="selectedDayIds"
+        placeholder="All days"
+        searchPlaceholder="Search days..."
+      />
+    </div>
+
+    <div class="tr-field tr-actions">
+      <button type="button" class="btn btn-primary tr-generate" [disabled]="loading" (click)="generate()">
+        <mat-icon>search</mat-icon> {{ loading ? 'Loading…' : 'Generate' }}
+      </button>
+    </div>
+  </div>
+
+  <p class="form-hint tr-hint">
+    Uses the academic year selected in the header. Leave multi-selects blank to include all. Pick a few teachers to load week grids.
+  </p>
+</div>
+
+@if (loading) {
+  <div class="empty-panel">Loading report…</div>
+} @else if (report) {
+  <app-smart-data-table
+    [config]="tableConfig"
+    [data]="summaryRows"
+    [serverSide]="false"
+    (actionClicked)="onSummaryAction($event)"
+    (exportClicked)="print()"
+  />
+
+  @if (!teacherDetails.length) {
+    <div class="empty-panel">
+      Summary ready. Select specific teachers and Generate again to view week grids (or leave blank for first 5).
+    </div>
+  }
+
+  @for (t of teacherDetails; track t.employeeId) {
+    <div class="teacher-grid-block card" [id]="'teacher-grid-' + t.employeeId">
+      <div class="card-title">
+        <mat-icon>person</mat-icon> {{ t.employeeName }}
+        @if (focusedTeacherId === t.employeeId) {
+          <span class="b-green">Focused</span>
+        }
+      </div>
+      @if (!periodsFor(t).length) {
+        <div class="empty-panel">No periods assigned for this teacher.</div>
+      } @else {
+        <div class="tt-grid-wrap">
+          <table class="tt-grid">
+            <thead>
+              <tr>
+                <th class="tt-period-col">Period</th>
+                @for (d of visibleDays; track d.day) {
+                  <th>{{ d.label }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of periodsFor(t); track p.id) {
+                <tr [class.tt-break-row]="p.isBreak">
+                  <th class="tt-period-col">
+                    <div class="tt-period-name">{{ p.shortName || p.name }}</div>
+                    <div class="tt-period-time">{{ p.startTime }} – {{ p.endTime }}</div>
+                  </th>
+                  @for (d of visibleDays; track d.day) {
+                    <td>
+                      @if (p.isBreak) {
+                        <div class="tt-break-cell">Break</div>
+                      } @else {
+                        @let cell = getCell(t, d.day, p.id);
+                        <div
+                          class="tt-cell tt-cell-readonly"
+                          [class.tt-cell-filled]="!!cell?.className || !!cell?.subjectName"
+                          [class.tt-cell-conflict]="!!cell?.hasTeacherConflict"
+                        >
+                          @if (cell?.className || cell?.subjectName) {
+                            <span class="tt-cell-main">{{ cell?.className }}</span>
+                            <span class="tt-cell-sub">{{ cell?.subjectName }}</span>
+                            @if (cell?.roomNo) {
+                              <span class="tt-cell-room">Rm {{ cell?.roomNo }}</span>
+                            }
+                          }
+                        </div>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+} @else {
+  <div class="empty-panel">Set filters and click Generate to load the teacher timetable report.</div>
+}

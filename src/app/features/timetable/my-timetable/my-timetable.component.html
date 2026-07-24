@@ -24,7 +24,16 @@
   </app-list-page-header>
 
   @if (message) {
-    <div class="empty-panel">{{ message }}</div>
+    <div class="empty-panel">
+      <p>{{ message }}</p>
+      @if (canOpenTeacherReport) {
+        <p>
+          <a routerLink="/teacher-timetable-report" class="btn-outline">
+            <mat-icon>analytics</mat-icon> Open Teacher Timetable Report
+          </a>
+        </p>
+      }
+    </div>
   }
 
   @if (loading) {
