@@ -1132,7 +1132,10 @@ textarea.form-control {
 .grid2 app-dynamic-field,
 .grid3 app-dynamic-field,
 .grid-two app-dynamic-field,
-.photo-fields app-dynamic-field {
+.photo-fields app-dynamic-field,
+.grid2 app-form-field,
+.grid3 app-form-field,
+.grid-two app-form-field {
   display: block;
   min-width: 0;
   width: 100%;
@@ -1273,6 +1276,46 @@ textarea.form-control.native-textarea {
   height: 20px !important;
   line-height: 20px;
   width: 20px !important;
+}
+
+/* Material select/autocomplete options — theme green (not browser/Material blue) */
+.mat-mdc-option {
+  --mat-option-selected-state-layer-color: color-mix(in srgb, var(--primary-color) 18%, transparent);
+  --mat-option-focus-state-layer-color: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  --mat-option-hover-state-layer-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mdc-list-item--with-leading-icon) {
+  background-color: var(--badge-bg, #eaf3de) !important;
+}
+
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: var(--secondary-color, #3b6d11) !important;
+  font-weight: 600;
+}
+
+.mat-mdc-option:hover:not(.mdc-list-item--disabled):not(.mdc-list-item--selected),
+.mat-mdc-option.mat-mdc-option-active:not(.mdc-list-item--disabled):not(.mdc-list-item--selected) {
+  background-color: var(--hover-bg, #f0f7e8) !important;
+}
+
+/* Single-select: no checkmark icon — selected row highlight is enough (native-like) */
+.mat-mdc-select-panel:not(.mat-mdc-select-multiple) .mat-mdc-option .mat-pseudo-checkbox {
+  display: none !important;
+}
+
+/* Restore caret triangle (Tailwind preflight breaks border-based arrows) */
+.mat-mdc-select-arrow {
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 4px !important;
+  border-left: 5px solid transparent !important;
+  border-right: 5px solid transparent !important;
+  border-top: 5px solid currentColor !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
 }
 
 .topbar,

@@ -2,9 +2,6 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
 import { finalize } from 'rxjs/operators';
 
 import { NotificationService } from '../../../core/services/notification.service';
@@ -24,6 +21,7 @@ import { SmartDataTableComponent } from '../../../shared/components/smart-data-t
 import type { DataTableAction, DataTableConfig } from '../../../shared/components/smart-data-table';
 import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
+import { FormFieldComponent } from '../../../shared/form-controls/form-field';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
 
 const DAYS = [
@@ -42,12 +40,10 @@ const DAYS = [
     CommonModule,
     FormsModule,
     MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatDatepickerModule,
     MultiSelectChipsComponent,
     SmartDataTableComponent,
     PageChromeDirective,
+    FormFieldComponent,
   ],
   templateUrl: './teacher-report.component.html',
   styleUrl: './teacher-report.component.css',
@@ -67,7 +63,7 @@ export class TeacherReportComponent implements OnInit {
   classOptions: MappingOption[] = [];
   subjectOptions: MappingOption[] = [];
 
-  asOfDate: Date = new Date();
+  asOf = new Date().toISOString().slice(0, 10);
   selectedTeacherIds: string[] = [];
   selectedClassIds: string[] = [];
   selectedSubjectIds: string[] = [];
@@ -152,7 +148,7 @@ export class TeacherReportComponent implements OnInit {
     this.timetableService
       .getTeacherReport({
         academicYearId,
-        asOf: this.formatDate(this.asOfDate),
+        asOf: this.asOf || undefined,
         employeeIds: this.selectedTeacherIds.length ? this.selectedTeacherIds : undefined,
         classIds: this.selectedClassIds.length ? this.selectedClassIds : undefined,
         subjectIds: this.selectedSubjectIds.length ? this.selectedSubjectIds : undefined,
@@ -250,7 +246,7 @@ export class TeacherReportComponent implements OnInit {
       return;
     }
 
-    const asOfLabel = this.formatDate(this.asOfDate) || String(this.report.asOf).slice(0, 10);
+    const asOfLabel = this.asOf || String(this.report.asOf).slice(0, 10);
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Teacher Timetable Report</title>
 <style>
 body{font-family:Arial,Helvetica,sans-serif;margin:24px;font-size:12px;color:#111}
@@ -270,14 +266,6 @@ ${gridsHtml}
 <script>window.onload=function(){window.focus();window.print();};</script>
 </body></html>`);
     win.document.close();
-  }
-
-  private formatDate(value: Date | null | undefined): string | undefined {
-    if (!value || Number.isNaN(value.getTime())) return undefined;
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, '0');
-    const d = String(value.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 
   private esc(value: string): string {

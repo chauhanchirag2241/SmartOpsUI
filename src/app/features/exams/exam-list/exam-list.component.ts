@@ -16,6 +16,8 @@ import type {
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
+import { FormFieldComponent } from '../../../shared/form-controls/form-field';
+import type { FormFieldOption } from '../../../shared/form-controls/form-field';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ClassService } from '../../../core/services/class.service';
@@ -59,6 +61,7 @@ const EXAM_TYPES = [
     ActionButtonComponent,
     MultiSelectChipsComponent,
     PageChromeDirective,
+    FormFieldComponent,
   ],
   templateUrl: './exam-list.component.html',
   styleUrl: './exam-list.component.css',
@@ -75,6 +78,7 @@ export class ExamListComponent implements OnInit {
 
   ExamStatus = ExamStatus;
   examTypes = EXAM_TYPES;
+  readonly examTypeOptions: FormFieldOption[] = EXAM_TYPES.map((t) => ({ label: t, value: t }));
 
   rows: Record<string, unknown>[] = [];
   groups: ExamGroup[] = [];
@@ -84,6 +88,18 @@ export class ExamListComponent implements OnInit {
 
   filterGroupId = '';
   filterClassId = '';
+
+  get groupFilterOptions(): FormFieldOption[] {
+    return this.groups.map((g) => ({ label: g.name, value: g.id }));
+  }
+
+  get classFilterOptions(): FormFieldOption[] {
+    return this.classOptions.map((c) => ({ label: c.name, value: c.id }));
+  }
+
+  get gradeScaleOptions(): FormFieldOption[] {
+    return this.gradeScales.map((s) => ({ label: s.name, value: s.id }));
+  }
 
   showForm = false;
   formMode: 'add' | 'edit' = 'add';

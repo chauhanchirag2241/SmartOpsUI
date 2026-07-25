@@ -17,15 +17,20 @@
     <div class="card">
       <div class="card-title"><mat-icon>grade</mat-icon> Scale details</div>
       <div class="grid2">
-        <div class="field">
-          <label>Scale name <span class="req">*</span></label>
-          <input type="text" [(ngModel)]="formName" placeholder="e.g. CBSE 10-point scale" />
-        </div>
-        <div class="field">
-          <label>Description</label>
-          <input type="text" [(ngModel)]="formDescription" placeholder="Optional description" />
-        </div>
-        <div class="field">
+        <app-form-field
+          label="Scale name"
+          type="text"
+          [required]="true"
+          [(ngModel)]="formName"
+          placeholder="e.g. CBSE 10-point scale"
+        />
+        <app-form-field
+          label="Description"
+          type="text"
+          [(ngModel)]="formDescription"
+          placeholder="Optional description"
+        />
+        <div class="field full check-field">
           <label class="check-row">
             <input type="checkbox" [(ngModel)]="formIsDefault" />
             Use as default scale when exams have no override
@@ -39,25 +44,17 @@
       <div class="band-rows">
         @for (row of gradeRows; track $index; let i = $index) {
           <div class="band-row">
-            <div class="field">
-              <label>Grade</label>
-              <input type="text" [(ngModel)]="row.grade" placeholder="A1" />
-            </div>
-            <div class="field">
-              <label>Min %</label>
-              <input type="number" [(ngModel)]="row.minPercent" min="0" max="100" />
-            </div>
-            <div class="field">
-              <label>Max %</label>
-              <input type="number" [(ngModel)]="row.maxPercent" min="0" max="100" />
-            </div>
-            <div class="field">
-              <label>Grade point</label>
-              <input type="number" [(ngModel)]="row.gradePoint" min="0" />
-            </div>
-            <div class="field remark">
-              <label>Remark</label>
-              <input type="text" [(ngModel)]="row.description" placeholder="Outstanding" />
+            <app-form-field label="Grade" type="text" [(ngModel)]="row.grade" placeholder="A1" />
+            <app-form-field label="Min %" type="number" [(ngModel)]="row.minPercent" [min]="0" [max]="100" />
+            <app-form-field label="Max %" type="number" [(ngModel)]="row.maxPercent" [min]="0" [max]="100" />
+            <app-form-field label="Grade point" type="number" [(ngModel)]="row.gradePoint" [min]="0" />
+            <div class="remark">
+              <app-form-field
+                label="Remark"
+                type="text"
+                [(ngModel)]="row.description"
+                placeholder="Outstanding"
+              />
             </div>
             <button
               type="button"

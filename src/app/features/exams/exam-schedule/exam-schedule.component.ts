@@ -14,6 +14,8 @@ import type {
 } from '../../../shared/components/smart-data-table';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
+import { FormFieldComponent } from '../../../shared/form-controls/form-field';
+import type { FormFieldOption } from '../../../shared/form-controls/form-field';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SubjectService } from '../../../core/services/subject.service';
@@ -36,6 +38,7 @@ import {
     SmartDataTableComponent,
     ActionButtonComponent,
     PageChromeDirective,
+    FormFieldComponent,
   ],
   templateUrl: './exam-schedule.component.html',
   styleUrl: './exam-schedule.component.css',
@@ -137,6 +140,32 @@ export class ExamScheduleComponent implements OnInit {
 
   get formExamClasses(): ExamClassInfo[] {
     return this.formExam?.classes ?? [];
+  }
+
+  get examOptions(): FormFieldOption[] {
+    return this.exams.map((e) => ({
+      label: `${e.name} (${e.examGroupName})`,
+      value: e.id,
+    }));
+  }
+
+  get examClassOptions(): FormFieldOption[] {
+    return this.examClasses.map((c) => ({ label: c.className, value: c.classId }));
+  }
+
+  get formExamClassOptions(): FormFieldOption[] {
+    return this.formExamClasses.map((c) => ({ label: c.className, value: c.classId }));
+  }
+
+  get subjectOptions(): FormFieldOption[] {
+    return (this.subjects || []).map((s: { id: string; name: string }) => ({
+      label: s.name,
+      value: s.id,
+    }));
+  }
+
+  get employeeOptions(): FormFieldOption[] {
+    return this.employees.map((e) => ({ label: e.name, value: e.id }));
   }
 
   ngOnInit(): void {

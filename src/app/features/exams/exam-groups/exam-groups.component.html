@@ -17,40 +17,41 @@
     <div class="card">
       <div class="card-title"><mat-icon>folder_special</mat-icon> Group details</div>
       <div class="grid2">
-        <div class="field">
-          <label>Group name <span class="req">*</span></label>
-          <input type="text" [(ngModel)]="formName" placeholder="e.g. Term 1 Exams 2025-26" />
-        </div>
-        <div class="field">
-          <label>Academic year <span class="req">*</span></label>
-          <select [(ngModel)]="formAcademicYearId">
-            <option value="">Select year</option>
-            @for (year of academicYears; track year.id) {
-              <option [value]="year.id">{{ year.name }}</option>
-            }
-          </select>
-        </div>
-        <div class="field">
-          <label>Evaluation type</label>
-          <select [(ngModel)]="formEvaluationType">
-            <option [ngValue]="ExamEvaluationType.Marks">Marks</option>
-            <option [ngValue]="ExamEvaluationType.Grade">Grade</option>
-            <option [ngValue]="ExamEvaluationType.Both">Marks &amp; Grade</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Default grade scale</label>
-          <select [(ngModel)]="formGradeScaleId">
-            <option value="">None</option>
-            @for (scale of gradeScales; track scale.id) {
-              <option [value]="scale.id">{{ scale.name }}</option>
-            }
-          </select>
-        </div>
-        <div class="field full">
-          <label>Description</label>
-          <textarea rows="2" [(ngModel)]="formDescription" placeholder="Optional description"></textarea>
-        </div>
+        <app-form-field
+          label="Group name"
+          type="text"
+          [required]="true"
+          [(ngModel)]="formName"
+          placeholder="e.g. Term 1 Exams 2025-26"
+        />
+        <app-form-field
+          label="Academic year"
+          type="select"
+          [required]="true"
+          [(ngModel)]="formAcademicYearId"
+          [options]="academicYearOptions"
+          emptyOptionLabel="Select year"
+        />
+        <app-form-field
+          label="Evaluation type"
+          type="select"
+          [(ngModel)]="formEvaluationType"
+          [options]="evaluationTypeOptions"
+        />
+        <app-form-field
+          label="Default grade scale"
+          type="select"
+          [(ngModel)]="formGradeScaleId"
+          [options]="gradeScaleOptions"
+          emptyOptionLabel="None"
+        />
+        <app-form-field
+          label="Description"
+          type="textarea"
+          [fullWidth]="true"
+          [(ngModel)]="formDescription"
+          placeholder="Optional description"
+        />
       </div>
     </div>
 

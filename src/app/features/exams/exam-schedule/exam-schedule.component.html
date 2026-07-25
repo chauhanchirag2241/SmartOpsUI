@@ -8,24 +8,24 @@
       (exportClicked)="onExportClicked()"
     >
       <div tableFilters class="st-table-filters">
-        <div class="filter-field">
-          <label>Exam</label>
-          <select [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
-            <option value="">Select exam</option>
-            @for (e of exams; track e.id) {
-              <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-            }
-          </select>
-        </div>
-        <div class="filter-field">
-          <label>Class</label>
-          <select [(ngModel)]="selectedClassId" (ngModelChange)="loadSchedules()">
-            <option value="">All classes</option>
-            @for (c of examClasses; track c.classId) {
-              <option [value]="c.classId">{{ c.className }}</option>
-            }
-          </select>
-        </div>
+        <app-form-field
+          label="Exam"
+          type="select"
+          variant="filter"
+          [(ngModel)]="selectedExamId"
+          [options]="examOptions"
+          emptyOptionLabel="Select exam"
+          (ngModelChange)="onExamChange()"
+        />
+        <app-form-field
+          label="Class"
+          type="select"
+          variant="filter"
+          [(ngModel)]="selectedClassId"
+          [options]="examClassOptions"
+          emptyOptionLabel="All classes"
+          (ngModelChange)="loadSchedules()"
+        />
       </div>
     </app-smart-data-table>
   } @else {
@@ -39,58 +39,53 @@
     <div class="card">
       <div class="card-title"><mat-icon>event</mat-icon> Slot details</div>
       <div class="grid2">
-        <div class="field">
-          <label>Exam <span class="req">*</span></label>
-          <select [(ngModel)]="formExamId" (ngModelChange)="onFormExamChange()">
-            <option value="">Select exam</option>
-            @for (e of exams; track e.id) {
-              <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-            }
-          </select>
-        </div>
-        <div class="field">
-          <label>Class <span class="req">*</span></label>
-          <select [(ngModel)]="formClassId" [disabled]="!formExamId">
-            <option value="">Select class</option>
-            @for (c of formExamClasses; track c.classId) {
-              <option [value]="c.classId">{{ c.className }}</option>
-            }
-          </select>
-        </div>
-        <div class="field">
-          <label>Subject <span class="req">*</span></label>
-          <select [(ngModel)]="formSubjectId">
-            <option value="">Select subject</option>
-            @for (s of subjects; track s.id) {
-              <option [value]="s.id">{{ s.name }}</option>
-            }
-          </select>
-        </div>
-        <div class="field">
-          <label>Exam date <span class="req">*</span></label>
-          <input type="date" [(ngModel)]="formExamDate" />
-        </div>
-        <div class="field">
-          <label>Start time</label>
-          <input type="time" [(ngModel)]="formStartTime" />
-        </div>
-        <div class="field">
-          <label>End time</label>
-          <input type="time" [(ngModel)]="formEndTime" />
-        </div>
-        <div class="field">
-          <label>Room / Hall</label>
-          <input type="text" [(ngModel)]="formRoomNo" placeholder="e.g. Hall A / Room 12" />
-        </div>
-        <div class="field">
-          <label>Invigilator</label>
-          <select [(ngModel)]="formInvigilatorId">
-            <option value="">Not assigned</option>
-            @for (emp of employees; track emp.id) {
-              <option [value]="emp.id">{{ emp.name }}</option>
-            }
-          </select>
-        </div>
+        <app-form-field
+          label="Exam"
+          type="select"
+          [required]="true"
+          [(ngModel)]="formExamId"
+          [options]="examOptions"
+          emptyOptionLabel="Select exam"
+          (ngModelChange)="onFormExamChange()"
+        />
+        <app-form-field
+          label="Class"
+          type="select"
+          [required]="true"
+          [(ngModel)]="formClassId"
+          [options]="formExamClassOptions"
+          emptyOptionLabel="Select class"
+          [disabled]="!formExamId"
+        />
+        <app-form-field
+          label="Subject"
+          type="select"
+          [required]="true"
+          [(ngModel)]="formSubjectId"
+          [options]="subjectOptions"
+          emptyOptionLabel="Select subject"
+        />
+        <app-form-field
+          label="Exam date"
+          type="date"
+          [required]="true"
+          [(ngModel)]="formExamDate"
+        />
+        <app-form-field label="Start time" type="time" [(ngModel)]="formStartTime" />
+        <app-form-field label="End time" type="time" [(ngModel)]="formEndTime" />
+        <app-form-field
+          label="Room / Hall"
+          type="text"
+          [(ngModel)]="formRoomNo"
+          placeholder="e.g. Hall A / Room 12"
+        />
+        <app-form-field
+          label="Invigilator"
+          type="select"
+          [(ngModel)]="formInvigilatorId"
+          [options]="employeeOptions"
+          emptyOptionLabel="Not assigned"
+        />
       </div>
     </div>
 

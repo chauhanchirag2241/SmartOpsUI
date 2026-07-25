@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+
+:host.full {
+  grid-column: 1 / -1;
+}
+
+:host.filter-variant {
+  min-width: 180px;
+  width: auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.field > label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.3;
+}
+
+.req {
+  color: var(--danger-color, #a32d2d);
+  margin-left: 2px;
+}
+
+.field-date .date-field,
+.field-select .select-field {
+  width: 100%;
+}
+
+:host ::ng-deep .field-date .mat-mdc-form-field-subscript-wrapper,
+:host ::ng-deep .field-select .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}

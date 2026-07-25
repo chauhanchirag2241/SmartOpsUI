@@ -187,14 +187,11 @@ body {
   color: #639922 !important;
 }
 
-.mat-pseudo-checkbox-checked::after {
-  color: #639922 !important;
-}
-
 .mat-primary {
   --mat-option-selected-state-icon-color: #639922;
   --mat-option-selected-state-label-text-color: #639922;
   --mat-pseudo-checkbox-checked-icon-color: #639922;
+  --mat-minimal-pseudo-checkbox-selected-checkmark-color: #639922;
 }
 
 /* Material Datepicker Theme Overrides */

@@ -15,6 +15,8 @@ import type {
 } from '../../../shared/components/smart-data-table';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
+import { FormFieldComponent } from '../../../shared/form-controls/form-field';
+import type { FormFieldOption } from '../../../shared/form-controls/form-field';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import {
@@ -39,6 +41,7 @@ import {
     SmartDataTableComponent,
     ActionButtonComponent,
     PageChromeDirective,
+    FormFieldComponent,
   ],
   templateUrl: './exam-groups.component.html',
   styleUrl: './exam-groups.component.css',
@@ -71,6 +74,20 @@ export class ExamGroupsComponent implements OnInit {
   formAcademicYearId = '';
   formGradeScaleId = '';
   formEvaluationType: ExamEvaluationType = ExamEvaluationType.Marks;
+
+  readonly evaluationTypeOptions: FormFieldOption[] = [
+    { label: 'Marks', value: ExamEvaluationType.Marks },
+    { label: 'Grade', value: ExamEvaluationType.Grade },
+    { label: 'Marks & Grade', value: ExamEvaluationType.Both },
+  ];
+
+  get academicYearOptions(): FormFieldOption[] {
+    return this.academicYears.map((y) => ({ label: y.name, value: y.id }));
+  }
+
+  get gradeScaleOptions(): FormFieldOption[] {
+    return this.gradeScales.map((s) => ({ label: s.name, value: s.id }));
+  }
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {

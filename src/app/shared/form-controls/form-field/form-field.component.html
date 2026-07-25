@@ -1,0 +1,105 @@
+<div
+  class="field"
+  [class.field-date]="type === 'date'"
+  [class.field-select]="type === 'select'"
+>
+  @if (label) {
+    <label [attr.for]="inputId">
+      {{ label }}
+      @if (required) {
+        <span class="req">*</span>
+      }
+    </label>
+  }
+
+  @switch (type) {
+    @case ('text') {
+      <input
+        class="form-control"
+        [id]="inputId"
+        type="text"
+        [placeholder]="placeholder"
+        [disabled]="disabled"
+        [ngModel]="value"
+        (ngModelChange)="emit($event)"
+        (blur)="onTouched()"
+      />
+    }
+    @case ('number') {
+      <input
+        class="form-control"
+        [id]="inputId"
+        type="number"
+        [placeholder]="placeholder"
+        [disabled]="disabled"
+        [attr.min]="min"
+        [attr.max]="max"
+        [attr.step]="step"
+        [ngModel]="value"
+        (ngModelChange)="emit($event === '' || $event === null ? null : +$event)"
+        (blur)="onTouched()"
+      />
+    }
+    @case ('time') {
+      <input
+        class="form-control"
+        [id]="inputId"
+        type="time"
+        [disabled]="disabled"
+        [ngModel]="value"
+        (ngModelChange)="emit($event)"
+        (blur)="onTouched()"
+      />
+    }
+    @case ('textarea') {
+      <textarea
+        class="form-control native-textarea"
+        [id]="inputId"
+        [rows]="rows"
+        [placeholder]="placeholder"
+        [disabled]="disabled"
+        [ngModel]="value"
+        (ngModelChange)="emit($event)"
+        (blur)="onTouched()"
+      ></textarea>
+    }
+    @case ('select') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field select-field">
+        <mat-select
+          [id]="inputId"
+          [placeholder]="placeholder || emptyOptionLabel || 'Select'"
+          [disabled]="disabled"
+          [ngModel]="value"
+          (ngModelChange)="emit($event)"
+          (blur)="onTouched()"
+        >
+          @if (emptyOptionLabel) {
+            <mat-option [value]="emptyValue">{{ emptyOptionLabel }}</mat-option>
+          }
+          @for (opt of options; track trackOption($index, opt)) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    @case ('date') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field date-field">
+        <input
+          matInput
+          [id]="inputId"
+          [matDatepicker]="picker"
+          [placeholder]="placeholder || 'dd-mm-yyyy'"
+          [disabled]="disabled"
+          [ngModel]="dateValue"
+          (ngModelChange)="onDatePicked($event)"
+          (blur)="onTouched()"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+    }
+    @default {
+      <ng-content />
+    }
+  }
+</div>

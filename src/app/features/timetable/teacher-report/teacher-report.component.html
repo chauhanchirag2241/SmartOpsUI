@@ -4,57 +4,47 @@
 ></span>
 
 <div class="tr-filters card">
-  <div class="tr-filters-grid">
-    <div class="tr-field">
-      <label class="table-filter-section-label" for="tr-asof">As of</label>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field full-width">
-        <input id="tr-asof" matInput [matDatepicker]="asOfPicker" [(ngModel)]="asOfDate" />
-        <mat-datepicker-toggle matIconSuffix [for]="asOfPicker"></mat-datepicker-toggle>
-        <mat-datepicker #asOfPicker></mat-datepicker>
-      </mat-form-field>
-    </div>
+  <div class="card-title"><mat-icon>filter_alt</mat-icon> Report filters</div>
+  <div class="grid2">
+    <app-form-field label="As of" type="date" [(ngModel)]="asOf" />
 
-    <div class="tr-field tr-field-span">
-      <label class="table-filter-section-label">Teachers</label>
+    <app-form-field label="Teachers">
       <app-multi-select-chips
         [options]="teacherOptions"
         [(selectedIds)]="selectedTeacherIds"
         placeholder="All teachers with slots"
         searchPlaceholder="Search teachers..."
       />
-    </div>
+    </app-form-field>
 
-    <div class="tr-field">
-      <label class="table-filter-section-label">Classes</label>
+    <app-form-field label="Classes">
       <app-multi-select-chips
         [options]="classOptions"
         [(selectedIds)]="selectedClassIds"
         placeholder="All classes"
         searchPlaceholder="Search classes..."
       />
-    </div>
+    </app-form-field>
 
-    <div class="tr-field">
-      <label class="table-filter-section-label">Subjects</label>
+    <app-form-field label="Subjects">
       <app-multi-select-chips
         [options]="subjectOptions"
         [(selectedIds)]="selectedSubjectIds"
         placeholder="All subjects"
         searchPlaceholder="Search subjects..."
       />
-    </div>
+    </app-form-field>
 
-    <div class="tr-field">
-      <label class="table-filter-section-label">Days</label>
+    <app-form-field label="Days">
       <app-multi-select-chips
         [options]="dayOptions"
         [(selectedIds)]="selectedDayIds"
         placeholder="All days"
         searchPlaceholder="Search days..."
       />
-    </div>
+    </app-form-field>
 
-    <div class="tr-field tr-actions">
+    <div class="tr-actions">
       <button type="button" class="btn btn-primary tr-generate" [disabled]="loading" (click)="generate()">
         <mat-icon>search</mat-icon> {{ loading ? 'Loading…' : 'Generate' }}
       </button>
