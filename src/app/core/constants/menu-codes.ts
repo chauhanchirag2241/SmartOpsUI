@@ -20,6 +20,8 @@ export const MenuCodes = {
   AcademicPeriods: 'ACADEMIC_PERIODS',
   Attendance: 'ATTENDANCE',
   AttendanceReport: 'ATTENDANCE_REPORT',
+  StaffAttendance: 'STAFF_ATTENDANCE',
+  StaffAttendanceReport: 'STAFF_ATTENDANCE_REPORT',
   Homework: 'HOMEWORK',
   FeesStructure: 'FEES_STRUCTURE',
   FeesClassAmounts: 'FEES_CLASS_AMOUNTS',

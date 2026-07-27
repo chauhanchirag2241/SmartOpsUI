@@ -1,0 +1,218 @@
+<span
+  [appPageChrome]="'Staff Attendance Report'"
+  [pageChromeSubtitle]="'Department-wise, date-wise staff attendance analysis'"
+></span>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field" style="width: 140px;">
+    <mat-select [ngModel]="selectedYear()" (ngModelChange)="selectedYear.set(+$event)">
+      <mat-option *ngFor="let y of years()" [value]="y">{{ y }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="compact-field" style="width: 140px;">
+    <mat-select [ngModel]="selectedMonth()" (ngModelChange)="selectedMonth.set(+$event)">
+      <mat-option [value]="1">January</mat-option>
+      <mat-option [value]="2">February</mat-option>
+      <mat-option [value]="3">March</mat-option>
+      <mat-option [value]="4">April</mat-option>
+      <mat-option [value]="5">May</mat-option>
+      <mat-option [value]="6">June</mat-option>
+      <mat-option [value]="7">July</mat-option>
+      <mat-option [value]="8">August</mat-option>
+      <mat-option [value]="9">September</mat-option>
+      <mat-option [value]="10">October</mat-option>
+      <mat-option [value]="11">November</mat-option>
+      <mat-option [value]="12">December</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field
+    *ngIf="departments().length"
+    appearance="outline"
+    subscriptSizing="dynamic"
+    class="compact-field"
+    style="width: 180px;"
+  >
+    <mat-select [ngModel]="selectedDepartmentId()" (ngModelChange)="selectedDepartmentId.set($event)">
+      <mat-option value="">All departments</mat-option>
+      <mat-option *ngFor="let d of departments()" [value]="d.id">{{ d.name }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <button type="button" class="btn btn-primary" style="height: 32px;" (click)="loadReport()">
+    <mat-icon style="font-size: 16px; width: 16px; height: 16px;">search</mat-icon> Generate
+  </button>
+
+  <div style="display:flex;gap:5px;align-items:center;margin-left:4px;">
+    <button type="button" class="filter-chip" [class.active]="chipFilter() === 'all'" (click)="setChip('all')">All staff</button>
+    <button type="button" class="filter-chip" [class.active]="chipFilter() === 'low'" (click)="setChip('low')">Below 75%</button>
+    <button type="button" class="filter-chip" [class.active]="chipFilter() === 'absent'" (click)="setChip('absent')">Frequently absent</button>
+  </div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+  <div class="search-wrap">
+    <input type="text" placeholder="Search employee..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+    <button type="button" class="search-icon-btn" aria-label="Search">
+      <mat-icon>search</mat-icon>
+    </button>
+  </div>
+
+  <div class="toolbar-right">
+    <button type="button" class="icon-btn" (click)="showToast('Exporting Excel...')">
+      <mat-icon>table_view</mat-icon> Excel
+    </button>
+    <button type="button" class="icon-btn" (click)="showToast('Generating PDF...')">
+      <mat-icon>picture_as_pdf</mat-icon> PDF
+    </button>
+    <button type="button" class="icon-btn" (click)="showToast('Printing register...')">
+      <mat-icon>print</mat-icon> Print
+    </button>
+  </div>
+</div>
+
+<ng-container *ngIf="loading()">
+  <div class="loading-state" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+    Loading report data...
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!loading() && reportData()">
+  <div class="stats-strip" style="margin-bottom:12px">
+    <div class="ss"><div class="ss-accent" style="background:var(--g400)"></div><div class="ss-val">{{kpi().workingDays}}</div><div class="ss-label">Working days</div></div>
+    <div class="ss"><div class="ss-accent" style="background:var(--g400)"></div><div class="ss-val">{{kpi().avgPct}}%</div><div class="ss-label">Avg attendance</div></div>
+    <div class="ss"><div class="ss-accent" style="background:var(--g400)"></div><div class="ss-val">{{kpi().perfect}}</div><div class="ss-label">100% attendance</div></div>
+    <div class="ss"><div class="ss-accent" style="background:#EF9F27"></div><div class="ss-val" style="color:#854F0B">{{kpi().below75}}</div><div class="ss-label">Below 75%</div></div>
+    <div class="ss"><div class="ss-accent" style="background:#E24B4A"></div><div class="ss-val" style="color:#A32D2D">{{kpi().chronic}}</div><div class="ss-label">Chronic absentees</div></div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:12px;font-weight:500">{{monthLabel()}} · {{filteredEmployees().length}} employees</div>
+    <div class="view-tabs">
+      <div class="vt" [class.active]="currentView() === 'register'" (click)="setView('register')"><mat-icon style="font-size:16px; width:16px; height:16px;">table_chart</mat-icon> Register</div>
+      <div class="vt" [class.active]="currentView() === 'summary'" (click)="setView('summary')"><mat-icon style="font-size:16px; width:16px; height:16px;">list</mat-icon> Summary</div>
+    </div>
+  </div>
+
+  <div id="main-area">
+    <div class="card" *ngIf="currentView() === 'register'">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>table_chart</mat-icon>Staff Attendance Register</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge b-green">P = Present</span>
+          <span class="badge b-red">A = Absent</span>
+          <span class="badge b-amber">L = Late</span>
+          <span class="badge b-purple">H = Half day</span>
+          <span class="badge b-gray">Su = Sunday</span>
+        </div>
+      </div>
+      <div class="reg-wrap">
+        <table class="register">
+          <thead>
+            <tr>
+              <th class="reg-name" rowspan="2" style="padding:7px 8px;text-align:left;left:0">Employee</th>
+              <th [colSpan]="daysInMonth().length" style="text-align:center">{{monthLabel()}}</th>
+              <th class="reg-sum" colspan="5" style="text-align:center">Summary</th>
+            </tr>
+            <tr>
+              <th *ngFor="let day of daysInMonth()" class="day-col" [class.sun]="isSunday(day)">{{day}}</th>
+              <th class="reg-sum">P</th><th class="reg-sum">A</th><th class="reg-sum">L</th><th class="reg-sum">H</th><th class="reg-sum">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of filteredEmployees()">
+              <td class="reg-name reg-name-cell" [title]="emp.employeeName" style="left:0">
+                {{emp.employeeName}}
+                <div class="cell-sub" *ngIf="emp.departmentName">{{emp.departmentName}}</div>
+              </td>
+              <td
+                *ngFor="let day of daysInMonth()"
+                class="reg-cell"
+                [class.rc-H]="isSunday(day)"
+                [class.rc-P]="dayStatus(emp, day) === 'P'"
+                [class.rc-A]="dayStatus(emp, day) === 'A'"
+                [class.rc-L]="dayStatus(emp, day) === 'L'"
+                [class.rc-half]="dayStatus(emp, day) === 'H'"
+                [class.rc-empty]="!isSunday(day) && !dayStatus(emp, day)"
+              >
+                <ng-container *ngIf="isSunday(day)">Su</ng-container>
+                <ng-container *ngIf="!isSunday(day)">{{ dayStatus(emp, day) || '—' }}</ng-container>
+              </td>
+              <td class="reg-cell reg-sum" style="color:var(--g600)">{{emp.presentDays}}</td>
+              <td class="reg-cell reg-sum" style="color:#A32D2D">{{emp.absentDays}}</td>
+              <td class="reg-cell reg-sum" style="color:#5B21B6">{{emp.lateDays}}</td>
+              <td class="reg-cell reg-sum" style="color:#854F0B">{{emp.halfDayDays}}</td>
+              <td
+                class="reg-cell reg-sum"
+                [style.color]="attendancePct(emp) >= 75 ? 'var(--g600)' : '#A32D2D'"
+                style="font-weight:700"
+              >
+                {{attendancePct(emp)}}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="currentView() === 'summary'">
+      <div class="card-header">
+        <div class="card-title"><mat-icon>list</mat-icon>Employee-wise Summary</div>
+        <span style="font-size:11px;color:var(--muted)">{{filteredEmployees().length}} employees</span>
+      </div>
+      <div class="summary-table-wrap">
+        <table class="summary">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Employee</th>
+              <th style="text-align:center;color:var(--g600)">P</th>
+              <th style="text-align:center;color:#A32D2D">A</th>
+              <th style="text-align:center;color:#5B21B6">L</th>
+              <th style="text-align:center;color:#854F0B">H</th>
+              <th style="min-width:110px">Attendance %</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of filteredEmployees()">
+              <td>
+                <div class="cell-user">
+                  <app-avatar [name]="emp.employeeName" size="sm"></app-avatar>
+                  <div>
+                    <div class="cell-name">{{emp.employeeName}}</div>
+                    <div class="cell-sub">{{emp.departmentName || '—'}}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="text-align:center;font-weight:500;color:var(--g600)">{{emp.presentDays}}</td>
+              <td style="text-align:center;font-weight:500;color:#A32D2D">{{emp.absentDays}}</td>
+              <td style="text-align:center;font-weight:500;color:#5B21B6">{{emp.lateDays}}</td>
+              <td style="text-align:center;font-weight:500;color:#854F0B">{{emp.halfDayDays}}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:5px">
+                  <div class="pct-bar">
+                    <div
+                      class="pct-fill"
+                      [ngClass]="attendancePct(emp) >= 90 ? 'pct-good' : (attendancePct(emp) >= 75 ? 'pct-warn' : 'pct-bad')"
+                      [style.width.%]="attendancePct(emp)"
+                    ></div>
+                  </div>
+                  <span style="font-size:11px;font-weight:600">{{attendancePct(emp)}}%</span>
+                </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="attendancePct(emp) >= 90 ? 'b-green' : (attendancePct(emp) >= 75 ? 'b-amber' : 'b-red')"
+                >
+                  {{attendancePct(emp) >= 90 ? 'Excellent' : (attendancePct(emp) >= 75 ? 'Good' : 'Low')}}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</ng-container>

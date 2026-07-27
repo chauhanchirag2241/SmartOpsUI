@@ -149,6 +149,24 @@ export const routes: Routes = [
           import('./features/attendance/attendance-report/attendance-report.component').then((m) => m.AttendanceReportComponent),
       },
       {
+        path: 'staff-attendance',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.StaffAttendance, permission: 'view' },
+        loadComponent: () =>
+          import('./features/staff-attendance/staff-attendance.component').then(
+            (m) => m.StaffAttendanceComponent,
+          ),
+      },
+      {
+        path: 'staff-attendance-report',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.StaffAttendanceReport, permission: 'view' },
+        loadComponent: () =>
+          import('./features/staff-attendance/staff-attendance-report/staff-attendance-report.component').then(
+            (m) => m.StaffAttendanceReportComponent,
+          ),
+      },
+      {
         path: 'teacher-timetable-report',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.TeacherTimetableReport, permission: 'view' },

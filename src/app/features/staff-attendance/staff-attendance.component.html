@@ -1,0 +1,193 @@
+<div class="attendance-container">
+  <div class="topbar">
+    <span
+      style="flex:1"
+      [appPageChrome]="'Staff Attendance'"
+      [pageChromeSubtitle]="displaySelectedDate + (settings.type ? ' · ' + settings.type : '')"
+    ></span>
+    <button
+      *ngIf="canEdit && settings.allowsFace"
+      type="button"
+      class="icon-btn"
+      (click)="openFacePunch()"
+      [disabled]="actionBusy"
+      aria-label="Face recognition punch"
+    >
+      <mat-icon>face</mat-icon>
+      <span>Face punch</span>
+    </button>
+  </div>
+
+  <app-page-toolbar
+    searchInputId="staff-att-search"
+    searchPlaceholder="Search employee or department..."
+    [searchValue]="appliedSearchQuery"
+    [filterPanelActive]="toolbarFilterActive"
+    (searchSubmitted)="onToolbarSearchSubmit($event)"
+    (advancedFiltersCleared)="onToolbarFiltersCleared()"
+  >
+    <div toolbarFilters class="st-table-filters">
+      <label class="table-filter-section-label" for="staff-att-date">Date</label>
+      <input
+        id="staff-att-date"
+        type="date"
+        class="sel-filter sel-filter-lg att-date-filter"
+        [ngModel]="selectedDate"
+        [max]="maxDate"
+        (ngModelChange)="onDateChanged($event)"
+      />
+      <ng-container *ngIf="departments.length">
+        <label class="table-filter-section-label" for="staff-att-dept">Department</label>
+        <select
+          id="staff-att-dept"
+          class="sel-filter sel-filter-lg"
+          [ngModel]="selectedDepartmentId"
+          (ngModelChange)="onDepartmentChanged($event)"
+        >
+          <option value="">All departments</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+        </select>
+      </ng-container>
+    </div>
+  </app-page-toolbar>
+
+  <div class="summary">
+    <div class="sum-card" [class.active-filter]="curFilter === 'all'" (click)="filterBy('all')">
+      <div class="sum-icon si-g"><mat-icon>groups</mat-icon></div>
+      <div><div class="sum-val">{{ stats.total }}</div><div class="sum-label">Total</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'checkedin'" (click)="filterBy('checkedin')">
+      <div class="sum-icon si-g"><mat-icon>login</mat-icon></div>
+      <div><div class="sum-val">{{ stats.checkedIn }}</div><div class="sum-label">Checked in</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'checkedout'" (click)="filterBy('checkedout')">
+      <div class="sum-icon si-l"><mat-icon>logout</mat-icon></div>
+      <div><div class="sum-val">{{ stats.checkedOut }}</div><div class="sum-label">Checked out</div></div>
+    </div>
+    <div class="sum-card" [class.active-filter]="curFilter === 'notpunched'" (click)="filterBy('notpunched')">
+      <div class="sum-icon si-u"><mat-icon>schedule</mat-icon></div>
+      <div><div class="sum-val">{{ stats.notPunched }}</div><div class="sum-label">Not punched</div></div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">Loading staff attendance…</div>
+
+  <div class="staff-list" *ngIf="!loading">
+    <div *ngFor="let row of visibleRows" class="list-row" [ngClass]="statusClass(row)">
+      <app-avatar [name]="row.employeeName" size="sm" />
+      <div class="list-emp">
+        <div class="list-name">{{ row.employeeName }}</div>
+        <div class="list-sub">
+          {{ row.departmentName || '—' }}
+          <span *ngIf="row.shiftStartTime"> · Shift {{ row.shiftStartTime }}</span>
+        </div>
+      </div>
+
+      <div class="list-punch">
+        <div class="punch-time">
+          <span class="punch-label">In</span>
+          <strong>{{ formatTime(row.checkInTime) }}</strong>
+          <span *ngIf="row.checkInSource" class="src-badge" [ngClass]="sourceClass(row.checkInSource)">
+            {{ sourceLabel(row.checkInSource) }}
+          </span>
+        </div>
+        <div class="punch-time">
+          <span class="punch-label">Out</span>
+          <strong>{{ formatTime(row.checkOutTime) }}</strong>
+          <span *ngIf="row.checkOutSource" class="src-badge" [ngClass]="sourceClass(row.checkOutSource)">
+            {{ sourceLabel(row.checkOutSource) }}
+          </span>
+        </div>
+      </div>
+
+      <span class="status-badge" [ngClass]="statusClass(row)">{{ row.statusLabel || '—' }}</span>
+
+      <div class="list-actions" *ngIf="canEdit">
+        <button
+          *ngIf="canCheckIn(row)"
+          type="button"
+          class="action-btn ab-in"
+          (click)="manualPunch(row, 'checkin')"
+          [disabled]="actionBusy"
+        >
+          <mat-icon>login</mat-icon> Check-in
+        </button>
+        <button
+          *ngIf="canCheckOut(row)"
+          type="button"
+          class="action-btn ab-out"
+          (click)="manualPunch(row, 'checkout')"
+          [disabled]="actionBusy"
+        >
+          <mat-icon>logout</mat-icon> Check-out
+        </button>
+        <ng-container *ngIf="settings.allowsFace">
+          <button
+            *ngIf="!row.isFaceEnrolled"
+            type="button"
+            class="action-btn ab-face"
+            (click)="startEnroll(row)"
+            [disabled]="actionBusy"
+            title="Enroll face"
+          >
+            <mat-icon>face_retouching_natural</mat-icon> Enroll
+          </button>
+          <button
+            *ngIf="row.isFaceEnrolled"
+            type="button"
+            class="action-btn ab-muted"
+            (click)="deactivateFace(row)"
+            [disabled]="actionBusy"
+            title="Remove face enrollment"
+          >
+            <mat-icon>face_retouching_off</mat-icon>
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="visibleRows.length === 0">
+      <mat-icon>person_search</mat-icon>
+      <p>No employees found for this criteria.</p>
+    </div>
+  </div>
+
+  <input
+    #enrollFileInput
+    type="file"
+    accept="image/*"
+    hidden
+    (change)="onEnrollFileSelected($event)"
+  />
+  <input
+    #faceFileInput
+    type="file"
+    accept="image/*"
+    capture="user"
+    hidden
+    (change)="onFaceFileSelected($event)"
+  />
+
+  <div class="note-modal" *ngIf="faceModalOpen" (click)="closeFaceModal()">
+    <div class="note-box face-box" (click)="$event.stopPropagation()">
+      <h3>Face recognition punch</h3>
+      <p class="face-hint">Capture a photo or upload an image to punch attendance.</p>
+      <div class="webcam-wrap">
+        <video #webcamVideo autoplay playsinline muted></video>
+        <canvas #webcamCanvas hidden></canvas>
+      </div>
+      <p class="webcam-error" *ngIf="webcamError">{{ webcamError }}</p>
+      <div class="note-footer face-footer">
+        <button type="button" class="nb-cancel" (click)="closeFaceModal()">Cancel</button>
+        <button type="button" class="nb-cancel" (click)="triggerFaceFile()" [disabled]="actionBusy">
+          <mat-icon>upload</mat-icon> Upload
+        </button>
+        <button type="button" class="nb-save" (click)="captureWebcamAndPunch()" [disabled]="actionBusy || !!webcamError">
+          <mat-icon *ngIf="!actionBusy">photo_camera</mat-icon>
+          <mat-icon class="spinning" *ngIf="actionBusy">sync</mat-icon>
+          {{ actionBusy ? 'Processing…' : 'Capture & punch' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
