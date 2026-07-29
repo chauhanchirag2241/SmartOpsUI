@@ -11,7 +11,10 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
-import { MappingService, ClassSubjectTeacherMapping, MappingLookupOption } from '../../../core/services/mapping.service';
+import { MappingService, ClassSubjectTeacherMapping, MappingLookupOption, MappingLookups } from '../../../core/services/mapping.service';
+import { ClassService } from '../../../core/services/class.service';
+import { SubjectService } from '../../../core/services/subject.service';
+import { EmployeeService } from '../../../core/services/employee.service';
 import { PeriodTemplateService } from '../../../core/services/period-template.service';
 import {
   TimetableService,
@@ -65,6 +68,9 @@ const DAYS = [
 export class ClassTimetableComponent implements OnInit {
   private readonly timetableService = inject(TimetableService);
   private readonly mappingService = inject(MappingService);
+  private readonly classService = inject(ClassService);
+  private readonly subjectService = inject(SubjectService);
+  private readonly employeeService = inject(EmployeeService);
   private readonly periodTemplateService = inject(PeriodTemplateService);
   private readonly snackBar = inject(NotificationService);
   private readonly permissions = inject(PermissionService);
@@ -611,7 +617,7 @@ export class ClassTimetableComponent implements OnInit {
     const subjects = this.uniqueSubjects();
     if (!subjects.length) {
       this.snackBar.open(
-        'No subjects available. Add subjects in Subject Master first.',
+        'No subjects available. Add subjects in Subject Master, then refresh this page.',
         'Close',
         { duration: 4500, panelClass: 'snack-error' },
       );
@@ -721,14 +727,50 @@ export class ClassTimetableComponent implements OnInit {
   private loadLookups(yearId?: string): void {
     this.loading = true;
     forkJoin({
-      lookups: this.mappingService.getLookups(yearId),
-      templates: this.periodTemplateService.getDropdown().pipe(catchError(() => of([] as { id: string; name: string }[]))),
+      classes: this.classService.getClassDropdown(yearId).pipe(
+        catchError(() => of([] as unknown[])),
+      ),
+      subjects: this.subjectService.getSubjectDropdown().pipe(
+        catchError(() => of([] as unknown[])),
+      ),
+      employees: this.employeeService.getClassTeacherDropdown().pipe(
+        catchError(() => of([] as { id: string; name: string }[])),
+      ),
+      lookups: this.mappingService.getLookups(yearId).pipe(
+        catchError(() =>
+          of({
+            classes: [],
+            subjects: [],
+            teachers: [],
+            employees: [],
+            academicYears: [],
+            classSummaries: [],
+          } satisfies MappingLookups),
+        ),
+      ),
+      templates: this.periodTemplateService.getDropdown().pipe(
+        catchError(() => of([] as { id: string; name: string }[])),
+      ),
     }).subscribe({
-      next: ({ lookups, templates }) => {
-        this.classes = lookups.classes || [];
-        this.employees = lookups.employees || lookups.teachers || [];
-        this.lookupSubjects = lookups.subjects || [];
-        this.periodTemplates = templates || [];
+      next: ({ classes, subjects, employees, lookups, templates }) => {
+        this.classes = this.normalizeDropdownOptions(classes);
+        if (!this.classes.length && lookups.classes?.length) {
+          this.classes = lookups.classes;
+        }
+
+        this.lookupSubjects = this.normalizeDropdownOptions(subjects);
+        if (!this.lookupSubjects.length && lookups.subjects?.length) {
+          this.lookupSubjects = lookups.subjects;
+        }
+
+        this.employees = (employees || [])
+          .map((e) => ({ id: e.id, name: e.name }))
+          .filter((e) => e.id && e.name);
+        if (!this.employees.length) {
+          this.employees = lookups.employees || lookups.teachers || [];
+        }
+
+        this.periodTemplates = this.normalizeDropdownOptions(templates);
 
         this.syncClassFilterOptions();
         this.versionConfigs['classId'] = {
@@ -740,7 +782,10 @@ export class ClassTimetableComponent implements OnInit {
         };
         this.versionConfigs['periodTemplateId'] = {
           ...this.versionConfigs['periodTemplateId'],
-          options: this.periodTemplates.map((t) => ({ value: t.id, label: t.name })),
+          options: [
+            { label: SELECT_PLACEHOLDER, value: '' },
+            ...this.periodTemplates.map((t) => ({ value: t.id, label: t.name })),
+          ],
         };
 
         // Keep only still-valid selected class ids.
@@ -751,6 +796,13 @@ export class ClassTimetableComponent implements OnInit {
         const currentTemplate = this.versionForm.get('periodTemplateId')?.value;
         if ((!currentTemplate || !this.periodTemplates.some((t) => t.id === currentTemplate)) && this.periodTemplates.length) {
           this.versionForm.patchValue({ periodTemplateId: this.periodTemplates[0].id });
+        }
+
+        if (this.showDetail && this.formMode === 'add') {
+          const currentClassId = String(this.versionForm.get('classId')?.value ?? '');
+          if (!currentClassId || !this.classes.some((c) => c.id === currentClassId)) {
+            this.versionForm.patchValue({ classId: this.classes[0]?.id || '' });
+          }
         }
 
         this.loading = false;
@@ -765,6 +817,25 @@ export class ClassTimetableComponent implements OnInit {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private normalizeDropdownOptions(items: unknown): MappingLookupOption[] {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+    return items
+      .map((raw) => {
+        const row = raw as Record<string, unknown>;
+        const id = String(row['id'] ?? row['Id'] ?? '');
+        const name = String(row['name'] ?? row['Name'] ?? '').trim();
+        const code = row['code'] ?? row['Code'] ?? row['subjectCode'] ?? row['SubjectCode'];
+        return {
+          id,
+          name,
+          ...(code != null && String(code) ? { code: String(code) } : {}),
+        };
+      })
+      .filter((c) => c.id && c.name);
   }
 
   private loadVersionList(): void {
