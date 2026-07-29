@@ -133,14 +133,14 @@
         </thead>
         <tbody>
           <ng-container *ngFor="let h of detail.feeHeads">
-            <tr class="fee-head-summary-row" (click)="toggleHeadExpand(h.feeTypeId)">
+            <tr class="fee-head-summary-row" (click)="toggleHeadExpand(h.feeHeadId)">
               <td>
                 <mat-icon class="expand-icon" *ngIf="h.installments.length > 1">
-                  {{ isHeadExpanded(h.feeTypeId) ? 'expand_less' : 'chevron_right' }}
+                  {{ isHeadExpanded(h.feeHeadId) ? 'expand_less' : 'chevron_right' }}
                 </mat-icon>
               </td>
               <td>
-                <div style="font-weight: 500">{{ h.feeTypeName }}</div>
+                <div style="font-weight: 500">{{ h.feeHeadName }}</div>
                 <div style="font-size: 9px; color: var(--muted)">
                   {{ h.collectionTypeLabel }}
                 </div>
@@ -157,7 +157,7 @@
             <tr
               *ngFor="let inst of h.installments"
               class="installment-row"
-              [class.hidden-installment]="h.installments.length > 1 && !isHeadExpanded(h.feeTypeId)"
+              [class.hidden-installment]="h.installments.length > 1 && !isHeadExpanded(h.feeHeadId)"
             >
               <td></td>
               <td class="installment-label">{{ inst.periodLabel }}</td>
@@ -251,7 +251,7 @@
               </span>
               <span class="alloc-name" [title]="a.label">
                 <span class="alloc-head">
-                  {{ a.feeTypeName }}
+                  {{ a.feeHeadName }}
                   <span *ngIf="a.isDiscount" class="badge b-discount alloc-discount-tag">Discount</span>
                 </span>
                 <span class="alloc-period">{{ a.label }}</span>

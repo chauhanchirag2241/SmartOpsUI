@@ -13,12 +13,6 @@ export enum StreamGroup {
   Regional = 'Regional',
 }
 
-export enum Shift {
-  Morning = 'Morning',
-  Afternoon = 'Afternoon',
-  Evening = 'Evening',
-}
-
 export enum Medium {
   English = 'English',
   Hindi = 'Hindi',

@@ -6,7 +6,6 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FeeStructureService } from '../../../core/services/fee-structure.service';
-import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table/smart-data-table.component';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
@@ -24,9 +23,8 @@ import {
   categoryBadgeClass,
   collectionTypeBadgeClass,
   extractApiError,
-  normalizeDropdownItem,
   normalizeFeeStructureVersion,
-  normalizeFeeType,
+  normalizeFeeHead,
   versionStatusBadgeClass,
 } from '../fees.shared';
 
@@ -46,7 +44,6 @@ import {
 })
 export class FeeStructureComponent implements OnInit {
   private readonly service = inject(FeeStructureService);
-  private readonly academicYearService = inject(AcademicYearService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissionService = inject(PermissionService);
   private readonly snackBar = inject(NotificationService);
@@ -56,21 +53,19 @@ export class FeeStructureComponent implements OnInit {
 
   tableConfig!: DataTableConfig;
   versions: Record<string, unknown>[] = [];
-  academicYears: ReturnType<typeof normalizeDropdownItem>[] = [];
-  academicYearFilter = '';
   currentStatusFilter = 'All';
   loading = false;
 
   selectedVersion: ReturnType<typeof normalizeFeeStructureVersion> | null = null;
-  feeTypes: ReturnType<typeof normalizeFeeType>[] = [];
+  feeHeads: ReturnType<typeof normalizeFeeHead>[] = [];
   loadingTypes = false;
 
   showCreateVersionModal = false;
-  showFeeTypeModal = false;
-  createVersionForm = { academicYearId: '', effectiveDate: '', cloneFromVersionId: '' };
+  showFeeHeadModal = false;
+  createVersionForm = { effectiveDate: '', cloneFromVersionId: '' };
   categoryOptions = FEE_CATEGORY_OPTIONS;
   collectionTypeOptions = FEE_COLLECTION_TYPE_OPTIONS;
-  feeTypeForm = {
+  feeHeadForm = {
     name: '',
     category: FeeCategory.Academic,
     collectionType: FeeCollectionType.PeriodWise,
@@ -82,14 +77,13 @@ export class FeeStructureComponent implements OnInit {
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Fee Structure',
-      subtitle: 'Academic year wise versions · Draft → Publish → Activate',
+      subtitle: 'Draft → Publish → Activate',
       showAddButton: true,
       addButtonText: 'New structure',
       addButtonIcon: 'add',
       addButtonClass: 'btn-primary',
     },
     columns: [
-      { key: 'academicYearTitle', label: 'Academic year', sortable: true },
       { key: 'versionLabel', label: 'Version', sortable: true, width: '90px' },
       {
         key: 'statusLabel',
@@ -103,7 +97,7 @@ export class FeeStructureComponent implements OnInit {
         },
       },
       { key: 'effectiveDate', label: 'Effective date', sortable: true, cellType: 'date' },
-      { key: 'feeTypeCount', label: 'Fee heads', sortable: true, align: 'right', width: '90px' },
+      { key: 'feeHeadCount', label: 'Fee heads', sortable: true, align: 'right', width: '90px' },
     ],
     filtersInPanel: true,
     filters: [
@@ -119,8 +113,8 @@ export class FeeStructureComponent implements OnInit {
       { label: 'Create new version', icon: 'content_copy', iconColor: '#854f0b' },
       { label: 'Delete draft', icon: 'delete', danger: true, separatorBefore: true },
     ],
-    searchPlaceholder: 'Search academic year or version...',
-    searchKeys: ['academicYearTitle', 'versionLabel', 'statusLabel'],
+    searchPlaceholder: 'Search version...',
+    searchKeys: ['versionLabel', 'statusLabel'],
     itemLabel: 'versions',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50],
@@ -138,36 +132,14 @@ export class FeeStructureComponent implements OnInit {
       MenuCodes.FeesStructure,
       this.ayContext.isReadOnlyScope(),
     );
-    this.loadAcademicYears();
-  }
-
-  loadAcademicYears(): void {
-    this.academicYearService.getAcademicYearDropdown().subscribe({
-      next: (years) => {
-        this.academicYears = asArray(years).map(normalizeDropdownItem);
-        const effective = this.ayContext.effectiveYearId();
-        if (effective && this.academicYears.some((y) => y.id === effective)) {
-          this.academicYearFilter = effective;
-        } else if (!this.academicYearFilter && this.academicYears.length) {
-          this.academicYearFilter = this.academicYears[0].id;
-        }
-        this.loadVersions();
-      },
-      error: () => this.toast('Failed to load academic years', true),
-    });
-  }
-
-  get tableFilterPanelActive(): boolean {
-    return !!this.academicYearFilter || this.currentStatusFilter !== 'All';
-  }
-
-  onAcademicYearFilterChange(): void {
-    this.closeManagePanel();
     this.loadVersions();
   }
 
+  get tableFilterPanelActive(): boolean {
+    return this.currentStatusFilter !== 'All';
+  }
+
   onTableFiltersCleared(): void {
-    this.academicYearFilter = '';
     this.currentStatusFilter = 'All';
     this.closeManagePanel();
     this.loadVersions();
@@ -179,7 +151,7 @@ export class FeeStructureComponent implements OnInit {
     }
     this.refreshView();
     const status = this.currentStatusFilter === 'All' ? undefined : this.currentStatusFilter.toLowerCase();
-    this.service.getVersions(this.academicYearFilter || undefined, status).subscribe({
+    this.service.getVersions(status).subscribe({
       next: (list) => {
         this.versions = asArray(list).map((v) => {
           const n = normalizeFeeStructureVersion(v);
@@ -216,7 +188,6 @@ export class FeeStructureComponent implements OnInit {
   onAddButtonClicked(): void {
     if (!this.permissionService.canAdd(MenuCodes.FeesStructure)) return;
     this.createVersionForm = {
-      academicYearId: this.academicYearFilter || this.academicYears[0]?.id || '',
       effectiveDate: new Date().toISOString().split('T')[0],
       cloneFromVersionId: '',
     };
@@ -250,13 +221,13 @@ export class FeeStructureComponent implements OnInit {
   openManagePanel(versionId: string): void {
     this.loadingTypes = true;
     this.selectedVersion = null;
-    this.feeTypes = [];
+    this.feeHeads = [];
     this.refreshView();
 
     this.service.getVersionDetail(versionId).subscribe({
       next: (detail) => {
         this.selectedVersion = normalizeFeeStructureVersion(detail);
-        this.feeTypes = asArray(detail?.feeTypes ?? detail?.FeeTypes).map(normalizeFeeType);
+        this.feeHeads = asArray(detail?.feeHeads ?? detail?.FeeHeads).map(normalizeFeeHead);
         this.loadingTypes = false;
         this.refreshView();
       },
@@ -270,17 +241,12 @@ export class FeeStructureComponent implements OnInit {
 
   closeManagePanel(): void {
     this.selectedVersion = null;
-    this.feeTypes = [];
+    this.feeHeads = [];
     this.refreshView();
   }
 
   createVersion(): void {
-    if (!this.createVersionForm.academicYearId) {
-      this.toast('Select academic year', true);
-      return;
-    }
     const body: Record<string, unknown> = {
-      academicYearId: this.createVersionForm.academicYearId,
       effectiveDate: this.createVersionForm.effectiveDate || null,
     };
     if (this.createVersionForm.cloneFromVersionId) {
@@ -308,11 +274,11 @@ export class FeeStructureComponent implements OnInit {
         title: 'Publish fee structure?',
         description:
           'Are you sure you want to publish this fee structure? It will be locked for editing and can be used for class-wise fee amounts.',
-        recordName: `${version.academicYearTitle} — ${version.versionLabel}`,
+        recordName: version.versionLabel,
         recordMeta: `Status: ${version.statusLabel}`,
         initials: 'FS',
         warningMessage:
-          'The current published version for this academic year will be moved to Archived. Fee heads cannot be changed after publish unless you create a new version.',
+          'The current published fee structure will be moved to Archived. Fee heads cannot be changed after publish unless you create a new version.',
         confirmButtonText: 'Yes, publish',
         cancelButtonText: 'No',
         variant: 'primary',
@@ -361,8 +327,8 @@ export class FeeStructureComponent implements OnInit {
       data: {
         title: 'Activate fee structure?',
         description:
-          'Previous active structure for this academic year will be archived.',
-        recordName: `${version.academicYearTitle} — ${version.versionLabel}`,
+          'Previous active fee structure will be archived.',
+        recordName: version.versionLabel,
         recordMeta: `Status: ${version.statusLabel}`,
         initials: 'FS',
         confirmButtonText: 'Yes, activate',
@@ -426,7 +392,7 @@ export class FeeStructureComponent implements OnInit {
       data: {
         title: 'Delete draft fee structure?',
         description: 'This draft and its fee heads will be removed.',
-        recordName: `${version.academicYearTitle} ${version.versionLabel}`,
+        recordName: version.versionLabel,
         initials: 'FS',
       },
       panelClass: 'erp-dialog',
@@ -445,9 +411,9 @@ export class FeeStructureComponent implements OnInit {
     });
   }
 
-  openAddFeeType(): void {
+  openAddFeeHead(): void {
     if (!this.selectedVersion || this.selectedVersion.isLocked) return;
-    this.feeTypeForm = {
+    this.feeHeadForm = {
       name: '',
       category: FeeCategory.Academic,
       collectionType: FeeCollectionType.PeriodWise,
@@ -455,18 +421,18 @@ export class FeeStructureComponent implements OnInit {
       isRefundable: false,
       studentWiseDifferentAmount: false,
     };
-    this.showFeeTypeModal = true;
+    this.showFeeHeadModal = true;
     this.refreshView();
   }
 
-  saveFeeType(): void {
-    if (!this.selectedVersion || !this.feeTypeForm.name.trim()) {
+  saveFeeHead(): void {
+    if (!this.selectedVersion || !this.feeHeadForm.name.trim()) {
       this.toast('Fee head name is required', true);
       return;
     }
-    this.service.createFeeType(this.selectedVersion.id, this.feeTypeForm).subscribe({
+    this.service.createFeeHead(this.selectedVersion.id, this.feeHeadForm).subscribe({
       next: () => {
-        this.showFeeTypeModal = false;
+        this.showFeeHeadModal = false;
         this.openManagePanel(this.selectedVersion!.id);
         this.loadVersions();
         this.toast('Fee head added');
@@ -475,7 +441,7 @@ export class FeeStructureComponent implements OnInit {
     });
   }
 
-  deleteFeeType(ft: ReturnType<typeof normalizeFeeType>): void {
+  deleteFeeHead(ft: ReturnType<typeof normalizeFeeHead>): void {
     if (!this.selectedVersion || this.selectedVersion.isLocked) return;
 
     const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
@@ -495,7 +461,7 @@ export class FeeStructureComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (!confirmed) return;
-      this.service.deleteFeeType(ft.id).subscribe({
+      this.service.deleteFeeHead(ft.id).subscribe({
         next: () => {
           this.openManagePanel(this.selectedVersion!.id);
           this.loadVersions();

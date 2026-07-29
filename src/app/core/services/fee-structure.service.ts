@@ -7,9 +7,8 @@ import { ApiService } from './api.service';
 export class FeeStructureService {
   private readonly api = inject(ApiService);
 
-  getVersions(academicYearId?: string, status?: string): Observable<any[]> {
+  getVersions(status?: string): Observable<any[]> {
     let params = new HttpParams();
-    if (academicYearId) params = params.set('academicYearId', academicYearId);
     if (status && status !== 'all') params = params.set('status', status);
     return this.api.get<any[]>('fees/structure/versions', params);
   }
@@ -38,23 +37,15 @@ export class FeeStructureService {
     return this.api.delete<void>(`fees/structure/versions/${versionId}`);
   }
 
-  createFeeType(versionId: string, body: unknown): Observable<any> {
-    return this.api.post<any>(`fees/structure/versions/${versionId}/types`, body);
+  createFeeHead(versionId: string, body: unknown): Observable<any> {
+    return this.api.post<any>(`fees/structure/versions/${versionId}/heads`, body);
   }
 
-  updateFeeType(typeId: string, body: unknown): Observable<any> {
-    return this.api.put<any>(`fees/structure/types/${typeId}`, body);
+  updateFeeHead(typeId: string, body: unknown): Observable<any> {
+    return this.api.put<any>(`fees/structure/heads/${typeId}`, body);
   }
 
-  deleteFeeType(typeId: string): Observable<void> {
-    return this.api.delete<void>(`fees/structure/types/${typeId}`);
-  }
-
-  getSettings(): Observable<any> {
-    return this.api.get<any>('fees/structure/settings');
-  }
-
-  upsertSettings(body: unknown): Observable<any> {
-    return this.api.put<any>('fees/structure/settings', body);
+  deleteFeeHead(typeId: string): Observable<void> {
+    return this.api.delete<void>(`fees/structure/heads/${typeId}`);
   }
 }

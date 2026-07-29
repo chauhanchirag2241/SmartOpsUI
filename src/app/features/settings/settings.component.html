@@ -38,9 +38,9 @@
               <button
                 type="button"
                 class="chip"
-                [class.selected]="isStaffTypeSelected(type.code)"
+                [class.selected]="isStaffTypeSelected(type.name)"
                 [disabled]="!canEdit"
-                (click)="toggleStaffType(type.code)"
+                (click)="toggleStaffType(type.name)"
               >
                 {{ type.name }}
               </button>
@@ -82,9 +82,9 @@
               <button
                 type="button"
                 class="chip"
-                [class.selected]="isLongLeaveTypeSelected(type.code)"
+                [class.selected]="isLongLeaveTypeSelected(type.name)"
                 [disabled]="!canEdit"
-                (click)="toggleLongLeaveType(type.code)"
+                (click)="toggleLongLeaveType(type.name)"
               >
                 {{ type.name }}
               </button>

@@ -4,7 +4,6 @@ import {
   Gender,
   Medium,
   Section,
-  Shift,
   SubjectCategory,
   SubjectType,
 } from '../enums/field-options.enum';
@@ -120,7 +119,8 @@ function mapClassField(field: string, value: string): string | null {
     case 'medium':
       return intToEnumLabel(Medium, value);
     case 'shift':
-      return intToEnumLabel(Shift, value);
+    case 'shiftid':
+      return null;
     case 'streamgroup':
       return mapStreamGroup(value);
     default:

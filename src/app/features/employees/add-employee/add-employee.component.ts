@@ -56,7 +56,13 @@ import { FormSection, FormTab } from '../../../shared/interfaces/form-layout';
 import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
 import { MappingOption } from '../../../shared/mapping/mapping.types';
 
-const STAFF_USER_TYPE_CODES = new Set(['TEACHER', 'ACCOUNTANT', 'STAFF']);
+const STAFF_USER_TYPE_NAMES = new Set([
+  'teacher',
+  'accountant',
+  'non-academic staff',
+  'office staff',
+  'principal',
+]);
 
 @Component({
   selector: 'app-add-employee',
@@ -343,7 +349,21 @@ export class AddEmployeeComponent implements OnInit {
       maxLength: 10,
       validations: [{ name: 'pattern', message: 'Enter a valid 10-digit number', validator: Validators.pattern('^[0-9]{10}$') }],
     },
-    employeeId: { type: 'input', controlName: 'employeeId', label: 'Employee ID', disabled: true },
+    employeeCode: {
+      type: 'input',
+      controlName: 'employeeCode',
+      label: 'Employee code',
+      placeholder: 'e.g. EMP-001',
+      maxLength: 50,
+      validations: [
+        { name: 'required', validator: Validators.required, message: 'Employee code is required' },
+        {
+          name: 'pattern',
+          validator: Validators.pattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
+          message: 'Use letters, numbers, dot, hyphen or underscore',
+        },
+      ],
+    },
     experience: {
       type: 'input',
       controlName: 'experience',
@@ -441,7 +461,7 @@ export class AddEmployeeComponent implements OnInit {
       'personal.emergencyContact.name',
       'personal.emergencyContact.mobile',
     ],
-    1: ['professional.joiningDate'],
+    1: ['professional.employeeCode', 'professional.joiningDate'],
     2: ['organization.employeeTypeId', 'organization.portalRoleId'],
     3: [],
     4: [],
@@ -450,7 +470,7 @@ export class AddEmployeeComponent implements OnInit {
   readonly personalFields = ['firstName', 'lastName', 'dob', 'gender', 'bloodGroup', 'aadhaarNumber', 'panNumber'];
   readonly contactFields = ['mobile', 'alternateMobile', 'email', 'address'];
   readonly emergencyContactFields = ['emergencyContactName', 'relation', 'emergencyContactMobile'];
-  readonly employmentFields = ['employeeId', 'joiningDate', 'designation', 'experience', 'salaryGrade', 'employmentType'];
+  readonly employmentFields = ['employeeCode', 'joiningDate', 'designation', 'experience', 'salaryGrade', 'employmentType'];
   readonly qualificationFields = ['degree', 'university', 'year', 'percentage'];
   readonly bankFields = ['accountNumber', 'ifscCode', 'bankName'];
   readonly organizationFields = [
@@ -558,7 +578,10 @@ export class AddEmployeeComponent implements OnInit {
         }),
       }),
       professional: this.fb.group({
-        employeeId: [{ value: 'Auto-generated', disabled: true }],
+        employeeCode: [
+          '',
+          [Validators.required, Validators.maxLength(50), Validators.pattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)],
+        ],
         joiningDate: ['', Validators.required],
         designation: [null],
         experience: [0, experienceValidator()],
@@ -604,24 +627,31 @@ export class AddEmployeeComponent implements OnInit {
     this.wirePortalAccessValidation();
     this.loadLookups();
     if (this.mode === 'add') {
-      this.generateEmployeeId();
       this.setupUsernameGeneration();
       this.professionalGroup.patchValue({ joiningDate: this.today() });
+    }
+    if (this.mode === 'edit') {
+      // Identity fields (name/mobile/email) live on `users` and are not updated via employee edit yet — keep read-only.
+      this.lockIdentityFields();
     }
     if (this.mode !== 'add' && this.employeeId) {
       this.loadEmployeeData();
     }
   }
 
+  private lockIdentityFields(): void {
+    this.personalGroup.get('firstName')?.disable({ emitEvent: false });
+    this.personalGroup.get('lastName')?.disable({ emitEvent: false });
+    this.personalGroup.get('mobile')?.disable({ emitEvent: false });
+    this.personalGroup.get('email')?.disable({ emitEvent: false });
+  }
+
   private loadLookups(): void {
     this.userTypeService.getUserTypes().subscribe({
       next: (types) => {
-        this.userTypes = types
-          .filter((t) => STAFF_USER_TYPE_CODES.has(String(t.code ?? '').toUpperCase()))
-          .map((t) => ({
-            ...t,
-            name: String(t.code ?? '').toUpperCase() === 'STAFF' ? 'Other Staff' : t.name,
-          }));
+        this.userTypes = types.filter((t) =>
+          STAFF_USER_TYPE_NAMES.has(String(t.name ?? t.code ?? '').trim().toLowerCase()),
+        );
         this.configs['employeeTypeId'].options = this.userTypes.map((t) => ({ label: t.name, value: t.id }));
         this.lookupsReady.userTypes = true;
         this.tryApplyOrganizationLookups();
@@ -690,11 +720,9 @@ export class AddEmployeeComponent implements OnInit {
     if (this.mode !== 'add') return;
     const first = (this.employeeForm.get('personal.firstName')?.value || '').trim().toLowerCase();
     const last = (this.employeeForm.get('personal.lastName')?.value || '').trim().toLowerCase();
-    const employeeId = this.employeeForm.get('professional.employeeId')?.value || '';
-    const idSuffix = employeeId.split('-').pop() || '';
     if (first || last) {
       const base = last ? `${first}.${last}` : first;
-      const username = `${base}${idSuffix ? '.' + idSuffix : ''}`.replace(/[^a-z0-9.]/g, '');
+      const username = base.replace(/[^a-z0-9.]/g, '');
       this.organizationGroup.get('username')?.setValue(username);
     }
   }
@@ -796,11 +824,13 @@ export class AddEmployeeComponent implements OnInit {
     if (direct) {
       return String(direct);
     }
-    const code = String(data['userTypeCode'] ?? data['UserTypeCode'] ?? '').toUpperCase();
-    if (!code) {
+    const typeName = String(data['userTypeCode'] ?? data['UserTypeCode'] ?? '').trim().toLowerCase();
+    if (!typeName) {
       return null;
     }
-    return this.userTypes.find((t) => String(t.code ?? '').toUpperCase() === code)?.id ?? null;
+    return (
+      this.userTypes.find((t) => String(t.name ?? t.code ?? '').trim().toLowerCase() === typeName)?.id ?? null
+    );
   }
 
   private resolvePortalRoleId(data: Record<string, unknown>): string | null {
@@ -874,7 +904,7 @@ export class AddEmployeeComponent implements OnInit {
             address: data.address,
           },
           professional: {
-            employeeId: data.employeeId,
+            employeeCode: data.employeeCode ?? data.employeeId,
             joiningDate: this.toLocalDate(data.joiningDate),
             designation: data.designation,
             experience: clampExperienceValue(data.experience),
@@ -1052,10 +1082,18 @@ export class AddEmployeeComponent implements OnInit {
 
     action.subscribe({
       next: () => {
-        if (this.mode === 'add') {
-          this.persistEmployeeSequence();
+        if (this.mode === 'edit') {
+          this.snackBar.open('Employee updated successfully', 'Close', { duration: 3000 });
+        } else {
+          const username = String(this.organizationGroup.get('username')?.value || '').trim();
+          this.snackBar.success(
+            'Employee added successfully',
+            username
+              ? `Login username: ${username} · Default password: SmartOps@123`
+              : 'Default password: SmartOps@123',
+            5000,
+          );
         }
-        this.snackBar.open(`Employee ${this.mode === 'edit' ? 'updated' : 'added'} successfully`, 'Close', { duration: 3000 });
         this.saved.emit();
       },
       error: (err) => {
@@ -1092,20 +1130,5 @@ export class AddEmployeeComponent implements OnInit {
     const [year, month, day] = String(value).substring(0, 10).split('-').map(Number);
     if (!year || !month || !day) return null;
     return new Date(year, month - 1, day);
-  }
-
-  private generateEmployeeId(): void {
-    const year = new Date().getFullYear();
-    const storageKey = `smartops-emp-sequence-${year}`;
-    const next = Number(localStorage.getItem(storageKey) || '0') + 1;
-    const employeeId = `EMP-${year}-${String(next).padStart(4, '0')}`;
-    this.employeeForm.get('professional.employeeId')?.setValue(employeeId);
-  }
-
-  private persistEmployeeSequence(): void {
-    const employeeId = String(this.employeeForm.get('professional.employeeId')?.value || '');
-    const match = employeeId.match(/^EMP-(\d{4})-(\d{4})$/);
-    if (!match) return;
-    localStorage.setItem(`smartops-emp-sequence-${match[1]}`, String(Number(match[2])));
   }
 }

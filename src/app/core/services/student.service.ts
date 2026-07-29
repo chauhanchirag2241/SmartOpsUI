@@ -60,6 +60,7 @@ export class StudentService {
       address: studentData.address,
       remarks: studentData.remarks,
       status: studentData.status,
+      portalAccess: true,
       parents: [
         {
           relationType: 'Father',
@@ -93,7 +94,7 @@ export class StudentService {
         }
       ] : [],
       feeHeadSelections: (studentData.feeHeadSelections ?? []).map((s: any) => ({
-        feeTypeId: s.feeTypeId,
+        feeHeadId: s.feeHeadId,
         isIncluded: Boolean(s.isIncluded),
         customAnnualAmount:
           s.customAnnualAmount != null && s.customAnnualAmount !== ''
@@ -153,9 +154,9 @@ export class StudentService {
           academicYearId: studentData.academicYearId,
           classId: studentData.classId,
           rollNumber: studentData.rollNumber,
-          feeStructureVersionId:
-            studentData.feeStructureVersionId ??
-            academic?.feeStructureVersionId ??
+          feeStructureId:
+            studentData.feeStructureId ??
+            academic?.feeStructureId ??
             undefined,
         }
       ],

@@ -9,6 +9,7 @@ export type AuditHistoryEntityType =
   | 'employee'
   | 'class'
   | 'subject'
+  | 'shift'
   | 'period'
   | 'academic-year'
   | 'visitor'

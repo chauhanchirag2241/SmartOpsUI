@@ -11,7 +11,6 @@ export interface IUserPermissionResponse {
   userId: string;
   roleId: string;
   roleName: string;
-  roleCode: string;
   permissions: IMenuPermission[];
 }
 

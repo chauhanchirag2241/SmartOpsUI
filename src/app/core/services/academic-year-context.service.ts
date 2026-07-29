@@ -93,12 +93,12 @@ export class AcademicYearContextService {
 
   canSwitchYear(): boolean {
     const roles = (this.auth.currentUser?.roles ?? []).map((r) => r.toUpperCase());
-    const roleCode = this.auth.currentUser?.roleCode?.toUpperCase() ?? '';
+    const primary = (this.auth.currentUser?.role ?? '').toUpperCase();
     return (
       roles.includes('ADMIN') ||
       roles.includes('SCHOOL_ADMIN') ||
-      roleCode === 'ADMIN' ||
-      roleCode === 'SCHOOL_ADMIN'
+      primary === 'ADMIN' ||
+      primary === 'SCHOOL_ADMIN'
     );
   }
 

@@ -77,7 +77,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
 
   readonly filterForm = this.fb.group({
     academicYearId: [''],
-    feeStructureVersionId: [''],
+    feeStructureId: [''],
   });
 
   yearConfig: FormFieldConfig = {
@@ -90,7 +90,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
 
   versionConfig: FormFieldConfig = {
     type: 'select',
-    controlName: 'feeStructureVersionId',
+    controlName: 'feeStructureId',
     label: 'Fee structure',
     placeholder: 'Select fee structure',
     options: [],
@@ -101,8 +101,8 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
     return String(this.filterForm.get('academicYearId')?.value ?? '');
   }
 
-  get feeStructureVersionId(): string {
-    return String(this.filterForm.get('feeStructureVersionId')?.value ?? '');
+  get feeStructureId(): string {
+    return String(this.filterForm.get('feeStructureId')?.value ?? '');
   }
 
   ngOnInit(): void {
@@ -111,7 +111,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
     );
     this.subs.add(
       this.filterForm
-        .get('feeStructureVersionId')!
+        .get('feeStructureId')!
         .valueChanges.subscribe(() => this.onVersionChange()),
     );
 
@@ -129,7 +129,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
             : this.academicYears[0]?.id;
         if (pick) {
           this.filterForm.patchValue({ academicYearId: pick }, { emitEvent: false });
-          this.loadVersions();
+          this.loadClasses();
         }
         this.refreshView();
       },
@@ -138,6 +138,8 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
         this.refreshView();
       },
     });
+
+    this.loadVersions();
   }
 
   ngOnDestroy(): void {
@@ -161,8 +163,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   onYearChange(): void {
     this.selectedClassId = '';
     this.amountData = null;
-    this.filterForm.patchValue({ feeStructureVersionId: '' }, { emitEvent: false });
-    this.loadVersions();
+    this.loadClasses();
   }
 
   onVersionChange(): void {
@@ -172,11 +173,10 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   }
 
   loadVersions(): void {
-    if (!this.academicYearId) return;
     this.loadingVersions = true;
     this.syncVersionConfig([], true);
     this.refreshView();
-    this.feeStructureService.getVersions(this.academicYearId).subscribe({
+    this.feeStructureService.getVersions().subscribe({
       next: (list) => {
         this.versions = asArray(list).map(normalizeFeeStructureVersion);
         const draft = this.versions.find((v) => v.statusLabel === 'Draft');
@@ -186,7 +186,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
           draft?.id || published?.id || active?.id || this.versions[0]?.id || '';
         this.syncVersionConfig(this.versions, !this.versions.length);
         this.filterForm.patchValue(
-          { feeStructureVersionId: nextVersionId },
+          { feeStructureId: nextVersionId },
           { emitEvent: false },
         );
         this.loadingVersions = false;
@@ -215,7 +215,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
         value: v.id,
       })),
     };
-    const control = this.filterForm.get('feeStructureVersionId');
+    const control = this.filterForm.get('feeStructureId');
     if (disabled) {
       control?.disable({ emitEvent: false });
     } else {
@@ -224,13 +224,13 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   }
 
   get selectedVersion(): ReturnType<typeof normalizeFeeStructureVersion> | undefined {
-    return this.versions.find((v) => v.id === this.feeStructureVersionId);
+    return this.versions.find((v) => v.id === this.feeStructureId);
   }
 
   loadClasses(): void {
-    if (!this.academicYearId || !this.feeStructureVersionId) return;
+    if (!this.academicYearId || !this.feeStructureId) return;
     const keepSelection = this.selectedClassId;
-    this.service.getClassSummaries(this.academicYearId, this.feeStructureVersionId).subscribe({
+    this.service.getClassSummaries(this.academicYearId, this.feeStructureId).subscribe({
       next: (list) => {
         this.classes = asArray(list).map(normalizeClassSummary);
         if (keepSelection && this.classes.some((c) => c.classId === keepSelection)) {
@@ -266,11 +266,11 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   }
 
   loadInstallmentPreview(): void {
-    if (!this.selectedClassId || !this.academicYearId || !this.feeStructureVersionId) return;
+    if (!this.selectedClassId || !this.academicYearId || !this.feeStructureId) return;
     this.loadingInstallments = true;
     this.refreshView();
     this.service
-      .getInstallmentPreview(this.selectedClassId, this.academicYearId, this.feeStructureVersionId)
+      .getInstallmentPreview(this.selectedClassId, this.academicYearId, this.feeStructureId)
       .subscribe({
         next: (list) => {
           this.installmentPreview = asArray(list).map(normalizeInstallmentPreview);
@@ -287,17 +287,17 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   }
 
   loadAmounts(classId: string = this.selectedClassId): void {
-    if (!classId || !this.academicYearId || !this.feeStructureVersionId) return;
+    if (!classId || !this.academicYearId || !this.feeStructureId) return;
     this.loading = true;
     this.refreshView();
 
-    this.service.getClassAmounts(classId, this.academicYearId, this.feeStructureVersionId).subscribe({
+    this.service.getClassAmounts(classId, this.academicYearId, this.feeStructureId).subscribe({
       next: (data) => {
         if (classId !== this.selectedClassId) return;
         this.amountData = normalizeClassAmounts(data);
         this.amountEdits = {};
         this.amountData.items.forEach((i) => {
-          this.amountEdits[i.feeTypeId] = {
+          this.amountEdits[i.feeHeadId] = {
             amount: i.amount ?? 0,
             periodAmounts: Object.fromEntries(
               this.amountData!.periods.map((period) => [
@@ -331,18 +331,18 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
         sum +
         signedFeeAmount(
           item.category,
-          this.annualTotalFor(item.feeTypeId, item.collectionType),
+          this.annualTotalFor(item.feeHeadId, item.collectionType),
           item.categoryLabel,
         ),
       0,
     );
   }
 
-  amountEditFor(feeTypeId: string): AmountEdits {
-    if (!this.amountEdits[feeTypeId]) {
-      this.amountEdits[feeTypeId] = { amount: 0, periodAmounts: {} };
+  amountEditFor(feeHeadId: string): AmountEdits {
+    if (!this.amountEdits[feeHeadId]) {
+      this.amountEdits[feeHeadId] = { amount: 0, periodAmounts: {} };
     }
-    return this.amountEdits[feeTypeId];
+    return this.amountEdits[feeHeadId];
   }
 
   isPeriodWise(collectionType: number): boolean {
@@ -353,10 +353,10 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
     return collectionType === FeeCollectionType.OneTime;
   }
 
-  annualTotalFor(feeTypeId: string, collectionType: number): number {
-    const edits = this.amountEdits[feeTypeId];
+  annualTotalFor(feeHeadId: string, collectionType: number): number {
+    const edits = this.amountEdits[feeHeadId];
     if (!edits) return 0;
-    const item = this.amountData?.items.find((i) => i.feeTypeId === feeTypeId);
+    const item = this.amountData?.items.find((i) => i.feeHeadId === feeHeadId);
     let annual = 0;
     if (collectionType === FeeCollectionType.PeriodWise) {
       annual = Object.values(edits.periodAmounts).reduce(
@@ -378,8 +378,8 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
     this.refreshView();
   }
 
-  onPeriodAmountChange(feeTypeId: string): void {
-    const edits = this.amountEdits[feeTypeId];
+  onPeriodAmountChange(feeHeadId: string): void {
+    const edits = this.amountEdits[feeHeadId];
     if (edits) {
       edits.amount = Object.values(edits.periodAmounts).reduce(
         (sum, amount) => sum + (Number(amount) || 0),
@@ -411,11 +411,11 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
       this.toast('Configure Academic Periods for this class before saving amounts', true);
       return;
     }
-    const amounts = Object.entries(this.amountEdits).map(([feeTypeId, edits]) => ({
-      feeTypeId,
+    const amounts = Object.entries(this.amountEdits).map(([feeHeadId, edits]) => ({
+      feeHeadId,
       amount: Number(edits.amount) || 0,
       periodAmounts: this.isPeriodWise(
-        this.amountData?.items.find((item) => item.feeTypeId === feeTypeId)?.collectionType ?? FeeCollectionType.OneTime,
+        this.amountData?.items.find((item) => item.feeHeadId === feeHeadId)?.collectionType ?? FeeCollectionType.OneTime,
       )
         ? Object.entries(edits.periodAmounts).map(([periodIndex, amount]) => ({
             periodIndex: Number(periodIndex),
@@ -429,7 +429,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
     this.service
       .saveClassAmounts(classId, {
         academicYearId: this.academicYearId,
-        feeStructureVersionId: this.feeStructureVersionId,
+        feeStructureId: this.feeStructureId,
         amounts,
       })
       .subscribe({
@@ -437,7 +437,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
           if (classId !== this.selectedClassId) return;
           this.amountData = normalizeClassAmounts(data);
           this.amountData.items.forEach((i) => {
-            this.amountEdits[i.feeTypeId] = {
+            this.amountEdits[i.feeHeadId] = {
               amount: i.amount ?? 0,
               periodAmounts: Object.fromEntries(
                 this.amountData!.periods.map((period) => [

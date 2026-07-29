@@ -7,15 +7,15 @@ import { ApiService } from './api.service';
 export class ClassFeeAmountService {
   private readonly api = inject(ApiService);
 
-  getClassSummaries(academicYearId: string, feeStructureVersionId?: string): Observable<any[]> {
+  getClassSummaries(academicYearId: string, feeStructureId?: string): Observable<any[]> {
     let params = new HttpParams().set('academicYearId', academicYearId);
-    if (feeStructureVersionId) params = params.set('feeStructureVersionId', feeStructureVersionId);
+    if (feeStructureId) params = params.set('feeStructureId', feeStructureId);
     return this.api.get<any[]>('fees/class-amounts/classes', params);
   }
 
-  getClassAmounts(classId: string, academicYearId: string, feeStructureVersionId?: string): Observable<any> {
+  getClassAmounts(classId: string, academicYearId: string, feeStructureId?: string): Observable<any> {
     let params = new HttpParams().set('academicYearId', academicYearId);
-    if (feeStructureVersionId) params = params.set('feeStructureVersionId', feeStructureVersionId);
+    if (feeStructureId) params = params.set('feeStructureId', feeStructureId);
     return this.api.get<any>(`fees/class-amounts/${classId}`, params);
   }
 
@@ -32,10 +32,10 @@ export class ClassFeeAmountService {
   getInstallmentPreview(
     classId: string,
     academicYearId: string,
-    feeStructureVersionId?: string,
+    feeStructureId?: string,
   ): Observable<any[]> {
     let params = new HttpParams().set('academicYearId', academicYearId);
-    if (feeStructureVersionId) params = params.set('feeStructureVersionId', feeStructureVersionId);
+    if (feeStructureId) params = params.set('feeStructureId', feeStructureId);
     return this.api.get<any[]>(`fees/class-amounts/${classId}/installments`, params);
   }
 }

@@ -7,7 +7,7 @@ import { stripAadhaarDigits } from '../../shared/utils/form-validators.util';
 export interface EmployeeDropdownItem {
   id: string;
   name: string;
-  employeeId?: string;
+  employeeCode?: string;
   designation?: string;
 }
 
@@ -57,7 +57,9 @@ export class EmployeeService {
         return {
           id: String(row['id'] ?? row['Id'] ?? ''),
           name: String(row['name'] ?? row['Name'] ?? '').trim(),
-          employeeId: row['employeeId'] ?? row['EmployeeId'] ? String(row['employeeId'] ?? row['EmployeeId']) : undefined,
+          employeeCode: row['employeeCode'] ?? row['EmployeeCode'] ?? row['employeeId'] ?? row['EmployeeId']
+            ? String(row['employeeCode'] ?? row['EmployeeCode'] ?? row['employeeId'] ?? row['EmployeeId'])
+            : undefined,
           designation: row['designation'] ?? row['Designation'] ? String(row['designation'] ?? row['Designation']) : undefined,
         };
       })
@@ -70,7 +72,7 @@ export class EmployeeService {
 
   createEmployee(
     employee: any,
-    lookups?: { userTypes?: { id: string; code: string; name: string }[]; roles?: { id: string; name: string; code: string }[] },
+    lookups?: { userTypes?: { id: string; code: string; name: string }[]; roles?: { id: string; name: string }[] },
   ): Observable<any> {
     return this.api.post<any>('employees', this.toEmployeeCreatePayload(employee, lookups));
   }
@@ -80,7 +82,7 @@ export class EmployeeService {
     employee: any,
     lookups?: {
       userTypes?: { id: string; code: string; name: string }[];
-      roles?: { id: string; name: string; code: string }[];
+      roles?: { id: string; name: string }[];
       existing?: Record<string, unknown>;
     },
   ): Observable<any> {
@@ -146,7 +148,7 @@ export class EmployeeService {
 
   private toEmployeeCreatePayload(
     employee: any,
-    lookups?: { userTypes?: { id: string; code: string; name: string }[]; roles?: { id: string; name: string; code: string }[] },
+    lookups?: { userTypes?: { id: string; code: string; name: string }[]; roles?: { id: string; name: string }[] },
   ): any {
     const organization = employee.organization ?? {};
     const schedule = employee.schedule ?? {};
@@ -170,6 +172,7 @@ export class EmployeeService {
         address: employee.personal.address,
       },
       professional: {
+        employeeCode: String(employee.professional.employeeCode ?? employee.professional.employeeId ?? '').trim() || null,
         joiningDate: this.formatDate(employee.professional.joiningDate),
         designation: employee.professional.designation || null,
         experience: Number(employee.professional.experience || 0),
@@ -183,7 +186,7 @@ export class EmployeeService {
         },
       },
       access: {
-        userTypeCode: userType?.code ?? organization.userTypeCode ?? 'TEACHER',
+        userTypeCode: userType?.name ?? userType?.code ?? organization.userTypeCode ?? 'Teacher',
         portalRoleName: portalEnabled ? (role?.name ?? 'Teacher') : 'Teacher',
         portalAccess: portalEnabled ? 'Enabled' : 'Disabled',
         username: portalEnabled ? (organization.username || null) : null,
@@ -204,7 +207,7 @@ export class EmployeeService {
     employee: any,
     lookups?: {
       userTypes?: { id: string; code: string; name: string }[];
-      roles?: { id: string; name: string; code: string }[];
+      roles?: { id: string; name: string }[];
       existing?: Record<string, unknown>;
     },
   ): any {
@@ -223,6 +226,7 @@ export class EmployeeService {
     return {
       id,
       userId: employee.userId ?? existing['userId'] ?? existing['UserId'] ?? null,
+      branchId: existing['branchId'] ?? existing['BranchId'] ?? undefined,
       firstName: employee.personal.firstName,
       lastName: employee.personal.lastName,
       dob: this.formatDate(employee.personal.dob),
@@ -234,7 +238,7 @@ export class EmployeeService {
       alternateMobile: employee.personal.alternateMobile,
       email: employee.personal.email,
       address: employee.personal.address,
-      employeeId: employee.professional.employeeId === 'Auto-generated' ? null : employee.professional.employeeId,
+      employeeCode: String(employee.professional.employeeCode ?? employee.professional.employeeId ?? '').trim() || null,
       joiningDate: this.formatDate(employee.professional.joiningDate),
       designation: employee.professional.designation || null,
       experience: Number(employee.professional.experience || 0),
@@ -244,7 +248,7 @@ export class EmployeeService {
       bankAccountNumber: employee.professional.bankDetails?.accountNumber,
       bankIfscCode: employee.professional.bankDetails?.ifscCode,
       bankName: employee.professional.bankDetails?.bankName,
-      userTypeCode: userType?.code ?? existing['userTypeCode'] ?? existing['UserTypeCode'] ?? 'TEACHER',
+      userTypeCode: userType?.name ?? userType?.code ?? existing['userTypeCode'] ?? existing['UserTypeCode'] ?? 'Teacher',
       portalRoleName: portalEnabled ? (role?.name ?? existingRoleName) : existingRoleName,
       departmentId: this.emptyGuidToNull(organization.departmentId),
       reportingManagerId: this.emptyGuidToNull(organization.reportingManagerId),

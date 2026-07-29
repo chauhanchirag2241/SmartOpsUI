@@ -170,16 +170,20 @@ export class SidebarComponent {
   }
 
   toggleGroup(code: string): void {
-    const next = new Set(this.expandedCodes());
     const collapsed = new Set(this.userCollapsedCodes());
-    if (next.has(code)) {
-      next.delete(code);
+    // Accordion: at most one parent group open at a time
+    if (this.expandedCodes().has(code)) {
       collapsed.add(code);
-    } else {
-      next.add(code);
-      collapsed.delete(code);
+      this.userCollapsedCodes.set(collapsed);
+      const next = new Set<string>();
+      this.expandedCodes.set(next);
+      this.persistExpandedGroups(next);
+      return;
     }
+
+    collapsed.delete(code);
     this.userCollapsedCodes.set(collapsed);
+    const next = new Set([code]);
     this.expandedCodes.set(next);
     this.persistExpandedGroups(next);
   }
@@ -231,16 +235,12 @@ export class SidebarComponent {
     if (!activeCodes.length) return;
 
     const skipped = this.userCollapsedCodes();
-    const next = new Set(this.expandedCodes());
-    let changed = false;
-    for (const code of activeCodes) {
-      if (skipped.has(code)) continue;
-      if (!next.has(code)) {
-        next.add(code);
-        changed = true;
-      }
-    }
-    if (changed) {
+    // Accordion: only the active route's ancestors stay open
+    const next = new Set(activeCodes.filter((code) => !skipped.has(code)));
+    const current = this.expandedCodes();
+    const unchanged =
+      next.size === current.size && [...next].every((code) => current.has(code));
+    if (!unchanged) {
       this.expandedCodes.set(next);
       this.persistExpandedGroups(next);
     }

@@ -18,7 +18,10 @@ export function applyModuleTablePermissions(
     addButtonText: config.header?.addButtonText,
     addButtonIcon: config.header?.addButtonIcon,
     addButtonClass: config.header?.addButtonClass,
-    showAddButton: !readOnlyYear && permissionService.canAdd(menuCode),
+    showAddButton:
+      config.header?.showAddButton !== false &&
+      !readOnlyYear &&
+      permissionService.canAdd(menuCode),
   };
 
   const actions = (config.actions ?? []).filter((action) =>

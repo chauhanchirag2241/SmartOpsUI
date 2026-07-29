@@ -121,7 +121,7 @@ export function normalizeEmployeeListItem(raw: any) {
     /** DB primary key — use for API routes */
     employeeRecordId: String(pick(raw, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
     /** Business employee code shown in UI */
-    employeeCode: String(pick(raw, 'employeeId', 'EmployeeId') ?? ''),
+    employeeCode: String(pick(raw, 'employeeCode', 'EmployeeCode') ?? pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
@@ -140,7 +140,7 @@ export function normalizeEmployeeDetail(raw: any) {
   });
   return {
     employeeRecordId: String(pick(raw, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
-    employeeCode: String(pick(raw, 'employeeId', 'EmployeeId') ?? ''),
+    employeeCode: String(pick(raw, 'employeeCode', 'EmployeeCode') ?? pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
@@ -207,7 +207,7 @@ export function normalizePayslip(raw: any) {
     payYear: Number(pick(raw, 'payYear', 'PayYear') ?? 0),
     payMonth: Number(pick(raw, 'payMonth', 'PayMonth') ?? 0),
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
-    employeeCode: String(pick(raw, 'employeeId', 'EmployeeId') ?? ''),
+    employeeCode: String(pick(raw, 'employeeCode', 'EmployeeCode') ?? pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
     workingDays: Number(pick(raw, 'workingDays', 'WorkingDays') ?? 0),

@@ -27,9 +27,9 @@ import { Subject, distinctUntilChanged, filter, map, switchMap } from 'rxjs';
 
 type CollectAllocRow = {
   installmentId: string;
-  feeTypeId: string;
+  feeHeadId: string;
   label: string;
-  feeTypeName: string;
+  feeHeadName: string;
   amount: number;
   checked: boolean;
   isDiscount: boolean;
@@ -318,15 +318,15 @@ export class FeeCollectionComponent {
     return Math.min(raw, netDue);
   }
 
-  isHeadExpanded(feeTypeId: string): boolean {
-    return this.expandedHeadIds.has(feeTypeId);
+  isHeadExpanded(feeHeadId: string): boolean {
+    return this.expandedHeadIds.has(feeHeadId);
   }
 
-  toggleHeadExpand(feeTypeId: string): void {
-    if (this.expandedHeadIds.has(feeTypeId)) {
-      this.expandedHeadIds.delete(feeTypeId);
+  toggleHeadExpand(feeHeadId: string): void {
+    if (this.expandedHeadIds.has(feeHeadId)) {
+      this.expandedHeadIds.delete(feeHeadId);
     } else {
-      this.expandedHeadIds.add(feeTypeId);
+      this.expandedHeadIds.add(feeHeadId);
     }
     this.cdr.markForCheck();
   }
@@ -363,7 +363,7 @@ export class FeeCollectionComponent {
           this.detail = normalizeStudentDetail(d);
           for (const h of this.detail.feeHeads) {
             if (h.installments.length > 1) {
-              this.expandedHeadIds.add(h.feeTypeId);
+              this.expandedHeadIds.add(h.feeHeadId);
             }
           }
           this.cdr.markForCheck();
@@ -384,9 +384,9 @@ export class FeeCollectionComponent {
         const isDiscount = inst.dueAmount < 0 || inst.totalAmount < 0;
         allocations.push({
           installmentId: inst.installmentId,
-          feeTypeId: inst.feeTypeId || h.feeTypeId,
-          label: inst.periodLabel || h.feeTypeName,
-          feeTypeName: h.feeTypeName,
+          feeHeadId: inst.feeHeadId || h.feeHeadId,
+          label: inst.periodLabel || h.feeHeadName,
+          feeHeadName: h.feeHeadName,
           amount: inst.dueAmount,
           checked: !isDiscount && this.isCurrentPeriod(inst.periodLabel),
           isDiscount,
@@ -453,7 +453,7 @@ export class FeeCollectionComponent {
     }
 
     const allocations = selected.map((a) => ({
-      feeTypeId: a.feeTypeId,
+      feeHeadId: a.feeHeadId,
       installmentId: a.installmentId || null,
       amount: 0,
     }));

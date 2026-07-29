@@ -60,7 +60,7 @@ import {
 } from '../../fees/fees.shared';
 
 type FeeStructureRow = {
-  feeTypeId: string;
+  feeHeadId: string;
   name: string;
   amount: string;
   amountValue: number;
@@ -261,7 +261,10 @@ export class AddStudentComponent implements OnInit {
       controlName: 'email',
       label: 'Email',
       placeholder: 'Email Address',
-      validations: [{ name: 'email', message: 'Invalid email', validator: Validators.email }],
+      validations: [
+        { name: 'required', message: 'Email is required', validator: Validators.required },
+        { name: 'email', message: 'Invalid email', validator: Validators.email },
+      ],
     },
     aadhaar: {
       type: 'input',
@@ -530,7 +533,7 @@ export class AddStudentComponent implements OnInit {
   hasActiveFeeStructure = false;
   feeStructureBlockMessage = '';
   /** Version locked at student admission — used in edit/view (not latest published). */
-  private assignedFeeStructureVersionId = '';
+  private assignedFeeStructureId = '';
   private academicRecordId = '';
   assignedFeeStructureVersionLabel = '';
   private feeStructureTotal = 0;
@@ -645,7 +648,7 @@ export class AddStudentComponent implements OnInit {
       cast: ['', nameValidator()],
       category: [null],
       mobile: ['', Validators.pattern('^[0-9]{10}$')],
-      email: ['', Validators.email],
+      email: ['', [Validators.required, Validators.email]],
       aadhaar: ['', aadhaarValidator()],
       address: ['', Validators.required],
       fatherName: ['', [Validators.required, nameValidator()]],
@@ -675,6 +678,7 @@ export class AddStudentComponent implements OnInit {
   ngOnInit() {
     if (this.mode === 'edit') {
       this.lockAdmissionNumber();
+      this.lockIdentityFields();
     }
 
     this.loadAcademicYears();
@@ -701,6 +705,14 @@ export class AddStudentComponent implements OnInit {
   private lockAdmissionNumber(): void {
     this.configs['admissionNo'].disabled = true;
     this.studentForm.get('admissionNo')?.disable({ emitEvent: false });
+  }
+
+  /** Identity fields (name/mobile/email) live on `users` and are not updated via student edit yet — keep read-only. */
+  private lockIdentityFields(): void {
+    this.studentForm.get('firstName')?.disable({ emitEvent: false });
+    this.studentForm.get('lastName')?.disable({ emitEvent: false });
+    this.studentForm.get('mobile')?.disable({ emitEvent: false });
+    this.studentForm.get('email')?.disable({ emitEvent: false });
   }
 
   private setupAcademicSelectionHandlers() {
@@ -811,7 +823,7 @@ export class AddStudentComponent implements OnInit {
     this.feeStructureTotal = 0;
     this.cdr.detectChanges();
 
-    const versionId = this.assignedFeeStructureVersionId;
+    const versionId = this.assignedFeeStructureId;
     const request$ = versionId
       ? this.classFeeAmountService.getClassAmounts(classId, academicYearId, versionId)
       : this.classFeeAmountService.getClassAmountsForAdmission(classId, academicYearId);
@@ -862,8 +874,8 @@ export class AddStudentComponent implements OnInit {
 
   private mapFeeStructureItems(
     items: Array<{
-      feeTypeId: string;
-      feeTypeName: string;
+      feeHeadId: string;
+      feeHeadName: string;
       category?: number;
       categoryLabel?: string;
       amount: number;
@@ -873,16 +885,16 @@ export class AddStudentComponent implements OnInit {
     }>,
   ): FeeStructureRow[] {
     return items.map((item) => {
-      const savedIncluded = this.savedFeeHeadIncluded.get(item.feeTypeId);
+      const savedIncluded = this.savedFeeHeadIncluded.get(item.feeHeadId);
       const isIncluded = savedIncluded ?? true;
-      const savedAmount = this.savedFeeHeadAmounts.get(item.feeTypeId);
+      const savedAmount = this.savedFeeHeadAmounts.get(item.feeHeadId);
       const defaultAmount = item.annualTotal ?? item.amount;
       const amountValue = savedAmount ?? defaultAmount;
       const category = resolveFeeCategory(item.category, item.categoryLabel);
       const isDiscount = category === FeeCategory.Discount;
       return {
-        feeTypeId: item.feeTypeId,
-        name: item.feeTypeName,
+        feeHeadId: item.feeHeadId,
+        name: item.feeHeadName,
         amount: this.formatFeeRowAmount(amountValue, isDiscount),
         amountValue,
         defaultAmountValue: defaultAmount,
@@ -1100,23 +1112,23 @@ export class AddStudentComponent implements OnInit {
     });
 
     this.academicRecordId = String(academic?.id ?? academic?.Id ?? '');
-    this.assignedFeeStructureVersionId = String(
-      academic?.feeStructureVersionId ?? academic?.FeeStructureVersionId ?? '',
+    this.assignedFeeStructureId = String(
+      academic?.feeStructureId ?? academic?.FeeStructureId ?? '',
     );
 
     this.savedFeeHeadIncluded.clear();
     this.savedFeeHeadAmounts.clear();
     const assignments = data.feeHeadAssignments ?? data.FeeHeadAssignments ?? [];
     for (const assignment of assignments) {
-      const feeTypeId = String(assignment.feeTypeId ?? assignment.FeeTypeId ?? '');
-      if (!feeTypeId) {
+      const feeHeadId = String(assignment.feeHeadId ?? assignment.FeeHeadId ?? '');
+      if (!feeHeadId) {
         continue;
       }
       const included = assignment.isIncluded ?? assignment.IsIncluded;
-      this.savedFeeHeadIncluded.set(feeTypeId, included === undefined ? true : Boolean(included));
+      this.savedFeeHeadIncluded.set(feeHeadId, included === undefined ? true : Boolean(included));
       const custom = assignment.customAnnualAmount ?? assignment.CustomAnnualAmount;
       if (custom != null && Number(custom) > 0) {
-        this.savedFeeHeadAmounts.set(feeTypeId, Number(custom));
+        this.savedFeeHeadAmounts.set(feeHeadId, Number(custom));
       }
     }
 
@@ -1238,7 +1250,7 @@ export class AddStudentComponent implements OnInit {
     const payload = {
       ...rawValue,
       academicRecordId: this.academicRecordId || undefined,
-      feeStructureVersionId: this.assignedFeeStructureVersionId || undefined,
+      feeStructureId: this.assignedFeeStructureId || undefined,
       academics: [
         {
           id: this.academicRecordId || undefined,
@@ -1246,13 +1258,13 @@ export class AddStudentComponent implements OnInit {
           academicYearId: rawValue.academicYearId,
           classId: rawValue.classId,
           rollNumber: rawValue.rollNumber,
-          feeStructureVersionId: this.assignedFeeStructureVersionId || undefined,
+          feeStructureId: this.assignedFeeStructureId || undefined,
         },
       ],
       feeHeadSelections:
         this.mode === 'add' && this.feeStructureRows.length
           ? this.feeStructureRows.map((row) => ({
-              feeTypeId: row.feeTypeId,
+              feeHeadId: row.feeHeadId,
               isIncluded: row.isIncluded,
               customAnnualAmount:
                 row.isIncluded && row.amountValue !== row.defaultAmountValue
@@ -1277,14 +1289,23 @@ export class AddStudentComponent implements OnInit {
             }
             this.isSaving = false;
             this.cdr.detectChanges();
-            this.snackBar.open(
-              `Student ${this.mode === 'edit' ? 'updated' : 'saved'} successfully`,
-              'Close',
-              {
+            if (this.mode === 'edit') {
+              this.snackBar.open('Student updated successfully', 'Close', {
                 duration: 3000,
                 panelClass: 'snack-success',
-              },
-            );
+              });
+            } else {
+              const first = String(rawValue.firstName || '').trim().toLowerCase();
+              const last = String(rawValue.lastName || '').trim().toLowerCase();
+              const username = (last ? `${first}.${last}` : first).replace(/[^a-z0-9.]/g, '');
+              this.snackBar.success(
+                'Student added successfully',
+                username
+                  ? `Login username: ${username} · Default password: SmartOps@123`
+                  : 'Default password: SmartOps@123',
+                5000,
+              );
+            }
             this.saved.emit();
           },
           error: (err) => {

@@ -7,7 +7,6 @@ import type { SchoolUserDto } from './user.service';
 export interface RoleDto {
   id: string;
   name: string;
-  code: string;
   description?: string;
   menuPermissions: IRoleMenuPermission[];
   dashboardWidgetPermissions?: IRoleDashboardWidgetPermission[];
@@ -23,7 +22,6 @@ export class RoleService {
 
   createRole(payload: {
     name: string;
-    code: string;
     description?: string;
     menuPermissions: IRoleMenuPermission[];
     dashboardWidgetPermissions?: IRoleDashboardWidgetPermission[];
@@ -33,7 +31,7 @@ export class RoleService {
 
   updateRole(
     id: string,
-    payload: { name: string; code: string; description?: string; isActive: boolean },
+    payload: { name: string; description?: string; isActive: boolean },
   ): Observable<void> {
     return this.api.put<void>(`roles/${id}`, payload);
   }

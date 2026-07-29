@@ -235,8 +235,6 @@ export function normalizeFeeStructureVersion(raw: any) {
   const statusLabel = String(pick(raw, 'statusLabel', 'StatusLabel') ?? '');
   return {
     id: String(pick(raw, 'id', 'Id') ?? ''),
-    academicYearId: String(pick(raw, 'academicYearId', 'AcademicYearId') ?? ''),
-    academicYearTitle: String(pick(raw, 'academicYearTitle', 'AcademicYearTitle') ?? ''),
     versionNumber,
     versionLabel: `V${versionNumber}`,
     status: Number(pick(raw, 'status', 'Status') ?? 0),
@@ -244,13 +242,13 @@ export function normalizeFeeStructureVersion(raw: any) {
     effectiveDate: String(pick(raw, 'effectiveDate', 'EffectiveDate') ?? ''),
     publishedOn: pick(raw, 'publishedOn', 'PublishedOn') as string | null,
     activatedOn: pick(raw, 'activatedOn', 'ActivatedOn') as string | null,
-    feeTypeCount: Number(pick(raw, 'feeTypeCount', 'FeeTypeCount') ?? 0),
+    feeHeadCount: Number(pick(raw, 'feeHeadCount', 'FeeHeadCount') ?? 0),
     hasStudentPayments: Boolean(pick(raw, 'hasStudentPayments', 'HasStudentPayments')),
     isLocked: Boolean(pick(raw, 'isLocked', 'IsLocked')),
   };
 }
 
-export function normalizeFeeType(raw: any) {
+export function normalizeFeeHead(raw: any) {
   const collectionTypeLabel = String(
     pick(raw, 'collectionTypeLabel', 'CollectionTypeLabel') ??
       pick(raw, 'frequencyLabel', 'FrequencyLabel') ??
@@ -258,7 +256,7 @@ export function normalizeFeeType(raw: any) {
   );
   return {
     id: String(pick(raw, 'id', 'Id') ?? ''),
-    feeStructureVersionId: String(pick(raw, 'feeStructureVersionId', 'FeeStructureVersionId') ?? ''),
+    feeStructureId: String(pick(raw, 'feeStructureId', 'FeeStructureId') ?? ''),
     name: String(pick(raw, 'name', 'Name') ?? ''),
     categoryLabel: String(pick(raw, 'categoryLabel', 'CategoryLabel') ?? ''),
     collectionType: resolveCollectionType(
@@ -316,8 +314,8 @@ export function normalizeClassAmounts(raw: any) {
           : amount),
     );
     return {
-      feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
-      feeTypeName: String(pick(i, 'feeTypeName', 'FeeTypeName') ?? ''),
+      feeHeadId: String(pick(i, 'feeHeadId', 'FeeHeadId') ?? ''),
+      feeHeadName: String(pick(i, 'feeHeadName', 'FeeHeadName') ?? ''),
       category,
       categoryLabel: categoryLabel || FEE_CATEGORY_OPTIONS.find((o) => o.value === category)?.label || '',
       collectionType,
@@ -337,7 +335,7 @@ export function normalizeClassAmounts(raw: any) {
     classId: String(pick(raw, 'classId', 'ClassId') ?? ''),
     className: String(pick(raw, 'className', 'ClassName') ?? ''),
     academicYearId: String(pick(raw, 'academicYearId', 'AcademicYearId') ?? ''),
-    feeStructureVersionId: String(pick(raw, 'feeStructureVersionId', 'FeeStructureVersionId') ?? ''),
+    feeStructureId: String(pick(raw, 'feeStructureId', 'FeeStructureId') ?? ''),
     versionNumber: Number(pick(raw, 'versionNumber', 'VersionNumber') ?? 0),
     versionStatusLabel: String(pick(raw, 'versionStatusLabel', 'VersionStatusLabel') ?? ''),
     isEditable: resolveClassAmountsEditable(
@@ -366,8 +364,8 @@ export function normalizeStudentListItem(raw: any) {
 export function normalizeInstallmentPreview(raw: any) {
   return {
     installmentId: String(pick(raw, 'installmentId', 'InstallmentId') ?? ''),
-    feeTypeId: String(pick(raw, 'feeTypeId', 'FeeTypeId') ?? ''),
-    feeTypeName: String(pick(raw, 'feeTypeName', 'FeeTypeName') ?? ''),
+    feeHeadId: String(pick(raw, 'feeHeadId', 'FeeHeadId') ?? ''),
+    feeHeadName: String(pick(raw, 'feeHeadName', 'FeeHeadName') ?? ''),
     collectionTypeLabel: String(
       pick(raw, 'collectionTypeLabel', 'CollectionTypeLabel') ??
         pick(raw, 'frequencyLabel', 'FrequencyLabel') ??
@@ -383,7 +381,7 @@ export function normalizeStudentDetail(raw: any) {
   const feeHeads = asArray<any>(pick(raw, 'feeHeads', 'FeeHeads')).map((h) => {
     const installments = asArray<any>(pick(h, 'installments', 'Installments')).map((i) => ({
       installmentId: String(pick(i, 'installmentId', 'InstallmentId') ?? ''),
-      feeTypeId: String(pick(i, 'feeTypeId', 'FeeTypeId') ?? ''),
+      feeHeadId: String(pick(i, 'feeHeadId', 'FeeHeadId') ?? ''),
       periodIndex: Number(pick(i, 'periodIndex', 'PeriodIndex') ?? 0),
       periodLabel: String(pick(i, 'periodLabel', 'PeriodLabel') ?? ''),
       totalAmount: Number(pick(i, 'totalAmount', 'TotalAmount') ?? 0),
@@ -392,8 +390,8 @@ export function normalizeStudentDetail(raw: any) {
       status: String(pick(i, 'status', 'Status') ?? ''),
     }));
     return {
-      feeTypeId: String(pick(h, 'feeTypeId', 'FeeTypeId') ?? ''),
-      feeTypeName: String(pick(h, 'feeTypeName', 'FeeTypeName') ?? ''),
+      feeHeadId: String(pick(h, 'feeHeadId', 'FeeHeadId') ?? ''),
+      feeHeadName: String(pick(h, 'feeHeadName', 'FeeHeadName') ?? ''),
       collectionTypeLabel: String(
         pick(h, 'collectionTypeLabel', 'CollectionTypeLabel') ??
           pick(h, 'frequencyLabel', 'FrequencyLabel') ??

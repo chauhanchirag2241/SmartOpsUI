@@ -75,7 +75,8 @@ export class AcademicYearService {
   }
 
   /**
-   * @param scope `switcher` = current + future only (header, forms). `all` = every active year.
+   * @param scope `all` = every active year including Draft (header switcher).
+   * `switcher` = current + Draft/future only (forms); excludes past Archived.
    */
   getAcademicYearDropdown(scope: AcademicYearDropdownScope = 'switcher'): Observable<AcademicYearDropdownItem[]> {
     const params = scope === 'switcher' ? new HttpParams().set('scope', 'switcher') : undefined;

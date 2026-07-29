@@ -106,7 +106,7 @@
       </thead>
       <tbody>
         <tr *ngFor="let item of amountData.items" [class.discount-fee-row]="isDiscountItem(item)">
-          <td style="font-weight: 500">{{ item.feeTypeName }}</td>
+          <td style="font-weight: 500">{{ item.feeHeadName }}</td>
           <td>
             <span class="badge" [ngClass]="isDiscountItem(item) ? 'b-discount' : 'b-gray'">{{ item.categoryLabel }}</span>
           </td>
@@ -115,12 +115,12 @@
             <ng-container *ngIf="!canEditAmounts">
               <div *ngIf="isPeriodWise(item.collectionType)" class="period-amount-grid">
                 <span *ngFor="let period of amountData.periods" class="amt-view">
-                  {{ formatInr(amountEditFor(item.feeTypeId).periodAmounts[period.periodIndex] || 0) }}
+                  {{ formatInr(amountEditFor(item.feeHeadId).periodAmounts[period.periodIndex] || 0) }}
                 </span>
-                <span class="amt-annual">{{ formatInr(annualTotalFor(item.feeTypeId, item.collectionType)) }}</span>
+                <span class="amt-annual">{{ formatInr(annualTotalFor(item.feeHeadId, item.collectionType)) }}</span>
               </div>
               <div *ngIf="isOneTime(item.collectionType)" class="onetime-amount-wrap">
-                <span class="amt-view">{{ formatInr(amountEditFor(item.feeTypeId).amount) }}</span>
+                <span class="amt-view">{{ formatInr(amountEditFor(item.feeHeadId).amount) }}</span>
               </div>
             </ng-container>
             <ng-container *ngIf="canEditAmounts">
@@ -132,10 +132,10 @@
                   min="0"
                   step="1"
                   inputmode="numeric"
-                  [(ngModel)]="amountEditFor(item.feeTypeId).periodAmounts[period.periodIndex]"
-                  (ngModelChange)="onPeriodAmountChange(item.feeTypeId)"
+                  [(ngModel)]="amountEditFor(item.feeHeadId).periodAmounts[period.periodIndex]"
+                  (ngModelChange)="onPeriodAmountChange(item.feeHeadId)"
                 />
-                <span class="amt-annual">{{ formatInr(annualTotalFor(item.feeTypeId, item.collectionType)) }}</span>
+                <span class="amt-annual">{{ formatInr(annualTotalFor(item.feeHeadId, item.collectionType)) }}</span>
               </div>
               <span *ngIf="isPeriodWise(item.collectionType) && !amountData.periods.length" class="period-missing">
                 Configure this class in Academic Period Setup first.
@@ -147,7 +147,7 @@
                   min="0"
                   step="1"
                   inputmode="numeric"
-                  [(ngModel)]="amountEditFor(item.feeTypeId).amount"
+                  [(ngModel)]="amountEditFor(item.feeHeadId).amount"
                   (ngModelChange)="onOneTimeAmountChange()"
                   placeholder="0"
                 />
@@ -181,7 +181,7 @@
             <td colspan="3" class="empty-panel">Loading...</td>
           </tr>
           <tr *ngFor="let row of installmentPreview">
-            <td>{{ row.feeTypeName }}</td>
+            <td>{{ row.feeHeadName }}</td>
             <td>{{ row.periodLabel }}</td>
             <td style="text-align: right">{{ formatInr(row.amount) }}</td>
           </tr>

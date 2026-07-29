@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent' | 'Admin' | 'Accountant';
+export type UserRole = 'admin' | 'teacher' | 'student' | 'Admin' | 'Accountant';
 
 export interface User {
   id: string;
@@ -7,6 +7,5 @@ export interface User {
   role: UserRole;
   roles?: string[];
   roleId?: string;
-  roleCode?: string;
   token?: string;
 }

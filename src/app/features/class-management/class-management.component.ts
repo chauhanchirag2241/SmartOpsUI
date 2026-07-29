@@ -180,7 +180,6 @@ export class ClassManagementComponent implements OnInit {
       { key: 'className', label: 'Class', sortable: true },
       { key: 'section', label: 'Section', sortable: true },
       { key: 'streamGroup', label: 'Stream / Group', sortable: true },
-      { key: 'academicYear', label: 'Academic year', sortable: true },
       { key: 'capacity', label: 'Capacity', sortable: true },
       { key: 'roomNumber', label: 'Room', sortable: true },
       {
@@ -275,7 +274,7 @@ export class ClassManagementComponent implements OnInit {
           description:
             'This will permanently remove the class section and any linked scheduling data.',
           recordName: `${event.row['className']} - ${event.row['section']}`,
-          recordMeta: `${event.row['academicYear']} · ${event.row['classTeacher'] || 'No class teacher assigned'}`,
+          recordMeta: `${event.row['streamGroup'] || 'No stream'} · ${event.row['classTeacher'] || 'No class teacher assigned'}`,
           initials: `${String(event.row['className']).charAt(0)}${String(event.row['section']).charAt(0)}`,
           warningMessage: 'This action cannot be undone.',
         },

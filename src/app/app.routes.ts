@@ -101,6 +101,22 @@ export const routes: Routes = [
           import('./features/subjects/subjects.component').then((m) => m.SubjectsComponent),
       },
       {
+        path: 'shifts',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Shifts, permission: 'view' },
+        loadComponent: () =>
+          import('./features/shifts/shifts.component').then((m) => m.ShiftsComponent),
+      },
+      {
+        path: 'shifts/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Shifts, permission: 'view', entityKind: 'shift' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
         path: 'timetable/periods',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.PeriodMaster, permission: 'view' },

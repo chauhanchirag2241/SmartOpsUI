@@ -1,0 +1,22 @@
+<section class="shifts-page">
+  @if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="shifts"
+      [serverSide]="true"
+      [totalRecords]="totalShifts"
+      [initialFilterValue]="currentFilter"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-shift
+      [mode]="formMode"
+      [shiftId]="selectedShiftId"
+      (cancel)="closeAddForm()"
+      (saved)="onShiftSaved()"
+    />
+  }
+</section>

@@ -9,6 +9,7 @@ import { StudentService } from '../../../core/services/student.service';
 import { EmployeeService } from '../../../core/services/employee.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
+import { ShiftService } from '../../../core/services/shift.service';
 import { PeriodTemplateService } from '../../../core/services/period-template.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { FrontOfficeService } from '../../../core/services/front-office.service';
@@ -31,6 +32,7 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   employee: { listRoute: '/employees', entityType: 'employee' },
   class: { listRoute: '/classes', entityType: 'class' },
   subject: { listRoute: '/subjects', entityType: 'subject' },
+  shift: { listRoute: '/shifts', entityType: 'shift' },
   period: { listRoute: '/timetable/periods', entityType: 'period' },
   'academic-year': { listRoute: '/academic-years', entityType: 'academic-year' },
   visitor: { listRoute: '/front-office/visitors', entityType: 'visitor' },
@@ -61,6 +63,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
+  private readonly shiftService = inject(ShiftService);
   private readonly periodTemplateService = inject(PeriodTemplateService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly frontOfficeService = inject(FrontOfficeService);
@@ -138,7 +141,7 @@ export class EntityHistoryComponent implements OnInit {
                 .map((p: string) => String(p ?? '').trim())
                 .filter(Boolean)
                 .join(' ') || 'Employee',
-            subtitle: [data.employeeId, data.email]
+            subtitle: [data.employeeCode ?? data.employeeId, data.email]
               .map((p: string) => String(p ?? '').trim())
               .filter(Boolean)
               .join(' · '),
@@ -162,6 +165,16 @@ export class EntityHistoryComponent implements OnInit {
           map((data) => ({
             title: String(data.subjectName ?? 'Subject').trim() || 'Subject',
             subtitle: String(data.subjectCode ?? '').trim(),
+          })),
+        );
+      case 'shift':
+        return this.shiftService.getShift(id).pipe(
+          map((data) => ({
+            title: String(data.shiftName ?? 'Shift').trim() || 'Shift',
+            subtitle: [data.startTime, data.endTime]
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' - '),
           })),
         );
       case 'period':

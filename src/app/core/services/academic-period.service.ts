@@ -64,8 +64,9 @@ export class AcademicPeriodService {
     );
   }
 
-  getClassSetup(classId: string): Observable<AcademicPeriodSetup> {
-    return this.api.get<AcademicPeriodSetup>(`academic-periods/classes/${classId}`).pipe(
+  getClassSetup(classId: string, academicYearId: string): Observable<AcademicPeriodSetup> {
+    const params = new HttpParams().set('academicYearId', academicYearId);
+    return this.api.get<AcademicPeriodSetup>(`academic-periods/classes/${classId}`, params).pipe(
       map((setup) => ({ ...setup, periodType: normalizePeriodType(setup.periodType) })),
     );
   }

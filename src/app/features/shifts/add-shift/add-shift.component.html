@@ -1,0 +1,31 @@
+<span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
+
+<form [formGroup]="shiftForm">
+  @for (tab of tabs; track tab.stepIndex) {
+    @for (section of tab.sections; track section.title) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}
+        </div>
+        <div [class]="section.layout">
+          @for (field of section.fields; track field) {
+            <app-dynamic-field [config]="configs[field]" [group]="shiftForm" />
+          }
+        </div>
+      </div>
+    }
+  }
+</form>
+
+<div class="footer-actions">
+  <div class="footer-hint">Shift name and timings appear in class create/edit dropdown.</div>
+  @if (mode !== 'view') {
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Shift' : 'Confirm & Add')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="saveShift()">
+    </app-action-button>
+  }
+</div>

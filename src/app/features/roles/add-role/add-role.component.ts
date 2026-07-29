@@ -32,6 +32,7 @@ import {
   collectMenuDescendants,
   flattenVisibleMenuRows,
 } from '../menu-permission-tree.util';
+import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
 interface RoleUserRow {
   id: string;
   username: string;
@@ -83,16 +84,6 @@ export class AddRoleComponent implements OnInit {
       maxLength: 100,
       validations: [
         { name: 'required', validator: Validators.required, message: 'Role name is required' },
-      ],
-    },
-    code: {
-      type: 'input',
-      controlName: 'code',
-      label: 'Role code',
-      placeholder: 'e.g. CLASS_TEACHER',
-      maxLength: 50,
-      validations: [
-        { name: 'required', validator: Validators.required, message: 'Role code is required' },
       ],
     },
     description: {
@@ -163,7 +154,6 @@ export class AddRoleComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(100)]],
-      code: ['', [Validators.required, Validators.maxLength(50)]],
       description: ['', Validators.maxLength(256)],
       isActive: [true],
     });
@@ -287,7 +277,7 @@ export class AddRoleComponent implements OnInit {
       return;
     }
 
-    const { name, code, description, isActive } = this.form.getRawValue();
+    const { name, description, isActive } = this.form.getRawValue();
     this.saving = true;
     this.errorMessage = '';
 
@@ -295,7 +285,6 @@ export class AddRoleComponent implements OnInit {
       this.roleService
         .createRole({
           name: String(name).trim(),
-          code: String(code).trim().toUpperCase(),
           description: String(description || '').trim() || undefined,
           menuPermissions: this.menuPermissions,
           dashboardWidgetPermissions: this.dashboardWidgetPermissions,
@@ -308,7 +297,7 @@ export class AddRoleComponent implements OnInit {
           },
           error: (err) => {
             this.saving = false;
-            this.errorMessage = String(err?.error ?? 'Failed to create role.');
+            this.errorMessage = getUserFacingApiError(err, 'Failed to create role.');
             this.cdr.markForCheck();
           },
         });
@@ -320,7 +309,6 @@ export class AddRoleComponent implements OnInit {
     this.roleService
       .updateRole(this.roleId, {
         name: String(name).trim(),
-        code: String(code).trim().toUpperCase(),
         description: String(description || '').trim() || undefined,
         isActive: !!isActive,
       })
@@ -343,9 +331,9 @@ export class AddRoleComponent implements OnInit {
             this.finishSave();
           }
         },
-        error: () => {
+        error: (err) => {
           this.saving = false;
-          this.errorMessage = 'Failed to update role.';
+          this.errorMessage = getUserFacingApiError(err, 'Failed to update role.');
           this.cdr.markForCheck();
         },
       });
@@ -358,7 +346,7 @@ export class AddRoleComponent implements OnInit {
   }
 
   trackMenu(index: number, menu: IRoleMenuPermission): string {
-    return `${menu.menuCode}-${index}`;
+    return menu.menuId || `${menu.menuCode}-${index}`;
   }
 
   private loadRole(id: string): void {
@@ -366,7 +354,6 @@ export class AddRoleComponent implements OnInit {
       next: (role) => {
         this.form.patchValue({
           name: role.name,
-          code: role.code,
           description: role.description ?? '',
           isActive: true,
         });
@@ -412,9 +399,10 @@ export class AddRoleComponent implements OnInit {
 
   private applyRolePermissions(role: RoleDto): void {
     const source = role.menuPermissions ?? [];
+    const byMenuId = new Map(source.map((p) => [p.menuId, p]));
     const byCode = new Map(source.map((p) => [p.menuCode, p]));
     this.menuPermissions = this.menuPermissions.map((template) => {
-      const existing = byCode.get(template.menuCode);
+      const existing = byMenuId.get(template.menuId) ?? byCode.get(template.menuCode);
       if (!existing) {
         return { ...template };
       }
@@ -482,16 +470,5 @@ export class AddRoleComponent implements OnInit {
     this.saving = false;
     this.snackBar.open('Role saved', 'Close', { duration: 3000, panelClass: 'snack-success' });
     this.saved.emit();
-  }
-
-  private readApiError(err: unknown, fallback: string): string {
-    const body = (err as { error?: unknown })?.error;
-    if (typeof body === 'string' && body.trim()) {
-      return body;
-    }
-    if (Array.isArray(body) && body.length > 0) {
-      return String(body[0]);
-    }
-    return fallback;
   }
 }

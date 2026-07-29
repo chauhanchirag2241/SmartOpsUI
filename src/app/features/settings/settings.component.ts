@@ -198,13 +198,13 @@ export class SettingsComponent implements OnInit {
               (map.get(LEAVE_KEYS.studentLongLeaveTransferToPrincipal) ?? 'true') === 'true',
           });
           this.selectedStaffTypes = new Set(
-            (map.get(LEAVE_KEYS.staffApproverUserTypes) ?? 'SCHOOL_ADMIN')
+            (map.get(LEAVE_KEYS.staffApproverUserTypes) ?? 'Office staff')
               .split(',')
               .map((s) => s.trim())
               .filter(Boolean),
           );
           this.selectedLongLeaveTypes = new Set(
-            (map.get(LEAVE_KEYS.studentLongLeaveApproverUserTypes) ?? 'PRINCIPAL')
+            (map.get(LEAVE_KEYS.studentLongLeaveApproverUserTypes) ?? 'Office staff')
               .split(',')
               .map((s) => s.trim())
               .filter(Boolean),
@@ -227,7 +227,7 @@ export class SettingsComponent implements OnInit {
       studentLongLeaveMinDays: 4,
       studentLongLeaveTransferToPrincipal: true,
     });
-    this.selectedStaffTypes = new Set(['SCHOOL_ADMIN']);
-    this.selectedLongLeaveTypes = new Set(['PRINCIPAL']);
+    this.selectedStaffTypes = new Set(['Office staff']);
+    this.selectedLongLeaveTypes = new Set(['Office staff']);
   }
 }

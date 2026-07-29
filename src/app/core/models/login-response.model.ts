@@ -12,5 +12,4 @@ export interface UserProfile {
   createdOn: string;
   roles: string[];
   roleId?: string;
-  roleCode?: string;
 }

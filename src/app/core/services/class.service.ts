@@ -3,12 +3,12 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { ClassFilter } from '../../shared/enums/table-filters.enum';
-import { Section, Shift, Medium } from '../../shared/enums/field-options.enum';
+import { Section, Medium } from '../../shared/enums/field-options.enum';
 import { streamGroupToApiInt } from '../../shared/utils/stream-group.util';
 
 /**
  * Maps a frontend string enum value to the backend 1-based integer.
- * E.g. Section.A → 1, Shift.Morning → 1
+ * E.g. Section.A → 1
  */
 function enumToInt<T extends Record<string, string>>(
   enumObj: T,
@@ -64,11 +64,16 @@ export class ClassService {
     return this.api.get('classes', params);
   }
 
-  getClassDropdown(academicYearId?: string): Observable<any[]> {
-    const params = academicYearId
-      ? new HttpParams().set('academicYearId', academicYearId)
-      : undefined;
-    return this.api.get<any[]>('class/dropdown', params);
+  /** Section-scoped by default (Class 1 - A). Pass scope `'group'` for Class 1 only (fees / periods). */
+  getClassDropdown(academicYearId?: string, scope?: 'group' | 'section'): Observable<any[]> {
+    let params = new HttpParams();
+    if (academicYearId) {
+      params = params.set('academicYearId', academicYearId);
+    }
+    if (scope === 'group') {
+      params = params.set('scope', 'group');
+    }
+    return this.api.get<any[]>('class/dropdown', params.keys().length ? params : undefined);
   }
 
   createClass(classData: any): Observable<any> {
@@ -79,7 +84,7 @@ export class ClassService {
       academicYearId: classData.academicYearId || classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
-      shift: enumToInt(Shift, classData.shift),
+      shiftId: classData.shiftId || classData.shift || null,
       medium: enumToInt(Medium, classData.medium),
       description: classData.description,
     };
@@ -94,13 +99,14 @@ export class ClassService {
   updateClass(id: string, classData: any): Observable<any> {
     const payload = {
       id,
+      classGroupId: classData.classGroupId || undefined,
       className: classData.className,
       section: enumToInt(Section, classData.section, true),
       streamGroup: streamGroupToApiInt(classData.streamGroup),
       academicYearId: classData.academicYearId || classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
-      shift: enumToInt(Shift, classData.shift),
+      shiftId: classData.shiftId || classData.shift || null,
       medium: enumToInt(Medium, classData.medium),
       description: classData.description,
     };

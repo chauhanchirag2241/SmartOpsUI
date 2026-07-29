@@ -185,7 +185,7 @@ export class AcademicYearManagementComponent implements OnInit {
     }
 
     if (action.label === 'Delete year') {
-      return status !== 'Current' && row['isCurrent'] !== true;
+      return status !== 'Current';
     }
 
     if (action.label === 'Edit details') {

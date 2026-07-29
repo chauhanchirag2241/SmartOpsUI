@@ -197,7 +197,7 @@ export class AcademicPeriodManagementComponent implements OnInit, OnDestroy {
     this.selectedClassId = classId;
     this.errorMessage = '';
     this.loading = true;
-    this.periodService.getClassSetup(classId)
+    this.periodService.getClassSetup(classId, this.academicYearId)
       .pipe(finalize(() => {
         this.loading = false;
         this.syncEditorDisabledState();

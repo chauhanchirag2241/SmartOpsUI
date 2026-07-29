@@ -11,18 +11,6 @@
     (actionClicked)="onActionClicked($event)"
     (addButtonClicked)="onAddButtonClicked()"
   >
-    <div tableFilters class="st-table-filters">
-      <label class="table-filter-section-label" for="fee-structure-year-filter">Academic year</label>
-      <select
-        id="fee-structure-year-filter"
-        class="sel-filter sel-filter-lg"
-        [(ngModel)]="academicYearFilter"
-        (ngModelChange)="onAcademicYearFilterChange()"
-      >
-        <option value="">All academic years</option>
-        <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-      </select>
-    </div>
   </app-smart-data-table>
   <div *ngIf="loading" class="empty-panel">Loading fee structures...</div>
 
@@ -30,7 +18,7 @@
     <div class="card-header">
       <div class="card-title">
         <mat-icon>list_alt</mat-icon>
-        {{ selectedVersion.academicYearTitle }} — {{ selectedVersion.versionLabel }}
+        {{ selectedVersion.versionLabel }}
         <span class="badge" [ngClass]="statusClass(selectedVersion.statusLabel)">{{ selectedVersion.statusLabel }}</span>
       </div>
       <div class="card-header-actions">
@@ -39,7 +27,7 @@
           *ngIf="canManageVersions && !selectedVersion.isLocked"
           type="button"
           class="btn-primary"
-          (click)="openAddFeeType()"
+          (click)="openAddFeeHead()"
         >
           <mat-icon>add</mat-icon> Add fee head
         </button>
@@ -69,7 +57,7 @@
       </thead>
       <tbody>
         <tr
-          *ngFor="let f of feeTypes"
+          *ngFor="let f of feeHeads"
           [class.fee-type-inactive-paid]="f.hasStudentPayments && selectedVersion.statusLabel === 'Archived'"
         >
           <td style="font-weight: 500">
@@ -82,12 +70,12 @@
           <td><span class="badge" [ngClass]="f.studentWiseDifferentAmount ? 'b-amber' : 'b-gray'">{{ f.studentWiseDifferentAmount ? 'Yes' : 'No' }}</span></td>
           <td><span class="badge" [ngClass]="f.isRefundable ? 'b-amber' : 'b-gray'">{{ f.isRefundable ? 'Yes' : 'No' }}</span></td>
           <td *ngIf="canManageVersions && !selectedVersion.isLocked">
-            <button type="button" class="act-btn del" title="Delete" (click)="deleteFeeType(f)">
+            <button type="button" class="act-btn del" title="Delete" (click)="deleteFeeHead(f)">
               <mat-icon>delete</mat-icon>
             </button>
           </td>
         </tr>
-        <tr *ngIf="!feeTypes.length">
+        <tr *ngIf="!feeHeads.length">
           <td [attr.colspan]="selectedVersion.isLocked ? 6 : 7" class="empty-panel">No fee heads yet.</td>
         </tr>
       </tbody>
@@ -102,13 +90,6 @@
       </div>
       <div class="mb">
         <div class="field">
-          <label>Academic year <span class="req">*</span></label>
-          <select [(ngModel)]="createVersionForm.academicYearId">
-            <option value="">Select year</option>
-            <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-          </select>
-        </div>
-        <div class="field">
           <label>Effective date</label>
           <input type="date" [(ngModel)]="createVersionForm.effectiveDate" />
         </div>
@@ -117,7 +98,7 @@
           <select [(ngModel)]="createVersionForm.cloneFromVersionId">
             <option value="">Start empty</option>
             <option *ngFor="let v of versions" [value]="v['id']">
-              {{ v['academicYearTitle'] }} — {{ v['versionLabel'] }}
+              {{ v['versionLabel'] }}
             </option>
           </select>
         </div>
@@ -129,27 +110,27 @@
     </div>
   </div>
 
-  <div class="overlay" [class.show]="showFeeTypeModal" (click)="showFeeTypeModal = false">
+  <div class="overlay" [class.show]="showFeeHeadModal" (click)="showFeeHeadModal = false">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="mh">
         <div class="mt"><mat-icon>add</mat-icon> Add fee head</div>
-        <button type="button" class="mc-btn" (click)="showFeeTypeModal = false"><mat-icon>close</mat-icon></button>
+        <button type="button" class="mc-btn" (click)="showFeeHeadModal = false"><mat-icon>close</mat-icon></button>
       </div>
       <div class="mb">
         <div class="field">
           <label>Fee head name <span class="req">*</span></label>
-          <input [(ngModel)]="feeTypeForm.name" placeholder="e.g. Tuition fee" />
+          <input [(ngModel)]="feeHeadForm.name" placeholder="e.g. Tuition fee" />
         </div>
         <div class="grid2">
           <div class="field">
             <label>Category</label>
-            <select [(ngModel)]="feeTypeForm.category">
+            <select [(ngModel)]="feeHeadForm.category">
               <option *ngFor="let o of categoryOptions" [ngValue]="o.value">{{ o.label }}</option>
             </select>
           </div>
           <div class="field">
             <label>Collection type</label>
-            <select [(ngModel)]="feeTypeForm.collectionType">
+            <select [(ngModel)]="feeHeadForm.collectionType">
               <option *ngFor="let o of collectionTypeOptions" [ngValue]="o.value">{{ o.label }}</option>
             </select>
           </div>
@@ -158,7 +139,7 @@
           <div class="field row-toggle">
             <label>Mandatory</label>
             <label class="toggle">
-              <input type="checkbox" [(ngModel)]="feeTypeForm.isMandatory" />
+              <input type="checkbox" [(ngModel)]="feeHeadForm.isMandatory" />
               <div class="toggle-track"></div>
               <div class="toggle-thumb"></div>
             </label>
@@ -166,7 +147,7 @@
           <div class="field row-toggle">
             <label>Student-wise different amount</label>
             <label class="toggle">
-              <input type="checkbox" [(ngModel)]="feeTypeForm.studentWiseDifferentAmount" />
+              <input type="checkbox" [(ngModel)]="feeHeadForm.studentWiseDifferentAmount" />
               <div class="toggle-track"></div>
               <div class="toggle-thumb"></div>
             </label>
@@ -175,7 +156,7 @@
         <div class="field row-toggle">
           <label>Refundable</label>
           <label class="toggle">
-            <input type="checkbox" [(ngModel)]="feeTypeForm.isRefundable" />
+            <input type="checkbox" [(ngModel)]="feeHeadForm.isRefundable" />
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
@@ -186,8 +167,8 @@
         </p>
       </div>
       <div class="mf">
-        <button type="button" class="btn-cancel" (click)="showFeeTypeModal = false">Cancel</button>
-        <button type="button" class="btn-save" (click)="saveFeeType()"><mat-icon>check</mat-icon> Add</button>
+        <button type="button" class="btn-cancel" (click)="showFeeHeadModal = false">Cancel</button>
+        <button type="button" class="btn-save" (click)="saveFeeHead()"><mat-icon>check</mat-icon> Add</button>
       </div>
     </div>
   </div>

@@ -12,15 +12,16 @@ import { PageChromeDirective } from '../../../shared/directives/page-chrome.dire
 import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
-import { Section, StreamGroup, Shift, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
+import { Section, StreamGroup, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
 import {
   streamGroupDuplicateKey,
   streamGroupFromApiInt,
   formatStreamGroupDisplay,
 } from '../../../shared/utils/stream-group.util';
 import { ClassService } from '../../../core/services/class.service';
-import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
+import { ShiftService } from '../../../core/services/shift.service';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
+
 @Component({
   selector: 'app-add-class',
   standalone: true,
@@ -36,6 +37,7 @@ export class AddClassComponent implements OnInit {
 
   classForm: FormGroup;
   isSaving = false;
+  private loadedClassGroupId: string | null = null;
 
   readonly configs: Record<string, FormFieldConfig> = {
     className: {
@@ -82,7 +84,13 @@ export class AddClassComponent implements OnInit {
       placeholder: 'Enter capacity',
     },
     roomNumber: { type: 'input', controlName: 'roomNumber', label: 'Room number', placeholder: 'Room number' },
-    shift: { type: 'select', controlName: 'shift', label: 'Shift', placeholder: SELECT_PLACEHOLDER, options: enumToOptions(Shift) },
+    shiftId: {
+      type: 'select',
+      controlName: 'shiftId',
+      label: 'Shift',
+      placeholder: SELECT_PLACEHOLDER,
+      options: [],
+    },
     medium: {
       type: 'select',
       controlName: 'medium',
@@ -112,17 +120,16 @@ export class AddClassComponent implements OnInit {
           title: 'Room & schedule',
           icon: 'meeting_room',
           layout: 'grid2',
-          fields: ['studentCapacity', 'roomNumber', 'shift', 'medium', 'description'],
+          fields: ['studentCapacity', 'roomNumber', 'shiftId', 'medium', 'description'],
         },
       ],
     },
   ];
 
-  private readonly ayContext = inject(AcademicYearContextService);
-
   constructor(
     private fb: FormBuilder,
     private classService: ClassService,
+    private shiftService: ShiftService,
     private snackBar: NotificationService,
     private cdr: ChangeDetectorRef
   ) {
@@ -132,7 +139,7 @@ export class AddClassComponent implements OnInit {
       streamGroup: [null],
       studentCapacity: [''],
       roomNumber: [''],
-      shift: [null],
+      shiftId: [null],
       medium: [null],
       description: [''],
       status: ['Active'],
@@ -145,15 +152,29 @@ export class AddClassComponent implements OnInit {
     return 'Add new class';
   }
 
-
-
   ngOnInit(): void {
+    this.loadShiftOptions();
     if ((this.mode === 'edit' || this.mode === 'view') && this.classId) {
       this.loadClass(this.classId);
     }
     if (this.mode === 'view') {
       this.classForm.disable();
     }
+  }
+
+  private loadShiftOptions(): void {
+    this.shiftService.getShiftDropdown().subscribe({
+      next: (items) => {
+        this.configs['shiftId'].options = (items || []).map((s) => ({
+          label: s.name,
+          value: s.id,
+        }));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.configs['shiftId'].options = [];
+      },
+    });
   }
 
   private static intToEnum<T extends Record<string, string>>(
@@ -170,13 +191,14 @@ export class AddClassComponent implements OnInit {
   private loadClass(id: string): void {
     this.classService.getClassById(id).subscribe({
       next: (res: any) => {
+        this.loadedClassGroupId = res.classGroupId ?? null;
         this.classForm.patchValue({
           className: res.className,
           section: AddClassComponent.intToEnum(Section, res.section),
           streamGroup: streamGroupFromApiInt(res.streamGroup),
           studentCapacity: res.capacity,
           roomNumber: res.roomNumber,
-          shift: AddClassComponent.intToEnum(Shift, res.shift),
+          shiftId: res.shiftId ?? null,
           medium: AddClassComponent.intToEnum(Medium, res.medium),
           description: res.description,
           status: res.isActive ? 'Active' : 'Inactive',
@@ -191,8 +213,6 @@ export class AddClassComponent implements OnInit {
     });
   }
 
-
-
   saveClass(): void {
     if (this.classForm.invalid || this.mode === 'view') {
       this.classForm.markAllAsTouched();
@@ -200,20 +220,11 @@ export class AddClassComponent implements OnInit {
       return;
     }
 
-    const academicYearId = this.ayContext.effectiveYearId();
-    if (!academicYearId) {
-      this.snackBar.open(
-        'Please create an academic year first before adding a class.',
-        'Close',
-        { duration: 4000, panelClass: 'snack-error' },
-      );
-      return;
-    }
-
     this.isSaving = true;
     const payloadRaw = this.classForm.getRawValue();
-    payloadRaw.academicYearId = academicYearId;
-    payloadRaw.academicYear = academicYearId;
+    if (this.loadedClassGroupId) {
+      payloadRaw.classGroupId = this.loadedClassGroupId;
+    }
 
     this.classService
       .getClasses(1, 2000, '', null, null, 'All')

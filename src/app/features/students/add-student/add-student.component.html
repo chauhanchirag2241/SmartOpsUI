@@ -88,7 +88,7 @@
                   <span class="fee-col-amount">Amount</span>
                 </div>
                 <div class="fee-table-body">
-                  @for (row of feeStructureRows; track row.feeTypeId) {
+                  @for (row of feeStructureRows; track row.feeHeadId) {
                     <div
                       class="fee-row"
                       [class.fee-row-excluded]="!row.isIncluded"
