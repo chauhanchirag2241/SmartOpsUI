@@ -44,14 +44,16 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
   deletingId: string | null = null;
   errorMessage = '';
 
-  academicYears: MappingLookupOption[] = [];
   subjects: MappingLookupOption[] = [];
   employees: MappingLookupOption[] = [];
   classSummaries: ClassMappingSummary[] = [];
 
-  selectedAcademicYearId = '';
   activeClassId = '';
   classFilter: ClassFilter = 'all';
+
+  get selectedAcademicYearId(): string {
+    return this.ayContext.effectiveYearId() ?? '';
+  }
 
   mappings: ClassSubjectTeacherMapping[] = [];
   subjectColorMap = new Map<string, string>();
@@ -100,12 +102,9 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
 
     this.mappingService.getLookups(academicYearId).subscribe({
         next: (data) => {
-          this.academicYears = data.academicYears ?? [];
           this.subjects = data.subjects ?? [];
           this.employees = data.employees ?? data.teachers ?? [];
           this.classSummaries = data.classSummaries ?? [];
-          this.selectedAcademicYearId =
-            academicYearId ?? data.activeAcademicYearId ?? this.academicYears[0]?.id ?? '';
 
           if (!this.activeClassId && this.classSummaries.length > 0) {
             this.activeClassId = this.classSummaries[0].classId;
@@ -128,12 +127,6 @@ export class ClassSubjectTeacherMappingComponent implements OnInit {
 
   onToolbarFiltersCleared(): void {
     this.setClassFilter('all');
-  }
-
-  onAcademicYearChange(): void {
-    this.activeClassId = '';
-    this.mappings = [];
-    this.loadLookups(this.selectedAcademicYearId || undefined);
   }
 
   selectClass(classId: string): void {

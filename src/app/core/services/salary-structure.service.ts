@@ -7,9 +7,8 @@ import { ApiService } from './api.service';
 export class SalaryStructureService {
   private readonly api = inject(ApiService);
 
-  getVersions(academicYearId?: string, status?: string): Observable<any[]> {
+  getVersions(status?: string): Observable<any[]> {
     let params = new HttpParams();
-    if (academicYearId) params = params.set('academicYearId', academicYearId);
     if (status && status !== 'all') params = params.set('status', status);
     return this.api.get<any[]>('salary/structure/versions', params);
   }

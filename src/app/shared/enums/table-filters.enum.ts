@@ -30,6 +30,8 @@ export enum AcademicYearFilter {
   Active = 1,
   Inactive = 2,
   Current = 3,
+  /** Upcoming years (start date after today). */
   Draft = 4,
+  /** Past years (end date before today). */
   Archived = 5,
 }

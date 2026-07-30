@@ -1,16 +1,12 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationService } from '../../core/services/notification.service';
-import { MatDialog } from '@angular/material/dialog';
 
-import { AddClassComponent } from './add-class/add-class.component';
+import { ClassGroupDetailComponent } from './class-group-detail/class-group-detail.component';
 import { ClassService } from '../../core/services/class.service';
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table/smart-data-table.component';
-import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import type {
   DataTableAction,
-  DataTableBulkAction,
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
@@ -19,12 +15,11 @@ import { PermissionService } from '../../core/services/permission.service';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 import { naturalTextCompare } from '../../shared/utils/natural-sort.util';
-import { formatStreamGroupDisplay } from '../../shared/utils/stream-group.util';
 
 @Component({
   selector: 'app-class-management',
   standalone: true,
-  imports: [SmartDataTableComponent, AddClassComponent],
+  imports: [SmartDataTableComponent, ClassGroupDetailComponent],
   templateUrl: './class-management.component.html',
   styleUrl: './class-management.component.css',
 })
@@ -32,29 +27,46 @@ export class ClassManagementComponent implements OnInit {
   private readonly classService = inject(ClassService);
   private readonly permissionService = inject(PermissionService);
   private readonly ayContext = inject(AcademicYearContextService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   constructor(
     private snackBar: NotificationService,
     private cdr: ChangeDetectorRef,
-    private dialog: MatDialog,
   ) {}
 
-  showAddForm = false;
-  formMode: 'add' | 'edit' | 'view' = 'add';
-  selectedClassId?: string;
-  totalClasses = 0;
+  showDetail = false;
+  detailMode: 'edit' | 'view' = 'edit';
+  selectedClassGroupId?: string;
+  detailInitialTab = 0;
+  totalGroups = 0;
   currentFilter = 'Active';
 
-  classes: Record<string, unknown>[] = [];
-  private allClasses: Record<string, unknown>[] = [];
+  groups: Record<string, unknown>[] = [];
+  private allGroups: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
     this.classConfig = this.buildClassConfig();
-    this.loadClasses();
+    this.route.queryParamMap.subscribe((params) => {
+      const groupId = (params.get('groupId') ?? '').trim();
+      if (!groupId) {
+        if (this.showDetail && !this.selectedClassGroupId) {
+          this.showDetail = false;
+        }
+        return;
+      }
+      const tabRaw = Number(params.get('tab') ?? '0');
+      const mode = params.get('mode');
+      this.selectedClassGroupId = groupId;
+      this.detailInitialTab = Number.isFinite(tabRaw) ? Math.max(0, Math.min(3, tabRaw)) : 0;
+      this.detailMode = mode === 'view' ? 'view' : 'edit';
+      this.showDetail = true;
+      this.cdr.detectChanges();
+    });
+    this.loadGroups();
   }
 
-  loadClasses(
+  loadGroups(
     pageIndex = 1,
     pageSize = 10,
     searchQuery = '',
@@ -63,23 +75,21 @@ export class ClassManagementComponent implements OnInit {
     filter = this.currentFilter,
   ): void {
     this.classService
-      .getClasses(1, 1000, searchQuery, sortColumn, sortDirection, filter)
+      .getClassGroups(1, 1000, searchQuery, sortColumn, sortDirection, filter)
       .subscribe({
         next: (res: any) => {
           const rawItems = (res?.items || []) as Record<string, unknown>[];
-          this.allClasses = rawItems.map((row) => ({
+          this.allGroups = rawItems.map((row) => ({
             ...row,
-            capacity: Number(row['capacity']) === 0 ? null : row['capacity'],
-            streamGroup: formatStreamGroupDisplay(row['streamGroup']),
+            descriptionDisplay: row['description'] || '—',
           }));
-          const sorted = this.applyClassSorting(this.allClasses, sortColumn, sortDirection);
-          this.totalClasses = sorted.length;
+          const sorted = this.applySorting(this.allGroups, sortColumn, sortDirection);
+          this.totalGroups = sorted.length;
           const start = Math.max(0, (pageIndex - 1) * pageSize);
-          this.classes = sorted.slice(start, start + pageSize);
+          this.groups = sorted.slice(start, start + pageSize);
           this.cdr.detectChanges();
         },
-        error: (err: any) => {
-          console.error('Error loading classes:', err);
+        error: () => {
           this.snackBar.open('Failed to load classes', 'Close', {
             duration: 3000,
             panelClass: 'snack-error',
@@ -88,7 +98,7 @@ export class ClassManagementComponent implements OnInit {
       });
   }
 
-  private applyClassSorting(
+  private applySorting(
     rows: Record<string, unknown>[],
     sortColumn: string | null,
     sortDirection: string | null,
@@ -100,17 +110,6 @@ export class ClassManagementComponent implements OnInit {
     }
 
     sorted.sort((a, b) => {
-      if (sortColumn === 'className') {
-        const classCmp = naturalTextCompare(a['className'], b['className']);
-        if (classCmp !== 0) return classCmp * dir;
-        return naturalTextCompare(a['section'], b['section']) * dir;
-      }
-      if (sortColumn === 'section') {
-        const secCmp = naturalTextCompare(a['section'], b['section']);
-        if (secCmp !== 0) return secCmp * dir;
-        return naturalTextCompare(a['className'], b['className']) * dir;
-      }
-
       const av = a[sortColumn];
       const bv = b[sortColumn];
       if (typeof av === 'number' && typeof bv === 'number') {
@@ -122,20 +121,12 @@ export class ClassManagementComponent implements OnInit {
     return sorted;
   }
 
-  openAddForm(): void {
-    if (!this.permissionService.canAdd(MenuCodes.Classes)) return;
-    this.formMode = 'add';
-    this.selectedClassId = undefined;
-    this.showAddForm = true;
-  }
-
-  closeAddForm(): void {
-    this.showAddForm = false;
-  }
-
-  onClassSaved(): void {
-    this.showAddForm = false;
-    this.loadClasses();
+  closeDetail(): void {
+    this.showDetail = false;
+    this.selectedClassGroupId = undefined;
+    this.detailInitialTab = 0;
+    void this.router.navigate(['/classes'], { queryParams: {} });
+    this.loadGroups();
   }
 
   onPageChange(event: {
@@ -147,7 +138,7 @@ export class ClassManagementComponent implements OnInit {
     currentFilter: string | null;
   }): void {
     const filterValue = event.currentFilter ?? this.currentFilter;
-    this.loadClasses(
+    this.loadGroups(
       event.pageIndex,
       event.pageSize,
       event.searchQuery,
@@ -170,18 +161,14 @@ export class ClassManagementComponent implements OnInit {
   private readonly baseClassConfig: DataTableConfig = {
     header: {
       title: 'Classes',
-      subtitle: 'Add and manage academic classes and sections',
-      showAddButton: true,
-      addButtonText: 'Add class',
-      addButtonIcon: 'add',
-      addButtonClass: 'btn-primary',
+      subtitle: 'Open a class to manage its sections and subjects. Class groups are created in Config.',
+      showAddButton: false,
     },
     columns: [
       { key: 'className', label: 'Class', sortable: true },
-      { key: 'section', label: 'Section', sortable: true },
-      { key: 'streamGroup', label: 'Stream / Group', sortable: true },
-      { key: 'capacity', label: 'Capacity', sortable: true },
-      { key: 'roomNumber', label: 'Room', sortable: true },
+      { key: 'sectionCount', label: 'Sections', sortable: true },
+      { key: 'subjectCount', label: 'Subjects', sortable: true },
+      { key: 'descriptionDisplay', label: 'Description', sortable: false },
       {
         key: 'status',
         label: 'Status',
@@ -200,23 +187,10 @@ export class ClassManagementComponent implements OnInit {
     ],
     actions: [
       { label: 'View class', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit class', icon: 'edit', iconColor: '#1E40AF' },
-      { label: 'Show history', icon: 'history', iconColor: '#639922' },
-      {
-        label: 'Recover class',
-        icon: 'unarchive',
-        iconColor: '#10B981',
-      },
-      {
-        label: 'Delete class',
-        icon: 'delete',
-        danger: true,
-        separatorBefore: true,
-      },
+      { label: 'Manage class', icon: 'edit', iconColor: '#1E40AF' },
     ],
-    actionVisibleFn: (action, row) => this.isClassActionVisible(action, row),
-    searchPlaceholder: 'Search by class, section, class teacher...',
-    searchKeys: ['className', 'section', 'streamGroup', 'roomNumber'],
+    searchPlaceholder: 'Search by class name...',
+    searchKeys: ['className', 'description'],
     itemLabel: 'classes',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],
@@ -225,13 +199,6 @@ export class ClassManagementComponent implements OnInit {
   classRowClass = (row: Record<string, unknown>): string => {
     return row['isActive'] === false ? 'row-inactive' : '';
   };
-
-  private isClassActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
-    if (row['isActive'] === false) {
-      return action.label === 'View class' || action.label === 'Show history' || action.label === 'Recover class';
-    }
-    return action.label !== 'Recover class';
-  }
 
   private buildClassConfig(): DataTableConfig {
     const permittedConfig = applyModuleTablePermissions(
@@ -242,6 +209,10 @@ export class ClassManagementComponent implements OnInit {
     );
     return {
       ...permittedConfig,
+      header: {
+        ...permittedConfig.header!,
+        showAddButton: false,
+      },
       columns: permittedConfig.columns.filter((col) => col.key !== 'status'),
     };
   }
@@ -255,77 +226,26 @@ export class ClassManagementComponent implements OnInit {
 
     if (event.action.label === 'View class') {
       if (!this.permissionService.canView(MenuCodes.Classes)) return;
-      this.formMode = 'view';
-      this.selectedClassId = id;
-      this.showAddForm = true;
-    } else if (event.action.label === 'Edit class') {
-      if (!this.permissionService.canEdit(MenuCodes.Classes)) return;
-      this.formMode = 'edit';
-      this.selectedClassId = id;
-      this.showAddForm = true;
-    } else if (event.action.label === 'Show history') {
-      if (!this.permissionService.canView(MenuCodes.Classes)) return;
-      this.router.navigate(['/classes', id, 'history']);
-    } else if (event.action.label === 'Delete class') {
-      if (!this.permissionService.canDelete(MenuCodes.Classes)) return;
-      const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
-        data: {
-          title: 'Delete class?',
-          description:
-            'This will permanently remove the class section and any linked scheduling data.',
-          recordName: `${event.row['className']} - ${event.row['section']}`,
-          recordMeta: `${event.row['streamGroup'] || 'No stream'} · ${event.row['classTeacher'] || 'No class teacher assigned'}`,
-          initials: `${String(event.row['className']).charAt(0)}${String(event.row['section']).charAt(0)}`,
-          warningMessage: 'This action cannot be undone.',
-        },
-        panelClass: 'erp-dialog',
-        disableClose: true,
-      });
-
-      dialogRef.afterClosed().subscribe((confirmed: any) => {
-        if (confirmed) {
-          this.classService.deleteClass(id).subscribe({
-            next: () => {
-              this.snackBar.open('Class deleted successfully', 'Close', {
-                duration: 3000,
-                panelClass: 'snack-success',
-              });
-              this.loadClasses();
-            },
-            error: (err) => {
-              const msg = err?.error?.message || (typeof err?.error === 'string' ? err.error : 'Failed to delete class');
-              this.snackBar.open(msg, 'Close', {
-                duration: 3000,
-                panelClass: 'snack-error',
-              });
-            }
-          });
-        }
-      });
-    } else if (event.action.label === 'Recover class') {
-      if (!this.permissionService.canEdit(MenuCodes.Classes)) return;
-      this.classService.recoverClass(id).subscribe({
-        next: () => {
-          this.snackBar.open('Class recovered successfully', 'Close', {
-            duration: 3000,
-            panelClass: 'snack-success',
-          });
-          this.loadClasses();
-        },
-        error: (err) => {
-          const msg = err?.error?.message || (typeof err?.error === 'string' ? err.error : 'Failed to recover class');
-          this.snackBar.open(msg, 'Close', {
-            duration: 3000,
-            panelClass: 'snack-error',
-          });
-        }
-      });
-    } else {
-      this.snackBar.open(`${event.action.label} → ${event.row['className']}`, 'Close', {
-        duration: 3000,
-        panelClass: 'snack-info',
-      });
+      this.openDetail(id, 'view', 0);
+    } else if (event.action.label === 'Manage class') {
+      if (!this.permissionService.canEdit(MenuCodes.Classes) && !this.permissionService.canAdd(MenuCodes.Classes)) {
+        if (!this.permissionService.canView(MenuCodes.Classes)) return;
+        this.openDetail(id, 'view', 0);
+      } else {
+        this.openDetail(id, 'edit', 0);
+      }
     }
+  }
+
+  private openDetail(groupId: string, mode: 'edit' | 'view', tab: number): void {
+    this.detailMode = mode;
+    this.selectedClassGroupId = groupId;
+    this.detailInitialTab = tab;
+    this.showDetail = true;
+    void this.router.navigate(['/classes'], {
+      queryParams: { groupId, tab, mode },
+      replaceUrl: true,
+    });
   }
 
   onExportClicked(): void {
@@ -334,9 +254,4 @@ export class ClassManagementComponent implements OnInit {
       panelClass: 'snack-success',
     });
   }
-
-  onAddButtonClicked(): void {
-    this.openAddForm();
-  }
-
 }

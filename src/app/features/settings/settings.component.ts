@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatIconModule } from '@angular/material/icon';
 import { finalize } from 'rxjs/operators';
 import { MenuCodes } from '../../core/constants/menu-codes';
+import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
+import { AcademicYearDropdownItem } from '../../core/services/academic-year.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { SettingsService } from '../../core/services/settings.service';
@@ -32,6 +34,7 @@ export class SettingsComponent implements OnInit {
   private readonly userTypeService = inject(UserTypeService);
   private readonly tenant = inject(TenantService);
   private readonly permissionService = inject(PermissionService);
+  readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -42,6 +45,8 @@ export class SettingsComponent implements OnInit {
   userTypes: UserTypeDto[] = [];
   loading = false;
   saving = false;
+  selectedYearId: string | null = null;
+  yearsLoading = false;
 
   get canEdit(): boolean {
     return this.permissionService.canEdit(MenuCodes.Settings);
@@ -59,6 +64,14 @@ export class SettingsComponent implements OnInit {
     return this.selectedSchoolName
       ? `School configuration for ${this.selectedSchoolName}`
       : 'Loading school configuration…';
+  }
+
+  get canSwitchYear(): boolean {
+    return this.ayContext.canSwitchYear();
+  }
+
+  get academicYears(): AcademicYearDropdownItem[] {
+    return this.ayContext.dropdownYears();
   }
 
   ngOnInit(): void {
@@ -81,6 +94,7 @@ export class SettingsComponent implements OnInit {
     });
 
     this.loadSettings();
+    this.loadAcademicYears();
   }
 
   isStaffTypeSelected(code: string): boolean {
@@ -109,6 +123,19 @@ export class SettingsComponent implements OnInit {
       this.selectedLongLeaveTypes.add(code);
     }
     this.cdr.markForCheck();
+  }
+
+  onAcademicYearChange(yearId: string): void {
+    if (!this.canSwitchYear || !yearId || yearId === this.ayContext.effectiveYearId()) {
+      this.selectedYearId = this.ayContext.effectiveYearId();
+      return;
+    }
+    this.selectedYearId = yearId;
+    this.ayContext.switchAcademicYear(yearId);
+    this.snackBar.open('Academic year switched', 'Close', {
+      duration: 2500,
+      panelClass: 'snack-success',
+    });
   }
 
   onSubmit(): void {
@@ -164,6 +191,27 @@ export class SettingsComponent implements OnInit {
         },
         error: () => {
           this.snackBar.open('Failed to save settings', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          });
+        },
+      });
+  }
+
+  private loadAcademicYears(): void {
+    this.yearsLoading = true;
+    this.ayContext
+      .loadDropdown()
+      .pipe(
+        finalize(() => {
+          this.yearsLoading = false;
+          this.selectedYearId = this.ayContext.effectiveYearId();
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        error: () => {
+          this.snackBar.open('Could not load academic years', 'Close', {
             duration: 3000,
             panelClass: 'snack-error',
           });

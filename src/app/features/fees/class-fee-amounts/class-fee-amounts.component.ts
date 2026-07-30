@@ -7,7 +7,6 @@ import { Subscription } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
 import { FeeStructureService } from '../../../core/services/fee-structure.service';
-import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
@@ -23,7 +22,6 @@ import {
   signedFeeAmount,
   normalizeClassSummary,
   normalizeInstallmentPreview,
-  normalizeDropdownItem,
   normalizeFeeStructureVersion,
   versionStatusBadgeClass,
 } from '../fees.shared';
@@ -52,7 +50,6 @@ type AmountEdits = {
 export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   private readonly service = inject(ClassFeeAmountService);
   private readonly feeStructureService = inject(FeeStructureService);
-  private readonly academicYearService = inject(AcademicYearService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -62,7 +59,6 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
 
   readonly FeeCollectionType = FeeCollectionType;
 
-  academicYears: ReturnType<typeof normalizeDropdownItem>[] = [];
   versions: ReturnType<typeof normalizeFeeStructureVersion>[] = [];
   classes: ReturnType<typeof normalizeClassSummary>[] = [];
   selectedClassId = '';
@@ -76,17 +72,8 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   loadingInstallments = false;
 
   readonly filterForm = this.fb.group({
-    academicYearId: [''],
     feeStructureId: [''],
   });
-
-  yearConfig: FormFieldConfig = {
-    type: 'select',
-    controlName: 'academicYearId',
-    label: 'Academic year',
-    placeholder: 'Select academic year',
-    options: [],
-  };
 
   versionConfig: FormFieldConfig = {
     type: 'select',
@@ -98,7 +85,7 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   };
 
   get academicYearId(): string {
-    return String(this.filterForm.get('academicYearId')?.value ?? '');
+    return this.ayContext.effectiveYearId() ?? '';
   }
 
   get feeStructureId(): string {
@@ -107,37 +94,10 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subs.add(
-      this.filterForm.get('academicYearId')!.valueChanges.subscribe(() => this.onYearChange()),
-    );
-    this.subs.add(
       this.filterForm
         .get('feeStructureId')!
         .valueChanges.subscribe(() => this.onVersionChange()),
     );
-
-    this.academicYearService.getAcademicYearDropdown().subscribe({
-      next: (years) => {
-        this.academicYears = asArray(years).map(normalizeDropdownItem);
-        this.yearConfig = {
-          ...this.yearConfig,
-          options: this.academicYears.map((y) => ({ label: y.name, value: y.id })),
-        };
-        const effective = this.ayContext.effectiveYearId();
-        const pick =
-          effective && this.academicYears.some((y) => y.id === effective)
-            ? effective
-            : this.academicYears[0]?.id;
-        if (pick) {
-          this.filterForm.patchValue({ academicYearId: pick }, { emitEvent: false });
-          this.loadClasses();
-        }
-        this.refreshView();
-      },
-      error: () => {
-        this.toast('Failed to load academic years', true);
-        this.refreshView();
-      },
-    });
 
     this.loadVersions();
   }
@@ -158,12 +118,6 @@ export class ClassFeeAmountsComponent implements OnInit, OnDestroy {
   get isDraftOrPublished(): boolean {
     const s = this.amountData?.versionStatusLabel;
     return s === 'Draft' || s === 'Published';
-  }
-
-  onYearChange(): void {
-    this.selectedClassId = '';
-    this.amountData = null;
-    this.loadClasses();
   }
 
   onVersionChange(): void {

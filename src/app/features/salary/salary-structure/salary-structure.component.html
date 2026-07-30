@@ -11,18 +11,6 @@
     (actionClicked)="onActionClicked($event)"
     (addButtonClicked)="onAddButtonClicked()"
   >
-    <div tableFilters class="st-table-filters">
-      <label class="table-filter-section-label" for="salary-structure-year-filter">Academic year</label>
-      <select
-        id="salary-structure-year-filter"
-        class="sel-filter sel-filter-lg"
-        [(ngModel)]="academicYearFilter"
-        (ngModelChange)="onAcademicYearFilterChange()"
-      >
-        <option value="">All academic years</option>
-        <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-      </select>
-    </div>
   </app-smart-data-table>
   <div *ngIf="loading" class="empty-panel">Loading salary structures...</div>
 
@@ -30,7 +18,7 @@
     <div class="card-header">
       <div class="card-title">
         <mat-icon>list_alt</mat-icon>
-        {{ selectedVersion.academicYearTitle }} — {{ selectedVersion.versionLabel }}
+        {{ selectedVersion.versionLabel }}
         <span class="badge" [ngClass]="statusClass(selectedVersion.statusLabel)">{{ selectedVersion.statusLabel }}</span>
       </div>
       <div class="card-header-actions">
@@ -95,13 +83,6 @@
       </div>
       <div class="mb">
         <div class="field">
-          <label>Academic year <span class="req">*</span></label>
-          <select [(ngModel)]="createVersionForm.academicYearId">
-            <option value="">Select year</option>
-            <option *ngFor="let y of academicYears" [value]="y.id">{{ y.name }}</option>
-          </select>
-        </div>
-        <div class="field">
           <label>Effective date</label>
           <input type="date" [(ngModel)]="createVersionForm.effectiveDate" />
         </div>
@@ -110,7 +91,7 @@
           <select [(ngModel)]="createVersionForm.cloneFromVersionId">
             <option value="">Start empty</option>
             <option *ngFor="let v of versions" [value]="v['id']">
-              {{ v['academicYearTitle'] }} — {{ v['versionLabel'] }}
+              {{ v['versionLabel'] }} ({{ v['statusLabel'] }})
             </option>
           </select>
         </div>

@@ -42,8 +42,6 @@ export interface ExamGroup {
   id: string;
   name: string;
   description?: string | null;
-  academicYearId: string;
-  academicYearTitle: string;
   gradeScaleId?: string | null;
   gradeScaleName?: string | null;
   evaluationType: ExamEvaluationType;
@@ -54,7 +52,6 @@ export interface ExamGroup {
 export interface SaveExamGroupRequest {
   name: string;
   description?: string | null;
-  academicYearId: string;
   gradeScaleId?: string | null;
   evaluationType: ExamEvaluationType;
 }

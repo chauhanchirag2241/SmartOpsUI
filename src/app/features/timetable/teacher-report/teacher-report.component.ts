@@ -137,7 +137,7 @@ export class TeacherReportComponent implements OnInit {
   generate(): void {
     const academicYearId = this.ayContext.effectiveYearId();
     if (!academicYearId) {
-      this.snackBar.open('Select academic year from the header', 'Close', {
+      this.snackBar.open('Select academic year from Settings', 'Close', {
         duration: 3000,
         panelClass: 'snack-error',
       });

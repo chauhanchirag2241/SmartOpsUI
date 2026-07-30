@@ -52,11 +52,8 @@ export class SubjectsComponent implements OnInit {
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Subjects',
-      subtitle: 'Manage curriculum and subject assignments',
-      showAddButton: true,
-      addButtonText: 'Add subject',
-      addButtonIcon: 'add',
-      addButtonClass: 'btn-primary'
+      subtitle: 'Subjects are created from Classes → Manage class → Subjects',
+      showAddButton: false,
     },
     columns: [
       {
@@ -154,10 +151,10 @@ export class SubjectsComponent implements OnInit {
   }
 
   onAddButtonClicked(): void {
-    if (!this.permissionService.canAdd(MenuCodes.Subjects)) return;
-    this.formMode = 'add';
-    this.selectedSubjectId = undefined;
-    this.showAddForm = true;
+    this.snackBar.open('Create subjects from Classes → Manage class → Subjects tab', 'Close', {
+      duration: 4000,
+      panelClass: 'snack-info',
+    });
   }
 
   closeAddForm(): void {

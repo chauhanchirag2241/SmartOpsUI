@@ -8,7 +8,7 @@
     />
   } @else {
     <span [appPageChrome]="formMode === 'edit' ? 'Edit exam group' : 'New exam group'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
-    <p class="form-hint">Exams inside the group inherit its academic year and default grade scale.</p>
+    <p class="form-hint">Exams inside the group inherit its default grade scale. Academic year is set per exam.</p>
 
     @if (formError) {
       <div class="error-banner">{{ formError }}</div>
@@ -23,14 +23,6 @@
           [required]="true"
           [(ngModel)]="formName"
           placeholder="e.g. Term 1 Exams 2025-26"
-        />
-        <app-form-field
-          label="Academic year"
-          type="select"
-          [required]="true"
-          [(ngModel)]="formAcademicYearId"
-          [options]="academicYearOptions"
-          emptyOptionLabel="Select year"
         />
         <app-form-field
           label="Evaluation type"

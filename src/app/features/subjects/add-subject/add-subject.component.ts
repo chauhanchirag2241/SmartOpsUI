@@ -30,8 +30,13 @@ import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
 export class AddSubjectComponent implements OnInit {
   @Input() mode: 'add' | 'edit' | 'view' = 'add';
   @Input() subjectId?: string;
+  /** Required when creating — subject always belongs to a class group. */
+  @Input() classGroupId?: string;
+  /** When true, hide page chrome (used inside dialog). */
+  @Input() embeddedInDialog = false;
   @Output() cancel = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
+  @Output() busyChange = new EventEmitter<boolean>();
 
   subjectForm: FormGroup;
   isSaving = false;
@@ -144,7 +149,12 @@ export class AddSubjectComponent implements OnInit {
 
   private buildSubjectApiPayload(raw: Record<string, unknown>): Record<string, unknown> {
     const snap = this.existingSnapshot;
+    const classGroupId =
+      this.classGroupId ||
+      String(snap?.['classGroupId'] ?? snap?.['ClassGroupId'] ?? '');
+
     return {
+      classGroupId: classGroupId || null,
       subjectName: String(raw['subjectName'] ?? '').trim(),
       subjectCode: String(raw['subjectCode'] ?? '').trim(),
       subjectType: raw['subjectType'] ?? null,
@@ -211,7 +221,16 @@ export class AddSubjectComponent implements OnInit {
       return;
     }
 
+    if (this.mode === 'add' && !this.classGroupId) {
+      this.snackBar.open('Subjects can only be created from a class (class group required).', 'Close', {
+        duration: 4000,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+
     this.isSaving = true;
+    this.busyChange.emit(true);
     const subjectPayload = this.buildSubjectApiPayload(this.subjectForm.getRawValue());
 
     const saveObs =
@@ -223,6 +242,7 @@ export class AddSubjectComponent implements OnInit {
       .pipe(
         finalize(() => {
           this.isSaving = false;
+          this.busyChange.emit(false);
           this.cdr.detectChanges();
         })
       )

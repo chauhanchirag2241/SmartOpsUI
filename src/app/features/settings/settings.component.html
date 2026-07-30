@@ -13,6 +13,41 @@
     </div>
   }
 
+  <section class="card">
+    <h2>
+      <mat-icon>calendar_month</mat-icon>
+      Academic year
+    </h2>
+    <p class="hint">
+      Switch the active academic year for this portal. The current year is the one whose date range includes today.
+      Past years are read-only.
+    </p>
+    @if (yearsLoading) {
+      <p class="loading">Loading academic years…</p>
+    } @else if (academicYears.length === 0) {
+      <p class="hint">No academic years found. Ask an admin to add them from school configuration.</p>
+    } @else if (canSwitchYear) {
+      <label class="field">
+        <span>Working academic year</span>
+        <select
+          [value]="selectedYearId ?? ''"
+          (change)="onAcademicYearChange(($any($event.target)).value)"
+        >
+          @for (year of academicYears; track year.id) {
+            <option [value]="year.id">
+              {{ year.name }}{{ year.isCurrent ? ' (current)' : '' }}
+            </option>
+          }
+        </select>
+      </label>
+    } @else {
+      <p class="hint">
+        Active year:
+        <strong>{{ ayContext.effectiveYearLabel() || '—' }}</strong>
+      </p>
+    }
+  </section>
+
   @if (loading) {
     <p class="loading">Loading settings…</p>
   } @else {

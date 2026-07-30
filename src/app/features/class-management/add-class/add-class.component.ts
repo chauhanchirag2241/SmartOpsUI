@@ -12,12 +12,6 @@ import { PageChromeDirective } from '../../../shared/directives/page-chrome.dire
 import { FormTab } from '../../../shared/interfaces/form-layout';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
-import { Section, StreamGroup, Medium, enumToOptions } from '../../../shared/enums/field-options.enum';
-import {
-  streamGroupDuplicateKey,
-  streamGroupFromApiInt,
-  formatStreamGroupDisplay,
-} from '../../../shared/utils/stream-group.util';
 import { ClassService } from '../../../core/services/class.service';
 import { ShiftService } from '../../../core/services/shift.service';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
@@ -37,44 +31,22 @@ export class AddClassComponent implements OnInit {
 
   classForm: FormGroup;
   isSaving = false;
-  private loadedClassGroupId: string | null = null;
 
   readonly configs: Record<string, FormFieldConfig> = {
-    className: {
+    classGroupId: {
       type: 'select',
-      controlName: 'className',
-      label: 'Class name',
-      placeholder: 'Select class',
-      options: [
-        { label: 'Class 1', value: 'Class 1' },
-        { label: 'Class 2', value: 'Class 2' },
-        { label: 'Class 3', value: 'Class 3' },
-        { label: 'Class 4', value: 'Class 4' },
-        { label: 'Class 5', value: 'Class 5' },
-        { label: 'Class 6', value: 'Class 6' },
-        { label: 'Class 7', value: 'Class 7' },
-        { label: 'Class 8', value: 'Class 8' },
-        { label: 'Class 9', value: 'Class 9' },
-        { label: 'Class 10', value: 'Class 10' },
-        { label: 'Class 11', value: 'Class 11' },
-        { label: 'Class 12', value: 'Class 12' },
-      ],
-      validations: [{ name: 'required', message: 'Class name is required', validator: Validators.required }],
+      controlName: 'classGroupId',
+      label: 'Class',
+      placeholder: 'Select class group',
+      options: [],
+      validations: [{ name: 'required', message: 'Class is required', validator: Validators.required }],
     },
     section: {
-      type: 'select',
+      type: 'input',
       controlName: 'section',
       label: 'Section',
-      placeholder: 'Select section',
-      options: enumToOptions(Section),
+      placeholder: 'e.g. A, B, 1, 2',
       validations: [{ name: 'required', message: 'Section is required', validator: Validators.required }],
-    },
-    streamGroup: {
-      type: 'select',
-      controlName: 'streamGroup',
-      label: 'Stream / group',
-      placeholder: SELECT_PLACEHOLDER,
-      options: enumToOptions(StreamGroup),
     },
     studentCapacity: {
       type: 'input',
@@ -91,19 +63,6 @@ export class AddClassComponent implements OnInit {
       placeholder: SELECT_PLACEHOLDER,
       options: [],
     },
-    medium: {
-      type: 'select',
-      controlName: 'medium',
-      label: 'Medium',
-      placeholder: SELECT_PLACEHOLDER,
-      options: enumToOptions(Medium),
-    },
-    description: {
-      type: 'textarea',
-      controlName: 'description',
-      label: 'Description / notes',
-      placeholder: 'Any special notes about this class...',
-    },
   };
 
   readonly tabs: FormTab[] = [
@@ -113,14 +72,14 @@ export class AddClassComponent implements OnInit {
         {
           title: 'Class identity',
           icon: 'school',
-          layout: 'grid3',
-          fields: ['className', 'section', 'streamGroup'],
+          layout: 'grid2',
+          fields: ['classGroupId', 'section'],
         },
         {
           title: 'Room & schedule',
           icon: 'meeting_room',
           layout: 'grid2',
-          fields: ['studentCapacity', 'roomNumber', 'shiftId', 'medium', 'description'],
+          fields: ['studentCapacity', 'roomNumber', 'shiftId'],
         },
       ],
     },
@@ -134,14 +93,11 @@ export class AddClassComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.classForm = this.fb.group({
-      className: ['', Validators.required],
+      classGroupId: ['', Validators.required],
       section: ['', Validators.required],
-      streamGroup: [null],
       studentCapacity: [''],
       roomNumber: [''],
       shiftId: [null],
-      medium: [null],
-      description: [''],
       status: ['Active'],
     });
   }
@@ -153,6 +109,7 @@ export class AddClassComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadClassGroupOptions();
     this.loadShiftOptions();
     if ((this.mode === 'edit' || this.mode === 'view') && this.classId) {
       this.loadClass(this.classId);
@@ -160,6 +117,25 @@ export class AddClassComponent implements OnInit {
     if (this.mode === 'view') {
       this.classForm.disable();
     }
+  }
+
+  private loadClassGroupOptions(): void {
+    this.classService.getClassDropdown(undefined, 'group').subscribe({
+      next: (items) => {
+        this.configs['classGroupId'].options = (items || []).map((g) => ({
+          label: g.name,
+          value: g.id,
+        }));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.configs['classGroupId'].options = [];
+        this.snackBar.open('Failed to load class groups. Create them in Config first.', 'Close', {
+          duration: 4000,
+          panelClass: 'snack-error',
+        });
+      },
+    });
   }
 
   private loadShiftOptions(): void {
@@ -177,30 +153,15 @@ export class AddClassComponent implements OnInit {
     });
   }
 
-  private static intToEnum<T extends Record<string, string>>(
-    enumObj: T,
-    intValue: number | null | undefined
-  ): string | null {
-    if (intValue == null || intValue <= 0) {
-      return null;
-    }
-    const values = Object.values(enumObj);
-    return values[intValue - 1] ?? null;
-  }
-
   private loadClass(id: string): void {
     this.classService.getClassById(id).subscribe({
       next: (res: any) => {
-        this.loadedClassGroupId = res.classGroupId ?? null;
         this.classForm.patchValue({
-          className: res.className,
-          section: AddClassComponent.intToEnum(Section, res.section),
-          streamGroup: streamGroupFromApiInt(res.streamGroup),
+          classGroupId: res.classGroupId ?? '',
+          section: res.section ?? '',
           studentCapacity: res.capacity,
           roomNumber: res.roomNumber,
           shiftId: res.shiftId ?? null,
-          medium: AddClassComponent.intToEnum(Medium, res.medium),
-          description: res.description,
           status: res.isActive ? 'Active' : 'Inactive',
         });
         if (this.mode === 'view') {
@@ -222,9 +183,6 @@ export class AddClassComponent implements OnInit {
 
     this.isSaving = true;
     const payloadRaw = this.classForm.getRawValue();
-    if (this.loadedClassGroupId) {
-      payloadRaw.classGroupId = this.loadedClassGroupId;
-    }
 
     this.classService
       .getClasses(1, 2000, '', null, null, 'All')
@@ -233,9 +191,11 @@ export class AddClassComponent implements OnInit {
           const items = (res?.items || []) as any[];
           const duplicate = items.find((row) => this.isDuplicateCombination(row, payloadRaw));
           if (duplicate) {
-            const streamLabel = this.getStreamLabel(payloadRaw.streamGroup);
+            const classLabel =
+              this.configs['classGroupId'].options?.find((o) => o.value === payloadRaw.classGroupId)?.label ??
+              'Class';
             this.snackBar.open(
-              `Duplicate class not allowed: ${payloadRaw.className} - ${payloadRaw.section} - ${streamLabel}`,
+              `Duplicate class not allowed: ${classLabel} - ${payloadRaw.section}`,
               'Close',
               { duration: 3500, panelClass: 'snack-error' },
             );
@@ -275,18 +235,11 @@ export class AddClassComponent implements OnInit {
       return false;
     }
 
-    const rowClass = String(row?.className ?? '').trim().toLowerCase();
+    const rowGroup = String(row?.classGroupId ?? '').trim().toLowerCase();
     const rowSection = String(row?.section ?? '').trim().toLowerCase();
-    const rowStream = streamGroupDuplicateKey(row?.streamGroup);
-
-    const formClass = String(payload?.className ?? '').trim().toLowerCase();
+    const formGroup = String(payload?.classGroupId ?? '').trim().toLowerCase();
     const formSection = String(payload?.section ?? '').trim().toLowerCase();
-    const formStream = streamGroupDuplicateKey(payload?.streamGroup);
 
-    return rowClass === formClass && rowSection === formSection && rowStream === formStream;
-  }
-
-  private getStreamLabel(value: unknown): string {
-    return formatStreamGroupDisplay(value);
+    return rowGroup === formGroup && rowSection === formSection;
   }
 }

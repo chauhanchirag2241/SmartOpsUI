@@ -366,7 +366,7 @@ export class ClassTimetableComponent implements OnInit {
     const academicYearId = this.detailAcademicYearId;
     const effectiveFrom = this.toDateInputValue(raw.effectiveFrom);
     if (!templateId || !classId || !academicYearId || !effectiveFrom) {
-      this.snackBar.open('Top nav bar ma academic year select karo', 'Close', {
+      this.snackBar.open('Settings ma academic year select karo', 'Close', {
         duration: 3500,
         panelClass: 'snack-error',
       });
@@ -475,7 +475,7 @@ export class ClassTimetableComponent implements OnInit {
     const periodTemplateId = String(raw.periodTemplateId ?? '');
     if (!effectiveFrom || !classId || !periodTemplateId) return;
     if (!academicYearId) {
-      this.snackBar.open('Top nav bar ma academic year select karo', 'Close', {
+      this.snackBar.open('Settings ma academic year select karo', 'Close', {
         duration: 3500,
         panelClass: 'snack-error',
       });

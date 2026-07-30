@@ -4,20 +4,11 @@
   gap: 16px;
 }
 
-.period-toolbar,
 .class-panel,
 .editor-card {
   background: var(--surface, #fff);
   border: 1px solid var(--border);
   border-radius: 10px;
-}
-
-.period-toolbar {
-  padding: 14px 16px;
-}
-
-.toolbar-field {
-  width: min(320px, 100%);
 }
 
 .period-layout {
@@ -86,10 +77,6 @@
 }
 
 .editor-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: end;
   margin-bottom: 16px;
 }
 
@@ -102,10 +89,6 @@
   margin-top: 4px;
   font-size: 12px;
   color: var(--muted);
-}
-
-.type-field {
-  min-width: 200px;
 }
 
 .period-table-wrap {
@@ -214,15 +197,5 @@
 @media (max-width: 800px) {
   .period-layout {
     grid-template-columns: 1fr;
-  }
-
-  .editor-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .type-field {
-    min-width: 0;
-    width: 100%;
   }
 }

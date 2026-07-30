@@ -215,7 +215,7 @@ export class EmployeeSalaryComponent implements OnInit {
 
   assignVersionLabel(versionId: string): string {
     const v = this.assignableVersions.find((x) => x.id === versionId);
-    return v ? `${v.academicYearTitle} — ${v.versionLabel} (${v.statusLabel})` : '—';
+    return v ? `${v.versionLabel} (${v.statusLabel})` : '—';
   }
 
   saveAssignment(): void {

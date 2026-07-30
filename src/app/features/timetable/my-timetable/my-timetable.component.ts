@@ -1,6 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { finalize } from 'rxjs/operators';
@@ -9,7 +8,6 @@ import { NotificationService } from '../../../core/services/notification.service
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
-import { MappingService, MappingLookupOption } from '../../../core/services/mapping.service';
 import {
   TimetableService,
   TimetableGrid,
@@ -31,21 +29,18 @@ const DAYS = [
 @Component({
   selector: 'app-my-timetable',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, ListPageHeaderComponent, RouterLink],
+  imports: [CommonModule, MatIconModule, ListPageHeaderComponent, RouterLink],
   templateUrl: './my-timetable.component.html',
   styleUrl: './my-timetable.component.css',
 })
 export class MyTimetableComponent implements OnInit {
   private readonly timetableService = inject(TimetableService);
-  private readonly mappingService = inject(MappingService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissions = inject(PermissionService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly days = DAYS;
-  academicYears: MappingLookupOption[] = [];
-  selectedAcademicYearId = '';
   response: MyTimetableResponse | null = null;
   slotMap = new Map<string, TimetableSlotCell>();
   loading = false;
@@ -59,6 +54,10 @@ export class MyTimetableComponent implements OnInit {
     return this.grid?.periods ?? [];
   }
 
+  get selectedAcademicYearId(): string {
+    return this.ayContext.effectiveYearId() ?? '';
+  }
+
   get canExport(): boolean {
     return this.permissions.canExport(MenuCodes.MyTimetable) || this.permissions.canView(MenuCodes.MyTimetable);
   }
@@ -68,26 +67,14 @@ export class MyTimetableComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.mappingService.getLookups(this.ayContext.effectiveYearId() ?? undefined).subscribe({
-      next: (lookups) => {
-        this.academicYears = lookups.academicYears || [];
-        this.selectedAcademicYearId =
-          this.ayContext.effectiveYearId() ||
-          lookups.activeAcademicYearId ||
-          this.academicYears[0]?.id ||
-          '';
-        this.loadMy();
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.message = 'Could not load academic years.';
-        this.cdr.detectChanges();
-      },
-    });
+    this.loadMy();
   }
 
   loadMy(): void {
-    if (!this.selectedAcademicYearId) return;
+    if (!this.selectedAcademicYearId) {
+      this.message = 'Select an academic year in Settings to view your timetable.';
+      return;
+    }
     this.loading = true;
     this.timetableService
       .getMyTimetable(this.selectedAcademicYearId)

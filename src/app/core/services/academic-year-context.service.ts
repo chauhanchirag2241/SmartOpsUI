@@ -117,7 +117,7 @@ export class AcademicYearContextService {
     );
   }
 
-  /** Header switcher: all active years (current, future, and archived). */
+  /** Settings switcher: all active years (current, upcoming, and past). */
   loadDropdown(): Observable<AcademicYearDropdownItem[]> {
     const loadItems = () =>
       this.ayService.getAcademicYearDropdown('all').pipe(

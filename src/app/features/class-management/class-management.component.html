@@ -1,24 +1,23 @@
 <section class="class-management-page">
-  @if (!showAddForm) {
+  @if (!showDetail) {
     <app-smart-data-table
       [config]="classConfig"
-      [data]="classes"
+      [data]="groups"
       [serverSide]="true"
-      [totalRecords]="totalClasses"
+      [totalRecords]="totalGroups"
       [rowClassFn]="classRowClass"
       [initialFilterValue]="currentFilter"
       (pageChange)="onPageChange($event)"
       (filterChanged)="onFilterChanged($event)"
       (actionClicked)="onActionClicked($event)"
       (exportClicked)="onExportClicked()"
-      (addButtonClicked)="onAddButtonClicked()"
     />
-  } @else {
-    <app-add-class
-      [mode]="formMode"
-      [classId]="selectedClassId"
-      (cancel)="closeAddForm()"
-      (saved)="onClassSaved()"
+  } @else if (selectedClassGroupId) {
+    <app-class-group-detail
+      [classGroupId]="selectedClassGroupId"
+      [mode]="detailMode"
+      [initialTab]="detailInitialTab"
+      (cancel)="closeDetail()"
     />
   }
 </section>

@@ -134,7 +134,7 @@
             [disabled]="loadingAssignVersions"
           >
             <option *ngFor="let v of assignableVersions" [value]="v.id">
-              {{ v.academicYearTitle }} — {{ v.versionLabel }} ({{ v.statusLabel }})
+              {{ v.versionLabel }} ({{ v.statusLabel }})
             </option>
           </select>
         </div>

@@ -20,10 +20,6 @@ import type { FormFieldOption } from '../../../shared/form-controls/form-field';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import {
-  AcademicYearService,
-  AcademicYearDropdownItem,
-} from '../../../core/services/academic-year.service';
-import {
   ExamService,
   ExamGroup,
   ExamGradeScale,
@@ -48,7 +44,6 @@ import {
 })
 export class ExamGroupsComponent implements OnInit {
   private examService = inject(ExamService);
-  private academicYearService = inject(AcademicYearService);
   private snackBar = inject(NotificationService);
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
@@ -59,7 +54,6 @@ export class ExamGroupsComponent implements OnInit {
   ExamEvaluationType = ExamEvaluationType;
 
   rows: Record<string, unknown>[] = [];
-  academicYears: AcademicYearDropdownItem[] = [];
   gradeScales: ExamGradeScale[] = [];
   tableConfig!: DataTableConfig;
 
@@ -71,7 +65,6 @@ export class ExamGroupsComponent implements OnInit {
 
   formName = '';
   formDescription = '';
-  formAcademicYearId = '';
   formGradeScaleId = '';
   formEvaluationType: ExamEvaluationType = ExamEvaluationType.Marks;
 
@@ -80,10 +73,6 @@ export class ExamGroupsComponent implements OnInit {
     { label: 'Grade', value: ExamEvaluationType.Grade },
     { label: 'Marks & Grade', value: ExamEvaluationType.Both },
   ];
-
-  get academicYearOptions(): FormFieldOption[] {
-    return this.academicYears.map((y) => ({ label: y.name, value: y.id }));
-  }
 
   get gradeScaleOptions(): FormFieldOption[] {
     return this.gradeScales.map((s) => ({ label: s.name, value: s.id }));
@@ -107,7 +96,6 @@ export class ExamGroupsComponent implements OnInit {
         toggleable: false,
         avatarConfig: { nameKey: 'name', subtitleKey: 'description' },
       },
-      { key: 'academicYearTitle', label: 'Academic year', sortable: true },
       {
         key: 'evaluationTypeLabel',
         label: 'Evaluation',
@@ -128,7 +116,7 @@ export class ExamGroupsComponent implements OnInit {
       { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
     searchPlaceholder: 'Search exam groups...',
-    searchKeys: ['name', 'description', 'academicYearTitle', 'gradeScaleName'],
+    searchKeys: ['name', 'description', 'gradeScaleName'],
     itemLabel: 'groups',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50],
@@ -144,12 +132,6 @@ export class ExamGroupsComponent implements OnInit {
       this.ayContext.isReadOnlyScope(),
     );
     this.load();
-    this.academicYearService.getAcademicYearDropdown('switcher').subscribe({
-      next: (years) => {
-        this.academicYears = years ?? [];
-        this.cdr.detectChanges();
-      },
-    });
     this.examService.getGradeScales().subscribe({
       next: (scales) => {
         this.gradeScales = scales ?? [];
@@ -186,8 +168,6 @@ export class ExamGroupsComponent implements OnInit {
     this.editingId = null;
     this.formName = '';
     this.formDescription = '';
-    this.formAcademicYearId =
-      this.academicYears.find((y) => y.isCurrent)?.id ?? this.academicYears[0]?.id ?? '';
     this.formGradeScaleId = this.gradeScales.find((s) => s.isDefault)?.id ?? '';
     this.formEvaluationType = ExamEvaluationType.Marks;
     this.formError = '';
@@ -213,7 +193,6 @@ export class ExamGroupsComponent implements OnInit {
       this.editingId = group.id;
       this.formName = group.name;
       this.formDescription = group.description ?? '';
-      this.formAcademicYearId = group.academicYearId;
       this.formGradeScaleId = group.gradeScaleId ?? '';
       this.formEvaluationType = group.evaluationType;
       this.formError = '';
@@ -228,15 +207,10 @@ export class ExamGroupsComponent implements OnInit {
       this.formError = 'Group name is required.';
       return;
     }
-    if (!this.formAcademicYearId) {
-      this.formError = 'Academic year is required.';
-      return;
-    }
 
     const payload = {
       name: this.formName.trim(),
       description: this.formDescription.trim() || null,
-      academicYearId: this.formAcademicYearId,
       gradeScaleId: this.formGradeScaleId || null,
       evaluationType: Number(this.formEvaluationType) as ExamEvaluationType,
     };
@@ -272,7 +246,7 @@ export class ExamGroupsComponent implements OnInit {
         title: 'Delete exam group?',
         description: 'This exam group will be removed.',
         recordName: group.name,
-        recordMeta: `${group.examCount} exam(s) · ${group.academicYearTitle}`,
+        recordMeta: `${group.examCount} exam(s)`,
         initials: 'EG',
         warningMessage: 'Groups that still contain exams cannot be deleted.',
         confirmButtonText: 'Yes, delete',

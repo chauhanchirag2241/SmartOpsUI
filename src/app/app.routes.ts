@@ -64,6 +64,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'academic-periods/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.AcademicPeriods, permission: 'view', entityKind: 'academic-period' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
         path: 'teachers',
         redirectTo: 'employees',
         pathMatch: 'full',
@@ -263,24 +272,6 @@ export const routes: Routes = [
         data: { menuCode: MenuCodes.SalaryPayroll, permission: 'view' },
         loadComponent: () =>
           import('./features/salary/payroll/payroll.component').then((m) => m.PayrollComponent),
-      },
-      {
-        path: 'academic-years',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.AcademicYears, permission: 'view' },
-        loadComponent: () =>
-          import('./features/academic-year-management/academic-year-management.component').then(
-            (m) => m.AcademicYearManagementComponent,
-          ),
-      },
-      {
-        path: 'academic-years/:id/history',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.AcademicYears, permission: 'view', entityKind: 'academic-year' },
-        loadComponent: () =>
-          import('./shared/pages/entity-history/entity-history.component').then(
-            (m) => m.EntityHistoryComponent,
-          ),
       },
       {
         path: 'academic-periods',

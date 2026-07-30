@@ -1,0 +1,76 @@
+<span
+  [appPageChrome]="className || 'Class'"
+  [pageChromeSubtitle]="'Manage sections and subjects for this class'"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+@if (loading) {
+  <p class="page-sub">Loading…</p>
+} @else {
+  <div class="tabs" role="tablist">
+    @for (tab of tabs; track tab.label; let i = $index) {
+      <div
+        class="tab"
+        [class.active]="currentTab === i"
+        [class.done]="currentTab > i"
+        (click)="goTab(i)"
+        role="tab"
+      >
+        <div class="tab-num">{{ i + 1 }}</div>
+        {{ tab.label }}
+      </div>
+    }
+  </div>
+
+  @if (currentTab === 0) {
+    <div class="card basic-detail-card">
+      <div class="card-title">
+        <mat-icon>info</mat-icon>
+        Basic detail
+      </div>
+      <div class="basic-detail-grid">
+        <div class="basic-detail-field">
+          <div class="basic-detail-label">Class name</div>
+          <div class="basic-detail-value">{{ className || '—' }}</div>
+        </div>
+        <div class="basic-detail-field">
+          <div class="basic-detail-label">Description</div>
+          <div class="basic-detail-value">{{ description || '—' }}</div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (currentTab === 1) {
+    <app-smart-data-table
+      [config]="sectionTableConfig"
+      [data]="sections"
+      [totalRecords]="sections.length"
+      (addButtonClicked)="openSectionDialog()"
+      (actionClicked)="onSectionAction($event)"
+    />
+  }
+
+  @if (currentTab === 2) {
+    <app-smart-data-table
+      [config]="subjectTableConfig"
+      [data]="subjects"
+      [serverSide]="true"
+      [totalRecords]="totalSubjects"
+      (pageChange)="onSubjectPageChange($event)"
+      (addButtonClicked)="openSubjectDialog('add')"
+      (actionClicked)="onSubjectAction($event)"
+    />
+  }
+
+  @if (currentTab === 3) {
+    <app-smart-data-table
+      [config]="periodTableConfig"
+      [data]="periods"
+      [totalRecords]="periods.length"
+      (addButtonClicked)="openPeriodDialog()"
+      (actionClicked)="onPeriodAction($event)"
+    />
+  }
+}

@@ -11,6 +11,7 @@ export type AuditHistoryEntityType =
   | 'subject'
   | 'shift'
   | 'period'
+  | 'academic-period'
   | 'academic-year'
   | 'visitor'
   | 'phone-log'
@@ -46,6 +47,8 @@ export class AuditService {
         return `classes/${entityId}/history`;
       case 'period':
         return `period-templates/${entityId}/history`;
+      case 'academic-period':
+        return `academic-periods/${entityId}/history`;
       case 'academic-year':
         return `academicYears/${entityId}/history`;
       case 'visitor':

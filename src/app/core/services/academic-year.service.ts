@@ -31,8 +31,10 @@ function resolveFilter(label: string): AcademicYearFilter {
       return AcademicYearFilter.Inactive;
     case 'Current':
       return AcademicYearFilter.Current;
+    case 'Upcoming':
     case 'Draft':
       return AcademicYearFilter.Draft;
+    case 'Past':
     case 'Archived':
       return AcademicYearFilter.Archived;
     default:
@@ -75,8 +77,8 @@ export class AcademicYearService {
   }
 
   /**
-   * @param scope `all` = every active year including Draft (header switcher).
-   * `switcher` = current + Draft/future only (forms); excludes past Archived.
+   * @param scope `all` = every active year (settings switcher).
+   * `switcher` = current + upcoming only (forms); excludes past years.
    */
   getAcademicYearDropdown(scope: AcademicYearDropdownScope = 'switcher'): Observable<AcademicYearDropdownItem[]> {
     const params = scope === 'switcher' ? new HttpParams().set('scope', 'switcher') : undefined;
@@ -87,10 +89,6 @@ export class AcademicYearService {
         ),
       ),
     );
-  }
-
-  setCurrentAcademicYear(id: string): Observable<void> {
-    return this.api.put(`academicYears/${id}/set-current`, {});
   }
 
   createAcademicYear(data: unknown): Observable<unknown> {

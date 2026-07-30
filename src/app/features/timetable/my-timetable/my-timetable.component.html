@@ -4,17 +4,6 @@
     subtitle="Your weekly schedule based on linked teacher or student profile"
   >
     <div headerActions class="header-actions">
-      <label class="table-filter-section-label" for="my-tt-year">Academic year</label>
-      <select
-        id="my-tt-year"
-        class="sel-filter sel-filter-lg"
-        [(ngModel)]="selectedAcademicYearId"
-        (ngModelChange)="loadMy()"
-      >
-        @for (year of academicYears; track year.id) {
-          <option [value]="year.id">{{ year.name }}</option>
-        }
-      </select>
       @if (canExport && grid) {
         <button type="button" class="btn-outline" (click)="printGrid()">
           <mat-icon>print</mat-icon> Print / PDF

@@ -76,8 +76,6 @@ export function normalizeSalaryStructureVersion(raw: any) {
   const statusLabel = String(pick(raw, 'statusLabel', 'StatusLabel') ?? '');
   return {
     id: String(pick(raw, 'id', 'Id') ?? ''),
-    academicYearId: String(pick(raw, 'academicYearId', 'AcademicYearId') ?? ''),
-    academicYearTitle: String(pick(raw, 'academicYearTitle', 'AcademicYearTitle') ?? ''),
     versionNumber,
     versionLabel: `V${versionNumber}`,
     status: Number(pick(raw, 'status', 'Status') ?? 0),

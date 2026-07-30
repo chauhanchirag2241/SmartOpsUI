@@ -1,6 +1,6 @@
-<span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
-
-<p class="form-hint">Class and employee assignments are managed from the Class Mapping screen.</p>
+@if (!embeddedInDialog) {
+  <span [appPageChrome]="pageTitle" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
+}
 
 <form [formGroup]="subjectForm">
   @for (tab of tabs; track tab.stepIndex) {
@@ -23,15 +23,19 @@
   }
 </form>
 
-<div class="footer-actions">
-  <div class="footer-hint">Save subject details, then map to classes from Class Mapping.</div>
-  @if (mode !== 'view') {
-    <app-action-button
-      type="save"
-      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Subject' : 'Confirm & Add')"
-      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
-      [disabled]="isSaving"
-      (action)="saveSubject()">
-    </app-action-button>
-  }
-</div>
+@if (!embeddedInDialog) {
+  <div class="footer-actions">
+    @if (mode !== 'view') {
+      <div class="footer-actions-right">
+        <app-action-button type="cancel" (action)="cancel.emit()" />
+        <app-action-button
+          type="save"
+          [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Subject' : 'Confirm & Add')"
+          [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+          [disabled]="isSaving"
+          (action)="saveSubject()"
+        />
+      </div>
+    }
+  </div>
+}

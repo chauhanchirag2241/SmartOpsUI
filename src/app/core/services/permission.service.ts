@@ -5,6 +5,7 @@ import { IMenu } from '../models/menu.model';
 import { IMenuPermission, IUserPermissionResponse } from '../models/permission.model';
 import { APP_MENU_APPLICATION } from '../constants/app.constants';
 import { canonicalMenuCode } from '../constants/menu-code-aliases';
+import { MenuCodes } from '../constants/menu-codes';
 import { resolveMenuRoute } from '../constants/menu-routes';
 import { isUsableAccessToken } from '../utils/token.util';
 import { ApiService } from './api.service';
@@ -167,7 +168,23 @@ export class PermissionService {
 
   private normalizeMenus(raw: unknown): IMenu[] {
     const list = Array.isArray(raw) ? raw : [];
-    return list.map((item) => this.normalizeMenu(item as Record<string, unknown>));
+    return list
+      .map((item) => this.normalizeMenu(item as Record<string, unknown>))
+      .map((menu) => this.excludeManagedElsewhereMenus(menu))
+      .filter((menu): menu is IMenu => menu != null);
+  }
+
+  /** Academic years are managed from ConfigUi school edit — hide from school portal nav. */
+  private excludeManagedElsewhereMenus(menu: IMenu): IMenu | null {
+    if (menu.code === MenuCodes.AcademicYears) {
+      return null;
+    }
+    return {
+      ...menu,
+      children: (menu.children ?? [])
+        .map((child) => this.excludeManagedElsewhereMenus(child))
+        .filter((child): child is IMenu => child != null),
+    };
   }
 
   private normalizeMenu(raw: Record<string, unknown>): IMenu {

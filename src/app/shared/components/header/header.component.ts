@@ -31,26 +31,15 @@ export class HeaderComponent implements OnInit {
   readonly branchContext = inject(BranchContextService);
   readonly pageChrome = inject(PageChromeService);
 
-  selectedYearId: string | null = null;
-  yearMenuOpen = false;
   branchMenuOpen = false;
   branchSearch = '';
 
   ngOnInit(): void {
-    this.selectedYearId = this.ayContext.effectiveYearId();
+    // Academic year selection lives on Settings; header only shows the effective label.
   }
 
   get academicYearLabel(): string {
     return this.ayContext.effectiveYearLabel();
-  }
-
-  get selectedYearLabel(): string {
-    const id = this.selectedYearId ?? this.ayContext.effectiveYearId();
-    const year = this.ayContext.dropdownYears().find((y) => y.id === id);
-    if (year) {
-      return `${year.name}${year.isCurrent ? ' (current)' : ''}`;
-    }
-    return this.academicYearLabel || 'Academic year';
   }
 
   get showBranchPicker(): boolean {
@@ -58,30 +47,16 @@ export class HeaderComponent implements OnInit {
   }
 
   get showBranchDropdown(): boolean {
-    // Always show picker when branches exist (including a single Main Campus).
     return this.branchContext.branches().length > 0;
-  }
-
-  toggleYearMenu(event: MouseEvent): void {
-    event.stopPropagation();
-    this.yearMenuOpen = !this.yearMenuOpen;
-    this.branchMenuOpen = false;
   }
 
   toggleBranchMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.branchMenuOpen = !this.branchMenuOpen;
-    this.yearMenuOpen = false;
     if (this.branchMenuOpen) {
       this.branchSearch = '';
       this.branchContext.setSearchTerm('');
     }
-  }
-
-  pickYear(yearId: string, event?: MouseEvent): void {
-    event?.stopPropagation();
-    this.yearMenuOpen = false;
-    this.onYearChange(yearId);
   }
 
   pickBranch(branchId: string, event?: MouseEvent): void {
@@ -110,20 +85,9 @@ export class HeaderComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.header-year-picker')) {
-      this.yearMenuOpen = false;
-    }
     if (!target.closest('.header-branch-picker')) {
       this.branchMenuOpen = false;
     }
-  }
-
-  onYearChange(yearId: string): void {
-    if (!yearId || yearId === this.ayContext.effectiveYearId()) {
-      return;
-    }
-    this.selectedYearId = yearId;
-    this.ayContext.switchAcademicYear(yearId);
   }
 
   onLogout(): void {

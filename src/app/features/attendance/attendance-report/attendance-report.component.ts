@@ -9,7 +9,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { AcademicYearService, AcademicYearDropdownItem } from '../../../core/services/academic-year.service';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 
 @Component({
   selector: 'app-attendance-report',
@@ -21,14 +21,12 @@ import { AcademicYearService, AcademicYearDropdownItem } from '../../../core/ser
 export class AttendanceReportComponent implements OnInit {
   private attendanceService = inject(AttendanceService);
   private classService = inject(ClassService);
-  private academicYearService = inject(AcademicYearService);
+  private ayContext = inject(AcademicYearContextService);
   private snackBar = inject(NotificationService);
 
   classes = signal<any[]>([]);
-  academicYears = signal<AcademicYearDropdownItem[]>([]);
   
   selectedClassId = signal<string>('');
-  selectedAcademicYearId = signal<string>('');
   selectedMonth = signal<number>(new Date().getMonth() + 1);
   selectedYear = signal<number>(new Date().getFullYear());
   
@@ -38,6 +36,10 @@ export class AttendanceReportComponent implements OnInit {
   
   reportData = signal<any>(null);
   loading = signal<boolean>(false);
+
+  get selectedAcademicYearId(): string {
+    return this.ayContext.effectiveYearId() ?? '';
+  }
 
   daysInMonth = computed(() => {
     if (!this.reportData()) return [];
@@ -72,23 +74,7 @@ export class AttendanceReportComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.loadAcademicYears();
     this.loadClasses();
-  }
-
-  loadAcademicYears() {
-    this.academicYearService.getAcademicYearDropdown('switcher').subscribe({
-      next: (res) => {
-        this.academicYears.set(res || []);
-        const current = res.find(a => a.isCurrent);
-        if (current) {
-          this.selectedAcademicYearId.set(current.id);
-        } else if (res.length > 0) {
-          this.selectedAcademicYearId.set(res[0].id);
-        }
-      },
-      error: () => this.snackBar.error('Failed to load academic years')
-    });
   }
 
   loadClasses() {
@@ -104,13 +90,16 @@ export class AttendanceReportComponent implements OnInit {
   }
 
   loadReport() {
-    if (!this.selectedClassId() || !this.selectedAcademicYearId()) return;
+    if (!this.selectedClassId() || !this.selectedAcademicYearId) {
+      this.snackBar.error('Select an academic year in Settings first');
+      return;
+    }
     
     this.loading.set(true);
     this.attendanceService.getAttendanceReport(
       this.selectedClassId(),
       this.selectedMonth(),
-      this.selectedAcademicYearId()
+      this.selectedAcademicYearId
     ).subscribe({
       next: (res: any) => {
         this.reportData.set(res);

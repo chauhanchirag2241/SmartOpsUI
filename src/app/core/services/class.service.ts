@@ -3,27 +3,6 @@ import { Observable } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { ClassFilter } from '../../shared/enums/table-filters.enum';
-import { Section, Medium } from '../../shared/enums/field-options.enum';
-import { streamGroupToApiInt } from '../../shared/utils/stream-group.util';
-
-/**
- * Maps a frontend string enum value to the backend 1-based integer.
- * E.g. Section.A → 1
- */
-function enumToInt<T extends Record<string, string>>(
-  enumObj: T,
-  value: string | null | undefined,
-  required = false
-): number | null {
-  if (!value) {
-    return required ? 1 : null;
-  }
-  const idx = Object.values(enumObj).indexOf(value);
-  if (idx < 0) {
-    return required ? 1 : null;
-  }
-  return idx + 1;
-}
 
 /** Maps frontend filter label → ClassFilter int */
 function resolveFilter(label: string): ClassFilter {
@@ -38,7 +17,7 @@ function resolveFilter(label: string): ClassFilter {
 export class ClassService {
   private readonly api = inject(ApiService);
 
-  getClasses(
+  getClassGroups(
     pageIndex = 1,
     pageSize = 10,
     searchTerm = '',
@@ -61,10 +40,44 @@ export class ClassService {
       params = params.set('sortDirection', sortDirection);
     }
 
+    return this.api.get('classGroups', params);
+  }
+
+  getClassGroupById(id: string): Observable<any> {
+    return this.api.get(`classGroups/${id}`);
+  }
+
+  getClasses(
+    pageIndex = 1,
+    pageSize = 10,
+    searchTerm = '',
+    sortColumn: string | null = null,
+    sortDirection: string | null = null,
+    filter: string = 'All',
+    classGroupId?: string | null
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('pageIndex', pageIndex.toString())
+      .set('pageSize', pageSize.toString())
+      .set('filter', resolveFilter(filter).toString());
+
+    if (searchTerm) {
+      params = params.set('searchTerm', searchTerm);
+    }
+    if (sortColumn) {
+      params = params.set('sortColumn', sortColumn);
+    }
+    if (sortDirection) {
+      params = params.set('sortDirection', sortDirection);
+    }
+    if (classGroupId) {
+      params = params.set('classGroupId', classGroupId);
+    }
+
     return this.api.get('classes', params);
   }
 
-  /** Section-scoped by default (Class 1 - A). Pass scope `'group'` for Class 1 only (fees / periods). */
+  /** Section-scoped by default (Class 1 - A). Pass scope `'group'` for Class 1 only. */
   getClassDropdown(academicYearId?: string, scope?: 'group' | 'section'): Observable<any[]> {
     let params = new HttpParams();
     if (academicYearId) {
@@ -78,15 +91,12 @@ export class ClassService {
 
   createClass(classData: any): Observable<any> {
     const payload = {
-      className: classData.className,
-      section: enumToInt(Section, classData.section, true),
-      streamGroup: streamGroupToApiInt(classData.streamGroup),
+      classGroupId: classData.classGroupId,
+      section: String(classData.section ?? '').trim(),
       academicYearId: classData.academicYearId || classData.academicYear,
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
       shiftId: classData.shiftId || classData.shift || null,
-      medium: enumToInt(Medium, classData.medium),
-      description: classData.description,
     };
 
     return this.api.post('classes', payload);
@@ -99,16 +109,11 @@ export class ClassService {
   updateClass(id: string, classData: any): Observable<any> {
     const payload = {
       id,
-      classGroupId: classData.classGroupId || undefined,
-      className: classData.className,
-      section: enumToInt(Section, classData.section, true),
-      streamGroup: streamGroupToApiInt(classData.streamGroup),
-      academicYearId: classData.academicYearId || classData.academicYear,
+      classGroupId: classData.classGroupId,
+      section: String(classData.section ?? '').trim(),
       capacity: Number(classData.studentCapacity) || 0,
       roomNumber: classData.roomNumber,
       shiftId: classData.shiftId || classData.shift || null,
-      medium: enumToInt(Medium, classData.medium),
-      description: classData.description,
     };
     return this.api.put(`classes/${id}`, payload);
   }
@@ -119,5 +124,17 @@ export class ClassService {
 
   recoverClass(id: string): Observable<any> {
     return this.api.put(`classes/${id}/recover`, {});
+  }
+
+  getClassGroupSubjects(classGroupId: string): Observable<any[]> {
+    return this.api.get<any[]>(`classGroups/${classGroupId}/subjects`);
+  }
+
+  addClassGroupSubject(classGroupId: string, subjectId: string): Observable<any> {
+    return this.api.post(`classGroups/${classGroupId}/subjects`, { subjectId });
+  }
+
+  removeClassGroupSubject(id: string): Observable<any> {
+    return this.api.delete(`classGroups/subjects/${id}`);
   }
 }

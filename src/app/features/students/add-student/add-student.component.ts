@@ -20,7 +20,6 @@ import {
   alphanumericValidationConfig,
   maxLengthValidator,
   nameValidator,
-  stripAadhaarDigits,
   textMaxLengthValidationConfig,
 } from '../../../shared/utils/form-validators.util';
 import {
@@ -29,7 +28,7 @@ import {
 } from '../../../shared/utils/form-validation.util';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '../../../core/services/notification.service';
-import { finalize, firstValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
@@ -47,31 +46,7 @@ import {
 } from '../../../shared/enums/field-options.enum';
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
-import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
-import { ClassFeeAmountService } from '../../../core/services/class-fee-amount.service';
-import {
-  formatInr,
-  isDiscountCategory,
-  normalizeClassAmounts,
-  resolveFeeCategory,
-  signedFeeAmount,
-  FeeCategory,
-} from '../../fees/fees.shared';
-
-type FeeStructureRow = {
-  feeHeadId: string;
-  name: string;
-  amount: string;
-  amountValue: number;
-  defaultAmountValue: number;
-  isMandatory: boolean;
-  isIncluded: boolean;
-  studentWiseDifferentAmount: boolean;
-  category: number;
-  categoryLabel: string;
-  isDiscount: boolean;
-};
 
 type DocumentChecklistItem = {
   icon: string;
@@ -118,29 +93,27 @@ export class AddStudentComponent implements OnInit {
   @Output() saved = new EventEmitter<void>();
 
   /** Zero-based index of the last wizard step (review). */
-  protected readonly finalTabIndex = 4;
-  protected readonly totalTabs = 5;
+  protected readonly finalTabIndex = 3;
+  protected readonly totalTabs = 4;
 
   studentForm: FormGroup;
   currentTab = 0;
   isSaving = false;
-  academicYears: any[] = [];
   classes: any[] = [];
   selectedPhoto: SelectedUploadFile | null = null;
   selectedDocuments: Record<string, SelectedUploadFile> = {};
+  private academicRecordId = '';
 
   readonly tabs = [
     { label: 'Personal info', hint: 'Step 1 of 4 — Personal information' },
-    { label: 'Academic', hint: 'Step 2 of 5 — Academic details' },
-    { label: 'Fees', hint: 'Step 3 of 5 — Fees & payment' },
-    { label: 'Documents', hint: 'Step 4 of 5 — Documents' },
-    { label: 'Review', hint: 'Step 5 of 5 — Review & Submit' },
+    { label: 'Academic', hint: 'Step 2 of 4 — Academic details' },
+    { label: 'Documents', hint: 'Step 3 of 4 — Documents' },
+    { label: 'Review', hint: 'Step 4 of 4 — Review & Submit' },
   ];
 
   readonly footerHints = [
     'Fill all required fields to continue',
     'Select class and section',
-    'Review fee structure and set payment mode',
     'Upload required documents',
     'Review all details before submitting',
   ];
@@ -372,15 +345,6 @@ export class AddStudentComponent implements OnInit {
         { name: 'required', message: 'Admission date is required', validator: Validators.required },
       ],
     },
-    academicYear: {
-      type: 'select',
-      controlName: 'academicYearId',
-      label: 'Academic year',
-      options: [],
-      validations: [
-        { name: 'required', message: 'Academic year is required', validator: Validators.required },
-      ],
-    },
     class: {
       type: 'select',
       controlName: 'classId',
@@ -487,7 +451,7 @@ export class AddStudentComponent implements OnInit {
           title: 'Admission details',
           icon: 'school',
           layout: 'grid3',
-          fields: ['academicYear', 'admissionDate', 'admissionNo'],
+          fields: ['admissionDate', 'admissionNo'],
         },
         {
           title: 'Class & section',
@@ -506,42 +470,16 @@ export class AddStudentComponent implements OnInit {
     {
       stepIndex: 2,
       sections: [
-        {
-          title: 'Fee structure',
-          icon: 'payments',
-          layout: 'fee-structure',
-          fields: [],
-        },
-      ],
-    },
-    {
-      stepIndex: 3,
-      sections: [
         { title: 'Required documents', icon: 'folder', layout: 'document-grid', fields: [] },
         { title: 'Custom fields', icon: 'tune', layout: 'custom-fields', fields: [] },
         { title: 'Additional notes', icon: 'notes', layout: 'grid2', fields: ['remarks'] },
       ],
     },
     {
-      stepIndex: 4,
+      stepIndex: 3,
       sections: [{ title: 'Review', icon: 'checklist', layout: 'review', fields: [] }],
     },
   ];
-
-  feeStructureRows: FeeStructureRow[] = [];
-  feeStructureLoading = false;
-  hasActiveFeeStructure = false;
-  feeStructureBlockMessage = '';
-  /** Version locked at student admission — used in edit/view (not latest published). */
-  private assignedFeeStructureId = '';
-  private academicRecordId = '';
-  assignedFeeStructureVersionLabel = '';
-  private feeStructureTotal = 0;
-  /** Saved selections when editing/viewing an existing student. */
-  private savedFeeHeadIncluded = new Map<string, boolean>();
-  private savedFeeHeadAmounts = new Map<string, number>();
-
-  readonly feeTotalLabel = 'Net total';
 
   readonly documentChecklist: ReadonlyArray<DocumentChecklistItem> = [
     { icon: 'badge', name: 'Aadhaar card', sub: '', uploaded: false },
@@ -575,9 +513,8 @@ export class AddStudentComponent implements OnInit {
       'motherEmail',
       'motherOcc',
     ],
-    1: ['admissionDate', 'academicYear', 'admissionNo', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
-    2: [],
-    3: ['remarks', 'customFields'],
+    1: ['admissionDate', 'admissionNo', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
+    2: ['remarks', 'customFields'],
   };
 
   readonly genderOptions = enumToOptions(Gender);
@@ -600,16 +537,11 @@ export class AddStudentComponent implements OnInit {
       title: 'Academic Details',
       icon: 'school',
       items: [
-        { label: 'Academic Year', key: 'academicYearId' },
+        { label: 'Academic Year', key: 'academicYearLabel' },
         { label: 'Class', key: 'classId' },
         { label: 'Admission No.', key: 'admissionNo' },
         { label: 'Admission Date', key: 'admissionDate' },
       ],
-    },
-    {
-      title: 'Fees',
-      icon: 'payments',
-      items: [{ label: 'Net annual fees', key: 'feeTotalAmount', emptyText: '—' }],
     },
     {
       title: 'Additional Info',
@@ -632,8 +564,6 @@ export class AddStudentComponent implements OnInit {
     private snackBar: NotificationService,
     private studentService: StudentService,
     private classService: ClassService,
-    private academicYearService: AcademicYearService,
-    private classFeeAmountService: ClassFeeAmountService,
     private cdr: ChangeDetectorRef,
   ) {
     this.studentForm = this.fb.group({
@@ -681,18 +611,19 @@ export class AddStudentComponent implements OnInit {
       this.lockIdentityFields();
     }
 
-    this.loadAcademicYears();
-    this.loadClasses(this.ayContext.effectiveYearId() ?? undefined);
-    this.setupAcademicSelectionHandlers();
-    if (this.studentId && this.mode !== 'add') {
-      this.loadStudentData(this.studentId);
-    }
-
+    const yearId = this.ayContext.effectiveYearId() ?? '';
     if (this.mode === 'add') {
       this.studentForm.patchValue({
         gender: 'Male',
         admissionDate: this.today(),
+        academicYearId: yearId,
       });
+    }
+
+    this.loadClasses(yearId || undefined);
+    this.setupClassSelectionHandlers();
+    if (this.studentId && this.mode !== 'add') {
+      this.loadStudentData(this.studentId);
     }
   }
 
@@ -715,239 +646,22 @@ export class AddStudentComponent implements OnInit {
     this.studentForm.get('email')?.disable({ emitEvent: false });
   }
 
-  private setupAcademicSelectionHandlers() {
-    this.studentForm.get('academicYearId')?.valueChanges.subscribe((yearId) => {
-      if (yearId) {
-        this.loadClasses(yearId, () => this.afterAcademicYearOrClassChange());
-      } else {
-        this.clearFeeStructure(true);
-      }
-    });
-
-    this.studentForm.get('classId')?.valueChanges.subscribe(() => {
-      this.afterAcademicYearOrClassChange();
-    });
-  }
-
-  private afterAcademicYearOrClassChange(): void {
-    const yearId = this.studentForm.get('academicYearId')?.value;
-    const classId = this.studentForm.get('classId')?.value;
-    if (yearId && classId) {
-      if (this.mode === 'add') {
+  private setupClassSelectionHandlers() {
+    this.studentForm.get('classId')?.valueChanges.subscribe((classId) => {
+      const yearId = this.resolveAcademicYearId();
+      if (this.mode === 'add' && yearId && classId) {
         this.generateRollNumber(yearId, classId);
       }
-      this.loadFeeStructure(classId, yearId);
-    } else {
-      this.clearFeeStructure(true);
-    }
-  }
-
-  get feeStructureTitle(): string {
-    const classId = this.studentForm.get('classId')?.value;
-    const className = this.classes.find((c) => String(c.id) === String(classId))?.name;
-    let title = className ? `Fee structure — ${className}` : 'Fee structure';
-    if (this.mode !== 'add' && this.assignedFeeStructureVersionLabel) {
-      title += ` (${this.assignedFeeStructureVersionLabel})`;
-    }
-    return title;
-  }
-
-  get feeTotalAmount(): string {
-    return formatInr(this.feeStructureTotal);
-  }
-
-  /** True when add mode shows optional fee heads with include checkboxes. */
-  get feeStructureShowCheckboxColumn(): boolean {
-    return this.mode === 'add' && this.feeStructureRows.some((row) => !row.isMandatory);
-  }
-
-  get feeStructureEmptyHint(): string {
-    const classId = this.studentForm.get('classId')?.value;
-    const yearId = this.studentForm.get('academicYearId')?.value;
-    if (!classId || !yearId) {
-      return 'Select academic year and class to view fee structure';
-    }
-    if (this.feeStructureBlockMessage) {
-      return this.feeStructureBlockMessage;
-    }
-    return 'No published fee structure for this academic year. Publish fees in Fee Structure before admitting students.';
-  }
-
-  private isAdmissionFeeStructureReady(statusLabel: string): boolean {
-    return statusLabel === 'Active' || statusLabel === 'Published';
-  }
-
-  private loadFeeStructure(classId: string, academicYearId: string): void {
-    if (this.mode !== 'add') {
-      this.loadFeeStructureForEdit(classId, academicYearId);
-      return;
-    }
-
-    this.feeStructureLoading = true;
-    this.hasActiveFeeStructure = false;
-    this.feeStructureBlockMessage = '';
-    this.feeStructureRows = [];
-    this.feeStructureTotal = 0;
-    this.cdr.detectChanges();
-
-    this.classFeeAmountService.getClassAmountsForAdmission(classId, academicYearId).subscribe({
-      next: (data) => {
-        const normalized = normalizeClassAmounts(data);
-        if (!this.isAdmissionFeeStructureReady(normalized.versionStatusLabel) || !normalized.items.length) {
-          this.feeStructureBlockMessage = 'Set class-wise fee amounts for this class before admitting students.';
-          this.clearFeeStructure();
-          this.cdr.detectChanges();
-          return;
-        }
-        this.hasActiveFeeStructure = true;
-        this.feeStructureRows = this.mapFeeStructureItems(normalized.items);
-        this.recalculateFeeStructureTotal();
-        this.feeStructureLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.feeStructureBlockMessage =
-          err?.error?.message ||
-          err?.error ||
-          'Set class-wise fee amounts for this class before admitting students.';
-        this.clearFeeStructure();
-        this.feeStructureLoading = false;
-        this.cdr.detectChanges();
-      },
     });
   }
 
-  private loadFeeStructureForEdit(classId: string, academicYearId: string): void {
-    this.feeStructureLoading = true;
-    this.feeStructureRows = [];
-    this.feeStructureTotal = 0;
-    this.cdr.detectChanges();
-
-    const versionId = this.assignedFeeStructureId;
-    const request$ = versionId
-      ? this.classFeeAmountService.getClassAmounts(classId, academicYearId, versionId)
-      : this.classFeeAmountService.getClassAmountsForAdmission(classId, academicYearId);
-
-    request$.subscribe({
-      next: (data) => {
-        const normalized = normalizeClassAmounts(data);
-        this.assignedFeeStructureVersionLabel =
-          normalized.versionNumber > 0
-            ? `V${normalized.versionNumber} · ${normalized.versionStatusLabel}`
-            : normalized.versionStatusLabel;
-        this.feeStructureRows = this.applyFeeStructureViewFilter(
-          this.mapFeeStructureItems(normalized.items),
-        );
-        this.recalculateFeeStructureTotal();
-        this.hasActiveFeeStructure = normalized.items.length > 0;
-        this.feeStructureLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.clearFeeStructure();
-        this.feeStructureLoading = false;
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  /** View mode: only show fee heads applied to this student. */
-  private applyFeeStructureViewFilter(rows: FeeStructureRow[]): FeeStructureRow[] {
-    if (this.mode !== 'view') {
-      return rows;
+  /** Settings-selected year for add; enrollment year for edit/view. */
+  private resolveAcademicYearId(): string {
+    const fromForm = String(this.studentForm.get('academicYearId')?.value ?? '').trim();
+    if (fromForm) {
+      return fromForm;
     }
-    return rows.filter((row) => row.isIncluded);
-  }
-
-  private clearFeeStructure(resetBlockMessage = false): void {
-    this.feeStructureRows = [];
-    this.feeStructureTotal = 0;
-    this.feeStructureLoading = false;
-    this.hasActiveFeeStructure = false;
-    if (resetBlockMessage) {
-      this.feeStructureBlockMessage = '';
-    }
-    if (this.mode === 'add') {
-      this.assignedFeeStructureVersionLabel = '';
-    }
-  }
-
-  private mapFeeStructureItems(
-    items: Array<{
-      feeHeadId: string;
-      feeHeadName: string;
-      category?: number;
-      categoryLabel?: string;
-      amount: number;
-      annualTotal?: number;
-      isMandatory: boolean;
-      studentWiseDifferentAmount?: boolean;
-    }>,
-  ): FeeStructureRow[] {
-    return items.map((item) => {
-      const savedIncluded = this.savedFeeHeadIncluded.get(item.feeHeadId);
-      const isIncluded = savedIncluded ?? true;
-      const savedAmount = this.savedFeeHeadAmounts.get(item.feeHeadId);
-      const defaultAmount = item.annualTotal ?? item.amount;
-      const amountValue = savedAmount ?? defaultAmount;
-      const category = resolveFeeCategory(item.category, item.categoryLabel);
-      const isDiscount = category === FeeCategory.Discount;
-      return {
-        feeHeadId: item.feeHeadId,
-        name: item.feeHeadName,
-        amount: this.formatFeeRowAmount(amountValue, isDiscount),
-        amountValue,
-        defaultAmountValue: defaultAmount,
-        isMandatory: item.isMandatory,
-        isIncluded: item.isMandatory ? true : isIncluded,
-        studentWiseDifferentAmount: Boolean(item.studentWiseDifferentAmount),
-        category,
-        categoryLabel: item.categoryLabel ?? '',
-        isDiscount,
-      };
-    });
-  }
-
-  formatFeeRowAmount(amountValue: number, isDiscount: boolean): string {
-    if (!amountValue) {
-      return formatInr(0);
-    }
-    return isDiscount ? formatInr(-Math.abs(amountValue)) : formatInr(amountValue);
-  }
-
-  canEditFeeHeadAmount(row: FeeStructureRow): boolean {
-    return this.mode === 'add' && row.isIncluded && row.studentWiseDifferentAmount;
-  }
-
-  onFeeHeadAmountChange(row: FeeStructureRow, event: Event): void {
-    if (!this.canEditFeeHeadAmount(row)) {
-      return;
-    }
-    const raw = (event.target as HTMLInputElement).value.replace(/[^\d.]/g, '');
-    const parsed = Number(raw);
-    row.amountValue = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    row.amount = this.formatFeeRowAmount(row.amountValue, row.isDiscount);
-    this.recalculateFeeStructureTotal();
-    this.cdr.detectChanges();
-  }
-
-  onFeeHeadToggle(row: FeeStructureRow, event: Event): void {
-    if (row.isMandatory || this.mode !== 'add') {
-      return;
-    }
-    const checked = (event.target as HTMLInputElement).checked;
-    row.isIncluded = checked;
-    this.recalculateFeeStructureTotal();
-    this.cdr.detectChanges();
-  }
-
-  private recalculateFeeStructureTotal(): void {
-    this.feeStructureTotal = this.feeStructureRows
-      .filter((row) => row.isIncluded)
-      .reduce(
-        (sum, row) => sum + signedFeeAmount(row.category, row.amountValue, row.categoryLabel),
-        0,
-      );
+    return this.ayContext.effectiveYearId() ?? '';
   }
 
   private generateRollNumber(academicYearId: string, classId: string) {
@@ -960,22 +674,8 @@ export class AddStudentComponent implements OnInit {
     });
   }
 
-  loadAcademicYears() {
-    this.academicYearService.getAcademicYearDropdown('switcher').subscribe({
-      next: (years) => {
-        this.academicYears = years || [];
-        this.configs['academicYear'].options = this.academicYears.map((year: any) => ({
-          label: year.name,
-          value: year.id,
-        }));
-        this.cdr.detectChanges();
-      },
-      error: () => this.snackBar.open('Error loading academic years', 'Close', { duration: 3000 }),
-    });
-  }
-
   loadClasses(academicYearId?: string, afterLoad?: () => void) {
-    const yearId = academicYearId ?? this.ayContext.effectiveYearId() ?? undefined;
+    const yearId = academicYearId || this.ayContext.effectiveYearId() || undefined;
     this.classService.getClassDropdown(yearId).subscribe({
       next: (classes) => {
         this.classes = classes || [];
@@ -990,7 +690,7 @@ export class AddStudentComponent implements OnInit {
     });
   }
 
-  /** Pick enrollment for header academic year (includes promoted/historical rows). */
+  /** Pick enrollment for Settings academic year (includes promoted/historical rows). */
   private resolveAcademicRecord(academics: any[] | undefined): any {
     const list = academics ?? [];
     if (!list.length) {
@@ -1092,7 +792,7 @@ export class AddStudentComponent implements OnInit {
       motherOcc: mother?.occupation,
 
       admissionDate: this.toLocalDate(academic?.admissionDate),
-      academicYearId: academic?.academicYearId,
+      academicYearId: academic?.academicYearId ?? this.ayContext.effectiveYearId(),
       classId: academic?.classId,
       rollNumber: academic?.rollNumber,
 
@@ -1112,44 +812,13 @@ export class AddStudentComponent implements OnInit {
     });
 
     this.academicRecordId = String(academic?.id ?? academic?.Id ?? '');
-    this.assignedFeeStructureId = String(
-      academic?.feeStructureId ?? academic?.FeeStructureId ?? '',
-    );
-
-    this.savedFeeHeadIncluded.clear();
-    this.savedFeeHeadAmounts.clear();
-    const assignments = data.feeHeadAssignments ?? data.FeeHeadAssignments ?? [];
-    for (const assignment of assignments) {
-      const feeHeadId = String(assignment.feeHeadId ?? assignment.FeeHeadId ?? '');
-      if (!feeHeadId) {
-        continue;
-      }
-      const included = assignment.isIncluded ?? assignment.IsIncluded;
-      this.savedFeeHeadIncluded.set(feeHeadId, included === undefined ? true : Boolean(included));
-      const custom = assignment.customAnnualAmount ?? assignment.CustomAnnualAmount;
-      if (custom != null && Number(custom) > 0) {
-        this.savedFeeHeadAmounts.set(feeHeadId, Number(custom));
-      }
-    }
-
-    const classId = academic?.classId;
-    const yearId = academic?.academicYearId;
-    if (classId && yearId) {
-      this.loadFeeStructure(classId, yearId);
-    }
   }
 
-  // ════════════════════════════════════════
-  // TAB NAVIGATION
-  // ════════════════════════════════════════
   goTab(index: number) {
     if (this.mode !== 'view' && index > this.currentTab && !this.validateTab(this.currentTab)) {
       return;
     }
     this.currentTab = index;
-    if (index === 2) {
-      this.refreshFeeStructureForCurrentSelection();
-    }
   }
 
   nextTab() {
@@ -1159,21 +828,14 @@ export class AddStudentComponent implements OnInit {
     }
 
     if (!this.validateTab(this.currentTab)) {
-      const feesTabBlocked =
-        this.mode === 'add' && this.currentTab === 2 && !this.hasActiveFeeStructure;
-      if (!feesTabBlocked) {
-        this.snackBar.open('Please fix errors on this step before continuing', 'Close', {
-          duration: 3000,
-          panelClass: 'snack-error',
-        });
-      }
+      this.snackBar.open('Please fix errors on this step before continuing', 'Close', {
+        duration: 3000,
+        panelClass: 'snack-error',
+      });
       return;
     }
 
     this.currentTab++;
-    if (this.mode === 'add' && this.currentTab === 2) {
-      this.refreshFeeStructureForCurrentSelection();
-    }
   }
 
   private validateTab(tab: number): boolean {
@@ -1183,11 +845,8 @@ export class AddStudentComponent implements OnInit {
 
     const keys = this.tabFieldKeys[tab] ?? [];
     const controlNames = controlNamesFromFieldKeys(keys, this.configs);
-    if (tab === 3) {
+    if (tab === 2) {
       controlNames.push('customFields');
-    }
-    if (this.mode === 'add' && tab === 2 && !this.hasActiveFeeStructure) {
-      return false;
     }
 
     if (!validateFormControls(this.studentForm, controlNames)) {
@@ -1197,20 +856,7 @@ export class AddStudentComponent implements OnInit {
     return true;
   }
 
-  private refreshFeeStructureForCurrentSelection(): void {
-    const classId = this.studentForm.get('classId')?.value;
-    const yearId = this.studentForm.get('academicYearId')?.value;
-    if (classId && yearId) {
-      this.loadFeeStructure(classId, yearId);
-    } else {
-      this.clearFeeStructure(true);
-    }
-  }
-
-  get feesTabFooterHint(): string {
-    if (this.mode === 'add' && this.currentTab === 2 && !this.hasActiveFeeStructure && !this.feeStructureLoading) {
-      return this.feeStructureBlockMessage || 'Publish fee structure before continuing';
-    }
+  get footerHint(): string {
     return this.footerHints[this.currentTab] ?? '';
   }
 
@@ -1220,10 +866,18 @@ export class AddStudentComponent implements OnInit {
     }
   }
 
-  // ════════════════════════════════════════
-  // API CALL SIMULATION
-  // ════════════════════════════════════════
   saveStudent() {
+    const yearId = this.resolveAcademicYearId();
+    if (!yearId) {
+      this.snackBar.open('Select an academic year in Settings before adding a student', 'Close', {
+        duration: 4000,
+        panelClass: 'snack-error',
+      });
+      return;
+    }
+
+    this.studentForm.patchValue({ academicYearId: yearId }, { emitEvent: false });
+
     if (this.studentForm.invalid) {
       this.studentForm.markAllAsTouched();
       this.snackBar.open('Please fill all required fields correctly', 'Close', {
@@ -1233,45 +887,24 @@ export class AddStudentComponent implements OnInit {
       return;
     }
 
-    if (this.mode === 'add' && !this.hasActiveFeeStructure) {
-      this.snackBar.open(
-        this.feeStructureBlockMessage || 'Cannot add student without a published fee structure. Publish fees first.',
-        'Close',
-        { duration: 4000, panelClass: 'snack-error' },
-      );
-      return;
-    }
-
     this.isSaving = true;
 
-    // Prepare payload by mapping class selection to classId
     const rawValue = this.studentForm.getRawValue();
 
     const payload = {
       ...rawValue,
+      academicYearId: yearId,
       academicRecordId: this.academicRecordId || undefined,
-      feeStructureId: this.assignedFeeStructureId || undefined,
       academics: [
         {
           id: this.academicRecordId || undefined,
           admissionDate: rawValue.admissionDate,
-          academicYearId: rawValue.academicYearId,
+          academicYearId: yearId,
           classId: rawValue.classId,
           rollNumber: rawValue.rollNumber,
-          feeStructureId: this.assignedFeeStructureId || undefined,
         },
       ],
-      feeHeadSelections:
-        this.mode === 'add' && this.feeStructureRows.length
-          ? this.feeStructureRows.map((row) => ({
-              feeHeadId: row.feeHeadId,
-              isIncluded: row.isIncluded,
-              customAnnualAmount:
-                row.isIncluded && row.amountValue !== row.defaultAmountValue
-                  ? Math.abs(row.amountValue)
-                  : null,
-            }))
-          : [],
+      feeHeadSelections: [],
     };
 
     try {
@@ -1280,44 +913,43 @@ export class AddStudentComponent implements OnInit {
           ? this.studentService.updateStudent(this.studentId, payload)
           : this.studentService.createStudent(payload);
 
-      saveObs
-        .subscribe({
-          next: async (res: any) => {
-            const returnedStudentId = res?.studentId || this.studentId;
-            if (returnedStudentId) {
-              await this.uploadFiles(returnedStudentId);
-            }
-            this.isSaving = false;
-            this.cdr.detectChanges();
-            if (this.mode === 'edit') {
-              this.snackBar.open('Student updated successfully', 'Close', {
-                duration: 3000,
-                panelClass: 'snack-success',
-              });
-            } else {
-              const first = String(rawValue.firstName || '').trim().toLowerCase();
-              const last = String(rawValue.lastName || '').trim().toLowerCase();
-              const username = (last ? `${first}.${last}` : first).replace(/[^a-z0-9.]/g, '');
-              this.snackBar.success(
-                'Student added successfully',
-                username
-                  ? `Login username: ${username} · Default password: SmartOps@123`
-                  : 'Default password: SmartOps@123',
-                5000,
-              );
-            }
-            this.saved.emit();
-          },
-          error: (err) => {
-            this.isSaving = false;
-            this.cdr.detectChanges();
-            const errorMsg = err?.error?.message || err?.message || 'Error saving student';
-            this.snackBar.open(errorMsg, 'Close', {
-              duration: 4000,
-              panelClass: 'snack-error',
+      saveObs.subscribe({
+        next: async (res: any) => {
+          const returnedStudentId = res?.studentId || this.studentId;
+          if (returnedStudentId) {
+            await this.uploadFiles(returnedStudentId);
+          }
+          this.isSaving = false;
+          this.cdr.detectChanges();
+          if (this.mode === 'edit') {
+            this.snackBar.open('Student updated successfully', 'Close', {
+              duration: 3000,
+              panelClass: 'snack-success',
             });
-          },
-        });
+          } else {
+            const first = String(rawValue.firstName || '').trim().toLowerCase();
+            const last = String(rawValue.lastName || '').trim().toLowerCase();
+            const username = (last ? `${first}.${last}` : first).replace(/[^a-z0-9.]/g, '');
+            this.snackBar.success(
+              'Student added successfully',
+              username
+                ? `Login username: ${username} · Default password: SmartOps@123`
+                : 'Default password: SmartOps@123',
+              5000,
+            );
+          }
+          this.saved.emit();
+        },
+        error: (err) => {
+          this.isSaving = false;
+          this.cdr.detectChanges();
+          const errorMsg = err?.error?.message || err?.message || 'Error saving student';
+          this.snackBar.open(errorMsg, 'Close', {
+            duration: 4000,
+            panelClass: 'snack-error',
+          });
+        },
+      });
     } catch (e) {
       this.isSaving = false;
       this.cdr.detectChanges();
@@ -1340,9 +972,11 @@ export class AddStudentComponent implements OnInit {
     for (const docKey of docKeys) {
       const selectedDoc = this.selectedDocuments[docKey];
       if (selectedDoc && selectedDoc.file) {
-        const docName = this.documentChecklist.find(d => d.name === docKey)?.name || docKey;
+        const docName = this.documentChecklist.find((d) => d.name === docKey)?.name || docKey;
         try {
-          await firstValueFrom(this.studentService.uploadDocument(studentId, docName, selectedDoc.file));
+          await firstValueFrom(
+            this.studentService.uploadDocument(studentId, docName, selectedDoc.file),
+          );
         } catch (err) {
           console.error(`Document ${docKey} upload failed`, err);
         }
@@ -1366,8 +1000,8 @@ export class AddStudentComponent implements OnInit {
     if (!item.key) {
       return '-';
     }
-    if (item.key === 'feeTotalAmount') {
-      return this.feeStructureRows.length ? this.feeTotalAmount : item.emptyText ?? '—';
+    if (item.key === 'academicYearLabel') {
+      return this.ayContext.effectiveYearLabel() || '-';
     }
     const raw = this.studentForm.get(item.key)?.value;
     if (item.key === 'customFields' && Array.isArray(raw)) {
@@ -1417,10 +1051,6 @@ export class AddStudentComponent implements OnInit {
 
     if (key === 'classId') {
       return this.classes.find((item) => String(item.id) === String(raw))?.name ?? '';
-    }
-
-    if (key === 'academicYearId') {
-      return this.academicYears.find((item) => String(item.id) === String(raw))?.name ?? '';
     }
 
     return '';

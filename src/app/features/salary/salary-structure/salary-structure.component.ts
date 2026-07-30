@@ -6,7 +6,6 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SalaryStructureService } from '../../../core/services/salary-structure.service';
-import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table/smart-data-table.component';
 import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
@@ -24,7 +23,6 @@ import {
   componentTypeBadgeClass,
   extractApiError,
   formatValueDisplay,
-  normalizeDropdownItem,
   normalizeSalaryStructureVersion,
   normalizeSalaryVersionComponent,
   versionStatusBadgeClass,
@@ -46,7 +44,6 @@ import {
 })
 export class SalaryStructureComponent implements OnInit {
   private readonly service = inject(SalaryStructureService);
-  private readonly academicYearService = inject(AcademicYearService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissionService = inject(PermissionService);
   private readonly snackBar = inject(NotificationService);
@@ -56,8 +53,6 @@ export class SalaryStructureComponent implements OnInit {
 
   tableConfig!: DataTableConfig;
   versions: Record<string, unknown>[] = [];
-  academicYears: ReturnType<typeof normalizeDropdownItem>[] = [];
-  academicYearFilter = '';
   currentStatusFilter = 'All';
   loading = false;
 
@@ -67,7 +62,7 @@ export class SalaryStructureComponent implements OnInit {
 
   showCreateVersionModal = false;
   showComponentModal = false;
-  createVersionForm = { academicYearId: '', effectiveDate: '', cloneFromVersionId: '' };
+  createVersionForm = { effectiveDate: '', cloneFromVersionId: '' };
   componentTypeOptions = COMPONENT_TYPE_OPTIONS;
   calculationTypeOptions = CALCULATION_TYPE_OPTIONS;
   componentForm = {
@@ -86,14 +81,13 @@ export class SalaryStructureComponent implements OnInit {
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Salary Management — Salary Structure',
-      subtitle: 'Academic year wise versions · Draft → Publish → Activate',
+      subtitle: 'Draft → Publish → Activate',
       showAddButton: true,
       addButtonText: 'New structure',
       addButtonIcon: 'add',
       addButtonClass: 'btn-primary',
     },
     columns: [
-      { key: 'academicYearTitle', label: 'Academic year', sortable: true },
       { key: 'versionLabel', label: 'Version', sortable: true, width: '90px' },
       {
         key: 'statusLabel',
@@ -123,8 +117,8 @@ export class SalaryStructureComponent implements OnInit {
       { label: 'Create new version', icon: 'content_copy', iconColor: '#854f0b' },
       { label: 'Delete draft', icon: 'delete', danger: true, separatorBefore: true },
     ],
-    searchPlaceholder: 'Search academic year or version...',
-    searchKeys: ['academicYearTitle', 'versionLabel', 'statusLabel'],
+    searchPlaceholder: 'Search version or status...',
+    searchKeys: ['versionLabel', 'statusLabel'],
     itemLabel: 'versions',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50],
@@ -142,36 +136,14 @@ export class SalaryStructureComponent implements OnInit {
       MenuCodes.SalaryStructure,
       this.ayContext.isReadOnlyScope(),
     );
-    this.loadAcademicYears();
-  }
-
-  loadAcademicYears(): void {
-    this.academicYearService.getAcademicYearDropdown().subscribe({
-      next: (years) => {
-        this.academicYears = asArray(years).map(normalizeDropdownItem);
-        const effective = this.ayContext.effectiveYearId();
-        if (effective && this.academicYears.some((y) => y.id === effective)) {
-          this.academicYearFilter = effective;
-        } else if (!this.academicYearFilter && this.academicYears.length) {
-          this.academicYearFilter = this.academicYears[0].id;
-        }
-        this.loadVersions();
-      },
-      error: () => this.toast('Failed to load academic years', true),
-    });
-  }
-
-  get tableFilterPanelActive(): boolean {
-    return !!this.academicYearFilter || this.currentStatusFilter !== 'All';
-  }
-
-  onAcademicYearFilterChange(): void {
-    this.closeManagePanel();
     this.loadVersions();
   }
 
+  get tableFilterPanelActive(): boolean {
+    return this.currentStatusFilter !== 'All';
+  }
+
   onTableFiltersCleared(): void {
-    this.academicYearFilter = '';
     this.currentStatusFilter = 'All';
     this.closeManagePanel();
     this.loadVersions();
@@ -183,7 +155,7 @@ export class SalaryStructureComponent implements OnInit {
     }
     this.refreshView();
     const status = this.currentStatusFilter === 'All' ? undefined : this.currentStatusFilter.toLowerCase();
-    this.service.getVersions(this.academicYearFilter || undefined, status).subscribe({
+    this.service.getVersions(status).subscribe({
       next: (list) => {
         this.versions = asArray(list).map((v) => {
           const n = normalizeSalaryStructureVersion(v);
@@ -217,7 +189,6 @@ export class SalaryStructureComponent implements OnInit {
   onAddButtonClicked(): void {
     if (!this.permissionService.canAdd(MenuCodes.SalaryStructure)) return;
     this.createVersionForm = {
-      academicYearId: this.academicYearFilter || this.academicYears[0]?.id || '',
       effectiveDate: new Date().toISOString().split('T')[0],
       cloneFromVersionId: '',
     };
@@ -276,12 +247,7 @@ export class SalaryStructureComponent implements OnInit {
   }
 
   createVersion(): void {
-    if (!this.createVersionForm.academicYearId) {
-      this.toast('Select academic year', true);
-      return;
-    }
     const body: Record<string, unknown> = {
-      academicYearId: this.createVersionForm.academicYearId,
       effectiveDate: this.createVersionForm.effectiveDate || null,
     };
     if (this.createVersionForm.cloneFromVersionId) {
@@ -309,11 +275,11 @@ export class SalaryStructureComponent implements OnInit {
         title: 'Publish salary structure?',
         description:
           'Are you sure you want to publish this salary structure? It will be locked for editing and can be used for employee salary assignment.',
-        recordName: `${version.academicYearTitle} — ${version.versionLabel}`,
+        recordName: version.versionLabel,
         recordMeta: `Status: ${version.statusLabel}`,
         initials: 'SS',
         warningMessage:
-          'The current published version for this academic year will be moved to Archived. Salary components cannot be changed after publish unless you create a new version.',
+          'The current published version will be moved to Archived. Salary components cannot be changed after publish unless you create a new version.',
         confirmButtonText: 'Yes, publish',
         cancelButtonText: 'No',
         variant: 'primary',
@@ -361,9 +327,8 @@ export class SalaryStructureComponent implements OnInit {
     const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
       data: {
         title: 'Activate salary structure?',
-        description:
-          'Previous active structure for this academic year will be archived.',
-        recordName: `${version.academicYearTitle} — ${version.versionLabel}`,
+        description: 'Previous active structure will be archived.',
+        recordName: version.versionLabel,
         recordMeta: `Status: ${version.statusLabel}`,
         initials: 'SS',
         confirmButtonText: 'Yes, activate',
@@ -427,7 +392,7 @@ export class SalaryStructureComponent implements OnInit {
       data: {
         title: 'Delete draft salary structure?',
         description: 'This draft and its salary components will be removed.',
-        recordName: `${version.academicYearTitle} ${version.versionLabel}`,
+        recordName: version.versionLabel,
         initials: 'SS',
       },
       panelClass: 'erp-dialog',

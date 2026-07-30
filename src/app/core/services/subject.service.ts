@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 
 export interface SubjectDTO {
   id?: string;
+  classGroupId?: string;
   subjectName: string;
   subjectCode: string;
   subjectType: 'Theory' | 'Practical' | 'Both';
@@ -47,7 +48,8 @@ export class SubjectService {
     searchTerm = '',
     sortColumn: string | null = null,
     sortDirection: string | null = null,
-    filter = 'All'
+    filter = 'All',
+    classGroupId?: string | null
   ): Observable<any> {
     let params = new HttpParams()
       .set('pageIndex', pageIndex.toString())
@@ -62,6 +64,9 @@ export class SubjectService {
     }
     if (sortDirection) {
       params = params.set('sortDirection', sortDirection);
+    }
+    if (classGroupId) {
+      params = params.set('classGroupId', classGroupId);
     }
 
     return this.api.get<any>('subjects', params);

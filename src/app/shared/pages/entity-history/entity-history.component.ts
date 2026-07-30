@@ -11,6 +11,7 @@ import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
 import { ShiftService } from '../../../core/services/shift.service';
 import { PeriodTemplateService } from '../../../core/services/period-template.service';
+import { AcademicPeriodService } from '../../../core/services/academic-period.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { FrontOfficeService } from '../../../core/services/front-office.service';
 import { AuditHistoryEntityType } from '../../../core/services/audit.service';
@@ -34,7 +35,8 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   subject: { listRoute: '/subjects', entityType: 'subject' },
   shift: { listRoute: '/shifts', entityType: 'shift' },
   period: { listRoute: '/timetable/periods', entityType: 'period' },
-  'academic-year': { listRoute: '/academic-years', entityType: 'academic-year' },
+  'academic-period': { listRoute: '/classes', entityType: 'academic-period' },
+  'academic-year': { listRoute: '/settings', entityType: 'academic-year' },
   visitor: { listRoute: '/front-office/visitors', entityType: 'visitor' },
   'phone-log': { listRoute: '/front-office/phone-logs', entityType: 'phone-log' },
   complaint: { listRoute: '/front-office/complaints', entityType: 'complaint' },
@@ -65,6 +67,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly subjectService = inject(SubjectService);
   private readonly shiftService = inject(ShiftService);
   private readonly periodTemplateService = inject(PeriodTemplateService);
+  private readonly academicPeriodService = inject(AcademicPeriodService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly frontOfficeService = inject(FrontOfficeService);
   private readonly snackBar = inject(NotificationService);
@@ -74,6 +77,8 @@ export class EntityHistoryComponent implements OnInit {
   entityId = '';
   entityType: EntityHistoryKind = 'student';
   listRoute = '/students';
+  /** Optional deep-link back target (e.g. class manage Subjects tab). */
+  private returnUrl: string | null = null;
   recordTitle = '';
   recordSubtitle = '';
   loadingHeader = true;
@@ -90,6 +95,7 @@ export class EntityHistoryComponent implements OnInit {
     const config = ROUTE_CONFIG[kind] ?? ROUTE_CONFIG.student;
     this.entityType = config.entityType;
     this.listRoute = config.listRoute;
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
     this.route.paramMap
       .pipe(
@@ -97,7 +103,7 @@ export class EntityHistoryComponent implements OnInit {
         switchMap((params) => {
           const id = (params.get('id') ?? '').trim();
           if (!id || !GUID_REGEX.test(id)) {
-            this.router.navigate([this.listRoute]);
+            this.navigateBack();
             return EMPTY;
           }
           this.entityId = id;
@@ -111,7 +117,7 @@ export class EntityHistoryComponent implements OnInit {
                 duration: 3000,
                 panelClass: 'snack-error',
               });
-              this.router.navigate([this.listRoute]);
+              this.navigateBack();
               return EMPTY;
             }),
           );
@@ -128,7 +134,15 @@ export class EntityHistoryComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate([this.listRoute]);
+    this.navigateBack();
+  }
+
+  private navigateBack(): void {
+    if (this.returnUrl) {
+      void this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+    void this.router.navigate([this.listRoute]);
   }
 
   private loadHeader(kind: EntityHistoryKind, id: string): Observable<EntityHistoryHeader> {
@@ -182,6 +196,13 @@ export class EntityHistoryComponent implements OnInit {
           map((data) => ({
             title: String(data.name ?? 'Period template').trim() || 'Period template',
             subtitle: `${(data.periods || []).length} periods`,
+          })),
+        );
+      case 'academic-period':
+        return this.academicPeriodService.getPeriod(id).pipe(
+          map((data) => ({
+            title: String(data.name ?? 'Academic period').trim() || 'Academic period',
+            subtitle: data.periodIndex != null ? `Period ${data.periodIndex}` : '',
           })),
         );
       case 'academic-year':

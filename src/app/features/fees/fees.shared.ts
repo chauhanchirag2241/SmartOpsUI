@@ -287,8 +287,6 @@ export function normalizeClassAmounts(raw: any) {
   const periods = asArray<any>(pick(raw, 'periods', 'Periods')).map((period) => ({
     periodIndex: Number(pick(period, 'periodIndex', 'PeriodIndex') ?? 0),
     name: String(pick(period, 'name', 'Name') ?? ''),
-    startDate: String(pick(period, 'startDate', 'StartDate') ?? ''),
-    endDate: String(pick(period, 'endDate', 'EndDate') ?? ''),
   }));
   const items = asArray<any>(pick(raw, 'items', 'Items')).map((i) => {
     const collectionTypeLabel = String(

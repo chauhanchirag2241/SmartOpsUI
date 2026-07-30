@@ -48,111 +48,6 @@
           </div>
         }
 
-        <!-- FEE-STRUCTURE layout -->
-        @else if (section.layout === 'fee-structure') {
-          <div class="card">
-            <div class="card-title">
-              <mat-icon>{{ section.icon }}</mat-icon>{{ feeStructureTitle }}
-            </div>
-            @if (feeStructureLoading) {
-              <div class="fee-empty-hint">Loading fee structure...</div>
-            } @else if (mode === 'add' && !hasActiveFeeStructure) {
-              <div class="fee-structure-warning">
-                <mat-icon>warning_amber</mat-icon>
-                <div class="fee-warning-body">
-                  <div class="fee-warning-title">Fee structure not ready</div>
-                  <p>{{ feeStructureEmptyHint }}</p>
-                  <p class="fee-warning-steps">
-                    Go to <strong>Fees Management → Fee Structure</strong>, add fee heads, then
-                    <strong>Publish</strong> for this academic year.
-                  </p>
-                </div>
-              </div>
-            } @else if (!feeStructureRows.length) {
-              <div class="fee-empty-hint">No fee structure assigned for this student.</div>
-            } @else {
-              @if (mode !== 'add' && assignedFeeStructureVersionLabel) {
-                <p class="fee-version-note">
-                  Showing fee structure assigned at admission — {{ assignedFeeStructureVersionLabel }}
-                </p>
-              }
-              <div
-                class="fee-structure-panel"
-                [class.fee-structure-panel--with-check]="feeStructureShowCheckboxColumn"
-              >
-                <div class="fee-table-head">
-                  @if (feeStructureShowCheckboxColumn) {
-                    <span class="fee-col-check" aria-hidden="true"></span>
-                  }
-                  <span>Fee head</span>
-                  <span class="fee-col-amount">Amount</span>
-                </div>
-                <div class="fee-table-body">
-                  @for (row of feeStructureRows; track row.feeHeadId) {
-                    <div
-                      class="fee-row"
-                      [class.fee-row-excluded]="!row.isIncluded"
-                      [class.fee-row-discount]="row.isDiscount"
-                    >
-                      @if (feeStructureShowCheckboxColumn) {
-                        <div class="fee-col-check">
-                          @if (!row.isMandatory) {
-                            <label class="fee-head-check" [attr.aria-label]="'Include ' + row.name">
-                              <input
-                                type="checkbox"
-                                [checked]="row.isIncluded"
-                                (change)="onFeeHeadToggle(row, $event)"
-                              />
-                            </label>
-                          }
-                        </div>
-                      }
-                      <div class="fee-name-cell">
-                        <span class="fee-name-text">{{ row.name }}</span>
-                        @if (row.isDiscount) {
-                          <span class="fee-discount-tag">Discount</span>
-                        }
-                        @if (!row.isMandatory && mode === 'add') {
-                          <span class="fee-optional-tag">Optional</span>
-                        }
-                        @if (!row.isMandatory && mode !== 'add' && !row.isIncluded) {
-                          <span class="fee-optional-tag fee-not-applied">Not applied</span>
-                        }
-                      </div>
-                      <div class="fee-amt-cell">
-                        @if (canEditFeeHeadAmount(row)) {
-                          <div class="fee-amount-input-wrap">
-                            <span class="fee-currency">₹</span>
-                            <input
-                              type="number"
-                              class="fee-amount-input"
-                              [value]="row.amountValue"
-                              min="0"
-                              step="1"
-                              (change)="onFeeHeadAmountChange(row, $event)"
-                            />
-                          </div>
-                        } @else {
-                          <span class="fee-amt" [class.fee-amt-discount]="row.isDiscount">{{
-                            row.isIncluded ? row.amount : '—'
-                          }}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-                <div class="fee-total-row">
-                  @if (feeStructureShowCheckboxColumn) {
-                    <span class="fee-col-check" aria-hidden="true"></span>
-                  }
-                  <span class="fee-total-label">{{ feeTotalLabel }}</span>
-                  <span class="fee-total-amt">{{ feeTotalAmount }}</span>
-                </div>
-              </div>
-            }
-          </div>
-        }
-
         <!-- DOCUMENT-GRID layout -->
         @else if (section.layout === 'document-grid') {
           <div class="card">
@@ -272,8 +167,8 @@
   >
   </app-action-button>
 
-  <div class="footer-hint" [class.footer-hint-warn]="mode === 'add' && currentTab === 2 && !hasActiveFeeStructure">
-    {{ feesTabFooterHint }}
+  <div class="footer-hint">
+    {{ footerHint }}
   </div>
 
   @if (currentTab < finalTabIndex) {
