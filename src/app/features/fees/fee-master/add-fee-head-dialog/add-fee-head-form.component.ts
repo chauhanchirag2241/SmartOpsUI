@@ -285,12 +285,12 @@ export class AddFeeHeadFormComponent implements OnInit {
     this.busyChange.emit(true);
     const onSuccess = () => {
       this.busyChange.emit(false);
+      this.saved.emit();
       this.snackBar.open(
         this.mode === 'edit' ? 'Fee head updated' : 'Fee head created',
         'Close',
         { duration: 3000, panelClass: 'snack-success' },
       );
-      this.saved.emit();
     };
     const onError = (err: unknown) => {
       this.busyChange.emit(false);

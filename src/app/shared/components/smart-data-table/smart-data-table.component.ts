@@ -180,7 +180,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   trackPagedRow(i: number, row: Record<string, unknown>): string {
-    const id = row['id'] ?? row['admNo'] ?? row['name'];
+    const id =
+      row['id'] ??
+      row['studentId'] ??
+      row['admNo'] ??
+      row['admissionNo'] ??
+      row['name'] ??
+      row['studentName'];
     return `${this.currentPage}-${i}-${String(id)}`;
   }
 

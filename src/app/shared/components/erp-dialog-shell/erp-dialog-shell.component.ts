@@ -129,9 +129,14 @@ import { ActionButtonComponent } from '../action-button/action-button.component'
         min-height: 0;
       }
 
+      .erp-dialog-shell.no-body-scroll {
+        max-height: none;
+        height: auto;
+      }
+
       .erp-dialog-shell.no-body-scroll .dialog-body {
         overflow: visible;
-        flex: 0 1 auto;
+        flex: 0 0 auto;
         min-height: unset;
       }
 

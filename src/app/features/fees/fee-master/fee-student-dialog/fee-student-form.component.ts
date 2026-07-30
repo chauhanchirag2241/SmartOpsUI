@@ -208,12 +208,12 @@ export class FeeStudentFormComponent implements OnInit {
     forkJoin(calls).subscribe({
       next: () => {
         this.busyChange.emit(false);
+        this.saved.emit();
         this.snackBar.open(
           this.staged.length === 1 ? 'Student added' : `${this.staged.length} students added`,
           'Close',
           { duration: 3000, panelClass: 'snack-success' },
         );
-        this.saved.emit();
       },
       error: (err: unknown) => {
         this.busyChange.emit(false);
@@ -243,11 +243,11 @@ export class FeeStudentFormComponent implements OnInit {
     this.feeMasterService.updateFeeStudent(this.feeMasterId, this.studentId, { amounts }).subscribe({
       next: () => {
         this.busyChange.emit(false);
+        this.saved.emit();
         this.snackBar.open('Amounts updated', 'Close', {
           duration: 3000,
           panelClass: 'snack-success',
         });
-        this.saved.emit();
       },
       error: (err: unknown) => {
         this.busyChange.emit(false);

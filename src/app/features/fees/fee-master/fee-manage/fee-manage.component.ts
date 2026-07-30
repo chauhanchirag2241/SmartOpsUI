@@ -5,6 +5,7 @@ import {
   Output,
   OnInit,
   ChangeDetectorRef,
+  NgZone,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -78,6 +79,7 @@ export class FeeManageComponent implements OnInit {
   private readonly classService = inject(ClassService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
 
   readonly tabs = [{ label: 'Basic Detail' }, { label: 'Fee Head' }, { label: 'Students' }];
   currentTab = 0;
@@ -95,6 +97,7 @@ export class FeeManageComponent implements OnInit {
   studentTableConfig!: DataTableConfig;
   selectedStudentClassIds: string[] = [];
   classOptions: { id: string; name: string }[] = [];
+  studentClassFilterDropdownOpen = false;
   private studentSearch = '';
   private studentSortColumn: string | null = null;
   private studentSortDirection: string | null = null;
@@ -266,6 +269,7 @@ export class FeeManageComponent implements OnInit {
     selectable: false,
     showExport: false,
     showColumnToggle: false,
+    filtersInPanel: true,
   };
 
   ngOnInit(): void {
@@ -302,6 +306,46 @@ export class FeeManageComponent implements OnInit {
     this.loadStudents();
   }
 
+  get studentClassFilterActive(): boolean {
+    return this.selectedStudentClassIds.length > 0;
+  }
+
+  get studentClassFilterSummary(): string {
+    const count = this.selectedStudentClassIds.length;
+    if (!count) return 'All classes';
+    if (count === 1) {
+      const id = this.selectedStudentClassIds[0];
+      return this.classOptions.find((c) => c.id === id)?.name || '1 class';
+    }
+    return `${count} classes`;
+  }
+
+  toggleStudentClassFilterDropdown(event: Event): void {
+    event.stopPropagation();
+    this.studentClassFilterDropdownOpen = !this.studentClassFilterDropdownOpen;
+  }
+
+  isStudentClassSelected(classId: string): boolean {
+    return this.selectedStudentClassIds.includes(classId);
+  }
+
+  toggleStudentClassSelection(classId: string, checked: boolean): void {
+    if (checked) {
+      if (!this.selectedStudentClassIds.includes(classId)) {
+        this.selectedStudentClassIds = [...this.selectedStudentClassIds, classId];
+      }
+    } else {
+      this.selectedStudentClassIds = this.selectedStudentClassIds.filter((id) => id !== classId);
+    }
+    this.loadStudents(1);
+  }
+
+  clearStudentClassFilter(): void {
+    this.selectedStudentClassIds = [];
+    this.studentClassFilterDropdownOpen = false;
+    this.loadStudents(1);
+  }
+
   loadStudents(
     pageIndex = 1,
     pageSize = 10,
@@ -333,7 +377,7 @@ export class FeeManageComponent implements OnInit {
             admissionNo: row['admissionNo'] || '—',
           }));
           this.totalStudents = res?.totalCount || 0;
-          this.cdr.detectChanges();
+          this.refreshView();
         },
         error: () => {
           this.students = [];
@@ -342,7 +386,7 @@ export class FeeManageComponent implements OnInit {
             duration: 3000,
             panelClass: 'snack-error',
           });
-          this.cdr.detectChanges();
+          this.refreshView();
         },
       });
   }
@@ -374,15 +418,15 @@ export class FeeManageComponent implements OnInit {
     this.dialog
       .open(FeeStudentDialogComponent, {
         data,
-        panelClass: 'erp-dialog',
+        panelClass: ['erp-dialog', 'fee-dialog'],
         disableClose: true,
         width: FEE_STUDENT_DIALOG_WIDTH,
         maxWidth: '96vw',
-        maxHeight: '96vh',
+        maxHeight: '92vh',
       })
       .afterClosed()
       .subscribe((saved) => {
-        if (saved) this.loadStudents();
+        if (saved) this.scheduleAfterDialog(() => this.loadStudents(1));
       });
   }
 
@@ -420,13 +464,14 @@ export class FeeManageComponent implements OnInit {
               'Close',
               { duration: 3000, panelClass: 'snack-success' },
             );
-            this.loadStudents();
+            this.loadStudents(1);
           },
           error: (err: unknown) => {
             this.snackBar.open(getUserFacingApiError(err, 'Failed to remove student'), 'Close', {
               duration: 3500,
               panelClass: 'snack-error',
             });
+            this.refreshView();
           },
         });
       });
@@ -450,6 +495,21 @@ export class FeeManageComponent implements OnInit {
     );
   }
 
+  /** Force UI refresh after async work / dialog teardown. */
+  private refreshView(): void {
+    this.ngZone.run(() => this.cdr.detectChanges());
+  }
+
+  /** Run after MatDialog closes so overlay teardown does not swallow the update. */
+  private scheduleAfterDialog(fn: () => void): void {
+    this.ngZone.run(() => {
+      setTimeout(() => {
+        fn();
+        this.refreshView();
+      }, 0);
+    });
+  }
+
   private loadClassOptions(): void {
     this.classService.getClassDropdown().subscribe({
       next: (rows: any[]) => {
@@ -457,13 +517,9 @@ export class FeeManageComponent implements OnInit {
           id: String(c.id),
           name: String(c.name ?? ''),
         }));
-        this.cdr.detectChanges();
+        this.refreshView();
       },
     });
-  }
-
-  get studentClassFilterOptions(): MappingOption[] {
-    return this.classOptions;
   }
 
   startBasicEdit(): void {
@@ -544,7 +600,7 @@ export class FeeManageComponent implements OnInit {
             duration: 3500,
             panelClass: 'snack-error',
           });
-          this.cdr.detectChanges();
+          this.refreshView();
         },
       });
   }
@@ -572,7 +628,7 @@ export class FeeManageComponent implements OnInit {
                   : 'Period wise',
           }));
           this.totalHeads = res?.totalCount || 0;
-          this.cdr.detectChanges();
+          this.refreshView();
         },
         error: () => {
           this.heads = [];
@@ -581,7 +637,7 @@ export class FeeManageComponent implements OnInit {
             duration: 3000,
             panelClass: 'snack-error',
           });
-          this.cdr.detectChanges();
+          this.refreshView();
         },
       });
   }
@@ -613,15 +669,15 @@ export class FeeManageComponent implements OnInit {
     this.dialog
       .open(AddFeeHeadDialogComponent, {
         data,
-        panelClass: 'erp-dialog',
+        panelClass: ['erp-dialog', 'fee-dialog'],
         disableClose: true,
         width: FEE_HEAD_DIALOG_WIDTH,
         maxWidth: '96vw',
-        maxHeight: '96vh',
+        maxHeight: '92vh',
       })
       .afterClosed()
       .subscribe((saved) => {
-        if (saved) this.loadHeads();
+        if (saved) this.scheduleAfterDialog(() => this.loadHeads());
       });
   }
 
@@ -698,7 +754,7 @@ export class FeeManageComponent implements OnInit {
               }));
               const map = new Map(this.classGroupOptions.map((c) => [c.id, c.name]));
               this.classGroupLabels = ids.map((id: string) => map.get(id) || id);
-              this.cdr.detectChanges();
+              this.refreshView();
             },
           });
         } else {
@@ -708,12 +764,12 @@ export class FeeManageComponent implements OnInit {
                 id: String(c.id),
                 name: String(c.name ?? ''),
               }));
-              this.cdr.detectChanges();
+              this.refreshView();
             },
           });
         }
         this.loading = false;
-        this.cdr.detectChanges();
+        this.refreshView();
       },
       error: () => {
         this.loading = false;

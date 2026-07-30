@@ -131,28 +131,62 @@
   }
 
   @if (currentTab === 2) {
-    <div class="students-toolbar">
-      <div class="class-filter-block">
-        <span class="class-filter-label">Class</span>
-        <app-multi-select-chips
-          [options]="studentClassFilterOptions"
-          [selectedIds]="selectedStudentClassIds"
-          placeholder="All classes"
-          searchPlaceholder="Search class…"
-          [compact]="true"
-          [maxVisibleChips]="2"
-          (selectedIdsChange)="onStudentClassIdsChange($event)"
-        />
-      </div>
-    </div>
     <app-smart-data-table
       [config]="studentTableConfig"
       [data]="students"
       [serverSide]="true"
       [totalRecords]="totalStudents"
+      [filterPanelActive]="studentClassFilterActive"
       (pageChange)="onStudentPageChange($event)"
       (addButtonClicked)="openStudentDialog('add')"
       (actionClicked)="onStudentAction($event)"
-    />
+      (advancedFiltersCleared)="clearStudentClassFilter()"
+    >
+      <div tableFilters class="st-table-filters">
+        <div class="table-filter-section">
+          <span class="table-filter-section-label">Class</span>
+          <div class="fee-student-class-multiselect">
+            <button
+              type="button"
+              class="fee-student-class-select-btn"
+              (click)="toggleStudentClassFilterDropdown($event)"
+            >
+              <span>{{ studentClassFilterSummary }}</span>
+              <mat-icon>{{
+                studentClassFilterDropdownOpen ? 'expand_less' : 'expand_more'
+              }}</mat-icon>
+            </button>
+            @if (studentClassFilterDropdownOpen) {
+              <div class="fee-student-class-options">
+                @for (cls of classOptions; track cls.id) {
+                  <label class="fee-student-class-option">
+                    <input
+                      type="checkbox"
+                      [checked]="isStudentClassSelected(cls.id)"
+                      (change)="toggleStudentClassSelection(cls.id, $any($event.target).checked)"
+                    />
+                    <span>{{ cls.name }}</span>
+                  </label>
+                }
+                @if (!classOptions.length) {
+                  <span class="fee-student-class-option">No classes available</span>
+                }
+              </div>
+            }
+          </div>
+          @if (selectedStudentClassIds.length) {
+            <div class="fee-student-class-filter-actions">
+              <button
+                type="button"
+                class="fee-student-class-filter-clear"
+                (click)="clearStudentClassFilter()"
+              >
+                Clear classes
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </app-smart-data-table>
   }
 }

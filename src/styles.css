@@ -249,6 +249,18 @@ body {
     0 0 0 1px rgba(99, 153, 34, 0.08) !important;
 }
 
+/* Fee add/edit dialogs: size to content, no inner scrollbar */
+.erp-dialog.fee-dialog .mat-mdc-dialog-container,
+.erp-dialog.fee-dialog .mat-mdc-dialog-surface {
+  overflow: hidden !important;
+  max-height: 92vh !important;
+}
+
+.erp-dialog.fee-dialog .mat-mdc-dialog-surface {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 .delete-item {
   color: #c0392b !important;
 }
