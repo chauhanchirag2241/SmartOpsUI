@@ -136,30 +136,9 @@ function mapSubjectField(field: string, value: string): string | null {
       return intToEnumLabel(SubjectCategory, value) ?? enumNameLabel(value, SubjectCategory);
     case 'medium':
       return intToEnumLabel(Medium, value);
+    default:
+      return null;
   }
-
-  if (field === 'gradesystem') {
-    const map: Record<string, string> = { '1': 'Marks', '2': 'Grade', '3': 'CGPA', Marks: 'Marks', Grade: 'Grade', CGPA: 'CGPA' };
-    return map[value] ?? null;
-  }
-
-  if (field === 'curriculum') {
-    const map: Record<string, string> = {
-      '1': 'CBSE',
-      '2': 'GSEB',
-      '3': 'ICSE',
-      '4': 'IB',
-      '5': 'State Board',
-      CBSE: 'CBSE',
-      GSEB: 'GSEB',
-      ICSE: 'ICSE',
-      IB: 'IB',
-      StateBoard: 'State Board',
-    };
-    return map[value] ?? null;
-  }
-
-  return null;
 }
 
 function mapPersonField(field: string, value: string): string | null {

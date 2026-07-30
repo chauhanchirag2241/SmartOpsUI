@@ -28,6 +28,8 @@ export class MultiSelectChipsComponent {
 
   @Input() options: MappingOption[] = [];
   @Input() selectedIds: string[] = [];
+  /** IDs that stay selected and cannot be removed (e.g. existing fee master classes). */
+  @Input() lockedIds: string[] = [];
   @Input() disabled = false;
   @Input() placeholder = 'Select…';
   @Input() searchPlaceholder = 'Search';
@@ -69,6 +71,10 @@ export class MultiSelectChipsComponent {
     return this.selectedIds.includes(id);
   }
 
+  isLocked(id: string): boolean {
+    return this.lockedIds.includes(id);
+  }
+
   togglePanel(event: Event): void {
     if (this.disabled) return;
     event.stopPropagation();
@@ -80,7 +86,7 @@ export class MultiSelectChipsComponent {
   }
 
   toggleOption(id: string, checked: boolean): void {
-    if (this.disabled || !id) return;
+    if (this.disabled || !id || this.isLocked(id)) return;
     if (this.singleSelect) {
       this.selectSingle(checked ? id : '');
       return;
@@ -105,14 +111,15 @@ export class MultiSelectChipsComponent {
 
   remove(id: string, event: Event): void {
     event.stopPropagation();
-    if (this.disabled) return;
+    if (this.disabled || this.isLocked(id)) return;
     this.selectedIdsChange.emit(this.selectedIds.filter((x) => x !== id));
   }
 
   clearAll(event: Event): void {
     event.stopPropagation();
     if (this.disabled || !this.selectedIds.length) return;
-    this.selectedIdsChange.emit([]);
+    const locked = this.lockedIds.filter((id) => this.selectedIds.includes(id));
+    this.selectedIdsChange.emit(locked);
     this.cdr.markForCheck();
   }
 

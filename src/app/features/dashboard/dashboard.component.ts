@@ -339,7 +339,6 @@ export class DashboardComponent implements OnInit {
   readonly quickActions: QuickAction[] = [
     { icon: 'person_add', label: 'Add student', route: '/students', menuCode: MenuCodes.Students },
     { icon: 'how_to_reg', label: 'Mark attendance', route: '/attendance', menuCode: MenuCodes.Attendance },
-    { icon: 'payments', label: 'Collect fees', route: '/fees-collection', menuCode: MenuCodes.FeesCollection },
     { icon: 'edit_note', label: 'Add homework', route: '/homework', menuCode: MenuCodes.Homework },
   ];
 

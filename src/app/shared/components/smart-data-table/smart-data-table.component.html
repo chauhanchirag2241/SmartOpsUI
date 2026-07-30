@@ -293,9 +293,30 @@
 
               @if (config.actions?.length) {
                 <td class="td-actions" (click)="$event.stopPropagation()">
-                  <button type="button" class="dot-btn" (click)="openContextMenu($event, i)" title="More actions">
-                    ⋮
-                  </button>
+                  @if (config.actionsLayout === 'inline') {
+                    <div class="inline-actions">
+                      @for (action of config.actions; track action.label) {
+                        @if (!config.actionVisibleFn || config.actionVisibleFn(action, row)) {
+                          <button
+                            type="button"
+                            class="inline-action-btn"
+                            [class.danger]="action.danger"
+                            [title]="action.label"
+                            [attr.aria-label]="action.label"
+                            (click)="onInlineActionClick(action, row, i)"
+                          >
+                            <mat-icon [style.color]="action.danger ? undefined : (action.iconColor ?? 'inherit')">{{
+                              action.icon
+                            }}</mat-icon>
+                          </button>
+                        }
+                      }
+                    </div>
+                  } @else {
+                    <button type="button" class="dot-btn" (click)="openContextMenu($event, i)" title="More actions">
+                      ⋮
+                    </button>
+                  }
                 </td>
               }
             </tr>

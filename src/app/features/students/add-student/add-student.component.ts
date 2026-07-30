@@ -904,7 +904,6 @@ export class AddStudentComponent implements OnInit {
           rollNumber: rawValue.rollNumber,
         },
       ],
-      feeHeadSelections: [],
     };
 
     try {

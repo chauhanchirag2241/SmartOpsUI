@@ -11,9 +11,9 @@
   >
     <div class="sms-chips">
       @for (chip of visibleChips; track chip.id) {
-        <span class="sms-chip">
+        <span class="sms-chip" [class.is-locked]="isLocked(chip.id)">
           <span class="sms-chip-label">{{ chip.name }}</span>
-          @if (!disabled) {
+          @if (!disabled && !isLocked(chip.id)) {
             <span class="sms-chip-remove" (click)="remove(chip.id, $event)">
               <mat-icon>close</mat-icon>
             </span>
@@ -29,7 +29,7 @@
     </div>
 
     <span class="sms-actions">
-      @if (selectedIds.length && !disabled) {
+      @if (selectedIds.length && !disabled && selectedIds.some((id) => !isLocked(id))) {
         <span class="sms-clear" (click)="clearAll($event)">
           <mat-icon>close</mat-icon>
         </span>
@@ -70,9 +70,14 @@
           }
         } @else {
           @for (opt of filteredOptions; track opt.id) {
-            <label class="sms-option" [class.is-selected]="isSelected(opt.id)">
+            <label
+              class="sms-option"
+              [class.is-selected]="isSelected(opt.id)"
+              [class.is-locked]="isLocked(opt.id)"
+            >
               <mat-checkbox
                 [checked]="isSelected(opt.id)"
+                [disabled]="isLocked(opt.id)"
                 (change)="toggleOption(opt.id, $event.checked)"
                 (click)="$event.stopPropagation()"
               />

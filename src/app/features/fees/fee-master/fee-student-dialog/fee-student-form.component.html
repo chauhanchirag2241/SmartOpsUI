@@ -1,0 +1,135 @@
+<div class="fee-student-form">
+  @if (mode === 'add') {
+    <div class="filter-row">
+      <div class="filter-field">
+        <label class="field-label">Class groups</label>
+        <app-multi-select-chips
+          [options]="classGroupOptions"
+          [selectedIds]="selectedClassGroupIds"
+          placeholder="Select class groups"
+          searchPlaceholder="Search class…"
+          (selectedIdsChange)="onClassGroupIdsChange($event)"
+        />
+      </div>
+      <div class="filter-field students-field">
+        <label class="field-label">Students</label>
+        <div class="students-add-row">
+          <app-multi-select-chips
+            class="students-chips"
+            [options]="studentOptions"
+            [selectedIds]="pendingStudentIds"
+            [disabled]="!selectedClassGroupIds.length"
+            placeholder="Select students"
+            searchPlaceholder="Search student…"
+            (selectedIdsChange)="onPendingStudentIdsChange($event)"
+          />
+          <button type="button" class="btn-add-inline" (click)="addPendingStudents()">
+            <mat-icon>add</mat-icon>
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="staged-block">
+      <div class="section-title">Selected students &amp; amounts</div>
+      @if (!staged.length) {
+        <div class="empty-staged">Select class groups and students, then click Add.</div>
+      } @else {
+        <div class="staged-table-wrap">
+          <table class="staged-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Class</th>
+                @for (h of heads; track h.feeHeadId) {
+                  <th>{{ h.feeHeadName }}</th>
+                }
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of staged; track s.id) {
+                <tr>
+                  <td class="col-name">{{ s.name }}</td>
+                  <td class="col-class">{{ s.classLabel || '—' }}</td>
+                  @for (h of heads; track h.feeHeadId) {
+                    <td>
+                      <input
+                        class="field-input amount-input"
+                        type="number"
+                        [value]="s.amounts[h.feeHeadId] ?? ''"
+                        (input)="setStagedAmount(s.id, h.feeHeadId, $any($event.target).value)"
+                        placeholder="0.00"
+                      />
+                    </td>
+                  }
+                  <td class="col-actions">
+                      <button type="button" class="btn-remove" (click)="removeStaged(s.id)" title="Remove">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="student-banner">
+      <div class="student-avatar">{{ studentInitial }}</div>
+      <div>
+        <div class="student-title">{{ studentName }}</div>
+        <div class="student-sub">Class-group default amounts shown until overridden</div>
+      </div>
+    </div>
+
+    <div class="heads-list">
+      <div class="section-title">Fee head amounts</div>
+      <form [formGroup]="form">
+        @for (h of heads; track h.feeHeadId) {
+          <div class="head-row" [class.excluded]="isExcluded(h.feeHeadId)">
+            @if (!h.isMandatory) {
+              <button
+                type="button"
+                class="include-tick"
+                [class.off]="isExcluded(h.feeHeadId)"
+                [attr.title]="isExcluded(h.feeHeadId) ? 'Click to include' : 'Click to exclude'"
+                (click)="toggleExcluded(h.feeHeadId)"
+              >
+                <mat-icon>{{ isExcluded(h.feeHeadId) ? 'remove' : 'check' }}</mat-icon>
+              </button>
+            } @else {
+              <span class="include-spacer" aria-hidden="true"></span>
+            }
+
+            <div class="head-meta">
+              <div class="head-name">{{ h.feeHeadName }}</div>
+              <div class="head-flags">
+                @if (h.isMandatory) {
+                  <span class="flag">Mandatory</span>
+                }
+                @if (!h.isEditable) {
+                  <span class="flag muted">Not editable</span>
+                }
+                @if (h.defaultAmount != null) {
+                  <span class="flag muted">Default {{ h.defaultAmount | number: '1.2-2' }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="head-controls">
+              <input
+                class="field-input amount-input"
+                type="number"
+                [formControlName]="'amt_' + h.feeHeadId"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        }
+      </form>
+    </div>
+  }
+</div>

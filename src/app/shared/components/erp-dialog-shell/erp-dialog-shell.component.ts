@@ -10,7 +10,12 @@ import { ActionButtonComponent } from '../action-button/action-button.component'
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatIconModule, ActionButtonComponent],
   template: `
-    <div class="erp-dialog-shell" [style.--erp-dialog-width]="width">
+    <div
+      class="erp-dialog-shell"
+      [class.no-body-scroll]="!bodyScroll"
+      [style.--erp-dialog-width]="width"
+      [style.--erp-dialog-max-height]="maxHeight"
+    >
       <div class="dialog-header">
         <div class="dialog-header-text">
           <h2 class="dialog-title">{{ title }}</h2>
@@ -65,7 +70,7 @@ import { ActionButtonComponent } from '../action-button/action-button.component'
       .erp-dialog-shell {
         position: relative;
         width: min(var(--erp-dialog-width, 760px), 94vw);
-        max-height: 90vh;
+        max-height: var(--erp-dialog-max-height, 90vh);
         display: flex;
         flex-direction: column;
       }
@@ -122,6 +127,12 @@ import { ActionButtonComponent } from '../action-button/action-button.component'
         overflow: auto;
         flex: 1 1 auto;
         min-height: 0;
+      }
+
+      .erp-dialog-shell.no-body-scroll .dialog-body {
+        overflow: visible;
+        flex: 0 1 auto;
+        min-height: unset;
       }
 
       .dialog-footer {
@@ -201,6 +212,10 @@ export class ErpDialogShellComponent {
   @Input() subtitle = '';
   /** CSS length, e.g. `760px`. Defaults to shared add/edit popup size. */
   @Input() width = '760px';
+  /** Shell max height (e.g. `94vh`). */
+  @Input() maxHeight = '90vh';
+  /** When false, body does not scroll — use for short / self-sized fee dialogs. */
+  @Input() bodyScroll = true;
   @Input() showFooter = true;
   @Input() showSave = true;
   @Input() saveLabel = 'Save';

@@ -2135,6 +2135,45 @@ tr.row-inactive:hover td {
   padding: 9px 8px;
 }
 
+.inline-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.inline-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+}
+
+.inline-action-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.inline-action-btn:hover {
+  background: var(--hover, #f3f4f6);
+}
+
+.inline-action-btn.danger {
+  color: var(--danger-dark, #b91c1c);
+}
+
+.inline-action-btn.danger:hover {
+  background: var(--danger-bg, #fef2f2);
+}
+
 .table-footer {
   padding: 9px 14px;
   border-top: 0.5px solid var(--border-color);
@@ -2318,6 +2357,10 @@ tr.row-inactive:hover td {
   border-radius: 14px !important;
   padding: 0 !important;
   overflow: hidden !important;
+  border: 0.5px solid var(--border-color, #e5e7eb) !important;
+  box-shadow:
+    0 8px 28px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(99, 153, 34, 0.08) !important;
 }
 
 .delete-dialog .mat-mdc-dialog-container {

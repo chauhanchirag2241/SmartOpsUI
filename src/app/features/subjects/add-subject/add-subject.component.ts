@@ -40,8 +40,7 @@ export class AddSubjectComponent implements OnInit {
 
   subjectForm: FormGroup;
   isSaving = false;
-  /** Loaded record used to preserve fields not shown on the simplified edit form. */
-  private existingSnapshot: Record<string, unknown> | null = null;
+  private existingClassGroupId: string | null = null;
 
   readonly configs: Record<string, FormFieldConfig> = {
     subjectName: {
@@ -116,7 +115,7 @@ export class AddSubjectComponent implements OnInit {
   loadSubjectData(id: string) {
     this.subjectService.getSubject(id).subscribe({
       next: (data: any) => {
-        this.existingSnapshot = data ?? null;
+        this.existingClassGroupId = String(data?.classGroupId ?? data?.ClassGroupId ?? '') || null;
         this.subjectForm.patchValue({
           subjectName: data?.subjectName,
           subjectCode: data?.subjectCode,
@@ -148,67 +147,16 @@ export class AddSubjectComponent implements OnInit {
   }
 
   private buildSubjectApiPayload(raw: Record<string, unknown>): Record<string, unknown> {
-    const snap = this.existingSnapshot;
-    const classGroupId =
-      this.classGroupId ||
-      String(snap?.['classGroupId'] ?? snap?.['ClassGroupId'] ?? '');
-
     return {
-      classGroupId: classGroupId || null,
+      classGroupId: this.classGroupId || this.existingClassGroupId || null,
       subjectName: String(raw['subjectName'] ?? '').trim(),
       subjectCode: String(raw['subjectCode'] ?? '').trim(),
       subjectType: raw['subjectType'] ?? null,
       subjectCategory: raw['subjectCategory'] ?? null,
       medium: raw['medium'] ?? null,
-      assignedClasses: this.parseJsonStringArray(snap?.['assignedClasses'] ?? snap?.['AssignedClasses']),
-      periodsPerWeek: Number(snap?.['periodsPerWeek'] ?? snap?.['PeriodsPerWeek'] ?? 1) || 1,
-      periodDuration: String(snap?.['periodDuration'] ?? snap?.['PeriodDuration'] ?? '45'),
-      teachingDays: this.parseJsonStringArray(snap?.['teachingDays'] ?? snap?.['TeachingDays']),
-      maxTheory: Number(snap?.['maxTheory'] ?? snap?.['MaxTheory'] ?? 80) || 80,
-      maxPractical: Number(snap?.['maxPractical'] ?? snap?.['MaxPractical'] ?? 20) || 20,
-      passingMarks: Number(snap?.['passingMarks'] ?? snap?.['PassingMarks'] ?? 33) || 33,
-      gradeSystem: this.normalizeGradeSystem(snap?.['gradeSystem'] ?? snap?.['GradeSystem']),
-      syllabusTextbook: snap?.['syllabusTextbook'] ?? snap?.['SyllabusTextbook'] ?? null,
-      curriculum: this.normalizeCurriculum(snap?.['curriculum'] ?? snap?.['Curriculum']),
-      description: snap?.['description'] ?? snap?.['Description'] ?? null,
-      isActive: raw['isActive'] ?? snap?.['isActive'] ?? snap?.['IsActive'] ?? true,
+      description: null,
+      isActive: raw['isActive'] ?? true,
     };
-  }
-
-  private parseJsonStringArray(value: unknown): string[] {
-    if (Array.isArray(value)) {
-      return value.map((v) => String(v));
-    }
-    if (typeof value === 'string' && value.trim()) {
-      try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  }
-
-  private normalizeGradeSystem(value: unknown): string {
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-    if (typeof value === 'number') {
-      return value === 2 ? 'grade' : 'marks';
-    }
-    return 'marks';
-  }
-
-  private normalizeCurriculum(value: unknown): string | null {
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-    if (typeof value === 'number') {
-      const map: Record<number, string> = { 1: 'CBSE', 2: 'GSEB', 3: 'ICSE' };
-      return map[value] ?? 'CBSE';
-    }
-    return null;
   }
 
   saveSubject() {

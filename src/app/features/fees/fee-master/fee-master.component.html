@@ -1,0 +1,28 @@
+<section class="fee-master-page">
+  @if (showManage && selectedFeeId) {
+    <app-fee-manage
+      [feeId]="selectedFeeId"
+      [initialTab]="manageInitialTab"
+      (cancel)="closeManage()"
+    />
+  } @else if (!showAddForm) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="fees"
+      [serverSide]="true"
+      [totalRecords]="totalFees"
+      [initialFilterValue]="currentFilter"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
+    />
+  } @else {
+    <app-add-fee-master
+      [mode]="formMode"
+      [feeId]="selectedFeeId"
+      (cancel)="closeAddForm()"
+      (saved)="onFeeSaved()"
+    />
+  }
+</section>

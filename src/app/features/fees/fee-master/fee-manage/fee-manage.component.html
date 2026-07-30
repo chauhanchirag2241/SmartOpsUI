@@ -1,0 +1,158 @@
+<span
+  [appPageChrome]="pageTitle"
+  [pageChromeSubtitle]="pageSubtitle"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+@if (loading) {
+  <p class="page-sub">Loading…</p>
+} @else {
+  <div class="tabs" role="tablist">
+    @for (tab of tabs; track tab.label; let i = $index) {
+      <div
+        class="tab"
+        [class.active]="currentTab === i"
+        [class.done]="currentTab > i"
+        (click)="goTab(i)"
+        role="tab"
+      >
+        <div class="tab-num">{{ i + 1 }}</div>
+        {{ tab.label }}
+      </div>
+    }
+  </div>
+
+  @if (currentTab === 0) {
+    <div class="card basic-detail-card">
+      <div class="card-title-row">
+        <div class="card-title">
+          <mat-icon>info</mat-icon>
+          Basic detail
+        </div>
+        @if (!editingBasic) {
+          <button type="button" class="btn-edit-card" (click)="startBasicEdit()">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </button>
+        }
+      </div>
+
+      @if (!editingBasic) {
+        <div class="basic-detail-grid">
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Fee name</div>
+            <div class="basic-detail-value">{{ fee?.feeName || '—' }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Fee type</div>
+            <div class="basic-detail-value">{{ feeTypeLabel }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Published on</div>
+            <div class="basic-detail-value">{{ formatDate(fee?.publishedOn) }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Default due date</div>
+            <div class="basic-detail-value">{{ formatDate(fee?.defaultDueDate) }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Applicable to</div>
+            <div class="basic-detail-value">{{ applicableToLabel }}</div>
+          </div>
+          @if (!isStudentWise) {
+            <div class="basic-detail-field full">
+              <div class="basic-detail-label">Classes</div>
+              <div class="basic-detail-value">
+                {{ classGroupLabels.length ? classGroupLabels.join(', ') : '—' }}
+              </div>
+            </div>
+          }
+          <div class="basic-detail-field full">
+            <div class="basic-detail-label">Description</div>
+            <div class="basic-detail-value">{{ fee?.description || '—' }}</div>
+          </div>
+        </div>
+      } @else {
+        <form [formGroup]="basicForm">
+          <div class="grid2">
+            <app-dynamic-field [config]="basicConfigs['feeName']" [group]="basicForm" />
+            <app-dynamic-field [config]="basicConfigs['feeType']" [group]="basicForm" />
+            <app-dynamic-field [config]="basicConfigs['publishedOn']" [group]="basicForm" />
+            <app-dynamic-field [config]="basicConfigs['defaultDueDate']" [group]="basicForm" />
+            <app-dynamic-field [config]="basicConfigs['applicableTo']" [group]="basicForm" />
+            @if (!isStudentWise) {
+              <div class="class-select-block">
+                <label class="field-label">Classes <span class="req">*</span></label>
+                <app-multi-select-chips
+                  [options]="classGroupOptions"
+                  [selectedIds]="selectedClassGroupIds"
+                  [lockedIds]="lockedClassGroupIds"
+                  placeholder="Select classes"
+                  searchPlaceholder="Search class…"
+                  (selectedIdsChange)="onFeeClassGroupIdsChange($event)"
+                />
+                @if (lockedClassGroupIds.length) {
+                  <p class="field-hint">Existing classes stay linked; you can add more but not remove them.</p>
+                }
+              </div>
+            }
+            <app-dynamic-field
+              [config]="basicConfigs['description']"
+              [group]="basicForm"
+              [full]="true"
+            />
+          </div>
+        </form>
+        <div class="footer-actions basic-edit-actions">
+          <app-action-button type="cancel" (action)="cancelBasicEdit()" />
+          <app-action-button
+            type="save"
+            [label]="isSavingBasic ? 'Saving...' : 'Save changes'"
+            [icon]="isSavingBasic ? 'hourglass_empty' : 'check_circle'"
+            [disabled]="isSavingBasic"
+            (action)="saveBasic()"
+          />
+        </div>
+      }
+    </div>
+  }
+
+  @if (currentTab === 1) {
+    <app-smart-data-table
+      [config]="headTableConfig"
+      [data]="heads"
+      [serverSide]="true"
+      [totalRecords]="totalHeads"
+      (pageChange)="onHeadPageChange($event)"
+      (addButtonClicked)="openHeadDialog('add')"
+      (actionClicked)="onHeadAction($event)"
+    />
+  }
+
+  @if (currentTab === 2) {
+    <div class="students-toolbar">
+      <div class="class-filter-block">
+        <span class="class-filter-label">Class</span>
+        <app-multi-select-chips
+          [options]="studentClassFilterOptions"
+          [selectedIds]="selectedStudentClassIds"
+          placeholder="All classes"
+          searchPlaceholder="Search class…"
+          [compact]="true"
+          [maxVisibleChips]="2"
+          (selectedIdsChange)="onStudentClassIdsChange($event)"
+        />
+      </div>
+    </div>
+    <app-smart-data-table
+      [config]="studentTableConfig"
+      [data]="students"
+      [serverSide]="true"
+      [totalRecords]="totalStudents"
+      (pageChange)="onStudentPageChange($event)"
+      (addButtonClicked)="openStudentDialog('add')"
+      (actionClicked)="onStudentAction($event)"
+    />
+  }
+}

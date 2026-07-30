@@ -48,26 +48,27 @@ export enum SubjectCategory {
   CoCurricular = 'Co-curricular',
 }
 
-export enum PeriodDuration {
-  M30 = '30',
-  M45 = '45',
-  M50 = '50',
-  M60 = '60',
+export enum FeeType {
+  OneTime = 'OneTime',
+  Monthly = 'Monthly',
+  PeriodWise = 'PeriodWise',
 }
 
-export enum GradeSystem {
-  Marks = 'marks',
-  Grade = 'grade',
-  CGPA = 'cgpa',
+export enum FeeApplicableTo {
+  ClassWise = 'ClassWise',
+  StudentWise = 'StudentWise',
 }
 
-export enum Curriculum {
-  CBSE = 'CBSE',
-  GSEB = 'GSEB',
-  ICSE = 'ICSE',
-  IB = 'IB',
-  StateBoard = 'state',
-}
+export const FEE_TYPE_LABELS: Record<FeeType, string> = {
+  [FeeType.OneTime]: 'One Time',
+  [FeeType.Monthly]: 'Monthly',
+  [FeeType.PeriodWise]: 'Period Wise',
+};
+
+export const FEE_APPLICABLE_TO_LABELS: Record<FeeApplicableTo, string> = {
+  [FeeApplicableTo.ClassWise]: 'Class wise',
+  [FeeApplicableTo.StudentWise]: 'Student wise',
+};
 
 export const enumToOptions = <T extends Record<string, string>>(enumObject: T, labelMapper?: (value: string) => string) => {
   return Object.values(enumObject).map((value) => ({

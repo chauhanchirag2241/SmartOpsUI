@@ -6,7 +6,6 @@ export const MenuCodes = {
   Settings: 'SETTINGS',
   Academics: 'ACADEMICS',
   AcademicSetup: 'ACADEMIC_SETUP',
-  FeesManagement: 'FEES_MANAGEMENT',
   SalaryManagement: 'SALARY_MANAGEMENT',
   LeaveManagement: 'LEAVE_MANAGEMENT',
   Administration: 'ADMINISTRATION',
@@ -24,9 +23,6 @@ export const MenuCodes = {
   StaffAttendance: 'STAFF_ATTENDANCE',
   StaffAttendanceReport: 'STAFF_ATTENDANCE_REPORT',
   Homework: 'HOMEWORK',
-  FeesStructure: 'FEES_STRUCTURE',
-  FeesClassAmounts: 'FEES_CLASS_AMOUNTS',
-  FeesCollection: 'FEES_COLLECTION',
   SalaryStructure: 'SALARY_STRUCTURE',
   SalaryEmployees: 'SALARY_EMPLOYEES',
   SalaryPayroll: 'SALARY_PAYROLL',
@@ -53,6 +49,8 @@ export const MenuCodes = {
   ClassTimetable: 'CLASS_TIMETABLE',
   MyTimetable: 'MY_TIMETABLE',
   TeacherTimetableReport: 'TEACHER_TIMETABLE_REPORT',
+  FeeManagement: 'FEE_MANAGEMENT',
+  FeeMaster: 'FEE_MASTER',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

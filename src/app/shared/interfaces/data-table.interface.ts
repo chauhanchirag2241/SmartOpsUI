@@ -111,6 +111,11 @@ export interface DataTableHeader {
   addButtonIcon?: string;
   /** CSS class for the add button (default: 'btn-primary') */
   addButtonClass?: string;
+  /**
+   * When false, do not push title/subtitle into the global page chrome.
+   * Use for nested tables (e.g. Manage Fee tabs) so the parent keeps Back + title.
+   */
+  syncPageChrome?: boolean;
 }
 
 /**
@@ -123,6 +128,12 @@ export interface DataTableConfig {
   filters?: DataTableFilter[];
   /** Context menu (3-dot) actions per row */
   actions?: DataTableAction[];
+  /**
+   * How row actions are shown.
+   * - `menu` (default): 3-dot context menu (all existing modules)
+   * - `inline`: icon buttons in the actions column (opt-in, e.g. Fee Students tab)
+   */
+  actionsLayout?: 'menu' | 'inline';
   /** Bulk actions shown when rows are selected */
   bulkActions?: DataTableBulkAction[];
   /** Placeholder text for the search box */

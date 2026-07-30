@@ -1,0 +1,46 @@
+.applicable-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px 24px;
+  margin-top: 4px;
+}
+
+.applicable-row.with-classes {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.class-select-block {
+  max-width: none;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 6px;
+}
+
+.field-label .req {
+  color: #c0392b;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.field-error {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #c0392b;
+}
+
+@media (max-width: 860px) {
+  .applicable-row.with-classes {
+    grid-template-columns: 1fr;
+  }
+}

@@ -14,6 +14,7 @@ import { PeriodTemplateService } from '../../../core/services/period-template.se
 import { AcademicPeriodService } from '../../../core/services/academic-period.service';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
 import { FrontOfficeService } from '../../../core/services/front-office.service';
+import { FeeMasterService } from '../../../core/services/fee-master.service';
 import { AuditHistoryEntityType } from '../../../core/services/audit.service';
 import { AuditHistoryComponent } from '../../components/audit-history/audit-history.component';
 import { PageChromeDirective } from '../../directives/page-chrome.directive';
@@ -44,6 +45,8 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
     listRoute: '/front-office/admission-inquiries',
     entityType: 'admission-inquiry',
   },
+  'fee-master': { listRoute: '/fees/master', entityType: 'fee-master' },
+  'fee-head': { listRoute: '/fees/master', entityType: 'fee-head' },
 };
 
 interface EntityHistoryHeader {
@@ -70,6 +73,7 @@ export class EntityHistoryComponent implements OnInit {
   private readonly academicPeriodService = inject(AcademicPeriodService);
   private readonly academicYearService = inject(AcademicYearService);
   private readonly frontOfficeService = inject(FrontOfficeService);
+  private readonly feeMasterService = inject(FeeMasterService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -259,6 +263,23 @@ export class EntityHistoryComponent implements OnInit {
               .map((p) => String(p ?? '').trim())
               .filter(Boolean)
               .join(' · '),
+          })),
+        );
+      case 'fee-master':
+        return this.feeMasterService.getFee(id).pipe(
+          map((data) => ({
+            title: String(data.feeName ?? 'Fee').trim() || 'Fee',
+            subtitle: [data.feeType, data.applicableTo]
+              .map((p) => String(p ?? '').trim())
+              .filter(Boolean)
+              .join(' · '),
+          })),
+        );
+      case 'fee-head':
+        return this.feeMasterService.getFeeHead(id).pipe(
+          map((data) => ({
+            title: String(data.feeHeadName ?? 'Fee head').trim() || 'Fee head',
+            subtitle: data.isMandatory ? 'Mandatory' : 'Optional',
           })),
         );
       case 'student':

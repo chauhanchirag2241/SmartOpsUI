@@ -1,0 +1,161 @@
+.fee-head-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.toggle-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  background: var(--input-bg, #f9fafb);
+}
+
+.toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.so-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: #d1d5db;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+
+.so-toggle.on {
+  background: var(--primary-color, #639922);
+}
+
+.so-toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.so-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.so-toggle.on .so-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.month-grid-card,
+.period-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.month-grid-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.month-grid,
+.class-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.month-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md, 8px);
+  border: 0.5px solid var(--border-color, #e5e7eb);
+  background: var(--input-bg, #f9fafb);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  user-select: none;
+}
+
+.month-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.month-chip.selected {
+  border-color: var(--primary-color, #639922);
+  background: var(--g50, #f3f8eb);
+  color: var(--primary-color, #639922);
+}
+
+.period-group-card {
+  border: 0.5px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-lg, 12px);
+  padding: 12px 14px;
+  background: var(--card, #fff);
+}
+
+.period-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 6px;
+}
+
+.field-input {
+  width: 100%;
+  height: 40px;
+  border: 0.5px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  background: var(--input-bg, #f9fafb);
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #639922);
+}
+
+@media (max-width: 640px) {
+  .toggle-row,
+  .month-grid,
+  .class-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

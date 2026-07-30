@@ -1,0 +1,72 @@
+<span
+  [appPageChrome]="pageTitle"
+  pageChromeSubtitle="Fee Master"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+<form [formGroup]="feeForm">
+  @for (tab of tabs; track tab.stepIndex) {
+    @for (section of tab.sections; track section.title) {
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}
+        </div>
+        <div class="grid2">
+          <app-dynamic-field [config]="configs['feeName']" [group]="feeForm" />
+          <app-dynamic-field [config]="configs['feeType']" [group]="feeForm" />
+          <app-dynamic-field [config]="configs['publishedOn']" [group]="feeForm" />
+          <app-dynamic-field [config]="configs['defaultDueDate']" [group]="feeForm" />
+        </div>
+
+        <div class="applicable-row" [class.with-classes]="isClassWise">
+          <div class="applicable-field">
+            <app-dynamic-field [config]="configs['applicableTo']" [group]="feeForm" />
+          </div>
+          @if (isClassWise) {
+            <div class="class-select-block">
+              <label class="field-label">Classes <span class="req">*</span></label>
+              <app-multi-select-chips
+                [options]="classGroupOptions"
+                [selectedIds]="selectedClassGroupIds"
+                [lockedIds]="lockedClassGroupIds"
+                [disabled]="mode === 'view'"
+                placeholder="Select classes"
+                searchPlaceholder="Search class…"
+                (selectedIdsChange)="onClassGroupIdsChange($event)"
+              />
+              @if (mode === 'edit' && lockedClassGroupIds.length) {
+                <p class="field-hint">Existing classes stay linked; you can add more but not remove them.</p>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="grid2">
+          <app-dynamic-field
+            [config]="configs['description']"
+            [group]="feeForm"
+            [full]="true"
+          />
+        </div>
+
+        @if (feeForm.hasError('dueBeforePublished') && feeForm.touched) {
+          <p class="field-error">Default due date must be on or after published on.</p>
+        }
+      </div>
+    }
+  }
+</form>
+
+<div class="footer-actions">
+  <div class="footer-hint">Fee masters are used when assigning amounts to classes or students.</div>
+  @if (mode !== 'view') {
+    <app-action-button
+      type="save"
+      [label]="isSaving ? 'Saving...' : (mode === 'edit' ? 'Update Fee' : 'Confirm & Add')"
+      [icon]="isSaving ? 'hourglass_empty' : 'check_circle'"
+      [disabled]="isSaving"
+      (action)="saveFee()">
+    </app-action-button>
+  }
+</div>

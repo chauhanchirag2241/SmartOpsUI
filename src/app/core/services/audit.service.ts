@@ -16,7 +16,9 @@ export type AuditHistoryEntityType =
   | 'visitor'
   | 'phone-log'
   | 'complaint'
-  | 'admission-inquiry';
+  | 'admission-inquiry'
+  | 'fee-master'
+  | 'fee-head';
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {
@@ -59,6 +61,10 @@ export class AuditService {
         return `front-office/complaints/${entityId}/history`;
       case 'admission-inquiry':
         return `front-office/admission-inquiries/${entityId}/history`;
+      case 'fee-master':
+        return `fees/master/${entityId}/history`;
+      case 'fee-head':
+        return `fees/master/heads/${entityId}/history`;
       default:
         return `${entityType}s/${entityId}/history`;
     }

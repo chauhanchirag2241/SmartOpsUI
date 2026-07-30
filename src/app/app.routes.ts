@@ -222,33 +222,6 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'fees-structure',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.FeesStructure, permission: 'view' },
-        loadComponent: () =>
-          import('./features/fees/fee-structure/fee-structure.component').then(
-            (m) => m.FeeStructureComponent,
-          ),
-      },
-      {
-        path: 'fees-class-amounts',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.FeesClassAmounts, permission: 'view' },
-        loadComponent: () =>
-          import('./features/fees/class-fee-amounts/class-fee-amounts.component').then(
-            (m) => m.ClassFeeAmountsComponent,
-          ),
-      },
-      {
-        path: 'fees-collection',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.FeesCollection, permission: 'view' },
-        loadComponent: () =>
-          import('./features/fees/fee-collection/fee-collection.component').then(
-            (m) => m.FeeCollectionComponent,
-          ),
-      },
-      {
         path: 'salary-structure',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.SalaryStructure, permission: 'view' },
@@ -406,6 +379,33 @@ export const routes: Routes = [
         data: { menuCode: MenuCodes.Notices, permission: 'view' },
         loadComponent: () =>
           import('./features/notices/notices.component').then((m) => m.NoticesComponent),
+      },
+      {
+        path: 'fees/master',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeeMaster, permission: 'view' },
+        loadComponent: () =>
+          import('./features/fees/fee-master/fee-master.component').then(
+            (m) => m.FeeMasterComponent,
+          ),
+      },
+      {
+        path: 'fees/master/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeeMaster, permission: 'view', entityKind: 'fee-master' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
+      },
+      {
+        path: 'fees/master/heads/:id/history',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeeMaster, permission: 'view', entityKind: 'fee-head' },
+        loadComponent: () =>
+          import('./shared/pages/entity-history/entity-history.component').then(
+            (m) => m.EntityHistoryComponent,
+          ),
       },
       {
         path: 'exams/groups',

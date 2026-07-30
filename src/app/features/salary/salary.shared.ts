@@ -1,14 +1,79 @@
-import {
-  asArray,
-  extractApiError,
-  formatInr,
-  normalizeDropdownItem,
-  pick,
-  studentInitials,
-  versionStatusBadgeClass,
-} from '../fees/fees.shared';
+export function pick(raw: any, ...keys: string[]): unknown {
+  if (raw == null) {
+    return undefined;
+  }
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(raw, key) && raw[key] !== undefined) {
+      return raw[key];
+    }
+  }
+  return undefined;
+}
 
-export { asArray, extractApiError, formatInr, normalizeDropdownItem, studentInitials, versionStatusBadgeClass };
+export function asArray<T = unknown>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  if (value == null) {
+    return [];
+  }
+  return [value as T];
+}
+
+export function formatInr(value: number | null | undefined): string {
+  const n = Number(value ?? 0);
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(n) ? n : 0);
+}
+
+export function extractApiError(err: unknown, fallback: string): string {
+  const e = err as { error?: { message?: string } | string; message?: string } | null;
+  const nested = e?.error;
+  if (typeof nested === 'string' && nested.trim()) {
+    return nested;
+  }
+  if (nested && typeof nested === 'object' && typeof nested.message === 'string' && nested.message.trim()) {
+    return nested.message;
+  }
+  if (typeof e?.message === 'string' && e.message.trim()) {
+    return e.message;
+  }
+  return fallback;
+}
+
+export function normalizeDropdownItem(raw: any): { id: string; name: string } {
+  return {
+    id: String(pick(raw, 'id', 'Id') ?? ''),
+    name: String(pick(raw, 'name', 'Name', 'label', 'Label') ?? ''),
+  };
+}
+
+export function studentInitials(name: string | null | undefined): string {
+  const parts = String(name ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) {
+    return '?';
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function versionStatusBadgeClass(status: string): string {
+  const m: Record<string, string> = {
+    Draft: 'b-amber',
+    Published: 'b-blue',
+    Active: 'b-green',
+    Archived: 'b-gray',
+  };
+  return m[status] ?? 'b-gray';
+}
 
 /** Matches backend SalaryStructureVersionStatus */
 export enum SalaryStructureVersionStatus {

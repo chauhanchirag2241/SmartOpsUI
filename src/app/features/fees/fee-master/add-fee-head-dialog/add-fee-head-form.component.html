@@ -1,0 +1,97 @@
+<form [formGroup]="form" class="fee-head-form">
+  <div class="grid2">
+    <app-dynamic-field [config]="nameConfig" [group]="form" [full]="true" />
+  </div>
+
+  <div class="toggle-row">
+    <div class="toggle-field">
+      <span class="toggle-label">Mandatory</span>
+      <button
+        type="button"
+        class="so-toggle"
+        [class.on]="form.get('isMandatory')?.value"
+        [disabled]="mode === 'view'"
+        (click)="toggleMandatory()"
+        role="switch"
+        [attr.aria-checked]="!!form.get('isMandatory')?.value"
+      >
+        <span class="so-toggle-thumb"></span>
+      </button>
+    </div>
+    <div class="toggle-field">
+      <span class="toggle-label">Editable</span>
+      <button
+        type="button"
+        class="so-toggle"
+        [class.on]="form.get('isEditable')?.value"
+        [disabled]="mode === 'view'"
+        (click)="toggleEditable()"
+        role="switch"
+        [attr.aria-checked]="!!form.get('isEditable')?.value"
+      >
+        <span class="so-toggle-thumb"></span>
+      </button>
+    </div>
+  </div>
+
+  @if (showSingleAmount) {
+    <div class="grid2">
+      <app-dynamic-field
+        [config]="isStudentWise ? studentAmountConfig : amountConfig"
+        [group]="form"
+      />
+    </div>
+  }
+
+  @if (showMonthGrid) {
+    <div class="month-grid-card">
+      <div class="month-grid-title">Applicable months</div>
+      <div class="month-grid">
+        @for (m of months; track m.value) {
+          <label class="month-chip" [class.selected]="isMonthSelected(m.value)">
+            <input
+              type="checkbox"
+              [checked]="isMonthSelected(m.value)"
+              [disabled]="mode === 'view'"
+              (change)="toggleMonth(m.value)"
+            />
+            <span>{{ m.label }}</span>
+          </label>
+        }
+      </div>
+    </div>
+  }
+
+  @if (showPeriodAmounts) {
+    <div class="period-section">
+      <div class="month-grid-title">Classes</div>
+      <app-multi-select-chips
+        [options]="classGroupOptions"
+        [selectedIds]="selectedClassGroupIds"
+        [disabled]="mode === 'view'"
+        placeholder="Select classes for period amounts"
+        searchPlaceholder="Search class…"
+        (selectedIdsChange)="onClassGroupIdsChange($event)"
+      />
+
+      @for (group of periodGroups; track group.classGroupId) {
+        <div class="period-group-card">
+          <div class="period-group-title">{{ group.classGroupName }}</div>
+          <div class="grid2">
+            @for (p of group.periods; track p.academicPeriodId) {
+              <div class="period-amount-field">
+                <label class="field-label">{{ p.name }} — default amount</label>
+                <input
+                  class="field-input"
+                  type="number"
+                  [formControlName]="p.controlName"
+                  placeholder="0.00"
+                />
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</form>

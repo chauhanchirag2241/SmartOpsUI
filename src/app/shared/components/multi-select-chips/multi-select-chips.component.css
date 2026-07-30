@@ -55,6 +55,16 @@
   line-height: 1.2;
 }
 
+.sms-chip.is-locked {
+  padding-right: 10px;
+  opacity: 0.92;
+}
+
+.sms-option.is-locked {
+  opacity: 0.85;
+  cursor: default;
+}
+
 .sms-chip-label {
   overflow: hidden;
   text-overflow: ellipsis;

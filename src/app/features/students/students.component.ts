@@ -320,17 +320,6 @@ export class StudentsComponent implements OnInit {
           { min: 0, color: '#E24B4A' },
         ],
       },
-      // {
-      //   key: 'fees',
-      //   label: 'Fees Status',
-      //   cellType: 'badge',
-      //   badgeMap: {
-      //     Paid: { cssClass: 'b-green', icon: 'check_circle' },
-      //     Partial: { cssClass: 'b-amber', icon: 'schedule' },
-      //     Overdue: { cssClass: 'b-red', icon: 'error' },
-      //     Pending: { cssClass: 'b-amber', icon: 'schedule' },
-      //   },
-      // },
       {
         key: 'isActive',
         label: 'Status',
@@ -355,11 +344,6 @@ export class StudentsComponent implements OnInit {
         icon: 'cancel',
         value: StudentFilter.Inactive.toString(),
       },
-      // {
-      //   label: 'Fee overdue',
-      //   icon: 'warning',
-      //   value: StudentFilter.FeeOverdue.toString(),
-      // },
     ],
 
     actions: [
@@ -460,7 +444,7 @@ export class StudentsComponent implements OnInit {
         data: {
           title: 'Delete student?',
           description:
-            'This will permanently remove the student and all associated records including documents, fee history, and academic data.',
+            'This will permanently remove the student and all associated records including documents and academic data.',
           recordName: event.row['name'] as string,
           recordMeta: `${event.row['email']} · Class ${event.row['class']}`,
           initials: this.getInitials(event.row['name'] as string),

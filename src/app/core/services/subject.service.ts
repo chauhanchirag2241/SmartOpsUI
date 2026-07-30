@@ -11,17 +11,8 @@ export interface SubjectDTO {
   subjectType: 'Theory' | 'Practical' | 'Both';
   subjectCategory: 'Core' | 'Elective' | 'Co-curricular';
   medium: string;
-  assignedClasses: string[];
-  periodsPerWeek: number;
-  periodDuration: string;
-  teachingDays: string[];
-  maxTheory: number;
-  maxPractical: number;
-  passingMarks: number;
-  gradeSystem: string;
-  syllabusTextbook?: string;
-  curriculum?: string;
   description?: string;
+  isActive?: boolean;
 }
 
 @Injectable({

@@ -93,14 +93,6 @@ export class StudentService {
           tcNumber: studentData.tcNo
         }
       ] : [],
-      feeHeadSelections: (studentData.feeHeadSelections ?? []).map((s: any) => ({
-        feeHeadId: s.feeHeadId,
-        isIncluded: Boolean(s.isIncluded),
-        customAnnualAmount:
-          s.customAnnualAmount != null && s.customAnnualAmount !== ''
-            ? Number(s.customAnnualAmount)
-            : null,
-      })),
       customFields: this.mapCustomFields(studentData.customFields),
     };
 
@@ -154,10 +146,6 @@ export class StudentService {
           academicYearId: studentData.academicYearId,
           classId: studentData.classId,
           rollNumber: studentData.rollNumber,
-          feeStructureId:
-            studentData.feeStructureId ??
-            academic?.feeStructureId ??
-            undefined,
         }
       ],
       previousSchools: studentData.prevSchool ? [
@@ -228,32 +216,6 @@ export class StudentService {
     return null;
   }
 
-  getPromoteReadiness(targetAcademicYearId: string, targetClassId: string): Observable<{ ready: boolean; message?: string }> {
-    const params = new HttpParams()
-      .set('targetAcademicYearId', targetAcademicYearId)
-      .set('targetClassId', targetClassId);
-    return this.api.get<{ ready: boolean; message?: string }>('students/promote-readiness', params);
-  }
-
-  getPromotePendingFees(
-    sourceAcademicYearId: string,
-    studentIds: string[],
-  ): Observable<
-    {
-      studentId: string;
-      studentName: string;
-      totalFees: number;
-      paidAmount: number;
-      pendingAmount: number;
-    }[]
-  > {
-    let params = new HttpParams().set('sourceAcademicYearId', sourceAcademicYearId);
-    for (const id of studentIds) {
-      params = params.append('studentIds', id);
-    }
-    return this.api.get('students/promote-pending-fees', params);
-  }
-
   promoteStudents(payload: {
     sourceAcademicYearId: string;
     targetAcademicYearId: string;
@@ -261,8 +223,6 @@ export class StudentService {
   }): Observable<{
     promotedCount: number;
     errors: string[];
-    studentsWithFeesTransferred?: number;
-    totalPendingTransferred?: number;
   }> {
     return this.api.post('students/promote', payload);
   }

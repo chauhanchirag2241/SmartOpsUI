@@ -241,6 +241,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
 
   private syncPageChrome(): void {
     const header = this.config?.header;
+    if (header?.syncPageChrome === false) {
+      return;
+    }
     if (!header?.title?.trim()) {
       this.pageChrome.clear(this);
       return;
@@ -611,6 +614,15 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
         rowIndex: globalIdx,
       });
     }
+  }
+
+  onInlineActionClick(action: DataTableAction, row: Record<string, unknown>, pageRowIndex: number): void {
+    const globalIdx = (this.currentPage - 1) * this.pageSize + pageRowIndex;
+    this.actionClicked.emit({
+      action,
+      row,
+      rowIndex: globalIdx,
+    });
   }
 
   onBulkAction(action: DataTableBulkAction): void {
