@@ -30,11 +30,14 @@
           <mat-icon>info</mat-icon>
           Basic detail
         </div>
-        @if (!editingBasic) {
+        @if (!editingBasic && !isFeePublishedLocked) {
           <button type="button" class="btn-edit-card" (click)="startBasicEdit()">
             <mat-icon>edit</mat-icon>
             Edit
           </button>
+        }
+        @if (isFeePublishedLocked) {
+          <span class="field-hint">Locked after published-on date</span>
         }
       </div>
 

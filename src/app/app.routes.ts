@@ -390,6 +390,24 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'fees/collection',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeeCollection, permission: 'view' },
+        loadComponent: () =>
+          import('./features/fees/fee-collection/fee-collection.component').then(
+            (m) => m.FeeCollectionComponent,
+          ),
+      },
+      {
+        path: 'fees/collection/:studentId',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.FeeCollection, permission: 'view' },
+        loadComponent: () =>
+          import(
+            './features/fees/fee-collection/fee-collection-detail/fee-collection-detail.component'
+          ).then((m) => m.FeeCollectionDetailComponent),
+      },
+      {
         path: 'fees/master/:id/history',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.FeeMaster, permission: 'view', entityKind: 'fee-master' },

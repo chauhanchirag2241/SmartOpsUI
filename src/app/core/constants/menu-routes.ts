@@ -45,6 +45,7 @@ export const MENU_ROUTE_BY_CODE: Record<string, string> = {
   [MenuCodes.ExamHallTickets]: '/exams/hall-tickets',
   [MenuCodes.ExamGradeSetup]: '/exams/grade-setup',
   [MenuCodes.FeeMaster]: '/fees/master',
+  [MenuCodes.FeeCollection]: '/fees/collection',
   [MenuCodes.Users]: '/configuration/users',
   [MenuCodes.Roles]: '/configuration/roles',
   [MenuCodes.Settings]: '/settings',

@@ -1,0 +1,193 @@
+<span
+  [appPageChrome]="pageTitle"
+  [pageChromeSubtitle]="pageSubtitle"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="goBack()"
+></span>
+
+@if (loading) {
+  <p class="page-sub">Loading…</p>
+} @else if (detail) {
+  <div class="fc-page">
+    <div class="summary-pills">
+      <div class="pill total">
+        <b>{{ formatMoney(detail.summaryTotal) }}</b>
+        Total Fees
+      </div>
+      <div class="pill paid">
+        <b>{{ formatMoney(detail.summaryPaid) }}</b>
+        Collected
+      </div>
+      <div class="pill pending">
+        <b>{{ formatMoney(detail.summaryPending) }}</b>
+        Pending
+      </div>
+    </div>
+
+    <div class="student-card">
+      <div class="student-photo">{{ detail.student.initials }}</div>
+      <div class="student-main">
+        <div class="name">{{ detail.student.studentName }}</div>
+        <div class="sub">
+          @if (detail.student.fatherName) {
+            Father: {{ detail.student.fatherName }}
+          } @else {
+            Student fee collection
+          }
+        </div>
+      </div>
+      <div class="student-fields">
+        <div class="field">
+          <label>Mobile Number</label>
+          <span>{{ detail.student.mobile || '—' }}</span>
+        </div>
+        <div class="field">
+          <label>Current Class</label>
+          <span>
+            {{ detail.student.className || '—' }}
+            @if (detail.student.section) {
+              – {{ detail.student.section }}
+            }
+          </span>
+        </div>
+        <div class="field">
+          <label>Roll Number</label>
+          <span>{{ detail.student.rollNumber || '—' }}</span>
+        </div>
+        <div class="field">
+          <label>Admission Number</label>
+          <span>{{ detail.student.admissionNo || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Fee Masters</div>
+    @if (!actionableCards.length) {
+      <p class="empty-hint">No pending or upcoming fees for this student.</p>
+    }
+    <div class="fee-cards">
+      @for (card of actionableCards; track card.feeMasterId) {
+        <div class="fee-card">
+          <div class="fee-card-head">
+            <div class="fc-title">{{ card.feeName }}</div>
+            <div class="fc-sub">
+              @if (card.defaultDueDate) {
+                Due {{ formatDate(card.defaultDueDate) }}
+              } @else {
+                {{ card.feeType }}
+              }
+              @if (card.isPublished === false && card.publishedOn) {
+                · Collect from {{ formatDate(card.publishedOn) }}
+              }
+            </div>
+            <span class="status-badge" [class]="statusClass(card.status)">{{ card.status }}</span>
+            @if (card.isPublished === false) {
+              <span class="status-badge partial">Not published yet</span>
+            }
+          </div>
+          <div class="fee-head-list">
+            @for (head of card.heads; track head.feeHeadId) {
+              <div class="fee-head-row">
+                <div class="fh-name">
+                  {{ head.feeHeadName }}
+                  @if (head.isMandatory) {
+                    <span class="req">*</span>
+                  }
+                  @if (head.isEditable) {
+                    <span class="tag-soft">Editable</span>
+                  } @else {
+                    <span class="tag-soft">Locked</span>
+                  }
+                </div>
+                <div class="fh-amount-wrap">
+                  <span class="curr">₹</span>
+                  <span class="amt">{{ head.dueAmount | number: '1.0-2' }}</span>
+                  @if (head.paidAmount >= head.dueAmount && head.dueAmount > 0) {
+                    <span class="fh-paid-tick">Paid</span>
+                  } @else if (head.paidAmount > 0) {
+                    <span class="fh-paid-tick">₹{{ head.paidAmount | number: '1.0-2' }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="fee-card-foot">
+            <div class="fc-total">
+              Pending
+              <b>{{ formatMoney(card.totalPending) }}</b>
+            </div>
+            <button
+              type="button"
+              class="btn-collect"
+              [disabled]="!canCollect || !card.canCollect"
+              [title]="
+                card.isPublished === false
+                  ? 'Collect after published-on date'
+                  : !card.canCollect
+                    ? 'Nothing pending'
+                    : 'Collect fee'
+              "
+              (click)="openCollect(card)"
+            >
+              Collect Fee
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="section-heading">Fee Collection History</div>
+    <div class="history-panel">
+      <app-smart-data-table
+        [config]="historyTableConfig"
+        [data]="historyRows"
+        [serverSide]="false"
+        [totalRecords]="historyRows.length"
+      >
+        <ng-template #rowDetail let-row>
+          @if (historyDetail(row); as hist) {
+            <div class="history-detail">
+              @if (!hist.payments.length) {
+                <p class="empty-hint">No collections recorded yet for this fee.</p>
+              }
+              @for (pay of hist.payments; track pay.paymentId) {
+                <div class="payment-block">
+                  <div class="collect-meta">
+                    <span>Collected on <b>{{ formatDateTime(pay.paymentDate) }}</b></span>
+                    <span>Mode <b>{{ formatPaymentMethod(pay.paymentMethod) }}</b></span>
+                    <span>By <b>{{ pay.collectedBy || '—' }}</b></span>
+                    <span>Amount <b>{{ formatMoney(pay.totalAmount) }}</b></span>
+                  </div>
+                  <table class="detail-table">
+                    <thead>
+                      <tr>
+                        <th>Fee head</th>
+                        <th>Mandatory</th>
+                        <th>Editable</th>
+                        <th>Amount</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (line of pay.lines; track line.feeHeadId) {
+                        <tr>
+                          <td>{{ line.feeHeadName }}</td>
+                          <td>{{ line.isMandatory ? 'Yes' : 'No' }}</td>
+                          <td>{{ line.isEditable ? 'Yes' : 'No' }}</td>
+                          <td>{{ formatMoney(line.dueAmount) }}</td>
+                          <td class="amt-paid">{{ formatMoney(line.paidAmount) }}</td>
+                          <td>{{ formatMoney(lineBalance(line.dueAmount, line.paidAmount)) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          }
+        </ng-template>
+      </app-smart-data-table>
+    </div>
+  </div>
+}

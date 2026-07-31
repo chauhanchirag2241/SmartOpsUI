@@ -64,6 +64,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   /** Optional: custom cell template passed from parent */
   @ContentChild('customCell') customCellTemplate?: TemplateRef<unknown>;
 
+  /** Optional: expandable row detail template (`#rowDetail`) */
+  @ContentChild('rowDetail') rowDetailTemplate?: TemplateRef<unknown>;
+
   /** Emits when a context menu action is clicked: { action, row, rowIndex } */
   @Output() actionClicked = new EventEmitter<{
     action: DataTableAction;
@@ -102,6 +105,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   /** Emits when add button is clicked */
   @Output() addButtonClicked = new EventEmitter<void>();
 
+  /** Emits when an expandable row is opened/closed */
+  @Output() rowExpandChanged = new EventEmitter<{
+    row: Record<string, unknown>;
+    expanded: boolean;
+    rowKey: string;
+  }>();
+
   @ViewChild('ctxMenu') ctxMenuRef!: ElementRef<HTMLDivElement>;
 
   // --- Internal State ---
@@ -114,6 +124,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   selectedRows = new Set<number>();
   selectAll = false;
   indeterminate = false;
+
+  // Expandable rows
+  private readonly expandedRowKeys = new Set<string>();
 
   // Sorting
   sortColumn: string | null = null;
@@ -160,9 +173,53 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
 
   get totalColumnsCount(): number {
     let count = this.visibleColumns.length;
+    if (this.config?.expandableRows) count++;
     if (this.config?.selectable !== false) count++;
     if (this.config?.actions?.length) count++;
     return count;
+  }
+
+  get isExpandable(): boolean {
+    return !!this.config?.expandableRows && !!this.rowDetailTemplate;
+  }
+
+  getRowExpandKey(row: Record<string, unknown>, index: number): string {
+    const key = this.config?.expandRowKey;
+    if (key && row[key] != null && String(row[key]).trim() !== '') {
+      return String(row[key]);
+    }
+    const fallback =
+      row['id'] ?? row['feeMasterId'] ?? row['studentId'] ?? row['admNo'] ?? row['name'];
+    return fallback != null ? String(fallback) : `row-${this.currentPage}-${index}`;
+  }
+
+  isRowExpanded(row: Record<string, unknown>, index: number): boolean {
+    return this.expandedRowKeys.has(this.getRowExpandKey(row, index));
+  }
+
+  toggleRowExpand(row: Record<string, unknown>, index: number, event?: Event): void {
+    if (!this.isExpandable) return;
+    event?.stopPropagation();
+    const key = this.getRowExpandKey(row, index);
+    const willExpand = !this.expandedRowKeys.has(key);
+    if (this.config?.expandAccordion !== false) {
+      this.expandedRowKeys.clear();
+    }
+    if (willExpand) {
+      this.expandedRowKeys.add(key);
+    } else {
+      this.expandedRowKeys.delete(key);
+    }
+    this.rowExpandChanged.emit({ row, expanded: willExpand, rowKey: key });
+  }
+
+  onExpandableRowClick(row: Record<string, unknown>, index: number, event: Event): void {
+    if (!this.isExpandable) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, a, input, label, .td-actions, .td-check, .inline-actions')) {
+      return;
+    }
+    this.toggleRowExpand(row, index);
   }
 
   get showingStart(): number {
@@ -234,6 +291,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
         this.updateSelectionState();
       } else {
         this.applyFilters();
+      }
+      if (changes['data']) {
+        this.expandedRowKeys.clear();
       }
     }
     if (changes['config']) {

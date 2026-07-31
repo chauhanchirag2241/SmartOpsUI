@@ -13,6 +13,7 @@ export function applyModuleTablePermissions(
 ): DataTableConfig {
 
   const header = {
+    ...config.header,
     title: config.header?.title ?? '',
     subtitle: config.header?.subtitle,
     addButtonText: config.header?.addButtonText,
@@ -58,6 +59,9 @@ function isActionAllowed(
   }
   if (action.label.toLowerCase().includes('view')) {
     return permissionService.canView(menuCode);
+  }
+  if (action.label.toLowerCase().includes('collect')) {
+    return permissionService.canEdit(menuCode);
   }
   return permissionService.canView(menuCode);
 }

@@ -51,6 +51,7 @@ export const MenuCodes = {
   TeacherTimetableReport: 'TEACHER_TIMETABLE_REPORT',
   FeeManagement: 'FEE_MANAGEMENT',
   FeeMaster: 'FEE_MASTER',
+  FeeCollection: 'FEE_COLLECTION',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

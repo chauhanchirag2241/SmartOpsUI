@@ -234,6 +234,18 @@ export class FeeManageComponent implements OnInit {
     return t === FeeApplicableTo.StudentWise || t === 'StudentWise';
   }
 
+  /** Fee master / heads freeze once published-on date has started. */
+  get isFeePublishedLocked(): boolean {
+    const raw = this.fee?.publishedOn;
+    if (!raw) return false;
+    const published = new Date(String(raw));
+    if (Number.isNaN(published.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    published.setHours(0, 0, 0, 0);
+    return published.getTime() <= today.getTime();
+  }
+
   private readonly baseStudentTableConfig: DataTableConfig = {
     header: {
       title: 'Students',
@@ -276,11 +288,7 @@ export class FeeManageComponent implements OnInit {
     if (this.initialTab >= 0 && this.initialTab < this.tabs.length) {
       this.currentTab = this.initialTab;
     }
-    this.headTableConfig = applyModuleTablePermissions(
-      this.baseHeadTableConfig,
-      this.permissionService,
-      MenuCodes.FeeMaster,
-    );
+    this.rebuildHeadTableConfig();
     this.rebuildStudentTableConfig();
     this.loadClassOptions();
     this.loadFee();
@@ -294,6 +302,9 @@ export class FeeManageComponent implements OnInit {
     this.currentTab = index;
     if (index === 0 && this.editingBasic) {
       this.cancelBasicEdit();
+    }
+    if (index === 1) {
+      this.rebuildHeadTableConfig();
     }
     if (index === 2) {
       this.rebuildStudentTableConfig();
@@ -477,6 +488,30 @@ export class FeeManageComponent implements OnInit {
       });
   }
 
+  private rebuildHeadTableConfig(): void {
+    const locked = this.isFeePublishedLocked;
+    const config: DataTableConfig = {
+      ...this.baseHeadTableConfig,
+      header: {
+        ...this.baseHeadTableConfig.header!,
+        showAddButton: !locked,
+      },
+      actionVisibleFn: (action, row) => {
+        if (locked && (action.label === 'Edit details' || action.label === 'Delete')) {
+          return false;
+        }
+        return (
+          action.label !== 'Delete' || (row['isActive'] !== false && row['isActive'] !== 'false')
+        );
+      },
+    };
+    this.headTableConfig = applyModuleTablePermissions(
+      config,
+      this.permissionService,
+      MenuCodes.FeeMaster,
+    );
+  }
+
   private rebuildStudentTableConfig(): void {
     const config: DataTableConfig = {
       ...this.baseStudentTableConfig,
@@ -524,6 +559,14 @@ export class FeeManageComponent implements OnInit {
 
   startBasicEdit(): void {
     if (!this.permissionService.canEdit(MenuCodes.FeeMaster) || !this.fee) return;
+    if (this.isFeePublishedLocked) {
+      this.snackBar.open(
+        'Fee master cannot be edited after the published-on date has started.',
+        'Close',
+        { duration: 3500, panelClass: 'snack-warning' },
+      );
+      return;
+    }
     this.patchBasicForm(this.fee);
     const ids = (this.fee.classGroupIds ?? []).map((x) => String(x));
     this.selectedClassGroupIds = [...ids];
@@ -658,6 +701,15 @@ export class FeeManageComponent implements OnInit {
     if (mode === 'edit' && !this.permissionService.canEdit(MenuCodes.FeeMaster)) return;
     if (mode === 'view' && !this.permissionService.canView(MenuCodes.FeeMaster)) return;
 
+    if ((mode === 'add' || mode === 'edit') && this.isFeePublishedLocked) {
+      this.snackBar.open(
+        'Fee heads cannot be changed after the published-on date has started.',
+        'Close',
+        { duration: 3500, panelClass: 'snack-warning' },
+      );
+      return;
+    }
+
     const data: AddFeeHeadDialogData = {
       mode,
       feeMasterId: this.feeId,
@@ -738,6 +790,7 @@ export class FeeManageComponent implements OnInit {
       next: (fee) => {
         this.fee = fee;
         this.patchBasicForm(fee);
+        this.rebuildHeadTableConfig();
         this.rebuildStudentTableConfig();
         this.classGroupLabels = [];
         const rawIds = (fee as any).classGroupIds ?? (fee as any).ClassGroupIds ?? [];

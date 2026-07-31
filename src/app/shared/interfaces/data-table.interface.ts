@@ -162,4 +162,17 @@ export interface DataTableConfig {
   actionVisibleFn?: (action: DataTableAction, row: Record<string, unknown>) => boolean;
   /** Optional filter for bulk actions based on selected rows */
   bulkActionVisibleFn?: (action: DataTableBulkAction, selectedRows: Record<string, unknown>[]) => boolean;
+  /**
+   * When true, shows a leading +/- circle and allows expanding a detail panel
+   * under the clicked row. Parent projects `#rowDetail` template.
+   */
+  expandableRows?: boolean;
+  /**
+   * Row field used as expand key (default: `id`, then `feeMasterId`).
+   */
+  expandRowKey?: string;
+  /**
+   * When true (default), only one row stays expanded at a time.
+   */
+  expandAccordion?: boolean;
 }

@@ -261,6 +261,23 @@ body {
   flex-direction: column !important;
 }
 
+/* Collect Fee: fill dialog width (no right-side white gap) */
+.erp-dialog.collect-fee-dialog .mat-mdc-dialog-container,
+.erp-dialog.collect-fee-dialog .mat-mdc-dialog-surface {
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.erp-dialog.collect-fee-dialog .mat-mdc-dialog-surface {
+  min-height: 520px !important;
+}
+
+.erp-dialog.collect-fee-dialog .mat-mdc-dialog-component-host {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .delete-item {
   color: #c0392b !important;
 }

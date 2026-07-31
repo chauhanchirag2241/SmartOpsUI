@@ -169,6 +169,9 @@
     <table>
       <thead>
         <tr>
+          @if (isExpandable) {
+            <th class="th-expand" aria-label="Expand"></th>
+          }
           @if (config.selectable !== false) {
             <th class="th-check">
               <input
@@ -210,7 +213,27 @@
       <tbody>
         @if (pagedData.length) {
           @for (row of pagedData; let i = $index; track trackPagedRow(i, row)) {
-            <tr [class.selected]="isRowSelected(i)" [ngClass]="rowClassFn ? rowClassFn(row) : ''">
+            <tr
+              [class.selected]="isRowSelected(i)"
+              [class.expandable-row]="isExpandable"
+              [class.expanded]="isExpandable && isRowExpanded(row, i)"
+              [ngClass]="rowClassFn ? rowClassFn(row) : ''"
+              (click)="onExpandableRowClick(row, i, $event)"
+            >
+              @if (isExpandable) {
+                <td class="td-expand">
+                  <button
+                    type="button"
+                    class="row-expand-btn"
+                    [class.open]="isRowExpanded(row, i)"
+                    [attr.aria-expanded]="isRowExpanded(row, i)"
+                    [attr.aria-label]="isRowExpanded(row, i) ? 'Collapse row' : 'Expand row'"
+                    (click)="toggleRowExpand(row, i, $event)"
+                  >
+                    <mat-icon>{{ isRowExpanded(row, i) ? 'remove' : 'add' }}</mat-icon>
+                  </button>
+                </td>
+              }
               @if (config.selectable !== false) {
                 <td class="td-check" (click)="$event.stopPropagation()">
                   <input
@@ -320,6 +343,17 @@
                 </td>
               }
             </tr>
+            @if (isExpandable && isRowExpanded(row, i) && rowDetailTemplate) {
+              <tr class="row-detail-row">
+                <td [attr.colspan]="totalColumnsCount">
+                  <div class="row-detail-panel">
+                    <ng-container
+                      *ngTemplateOutlet="rowDetailTemplate; context: { $implicit: row, row: row }"
+                    ></ng-container>
+                  </div>
+                </td>
+              </tr>
+            }
           }
         } @else {
           <tr>

@@ -1,0 +1,80 @@
+<div class="collect-modal">
+  <div class="collect-modal-head">
+    <div>
+      <h3>Collect Fee</h3>
+      <p>{{ data.card.feeName }}</p>
+    </div>
+    <button type="button" class="close-x" (click)="cancel()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="collect-modal-body">
+    @for (row of rows; track row.feeHeadId) {
+      <div class="mh-row" [class.disabled]="!row.selected">
+        <input type="checkbox" [(ngModel)]="row.selected" [attr.aria-label]="row.feeHeadName" />
+        <div class="mh-name">
+          {{ row.feeHeadName }}
+          <small>
+            Due ₹{{ row.dueAmount | number: '1.0-2' }} · Paid ₹{{ row.paidAmount | number: '1.0-2' }}
+            @if (row.isMandatory) {
+              · Mandatory
+            }
+            @if (!row.isEditable) {
+              · Locked
+            }
+          </small>
+        </div>
+        <div class="mh-amt">
+          <span>₹</span>
+          <input
+            type="number"
+            [(ngModel)]="row.collectAmount"
+            [disabled]="!row.selected || !row.isEditable"
+            (change)="onAmountChange(row)"
+            min="0"
+            [attr.max]="row.balance"
+            step="0.01"
+          />
+        </div>
+      </div>
+    }
+    @if (!rows.length) {
+      <p class="empty">Nothing pending for this fee.</p>
+    }
+
+    <div class="payment-mode">
+      <label>Collection mode</label>
+      <div class="mode-options" role="radiogroup" aria-label="Collection mode">
+        @for (m of paymentMethods; track m.value) {
+          <button
+            type="button"
+            class="mode-chip"
+            [class.active]="paymentMethod === m.value"
+            (click)="paymentMethod = m.value"
+          >
+            {{ m.label }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="collect-modal-totals">
+    <div class="row"><span>Selected amount</span><span>₹{{ selectedAmount | number: '1.0-2' }}</span></div>
+    <div class="row grand"><span>Total to collect</span><span>₹{{ selectedAmount | number: '1.0-2' }}</span></div>
+    <div class="row remain"><span>Remaining pending</span><span>₹{{ remainingAfter | number: '1.0-2' }}</span></div>
+  </div>
+
+  <div class="collect-modal-foot">
+    <button type="button" class="btn-secondary" (click)="cancel()">Cancel</button>
+    <button
+      type="button"
+      class="btn-primary"
+      [disabled]="!selectedAmount || !paymentMethod"
+      (click)="confirm()"
+    >
+      Collect Fee
+    </button>
+  </div>
+</div>
