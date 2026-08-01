@@ -21,8 +21,8 @@ export class SalaryStructureService {
     return this.api.post<any>('salary/structure/versions', body);
   }
 
-  publishVersion(versionId: string): Observable<any> {
-    return this.api.post<any>(`salary/structure/versions/${versionId}/publish`, {});
+  updateVersionBasic(versionId: string, body: unknown): Observable<any> {
+    return this.api.put<any>(`salary/structure/versions/${versionId}/basic`, body);
   }
 
   activateVersion(versionId: string): Observable<any> {

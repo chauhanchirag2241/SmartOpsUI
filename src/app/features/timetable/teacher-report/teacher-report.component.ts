@@ -2,13 +2,16 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { finalize } from 'rxjs/operators';
+import { finalize, catchError } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
 
 import { NotificationService } from '../../../core/services/notification.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
-import { MappingService } from '../../../core/services/mapping.service';
+import { ClassService } from '../../../core/services/class.service';
+import { SubjectService } from '../../../core/services/subject.service';
+import { EmployeeService } from '../../../core/services/employee.service';
 import {
   TimetableService,
   TeacherTimetableReport,
@@ -50,7 +53,9 @@ const DAYS = [
 })
 export class TeacherReportComponent implements OnInit {
   private readonly timetableService = inject(TimetableService);
-  private readonly mappingService = inject(MappingService);
+  private readonly classService = inject(ClassService);
+  private readonly subjectService = inject(SubjectService);
+  private readonly employeeService = inject(EmployeeService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissions = inject(PermissionService);
   private readonly snackBar = inject(NotificationService);
@@ -118,20 +123,38 @@ export class TeacherReportComponent implements OnInit {
       showExport: this.canExport,
     };
 
-    this.mappingService.getLookups(this.ayContext.effectiveYearId() ?? undefined).subscribe({
-      next: (lookups) => {
-        this.classOptions = (lookups.classes || []).map((c) => ({ id: c.id, name: c.name }));
-        this.subjectOptions = (lookups.subjects || []).map((s) => ({ id: s.id, name: s.name }));
-        this.teacherOptions = (lookups.employees || lookups.teachers || []).map((e) => ({
-          id: e.id,
-          name: e.name,
-        }));
+    const yearId = this.ayContext.effectiveYearId() ?? undefined;
+    forkJoin({
+      classes: this.classService.getClassDropdown(yearId).pipe(catchError(() => of([] as unknown[]))),
+      subjects: this.subjectService.getSubjectDropdown().pipe(catchError(() => of([] as unknown[]))),
+      employees: this.employeeService.getClassTeacherDropdown().pipe(
+        catchError(() => of([] as { id: string; name: string }[])),
+      ),
+    }).subscribe({
+      next: ({ classes, subjects, employees }) => {
+        this.classOptions = this.normalizeOptions(classes);
+        this.subjectOptions = this.normalizeOptions(subjects);
+        this.teacherOptions = (employees || [])
+          .map((e) => ({ id: e.id, name: e.name }))
+          .filter((e) => e.id && e.name);
         this.cdr.detectChanges();
       },
       error: () => {
         this.snackBar.open('Failed to load lookups', 'Close', { duration: 3000, panelClass: 'snack-error' });
       },
     });
+  }
+
+  private normalizeOptions(items: unknown): MappingOption[] {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((raw) => {
+        const row = raw as Record<string, unknown>;
+        const id = String(row['id'] ?? row['Id'] ?? '');
+        const name = String(row['name'] ?? row['Name'] ?? '').trim();
+        return { id, name };
+      })
+      .filter((o) => o.id && o.name);
   }
 
   generate(): void {

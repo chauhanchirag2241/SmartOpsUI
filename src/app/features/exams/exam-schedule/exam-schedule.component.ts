@@ -16,6 +16,8 @@ import { ActionButtonComponent } from '../../../shared/components/action-button/
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormFieldComponent } from '../../../shared/form-controls/form-field';
 import type { FormFieldOption } from '../../../shared/form-controls/form-field';
+import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { SubjectService } from '../../../core/services/subject.service';
@@ -25,7 +27,18 @@ import {
   ExamListItem,
   ExamClassInfo,
   ExamScheduleItem,
+  BulkExamScheduleSlot,
 } from '../../../core/services/exam.service';
+
+interface ScheduleSubjectRow {
+  id: number;
+  subjectId: string;
+  examDate: string;
+  startTime: string;
+  endTime: string;
+  invigilatorId: string;
+  roomNo: string;
+}
 
 @Component({
   selector: 'app-exam-schedule',
@@ -39,6 +52,7 @@ import {
     ActionButtonComponent,
     PageChromeDirective,
     FormFieldComponent,
+    MultiSelectChipsComponent,
   ],
   templateUrl: './exam-schedule.component.html',
   styleUrl: './exam-schedule.component.css',
@@ -54,7 +68,7 @@ export class ExamScheduleComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   exams: ExamListItem[] = [];
-  subjects: any[] = [];
+  subjects: { id: string; name: string }[] = [];
   employees: EmployeeDropdownItem[] = [];
   rows: Record<string, unknown>[] = [];
   tableConfig!: DataTableConfig;
@@ -68,6 +82,7 @@ export class ExamScheduleComponent implements OnInit {
   formError = '';
   saving = false;
 
+  // Shared / edit fields
   formExamId = '';
   formClassId = '';
   formSubjectId = '';
@@ -77,12 +92,20 @@ export class ExamScheduleComponent implements OnInit {
   formRoomNo = '';
   formInvigilatorId = '';
 
+  // Bulk add
+  formClassIds: string[] = [];
+  sameTimetableForAll = true;
+  uniformRows: ScheduleSubjectRow[] = [];
+  perClassRows: Record<string, ScheduleSubjectRow[]> = {};
+  activeClassTab: string | null = null;
+  private rowSeq = 1;
+
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Exam Schedule',
       subtitle: 'Subject & class wise exam timetable',
       showAddButton: true,
-      addButtonText: 'Add slot',
+      addButtonText: 'Schedule exam',
       addButtonIcon: 'add',
       addButtonClass: 'btn-primary',
     },
@@ -157,15 +180,50 @@ export class ExamScheduleComponent implements OnInit {
     return this.formExamClasses.map((c) => ({ label: c.className, value: c.classId }));
   }
 
+  get formClassMultiOptions(): MappingOption[] {
+    return this.formExamClasses.map((c) => ({ id: c.classId, name: c.className }));
+  }
+
   get subjectOptions(): FormFieldOption[] {
-    return (this.subjects || []).map((s: { id: string; name: string }) => ({
+    return (this.subjects || []).map((s) => ({
       label: s.name,
       value: s.id,
     }));
   }
 
+  /** Subjects already picked in other rows of the active timetable are hidden. */
+  subjectOptionsForRow(row: ScheduleSubjectRow): FormFieldOption[] {
+    const taken = new Set(
+      this.activeSubjectRows
+        .filter((r) => r.id !== row.id && r.subjectId)
+        .map((r) => r.subjectId),
+    );
+    return this.subjectOptions.filter((opt) => !taken.has(String(opt.value)));
+  }
+
   get employeeOptions(): FormFieldOption[] {
     return this.employees.map((e) => ({ label: e.name, value: e.id }));
+  }
+
+  get activeSubjectRows(): ScheduleSubjectRow[] {
+    if (this.sameTimetableForAll) return this.uniformRows;
+    if (!this.activeClassTab) return [];
+    return this.perClassRows[this.activeClassTab] ?? [];
+  }
+
+  get bulkSlotCount(): number {
+    if (!this.formClassIds.length) return 0;
+    if (this.sameTimetableForAll) {
+      return this.countValidRows(this.uniformRows) * this.formClassIds.length;
+    }
+    return this.formClassIds.reduce(
+      (sum, classId) => sum + this.countValidRows(this.perClassRows[classId] ?? []),
+      0,
+    );
+  }
+
+  get canCreateBulk(): boolean {
+    return !!this.formExamId && this.formClassIds.length > 0 && this.bulkSlotCount > 0;
   }
 
   ngOnInit(): void {
@@ -210,9 +268,88 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   onFormExamChange(): void {
+    if (this.formMode === 'edit') {
+      const classes = this.formExamClasses;
+      this.formClassId = classes[0]?.classId ?? '';
+      this.formExamDate = this.formExam?.startDate?.substring(0, 10) ?? this.formExamDate;
+      return;
+    }
+
     const classes = this.formExamClasses;
-    this.formClassId = classes[0]?.classId ?? '';
-    this.formExamDate = this.formExam?.startDate?.substring(0, 10) ?? this.formExamDate;
+    const preferred =
+      this.selectedClassId && classes.some((c) => c.classId === this.selectedClassId)
+        ? [this.selectedClassId]
+        : classes.map((c) => c.classId);
+    this.formClassIds = preferred.slice();
+    this.seedDefaultDateOnRows();
+    this.syncPerClassRows();
+    this.activeClassTab = this.formClassIds[0] ?? null;
+  }
+
+  onBulkClassesChange(): void {
+    this.syncPerClassRows();
+    if (!this.activeClassTab || !this.formClassIds.includes(this.activeClassTab)) {
+      this.activeClassTab = this.formClassIds[0] ?? null;
+    }
+  }
+
+  toggleSameTimetable(): void {
+    this.sameTimetableForAll = !this.sameTimetableForAll;
+    if (!this.sameTimetableForAll) {
+      this.syncPerClassRows(true);
+      this.activeClassTab = this.formClassIds[0] ?? null;
+    }
+  }
+
+  switchClassTab(classId: string): void {
+    this.activeClassTab = classId;
+  }
+
+  classTabLabel(classId: string): string {
+    return this.formExamClasses.find((c) => c.classId === classId)?.className ?? classId;
+  }
+
+  addSubjectRow(): void {
+    const row = this.newSubjectRow();
+    if (this.sameTimetableForAll) {
+      this.uniformRows = [...this.uniformRows, row];
+      return;
+    }
+    if (!this.activeClassTab) return;
+    const existing = this.perClassRows[this.activeClassTab] ?? [];
+    this.perClassRows = {
+      ...this.perClassRows,
+      [this.activeClassTab]: [...existing, row],
+    };
+  }
+
+  removeSubjectRow(rowId: number): void {
+    if (this.sameTimetableForAll) {
+      this.uniformRows = this.uniformRows.filter((r) => r.id !== rowId);
+      return;
+    }
+    if (!this.activeClassTab) return;
+    this.perClassRows = {
+      ...this.perClassRows,
+      [this.activeClassTab]: (this.perClassRows[this.activeClassTab] ?? []).filter(
+        (r) => r.id !== rowId,
+      ),
+    };
+  }
+
+  copyActiveTabToAll(): void {
+    if (!this.activeClassTab || this.sameTimetableForAll) return;
+    const source = this.perClassRows[this.activeClassTab] ?? [];
+    const next: Record<string, ScheduleSubjectRow[]> = { ...this.perClassRows };
+    for (const classId of this.formClassIds) {
+      if (classId === this.activeClassTab) continue;
+      next[classId] = source.map((r) => ({ ...r, id: this.rowSeq++ }));
+    }
+    this.perClassRows = next;
+    this.snackBar.open("Timetable copied to all other selected classes", 'Close', {
+      duration: 2500,
+      panelClass: 'snack-success',
+    });
   }
 
   loadSchedules(): void {
@@ -265,9 +402,7 @@ export class ExamScheduleComponent implements OnInit {
     }
 
     const exam = this.selectedExam;
-    const examTitle = exam
-      ? `${exam.name} (${exam.examGroupName})`
-      : 'Exam Schedule';
+    const examTitle = exam ? `${exam.name} (${exam.examGroupName})` : 'Exam Schedule';
     const dateRange =
       exam?.startDate && exam?.endDate
         ? `${this.formatExportDate(exam.startDate)} – ${this.formatExportDate(exam.endDate)}`
@@ -402,18 +537,11 @@ export class ExamScheduleComponent implements OnInit {
     this.formMode = 'add';
     this.editingId = null;
     this.formExamId = this.selectedExamId || this.exams[0]?.id || '';
-    const classes = this.formExamClasses;
-    this.formClassId =
-      (this.selectedClassId && classes.some((c) => c.classId === this.selectedClassId)
-        ? this.selectedClassId
-        : classes[0]?.classId) ?? '';
-    this.formSubjectId = '';
-    this.formExamDate = this.formExam?.startDate?.substring(0, 10) ?? '';
-    this.formStartTime = '10:00';
-    this.formEndTime = '13:00';
-    this.formRoomNo = '';
-    this.formInvigilatorId = '';
+    this.sameTimetableForAll = true;
+    this.uniformRows = [this.newSubjectRow()];
+    this.perClassRows = {};
     this.formError = '';
+    this.onFormExamChange();
     this.showForm = true;
   }
 
@@ -448,6 +576,80 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   save(): void {
+    if (this.formMode === 'add') {
+      this.saveBulk();
+      return;
+    }
+    this.saveEdit();
+  }
+
+  private saveBulk(): void {
+    if (!this.formExamId) {
+      this.formError = 'Exam is required.';
+      return;
+    }
+    if (!this.formClassIds.length) {
+      this.formError = 'Select at least one class.';
+      return;
+    }
+
+    const slots = this.buildBulkSlots();
+    if (!slots.length) {
+      this.formError = 'Add at least one subject with date and times.';
+      return;
+    }
+
+    const timeError = slots.find(
+      (s) => s.startTime && s.endTime && (s.endTime as string) <= (s.startTime as string),
+    );
+    if (timeError) {
+      this.formError = 'End time must be after start time for every subject.';
+      return;
+    }
+
+    const seen = new Set<string>();
+    for (const slot of slots) {
+      const key = `${slot.classId}:${slot.subjectId}`;
+      if (seen.has(key)) {
+        this.formError = 'Each class can only have one row per subject.';
+        return;
+      }
+      seen.add(key);
+    }
+
+    this.saving = true;
+    this.formError = '';
+    this.examService
+      .bulkCreateSchedules({
+        examId: this.formExamId,
+        slots,
+      })
+      .subscribe({
+        next: (result) => {
+          this.saving = false;
+          const count = result?.createdCount ?? slots.length;
+          this.snackBar.open(
+            `Created ${count} exam slot(s) across ${this.formClassIds.length} class(es)`,
+            'Close',
+            { duration: 3000, panelClass: 'snack-success' },
+          );
+          this.closeForm();
+          if (this.formExamId !== this.selectedExamId) {
+            this.selectedExamId = this.formExamId;
+            this.selectedClassId = '';
+          }
+          this.loadSchedules();
+        },
+        error: (err) => {
+          this.saving = false;
+          this.formError =
+            typeof err?.error === 'string' ? err.error : 'Failed to create schedule';
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  private saveEdit(): void {
     if (!this.formExamId) {
       this.formError = 'Exam is required.';
       return;
@@ -480,20 +682,16 @@ export class ExamScheduleComponent implements OnInit {
       invigilatorId: this.formInvigilatorId || null,
     };
 
-    this.saving = true;
-    const request =
-      this.formMode === 'edit' && this.editingId
-        ? this.examService.updateSchedule(this.editingId, payload)
-        : this.examService.createSchedule(payload);
+    if (!this.editingId) return;
 
-    request.subscribe({
+    this.saving = true;
+    this.examService.updateSchedule(this.editingId, payload).subscribe({
       next: () => {
         this.saving = false;
-        this.snackBar.open(
-          this.formMode === 'edit' ? 'Schedule updated' : 'Schedule slot added',
-          'Close',
-          { duration: 2500, panelClass: 'snack-success' },
-        );
+        this.snackBar.open('Schedule updated', 'Close', {
+          duration: 2500,
+          panelClass: 'snack-success',
+        });
         this.closeForm();
         this.loadSchedules();
       },
@@ -539,5 +737,79 @@ export class ExamScheduleComponent implements OnInit {
           ),
       });
     });
+  }
+
+  private newSubjectRow(): ScheduleSubjectRow {
+    const defaultDate = this.formExam?.startDate?.substring(0, 10) ?? '';
+    return {
+      id: this.rowSeq++,
+      subjectId: '',
+      examDate: defaultDate,
+      startTime: '10:00',
+      endTime: '13:00',
+      invigilatorId: '',
+      roomNo: '',
+    };
+  }
+
+  private seedDefaultDateOnRows(): void {
+    const defaultDate = this.formExam?.startDate?.substring(0, 10) ?? '';
+    this.uniformRows = this.uniformRows.map((r) => ({
+      ...r,
+      examDate: r.examDate || defaultDate,
+    }));
+  }
+
+  private syncPerClassRows(forceFromUniform = false): void {
+    const next: Record<string, ScheduleSubjectRow[]> = {};
+    for (const classId of this.formClassIds) {
+      if (forceFromUniform || !this.perClassRows[classId]?.length) {
+        next[classId] = this.uniformRows.map((r) => ({ ...r, id: this.rowSeq++ }));
+      } else {
+        next[classId] = this.perClassRows[classId];
+      }
+    }
+    this.perClassRows = next;
+  }
+
+  private countValidRows(rows: ScheduleSubjectRow[]): number {
+    return rows.filter((r) => r.subjectId && r.examDate && r.startTime && r.endTime).length;
+  }
+
+  private buildBulkSlots(): BulkExamScheduleSlot[] {
+    const slots: BulkExamScheduleSlot[] = [];
+    if (this.sameTimetableForAll) {
+      const valid = this.uniformRows.filter(
+        (r) => r.subjectId && r.examDate && r.startTime && r.endTime,
+      );
+      for (const classId of this.formClassIds) {
+        for (const row of valid) {
+          slots.push(this.toSlot(classId, row));
+        }
+      }
+      return slots;
+    }
+
+    for (const classId of this.formClassIds) {
+      const rows = (this.perClassRows[classId] ?? []).filter(
+        (r) => r.subjectId && r.examDate && r.startTime && r.endTime,
+      );
+      for (const row of rows) {
+        slots.push(this.toSlot(classId, row));
+      }
+    }
+    return slots;
+  }
+
+  private toSlot(classId: string, row: ScheduleSubjectRow): BulkExamScheduleSlot {
+    return {
+      classId,
+      subjectId: row.subjectId,
+      examDate: row.examDate,
+      startTime: row.startTime || null,
+      endTime: row.endTime || null,
+      roomNo: row.roomNo.trim() || null,
+      invigilatorId: row.invigilatorId || null,
+    };
   }
 }

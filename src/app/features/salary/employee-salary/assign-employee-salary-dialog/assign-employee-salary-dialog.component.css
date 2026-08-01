@@ -1,0 +1,115 @@
+:host {
+  display: block;
+}
+
+.assign-salary-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.page-sub {
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  margin: 0;
+}
+
+.info-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--g50, #f3f8eb);
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.info-chip mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--primary-color, #639922);
+}
+
+.assign-comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.assign-comp-table th,
+.assign-comp-table td {
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  text-align: left;
+  vertical-align: middle;
+}
+
+.assign-comp-table th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.comp-name {
+  font-weight: 500;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.col-value {
+  width: 160px;
+  text-align: right;
+}
+
+.amount-field {
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.amount-field .form-control {
+  width: 120px;
+  text-align: right;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.b-gray {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.empty-panel {
+  text-align: center;
+  color: var(--text-secondary, #6b7280);
+  padding: 16px !important;
+}
+
+@media (max-width: 640px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .col-value {
+    width: auto;
+  }
+}

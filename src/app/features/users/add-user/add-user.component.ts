@@ -23,7 +23,7 @@ import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-fie
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 
-const FALLBACK_ROLES = ['Admin'];
+const FALLBACK_ROLES = ['School Admin', 'SmartOpsAdmin'];
 
 @Component({
   selector: 'app-add-user',

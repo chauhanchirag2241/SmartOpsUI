@@ -29,6 +29,11 @@ import { MenuCodes } from '../../../../core/constants/menu-codes';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../../../core/utils/permission-ui.util';
 import {
+  formatDateOnlyDisplay,
+  parseDateOnly,
+  toDateOnlyString,
+} from '../../../../shared/utils/date-only.util';
+import {
   FEE_APPLICABLE_TO_LABELS,
   FEE_TYPE_LABELS,
   FeeApplicableTo,
@@ -236,13 +241,9 @@ export class FeeManageComponent implements OnInit {
 
   /** Fee master / heads freeze once published-on date has started. */
   get isFeePublishedLocked(): boolean {
-    const raw = this.fee?.publishedOn;
-    if (!raw) return false;
-    const published = new Date(String(raw));
-    if (Number.isNaN(published.getTime())) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    published.setHours(0, 0, 0, 0);
+    const published = parseDateOnly(this.fee?.publishedOn);
+    if (!published) return false;
+    const today = parseDateOnly(new Date())!;
     return published.getTime() <= today.getTime();
   }
 
@@ -270,7 +271,8 @@ export class FeeManageComponent implements OnInit {
       { label: 'Remove', icon: 'delete', danger: true },
     ],
     actionVisibleFn: (action, row) => {
-      if (action.label === 'Edit') return row['canEdit'] === true;
+      // Edit is always shown when permission allows (module filter). Head-level
+      // isEditable only controls which amount fields are writable in the dialog.
       if (action.label === 'Remove') return row['canRemove'] === true;
       return true;
     },
@@ -594,20 +596,14 @@ export class FeeManageComponent implements OnInit {
     }
 
     const raw = this.basicForm.getRawValue();
-    const published = raw.publishedOn as Date | null;
-    const due = raw.defaultDueDate as Date | null;
-    if (published && due) {
-      const p = new Date(published);
-      const d = new Date(due);
-      p.setHours(0, 0, 0, 0);
-      d.setHours(0, 0, 0, 0);
-      if (d.getTime() < p.getTime()) {
-        this.snackBar.open('Default due date must be on or after published on', 'Close', {
-          duration: 3000,
-          panelClass: 'snack-error',
-        });
-        return;
-      }
+    const published = parseDateOnly(raw.publishedOn);
+    const due = parseDateOnly(raw.defaultDueDate);
+    if (published && due && due.getTime() < published.getTime()) {
+      this.snackBar.open('Default due date must be on or after published on', 'Close', {
+        duration: 3000,
+        panelClass: 'snack-error',
+      });
+      return;
     }
 
     if (!this.isStudentWise && !this.selectedClassGroupIds.length) {
@@ -847,22 +843,14 @@ export class FeeManageComponent implements OnInit {
   }
 
   private toDate(value: string | null | undefined): Date | null {
-    if (!value) return null;
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? null : d;
+    return parseDateOnly(value);
   }
 
   private toApiDate(value: unknown): string | null {
-    if (!value) return null;
-    if (value instanceof Date) return value.toISOString().split('T')[0];
-    const d = new Date(String(value));
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+    return toDateOnlyString(value);
   }
 
   formatDate(value: string | null | undefined): string {
-    if (!value) return '—';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return String(value);
-    return d.toLocaleDateString();
+    return formatDateOnlyDisplay(value);
   }
 }

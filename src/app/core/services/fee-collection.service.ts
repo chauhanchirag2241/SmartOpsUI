@@ -36,6 +36,8 @@ export interface FeeCollectionHistoryLine {
   feeHeadName: string;
   dueAmount: number;
   paidAmount: number;
+  /** Remaining on this fee head after this payment. */
+  balanceAfter?: number;
   isMandatory: boolean;
   isEditable: boolean;
 }
@@ -45,6 +47,8 @@ export interface FeeCollectionHistoryPayment {
   paymentDate: string;
   totalAmount: number;
   paymentMethod?: string | null;
+  academicPeriodId?: string | null;
+  periodLabel?: string | null;
   collectedBy?: string | null;
   remarks?: string | null;
   lines: FeeCollectionHistoryLine[];
@@ -87,12 +91,27 @@ export interface CollectFeePayload {
   lines: { feeHeadId: string; amount: number }[];
 }
 
+export interface FeeCollectionStudentSummary {
+  studentId: string;
+  totalDue: number;
+  totalPaid: number;
+  totalPending: number;
+  status: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FeeCollectionService {
   private readonly api = inject(ApiService);
 
   getStudentDetail(studentId: string): Observable<FeeCollectionDetail> {
     return this.api.get<FeeCollectionDetail>(`fees/collection/students/${studentId}`);
+  }
+
+  getStudentSummaries(studentIds: string[]): Observable<FeeCollectionStudentSummary[]> {
+    return this.api.post<FeeCollectionStudentSummary[]>(
+      'fees/collection/students/summaries',
+      studentIds,
+    );
   }
 
   collect(studentId: string, payload: CollectFeePayload): Observable<{ paymentId: string; message: string }> {

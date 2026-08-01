@@ -30,6 +30,7 @@ import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filte
 import { naturalTextCompare } from '../../utils/natural-sort.util';
 import { DateRangeFilterComponent } from '../date-range-filter/date-range-filter.component';
 import { PageChromeService } from '../../../core/services/page-chrome.service';
+import { formatDateOnlyDisplay } from '../../utils/date-only.util';
 
 @Component({
   selector: 'app-smart-data-table',
@@ -310,8 +311,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
     if (header?.syncPageChrome === false) {
       return;
     }
+    // Config can be briefly unset during parent init / outlet remount — never wipe
+    // another owner's title here; ngOnDestroy is responsible for cleanup.
     if (!header?.title?.trim()) {
-      this.pageChrome.clear(this);
       return;
     }
     this.pageChrome.set(header.title, header.subtitle ?? '', this);
@@ -716,6 +718,10 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
 
   isEmptyCellValue(value: unknown): boolean {
     return value == null || value === '';
+  }
+
+  formatDateOnly(value: unknown): string {
+    return formatDateOnlyDisplay(value);
   }
 
   formatCellDisplay(value: unknown): string {

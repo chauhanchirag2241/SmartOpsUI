@@ -298,7 +298,11 @@
                       }
                     }
                     @case ('date') {
-                      {{ $any(cellVal) | date:'dd-MM-yyyy' }}
+                      @if (isEmptyCellValue(cellVal)) {
+                        <span class="cell-empty">—</span>
+                      } @else {
+                        {{ formatDateOnly(cellVal) }}
+                      }
                     }
                     @case ('datetime') {
                       @if (isEmptyCellValue(cellVal)) {

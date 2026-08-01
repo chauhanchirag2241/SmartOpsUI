@@ -90,6 +90,8 @@
           [matDatepicker]="picker"
           [placeholder]="placeholder || 'dd-mm-yyyy'"
           [disabled]="disabled"
+          [min]="dateMinBound"
+          [max]="dateMaxBound"
           [ngModel]="dateValue"
           (ngModelChange)="onDatePicked($event)"
           (blur)="onTouched()"

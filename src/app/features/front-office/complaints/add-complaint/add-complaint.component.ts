@@ -18,6 +18,7 @@ import { SELECT_PLACEHOLDER } from '../../../../shared/constants/form.constants'
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { toDateOnlyString } from '../../../../shared/utils/date-only.util';
 import { parseComplaintStatus } from '../../../../shared/utils/front-office-enum.util';
 
 @Component({
@@ -262,12 +263,6 @@ export class AddComplaintComponent implements OnInit {
   }
 
   private toDateOnly(value: unknown): string | null {
-    if (!value) return null;
-    const d = value instanceof Date ? value : new Date(String(value));
-    if (Number.isNaN(d.getTime())) return null;
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return toDateOnlyString(value);
   }
 }

@@ -14,19 +14,12 @@ import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import {
-  CALCULATION_TYPE_OPTIONS,
-  COMPONENT_TYPE_OPTIONS,
-  SalaryCalculationType,
-  SalaryComponentType,
   SalaryStructureVersionStatus,
   asArray,
-  componentTypeBadgeClass,
   extractApiError,
-  formatValueDisplay,
   normalizeSalaryStructureVersion,
-  normalizeSalaryVersionComponent,
-  versionStatusBadgeClass,
 } from '../salary.shared';
+import { SalaryStructureManageComponent } from './salary-structure-manage/salary-structure-manage.component';
 
 @Component({
   selector: 'app-salary-structure',
@@ -38,6 +31,7 @@ import {
     MatSnackBarModule,
     MatDialogModule,
     SmartDataTableComponent,
+    SalaryStructureManageComponent,
   ],
   templateUrl: './salary-structure.component.html',
   styleUrl: '../salary.shared.css',
@@ -56,32 +50,17 @@ export class SalaryStructureComponent implements OnInit {
   currentStatusFilter = 'All';
   loading = false;
 
-  selectedVersion: ReturnType<typeof normalizeSalaryStructureVersion> | null = null;
-  components: ReturnType<typeof normalizeSalaryVersionComponent>[] = [];
-  loadingComponents = false;
+  showManage = false;
+  selectedVersionId?: string;
+  manageInitialTab = 0;
 
   showCreateVersionModal = false;
-  showComponentModal = false;
   createVersionForm = { effectiveDate: '', cloneFromVersionId: '' };
-  componentTypeOptions = COMPONENT_TYPE_OPTIONS;
-  calculationTypeOptions = CALCULATION_TYPE_OPTIONS;
-  componentForm = {
-    name: '',
-    shortCode: '',
-    componentType: SalaryComponentType.Earning,
-    calculationType: SalaryCalculationType.PercentOfBasic,
-    value: 0,
-    isTaxable: true,
-  };
-
-  formatValueDisplay = formatValueDisplay;
-  typeClass = componentTypeBadgeClass;
-  statusClass = versionStatusBadgeClass;
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Salary Management — Salary Structure',
-      subtitle: 'Draft → Publish → Activate',
+      subtitle: 'Define versions and salary components',
       showAddButton: true,
       addButtonText: 'New structure',
       addButtonIcon: 'add',
@@ -111,8 +90,7 @@ export class SalaryStructureComponent implements OnInit {
       { label: 'Archived', icon: 'inventory_2', value: 'Archived' },
     ],
     actions: [
-      { label: 'Manage components', icon: 'list_alt', iconColor: '#639922' },
-      { label: 'Publish', icon: 'publish', iconColor: '#1E40AF' },
+      { label: 'Manage structure', icon: 'tune', iconColor: '#639922' },
       { label: 'Activate', icon: 'play_circle', iconColor: '#639922' },
       { label: 'Create new version', icon: 'content_copy', iconColor: '#854f0b' },
       { label: 'Delete draft', icon: 'delete', danger: true, separatorBefore: true },
@@ -124,10 +102,6 @@ export class SalaryStructureComponent implements OnInit {
     pageSizeOptions: [10, 25, 50],
     actionVisibleFn: (action, row) => this.isVersionActionVisible(action, row),
   };
-
-  get canManageVersions(): boolean {
-    return !this.ayContext.isReadOnlyScope();
-  }
 
   ngOnInit(): void {
     this.tableConfig = applyModuleTablePermissions(
@@ -145,7 +119,7 @@ export class SalaryStructureComponent implements OnInit {
 
   onTableFiltersCleared(): void {
     this.currentStatusFilter = 'All';
-    this.closeManagePanel();
+    this.closeManage();
     this.loadVersions();
   }
 
@@ -182,14 +156,14 @@ export class SalaryStructureComponent implements OnInit {
 
   onFilterChanged(filter: { value: string } | null): void {
     this.currentStatusFilter = filter?.value ?? 'All';
-    this.closeManagePanel();
+    this.closeManage();
     this.loadVersions();
   }
 
   onAddButtonClicked(): void {
     if (!this.permissionService.canAdd(MenuCodes.SalaryStructure)) return;
     this.createVersionForm = {
-      effectiveDate: new Date().toISOString().split('T')[0],
+      effectiveDate: '',
       cloneFromVersionId: '',
     };
     this.showCreateVersionModal = true;
@@ -201,11 +175,8 @@ export class SalaryStructureComponent implements OnInit {
     const version = normalizeSalaryStructureVersion(event.row);
 
     switch (event.action.label) {
-      case 'Manage components':
-        this.openManagePanel(id);
-        break;
-      case 'Publish':
-        this.publishVersion(id);
+      case 'Manage structure':
+        this.openManage(id, 0);
         break;
       case 'Activate':
         this.activateVersion(id);
@@ -219,31 +190,23 @@ export class SalaryStructureComponent implements OnInit {
     }
   }
 
-  openManagePanel(versionId: string): void {
-    this.loadingComponents = true;
-    this.selectedVersion = null;
-    this.components = [];
+  openManage(versionId: string, tab = 0): void {
+    if (!this.permissionService.canView(MenuCodes.SalaryStructure)) return;
+    this.selectedVersionId = versionId;
+    this.manageInitialTab = tab;
+    this.showManage = true;
     this.refreshView();
-
-    this.service.getVersionDetail(versionId).subscribe({
-      next: (detail) => {
-        this.selectedVersion = normalizeSalaryStructureVersion(detail);
-        this.components = asArray(detail?.components ?? detail?.Components).map(normalizeSalaryVersionComponent);
-        this.loadingComponents = false;
-        this.refreshView();
-      },
-      error: (e) => {
-        this.loadingComponents = false;
-        this.toast(extractApiError(e, 'Failed to load components'), true);
-        this.refreshView();
-      },
-    });
   }
 
-  closeManagePanel(): void {
-    this.selectedVersion = null;
-    this.components = [];
+  closeManage(): void {
+    this.showManage = false;
+    this.selectedVersionId = undefined;
+    this.manageInitialTab = 0;
     this.refreshView();
+  }
+
+  onManageChanged(): void {
+    this.loadVersions();
   }
 
   createVersion(): void {
@@ -263,56 +226,10 @@ export class SalaryStructureComponent implements OnInit {
     });
   }
 
-  publishVersion(id: string): void {
-    const version = this.resolveVersion(id);
-    if (!version) {
-      this.toast('Version not found', true);
-      return;
-    }
-
-    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
-      data: {
-        title: 'Publish salary structure?',
-        description:
-          'Are you sure you want to publish this salary structure? It will be locked for editing and can be used for employee salary assignment.',
-        recordName: version.versionLabel,
-        recordMeta: `Status: ${version.statusLabel}`,
-        initials: 'SS',
-        warningMessage:
-          'The current published version will be moved to Archived. Salary components cannot be changed after publish unless you create a new version.',
-        confirmButtonText: 'Yes, publish',
-        cancelButtonText: 'No',
-        variant: 'primary',
-        headerIcon: 'publish',
-      },
-      panelClass: 'erp-dialog',
-      disableClose: true,
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (!confirmed) {
-        return;
-      }
-      this.service.publishVersion(id).subscribe({
-        next: () => {
-          this.loadVersions();
-          if (this.selectedVersion?.id === id) {
-            this.openManagePanel(id);
-          }
-          this.toast('Published');
-        },
-        error: (e) => this.toast(extractApiError(e, 'Publish failed'), true),
-      });
-    });
-  }
-
   private resolveVersion(id: string): ReturnType<typeof normalizeSalaryStructureVersion> | null {
     const raw = this.versions.find((v) => String(v['id'] ?? '') === id);
     if (raw) {
       return normalizeSalaryStructureVersion(raw);
-    }
-    if (this.selectedVersion?.id === id) {
-      return this.selectedVersion;
     }
     return null;
   }
@@ -345,7 +262,6 @@ export class SalaryStructureComponent implements OnInit {
       this.service.activateVersion(id).subscribe({
         next: () => {
           this.loadVersions();
-          if (this.selectedVersion?.id === id) this.openManagePanel(id);
           this.toast('Activated');
         },
         error: (e) => this.toast(extractApiError(e, 'Activate failed'), true),
@@ -370,8 +286,6 @@ export class SalaryStructureComponent implements OnInit {
   isVersionActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
     const status = String(row['statusLabel'] ?? '');
     switch (action.label) {
-      case 'Publish':
-        return status === 'Draft';
       case 'Activate':
         return status === 'Published';
       case 'Create new version':
@@ -402,83 +316,15 @@ export class SalaryStructureComponent implements OnInit {
       if (!confirmed) return;
       this.service.deleteVersion(version.id).subscribe({
         next: () => {
-          this.closeManagePanel();
+          if (this.selectedVersionId === version.id) {
+            this.closeManage();
+          }
           this.loadVersions();
           this.toast('Deleted');
         },
         error: (e) => this.toast(extractApiError(e, 'Delete failed'), true),
       });
     });
-  }
-
-  openAddComponent(): void {
-    if (!this.selectedVersion || this.selectedVersion.isLocked) return;
-    this.componentForm = {
-      name: '',
-      shortCode: '',
-      componentType: SalaryComponentType.Earning,
-      calculationType: SalaryCalculationType.PercentOfBasic,
-      value: 0,
-      isTaxable: true,
-    };
-    this.showComponentModal = true;
-    this.refreshView();
-  }
-
-  saveComponent(): void {
-    if (!this.selectedVersion || !this.componentForm.name.trim()) {
-      this.toast('Component name is required', true);
-      return;
-    }
-    this.service.createComponent(this.selectedVersion.id, this.componentForm).subscribe({
-      next: () => {
-        this.showComponentModal = false;
-        this.openManagePanel(this.selectedVersion!.id);
-        this.loadVersions();
-        this.toast('Component added');
-      },
-      error: (e) => this.toast(extractApiError(e, 'Failed to add component'), true),
-    });
-  }
-
-  deleteComponent(c: ReturnType<typeof normalizeSalaryVersionComponent>): void {
-    if (!this.selectedVersion || this.selectedVersion.isLocked) return;
-
-    const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
-      data: {
-        title: 'Delete salary component?',
-        description: 'This component will be removed from the draft salary structure.',
-        recordName: c.name,
-        recordMeta: String(c.componentTypeLabel ?? c.componentType ?? ''),
-        initials: this.initialsFrom(c.name),
-        warningMessage: 'This action cannot be undone for this draft version.',
-        confirmButtonText: 'Yes, delete',
-        cancelButtonText: 'Cancel',
-      },
-      panelClass: 'erp-dialog',
-      disableClose: true,
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (!confirmed) return;
-      this.service.deleteComponent(c.id).subscribe({
-        next: () => {
-          this.openManagePanel(this.selectedVersion!.id);
-          this.loadVersions();
-          this.toast('Component removed');
-        },
-        error: (e) => this.toast(extractApiError(e, 'Delete failed'), true),
-      });
-    });
-  }
-
-  private initialsFrom(name: string): string {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return 'SC';
-    return parts
-      .slice(0, 2)
-      .map((p) => p[0]!.toUpperCase())
-      .join('');
   }
 
   private refreshView(): void {

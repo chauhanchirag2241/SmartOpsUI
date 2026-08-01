@@ -2,7 +2,6 @@ export const DashboardWidgetCodes = {
   StudentsStat: 'STUDENTS_STAT',
   EmployeesStat: 'EMPLOYEES_STAT',
   ClassesStat: 'CLASSES_STAT',
-  SubjectsStat: 'SUBJECTS_STAT',
   SalaryDisbursed: 'SALARY_DISBURSED',
   AttendanceRate: 'ATTENDANCE_RATE',
   AttendanceDetail: 'ATTENDANCE_DETAIL',

@@ -1,0 +1,26 @@
+<section class="teachers-page">
+  @if (!showDetail) {
+    <span
+      [appPageChrome]="'Teachers'"
+      [pageChromeSubtitle]="'Manage teachers and class / subject permissions'"
+    ></span>
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="teachers"
+      [serverSide]="true"
+      [totalRecords]="totalTeachers"
+      [rowClassFn]="teacherRowClass"
+      [initialFilterValue]="currentFilter.toString()"
+      (pageChange)="onPageChange($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (actionClicked)="onActionClicked($event)"
+    />
+  } @else if (selectedTeacherId) {
+    <app-teacher-detail
+      [teacherId]="selectedTeacherId"
+      [mode]="detailMode"
+      [initialTab]="detailInitialTab"
+      (cancel)="closeDetail()"
+    />
+  }
+</section>

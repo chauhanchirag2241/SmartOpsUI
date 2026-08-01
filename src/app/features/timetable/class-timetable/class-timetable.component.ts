@@ -11,7 +11,6 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
-import { MappingService, ClassSubjectTeacherMapping, MappingLookupOption, MappingLookups } from '../../../core/services/mapping.service';
 import { ClassService } from '../../../core/services/class.service';
 import { SubjectService } from '../../../core/services/subject.service';
 import { EmployeeService } from '../../../core/services/employee.service';
@@ -34,10 +33,17 @@ import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import type { DataTableAction, DataTableConfig } from '../../../shared/components/smart-data-table';
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
+import { formatDateOnlyDisplay, toDateOnlyString } from '../../../shared/utils/date-only.util';
 import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { TimetableSlotDialogComponent, TimetableSlotDialogData, TimetableSlotDialogResult } from './timetable-slot-dialog.component';
 
 type FormMode = 'add' | 'edit' | 'view';
+
+interface LookupOption {
+  id: string;
+  name: string;
+  code?: string;
+}
 
 const DAYS = [
   { day: 1, label: 'Mon' },
@@ -67,7 +73,6 @@ const DAYS = [
 })
 export class ClassTimetableComponent implements OnInit {
   private readonly timetableService = inject(TimetableService);
-  private readonly mappingService = inject(MappingService);
   private readonly classService = inject(ClassService);
   private readonly subjectService = inject(SubjectService);
   private readonly employeeService = inject(EmployeeService);
@@ -83,11 +88,10 @@ export class ClassTimetableComponent implements OnInit {
   showDetail = false;
   formMode: FormMode = 'add';
 
-  classes: MappingLookupOption[] = [];
-  employees: MappingLookupOption[] = [];
-  lookupSubjects: MappingLookupOption[] = [];
+  classes: LookupOption[] = [];
+  employees: LookupOption[] = [];
+  lookupSubjects: LookupOption[] = [];
   periodTemplates: { id: string; name: string }[] = [];
-  mappings: ClassSubjectTeacherMapping[] = [];
   versions: TimetableVersion[] = [];
   versionRows: Record<string, unknown>[] = [];
 
@@ -406,7 +410,6 @@ export class ClassTimetableComponent implements OnInit {
           this.selectedVersionId = '';
           this.draftReady = true;
           this.isDirty = true;
-          this.loadMappingsForClass(classId, academicYearId);
 
           const allPeriodIds = Object.values(built.periodsByDay)
             .flat()
@@ -682,7 +685,6 @@ export class ClassTimetableComponent implements OnInit {
     this.isDirty = false;
     this.errorMessage = '';
     this.grid = null;
-    this.loadMappingsForClass(classId, this.selectedAcademicYearId);
     this.loadVersionGrid(versionId);
   }
 
@@ -736,40 +738,16 @@ export class ClassTimetableComponent implements OnInit {
       employees: this.employeeService.getClassTeacherDropdown().pipe(
         catchError(() => of([] as { id: string; name: string }[])),
       ),
-      lookups: this.mappingService.getLookups(yearId).pipe(
-        catchError(() =>
-          of({
-            classes: [],
-            subjects: [],
-            teachers: [],
-            employees: [],
-            academicYears: [],
-            classSummaries: [],
-          } satisfies MappingLookups),
-        ),
-      ),
       templates: this.periodTemplateService.getDropdown().pipe(
         catchError(() => of([] as { id: string; name: string }[])),
       ),
     }).subscribe({
-      next: ({ classes, subjects, employees, lookups, templates }) => {
+      next: ({ classes, subjects, employees, templates }) => {
         this.classes = this.normalizeDropdownOptions(classes);
-        if (!this.classes.length && lookups.classes?.length) {
-          this.classes = lookups.classes;
-        }
-
         this.lookupSubjects = this.normalizeDropdownOptions(subjects);
-        if (!this.lookupSubjects.length && lookups.subjects?.length) {
-          this.lookupSubjects = lookups.subjects;
-        }
-
         this.employees = (employees || [])
           .map((e) => ({ id: e.id, name: e.name }))
           .filter((e) => e.id && e.name);
-        if (!this.employees.length) {
-          this.employees = lookups.employees || lookups.teachers || [];
-        }
-
         this.periodTemplates = this.normalizeDropdownOptions(templates);
 
         this.syncClassFilterOptions();
@@ -819,7 +797,7 @@ export class ClassTimetableComponent implements OnInit {
     });
   }
 
-  private normalizeDropdownOptions(items: unknown): MappingLookupOption[] {
+  private normalizeDropdownOptions(items: unknown): LookupOption[] {
     if (!Array.isArray(items)) {
       return [];
     }
@@ -892,24 +870,6 @@ export class ClassTimetableComponent implements OnInit {
           }));
         },
         error: () => (this.errorMessage = 'Failed to load timetable versions.'),
-      });
-  }
-
-  private loadMappingsForClass(classId?: string, academicYearId?: string): void {
-    const resolvedClassId = classId || this.detailClassId;
-    const resolvedYearId = academicYearId || this.detailAcademicYearId;
-    if (!resolvedClassId || !resolvedYearId) {
-      this.mappings = [];
-      return;
-    }
-    this.mappingService
-      .getByClass(resolvedClassId, resolvedYearId)
-      .pipe(catchError(() => of([] as ClassSubjectTeacherMapping[])))
-      .subscribe({
-        next: (rows) => {
-          this.mappings = this.normalizeMappings(rows || []);
-          this.cdr.detectChanges();
-        },
       });
   }
 
@@ -1022,49 +982,16 @@ export class ClassTimetableComponent implements OnInit {
     }));
   }
 
-  private normalizeMappings(rows: ClassSubjectTeacherMapping[]): ClassSubjectTeacherMapping[] {
-    return rows.map((m) => ({
-      ...m,
-      employeeId: m.employeeId ?? m.teacherId ?? null,
-      employeeName: m.employeeName ?? m.teacherName ?? null,
-    }));
-  }
-
   private uniqueSubjects(): { id: string; name: string; code?: string }[] {
-    // Prefer full subject master list so timetable assign does not require Class Mapping.
-    if (this.lookupSubjects.length) {
-      return this.lookupSubjects.map((s) => ({ id: s.id, name: s.name, code: s.code }));
-    }
-    const map = new Map<string, { id: string; name: string; code?: string }>();
-    for (const m of this.mappings) {
-      if (!m.subjectId || map.has(m.subjectId)) continue;
-      map.set(m.subjectId, {
-        id: m.subjectId,
-        name: m.subjectName || m.subjectId,
-        code: m.subjectCode,
-      });
-    }
-    return Array.from(map.values());
+    return this.lookupSubjects.map((s) => ({ id: s.id, name: s.name, code: s.code }));
   }
 
   private employeesForSubject(_subjectId: string): { id: string; name: string }[] {
-    // Full employee list — Class Mapping is optional for timetable assign.
-    if (this.employees.length) {
-      return this.employees.map((e) => ({ id: e.id, name: e.name }));
-    }
-    const map = new Map<string, { id: string; name: string }>();
-    for (const m of this.mappings) {
-      const id = m.employeeId ?? m.teacherId;
-      if (!id || map.has(id)) continue;
-      map.set(id, { id, name: (m.employeeName ?? m.teacherName ?? id) as string });
-    }
-    return Array.from(map.values());
+    return this.employees.map((e) => ({ id: e.id, name: e.name }));
   }
 
   private formatDateLabel(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDateOnlyDisplay(value);
   }
 
   private extractTimetableId(res: unknown): string {
@@ -1075,15 +1002,7 @@ export class ClassTimetableComponent implements OnInit {
   }
 
   private toDateInputValue(value: unknown): string {
-    if (!value) return '';
-    if (typeof value === 'string') return value.length >= 10 ? value.slice(0, 10) : value;
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      const y = value.getFullYear();
-      const m = String(value.getMonth() + 1).padStart(2, '0');
-      const d = String(value.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-    return '';
+    return toDateOnlyString(value) ?? '';
   }
 
   private buildTableConfig(): DataTableConfig {

@@ -135,15 +135,19 @@ export class AddPeriodTemplateComponent implements OnInit {
   ): void {
     const arr = target ?? this.periods;
     const order = arr.length + 1;
+    const isBreak = defaults?.isBreak ?? false;
+    // Breaks do not increment teaching-period numbering (Period 3 → Break → Period 4).
+    const teachingCount = arr.controls.filter((c) => !c.get('isBreak')?.value).length;
+    const periodNum = teachingCount + 1;
     arr.push(
       this.fb.group({
         id: [defaults?.id || ''],
-        name: [defaults?.name || `Period ${order}`, Validators.required],
-        shortName: [defaults?.shortName || `P${order}`, Validators.required],
+        name: [defaults?.name || (isBreak ? 'Break' : `Period ${periodNum}`), Validators.required],
+        shortName: [defaults?.shortName || (isBreak ? 'Br' : `P${periodNum}`), Validators.required],
         periodOrder: [order, Validators.required],
         startTime: [defaults?.startTime || '', Validators.required],
         endTime: [defaults?.endTime || '', Validators.required],
-        isBreak: [defaults?.isBreak ?? false],
+        isBreak: [isBreak],
       }),
     );
   }

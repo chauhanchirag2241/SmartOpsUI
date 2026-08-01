@@ -1,15 +1,40 @@
 import {
   Component, Input, OnInit, OnChanges,
-  SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef
+  SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef, inject
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AuditLogItem, AuditLogPagedResponse, FieldChange } from '../../../core/models/audit-history.model';
 import { AcademicYearService } from '../../../core/services/academic-year.service';
+import { ClassService } from '../../../core/services/class.service';
+import { ShiftService } from '../../../core/services/shift.service';
+import { SubjectService } from '../../../core/services/subject.service';
 import { AuditHistoryEntityType, AuditService } from '../../../core/services/audit.service';
 import { formatAuditFieldValue } from '../../utils/audit-field-format.util';
 
 export type { AuditHistoryEntityType };
+
+const GUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Friendly labels for common FK / technical field names in history. */
+const FIELD_LABELS: Record<string, string> = {
+  academicyearid: 'Academic Year',
+  classgroupid: 'Class Group',
+  shiftid: 'Shift',
+  subjectid: 'Subject',
+  classid: 'Class / Section',
+  studentid: 'Student',
+  employeeid: 'Employee',
+  userid: 'User',
+  periodtemplateid: 'Period Template',
+};
+
+/** Never show these fields in history (branch is fixed / not user-editable here). */
+const HIDDEN_HISTORY_FIELDS = new Set(['branchid', 'branch']);
+
 
 @Component({
   selector: 'app-audit-history',
@@ -30,16 +55,19 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
   loading = false;
   error = false;
   expandedRows = new Set<string>();
-  private academicYearLookup: Record<string, string> = {};
 
-  constructor(
-    private auditService: AuditService,
-    private academicYearService: AcademicYearService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  /** GUID (lowercase) → display name for branches, classes, shifts, subjects, years, etc. */
+  private idLookup: Record<string, string> = {};
+
+  private readonly auditService = inject(AuditService);
+  private readonly academicYearService = inject(AcademicYearService);
+  private readonly classService = inject(ClassService);
+  private readonly shiftService = inject(ShiftService);
+  private readonly subjectService = inject(SubjectService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
-    this.loadAcademicYearLookup();
+    this.loadLookups();
     this.load();
   }
 
@@ -115,12 +143,27 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
   }
 
   formatFieldName(field: string): string {
-    if (this.normalizeFieldName(field) === 'academicyearid') {
-      return 'Academic Year';
+    const key = this.normalizeFieldName(field);
+    if (FIELD_LABELS[key]) {
+      return FIELD_LABELS[key];
     }
 
-    // Convert PascalCase to readable: "FirstName" → "First Name"
-    return field.replace(/([A-Z])/g, ' $1').trim();
+    // PascalCase / camelCase → words, then drop trailing " Id"
+    return field
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .trim()
+      .replace(/\s+[Ii][Dd]$/, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  /** Changes shown in the table (Branch and other hidden fields excluded). */
+  visibleChanges(changes: FieldChange[]): FieldChange[] {
+    return (changes ?? []).filter((c) => !this.isHiddenHistoryField(c.field));
+  }
+
+  isHiddenHistoryField(field: string): boolean {
+    return HIDDEN_HISTORY_FIELDS.has(this.normalizeFieldName(field));
   }
 
   getInitials(name: string): string {
@@ -131,8 +174,7 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
   }
 
   formatValue(field: string, val: string | null): string {
-    const lookup = this.normalizeFieldName(field) === 'academicyearid' ? this.academicYearLookup : {};
-    return formatAuditFieldValue(this.entityType, field, val, lookup);
+    return formatAuditFieldValue(this.entityType, field, val, this.idLookup);
   }
 
   relativeTime(dateStr: string): string {
@@ -154,22 +196,62 @@ export class AuditHistoryComponent implements OnInit, OnChanges {
     return change.field;
   }
 
-  private loadAcademicYearLookup(): void {
-    this.academicYearService.getAcademicYears(1, 1000, '', null, null, 'All').subscribe({
-      next: (res: any) => {
-        const rows = (res?.items ?? []) as Record<string, unknown>[];
-        this.academicYearLookup = rows.reduce<Record<string, string>>((acc, row) => {
-          const id = String(row['id'] ?? '').toLowerCase();
-          const title = String(row['title'] ?? '').trim();
-          if (id && title) {
-            acc[id] = title;
+  private loadLookups(): void {
+    forkJoin({
+      years: this.academicYearService.getAcademicYears(1, 1000, '', null, null, 'All').pipe(
+        catchError(() => of({ items: [] })),
+      ),
+      classGroups: this.classService.getClassGroups(1, 1000, '', null, null, 'All').pipe(
+        catchError(() => of({ items: [] })),
+      ),
+      classes: this.classService.getClassDropdown(undefined, 'section').pipe(
+        catchError(() => of([])),
+      ),
+      classGroupsDropdown: this.classService.getClassDropdown(undefined, 'group').pipe(
+        catchError(() => of([])),
+      ),
+      shifts: this.shiftService.getShiftDropdown().pipe(
+        catchError(() => of([])),
+      ),
+      subjects: this.subjectService.getSubjectDropdown().pipe(
+        catchError(() => of([])),
+      ),
+    }).subscribe({
+      next: (res) => {
+        const map: Record<string, string> = {};
+
+        const put = (id: unknown, name: unknown) => {
+          const key = String(id ?? '').trim().toLowerCase();
+          const label = String(name ?? '').trim();
+          if (key && label && GUID_RE.test(key)) {
+            map[key] = label;
           }
-          return acc;
-        }, {});
+        };
+
+        for (const row of (res.years as any)?.items ?? []) {
+          put(row.id, row.title);
+        }
+        for (const row of (res.classGroups as any)?.items ?? []) {
+          put(row.id, row.className);
+        }
+        for (const row of res.classGroupsDropdown ?? []) {
+          put(row.id, row.name ?? row.className);
+        }
+        for (const row of res.classes ?? []) {
+          put(row.id, row.name ?? row.className);
+        }
+        for (const row of res.shifts ?? []) {
+          put(row.id, row.name);
+        }
+        for (const row of res.subjects ?? []) {
+          put(row.id, row.name ?? row.subjectName);
+        }
+
+        this.idLookup = map;
         this.cdr.markForCheck();
       },
       error: () => {
-        this.academicYearLookup = {};
+        this.idLookup = {};
       },
     });
   }

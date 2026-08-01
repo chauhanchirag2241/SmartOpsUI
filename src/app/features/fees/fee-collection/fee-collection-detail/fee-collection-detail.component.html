@@ -66,11 +66,15 @@
       <p class="empty-hint">No pending or upcoming fees for this student.</p>
     }
     <div class="fee-cards">
-      @for (card of actionableCards; track card.feeMasterId) {
+      @for (card of actionableCards; track cardTrackId(card)) {
         <div class="fee-card">
           <div class="fee-card-head">
-            <div class="fc-title">{{ card.feeName }}</div>
+            <div class="fc-title">{{ card.periodLabel || card.feeName }}</div>
             <div class="fc-sub">
+              @if (card.periodLabel) {
+                {{ card.feeName }}
+                ·
+              }
               @if (card.defaultDueDate) {
                 Due {{ formatDate(card.defaultDueDate) }}
               } @else {
@@ -84,6 +88,9 @@
             @if (card.isPublished === false) {
               <span class="status-badge partial">Not published yet</span>
             }
+            @if (card.periodLabel) {
+              <span class="tag-soft">Period-wise</span>
+            }
           </div>
           <div class="fee-head-list">
             @for (head of card.heads; track head.feeHeadId) {
@@ -93,11 +100,6 @@
                   @if (head.isMandatory) {
                     <span class="req">*</span>
                   }
-                  @if (head.isEditable) {
-                    <span class="tag-soft">Editable</span>
-                  } @else {
-                    <span class="tag-soft">Locked</span>
-                  }
                 </div>
                 <div class="fh-amount-wrap">
                   <span class="curr">₹</span>
@@ -105,7 +107,7 @@
                   @if (head.paidAmount >= head.dueAmount && head.dueAmount > 0) {
                     <span class="fh-paid-tick">Paid</span>
                   } @else if (head.paidAmount > 0) {
-                    <span class="fh-paid-tick">₹{{ head.paidAmount | number: '1.0-2' }}</span>
+                    <span class="fh-paid-tick">₹{{ head.paidAmount | number: '1.0-2' }} paid</span>
                   }
                 </div>
               </div>
@@ -154,6 +156,9 @@
                 <div class="payment-block">
                   <div class="collect-meta">
                     <span>Collected on <b>{{ formatDateTime(pay.paymentDate) }}</b></span>
+                    @if (pay.periodLabel) {
+                      <span>Period <b>{{ pay.periodLabel }}</b></span>
+                    }
                     <span>Mode <b>{{ formatPaymentMethod(pay.paymentMethod) }}</b></span>
                     <span>By <b>{{ pay.collectedBy || '—' }}</b></span>
                     <span>Amount <b>{{ formatMoney(pay.totalAmount) }}</b></span>
@@ -177,7 +182,7 @@
                           <td>{{ line.isEditable ? 'Yes' : 'No' }}</td>
                           <td>{{ formatMoney(line.dueAmount) }}</td>
                           <td class="amt-paid">{{ formatMoney(line.paidAmount) }}</td>
-                          <td>{{ formatMoney(lineBalance(line.dueAmount, line.paidAmount)) }}</td>
+                          <td>{{ formatMoney(line.balanceAfter ?? lineBalance(line.dueAmount, line.paidAmount)) }}</td>
                         </tr>
                       }
                     </tbody>

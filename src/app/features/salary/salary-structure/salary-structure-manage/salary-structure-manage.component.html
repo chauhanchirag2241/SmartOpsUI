@@ -1,0 +1,127 @@
+<span
+  [appPageChrome]="pageTitle"
+  [pageChromeSubtitle]="pageSubtitle"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+@if (loading) {
+  <p class="page-sub">Loading…</p>
+} @else {
+  <div class="tabs" role="tablist">
+    @for (tab of tabs; track tab.label; let i = $index) {
+      <div
+        class="tab"
+        [class.active]="currentTab === i"
+        [class.done]="currentTab > i"
+        (click)="goTab(i)"
+        role="tab"
+      >
+        <div class="tab-num">{{ i + 1 }}</div>
+        {{ tab.label }}
+      </div>
+    }
+  </div>
+
+  @if (currentTab === 0) {
+    <div class="card basic-detail-card">
+      <div class="card-title-row">
+        <div class="card-title">
+          <mat-icon>info</mat-icon>
+          Salary structure
+        </div>
+        @if (!editingBasic && canEditBasic) {
+          <button type="button" class="btn-edit-card" (click)="startBasicEdit()">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </button>
+        } @else if (isEffectiveLocked) {
+          <span class="field-hint">Locked after effective date</span>
+        } @else if (version) {
+          <span class="badge" [ngClass]="statusClass(version.statusLabel)">{{
+            version.statusLabel
+          }}</span>
+        }
+      </div>
+
+      @if (version?.hasAssignedEmployees && version?.statusLabel === 'Archived') {
+        <p class="paid-archived-hint">
+          Employees are assigned under this archived structure — records are preserved.
+        </p>
+      }
+
+      @if (!editingBasic) {
+        <div class="basic-detail-grid">
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Version</div>
+            <div class="basic-detail-value">{{ version?.versionLabel || '—' }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Status</div>
+            <div class="basic-detail-value">{{ version?.statusLabel || '—' }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Effective date</div>
+            <div class="basic-detail-value">{{ formatDate(version?.effectiveDate) }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Components</div>
+            <div class="basic-detail-value">{{ version?.componentCount ?? components.length }}</div>
+          </div>
+        </div>
+      } @else {
+        <div class="basic-detail-grid">
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Version</div>
+            <div class="basic-detail-value">{{ version?.versionLabel || '—' }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Status</div>
+            <div class="basic-detail-value">{{ version?.statusLabel || '—' }}</div>
+          </div>
+          <div class="basic-detail-field">
+            <label class="basic-detail-label" for="salary-effective-date">Effective date</label>
+            <input
+              id="salary-effective-date"
+              type="date"
+              class="basic-edit-input"
+              [(ngModel)]="editEffectiveDate"
+              [min]="minEffectiveDate"
+            />
+          </div>
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">Components</div>
+            <div class="basic-detail-value">{{ version?.componentCount ?? components.length }}</div>
+          </div>
+        </div>
+        <div class="footer-actions basic-edit-actions">
+          <app-action-button type="cancel" (action)="cancelBasicEdit()" />
+          <app-action-button
+            type="save"
+            [label]="isSavingBasic ? 'Saving...' : 'Save changes'"
+            [icon]="isSavingBasic ? 'hourglass_empty' : 'check_circle'"
+            [disabled]="isSavingBasic"
+            (action)="saveBasic()"
+          />
+        </div>
+      }
+    </div>
+  }
+
+  @if (currentTab === 1) {
+    @if (isEffectiveLocked) {
+      <p class="lock-hint">
+        <mat-icon>lock</mat-icon>
+        Components are locked after the effective date has started. Use
+        <strong>Create new version</strong> to make changes.
+      </p>
+    }
+    <app-smart-data-table
+      [config]="componentTableConfig"
+      [data]="components"
+      [totalRecords]="components.length"
+      (addButtonClicked)="openAddComponent()"
+      (actionClicked)="onComponentAction($event)"
+    />
+  }
+}

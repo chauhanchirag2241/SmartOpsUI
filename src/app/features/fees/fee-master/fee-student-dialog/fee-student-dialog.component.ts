@@ -56,7 +56,7 @@ export class FeeStudentDialogComponent {
 
   get subtitle(): string {
     return this.data.mode === 'edit'
-      ? 'Update amounts for editable fee heads'
+      ? 'Update amounts for editable fee heads (period-wise when applicable)'
       : 'Filter by class, select students, set amounts, then save';
   }
 

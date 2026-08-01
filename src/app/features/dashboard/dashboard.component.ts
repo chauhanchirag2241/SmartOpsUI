@@ -36,7 +36,6 @@ type ClassOverviewSortKey =
   | 'present'
   | 'late'
   | 'absent'
-  | 'onLeave'
   | 'feeCollectedToday';
 
 const HIDDEN_STORAGE_KEY = 'smartops.dashboard.hidden';
@@ -109,7 +108,6 @@ export class DashboardComponent implements OnInit {
       present: rows.reduce((s, r) => s + r.present, 0),
       late: rows.reduce((s, r) => s + r.late, 0),
       absent: rows.reduce((s, r) => s + r.absent, 0),
-      onLeave: rows.reduce((s, r) => s + r.onLeave, 0),
       feeCollectedToday: rows.reduce((s, r) => s + r.feeCollectedToday, 0),
     };
   });
@@ -303,7 +301,7 @@ export class DashboardComponent implements OnInit {
   }
 
   donutSegments(att: IAttendanceToday): DonutSegment[] {
-    const total = att.present + att.absent + att.leave + att.late;
+    const total = att.present + att.absent + att.late;
     if (total <= 0) {
       return [];
     }
@@ -311,7 +309,6 @@ export class DashboardComponent implements OnInit {
     const parts: { n: number; color: string }[] = [
       { n: att.present, color: '#639922' },
       { n: att.late, color: '#6366F1' },
-      { n: att.leave, color: '#EF9F27' },
       { n: att.absent, color: '#e24b4a' },
     ];
 

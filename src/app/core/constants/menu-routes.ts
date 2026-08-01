@@ -1,21 +1,16 @@
 import { canonicalMenuCode } from './menu-code-aliases';
 import { MenuCodes } from './menu-codes';
 
-/** Legacy routes from before Teachers → Employees rename. */
-const LEGACY_ROUTE_ALIASES: Record<string, string> = {
-  '/teachers': '/employees',
-};
-
 /** Fallback when API menu row has no route (e.g. stale cache or manual menu insert). */
 export const MENU_ROUTE_BY_CODE: Record<string, string> = {
   [MenuCodes.Dashboard]: '/dashboard',
   [MenuCodes.Students]: '/students',
   [MenuCodes.Employees]: '/employees',
-  TEACHERS: '/employees',
+  [MenuCodes.Teachers]: '/teachers',
   [MenuCodes.Classes]: '/classes',
-  [MenuCodes.ClassMappings]: '/class-subject-teacher-mapping',
-  [MenuCodes.Subjects]: '/subjects',
-  [MenuCodes.AcademicPeriods]: '/academic-periods',
+  [MenuCodes.Shifts]: '/shifts',
+  [MenuCodes.PromoteStudents]: '/promote-students',
+  [MenuCodes.RollNumbers]: '/roll-numbers',
   [MenuCodes.Attendance]: '/attendance',
   [MenuCodes.AttendanceReport]: '/attendance-report',
   [MenuCodes.StaffAttendance]: '/staff-attendance',
@@ -62,5 +57,5 @@ export function resolveMenuRoute(code: string, route?: string | null): string | 
   } else {
     resolved = MENU_ROUTE_BY_CODE[key] ?? null;
   }
-  return resolved ? (LEGACY_ROUTE_ALIASES[resolved] ?? resolved) : null;
+  return resolved;
 }

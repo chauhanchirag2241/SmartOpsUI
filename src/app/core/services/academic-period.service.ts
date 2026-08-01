@@ -2,12 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 
-export interface AcademicPeriodClassSummary {
-  classId: string;
-  className: string;
-  periodCount: number;
-}
-
 export interface AcademicPeriodRow {
   id?: string;
   periodIndex: number;
@@ -22,10 +16,6 @@ export interface AcademicPeriodSetup {
 @Injectable({ providedIn: 'root' })
 export class AcademicPeriodService {
   private readonly api = inject(ApiService);
-
-  getClasses(): Observable<AcademicPeriodClassSummary[]> {
-    return this.api.get<AcademicPeriodClassSummary[]>('academic-periods/classes');
-  }
 
   getClassSetup(classId: string): Observable<AcademicPeriodSetup> {
     return this.api.get<AcademicPeriodSetup>(`academic-periods/classes/${classId}`);

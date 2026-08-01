@@ -28,9 +28,13 @@
         />
       </div>
     </app-smart-data-table>
-  } @else {
-    <span [appPageChrome]="formMode === 'edit' ? 'Edit schedule slot' : 'Add schedule slot'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
-    <p class="form-hint">Pick exam and class, then set date, subject and time for this slot.</p>
+  } @else if (formMode === 'edit') {
+    <span
+      [appPageChrome]="'Edit schedule slot'"
+      [pageChromeShowBack]="true"
+      (pageChromeBack)="closeForm()"
+    ></span>
+    <p class="form-hint">Update date, subject and time for this slot.</p>
 
     @if (formError) {
       <div class="error-banner">{{ formError }}</div>
@@ -90,12 +94,183 @@
     </div>
 
     <div class="footer-actions">
-      <div class="footer-hint">Slots are independent — adding one never removes others.</div>
+      <div class="footer-hint">Changes apply only to this slot.</div>
       <app-action-button
         type="save"
-        [label]="saving ? 'Saving...' : formMode === 'edit' ? 'Update slot' : 'Add slot'"
+        [label]="saving ? 'Saving...' : 'Update slot'"
         [icon]="saving ? 'hourglass_empty' : 'check_circle'"
         [disabled]="saving"
+        (action)="save()"
+      />
+    </div>
+  } @else {
+    <span
+      [appPageChrome]="'Bulk schedule exam slots'"
+      [pageChromeShowBack]="true"
+      (pageChromeBack)="closeForm()"
+    ></span>
+    <p class="form-hint">
+      Pick the exam and every class it applies to, then build the subject timetable once — slots for
+      all selected classes are created together.
+    </p>
+
+    @if (formError) {
+      <div class="error-banner">{{ formError }}</div>
+    }
+
+    <div class="card">
+      <div class="card-title"><mat-icon>assignment</mat-icon> Exam &amp; Classes</div>
+      <div class="grid2">
+        <app-form-field
+          label="Exam"
+          type="select"
+          [required]="true"
+          [(ngModel)]="formExamId"
+          [options]="examOptions"
+          emptyOptionLabel="Select exam"
+          (ngModelChange)="onFormExamChange()"
+        />
+        <app-form-field label="Classes" [required]="true">
+          <app-multi-select-chips
+            [options]="formClassMultiOptions"
+            [(selectedIds)]="formClassIds"
+            placeholder="Select classes"
+            searchPlaceholder="Search class"
+            (selectedIdsChange)="onBulkClassesChange()"
+            [disabled]="!formExamId"
+          />
+        </app-form-field>
+      </div>
+    </div>
+
+    <div class="card timetable-card">
+      <div class="card-title timetable-card-title">
+        <span class="title-left"><mat-icon>calendar_month</mat-icon> Subject Timetable</span>
+        <div class="same-toggle">
+          <button
+            type="button"
+            class="so-toggle"
+            [class.on]="sameTimetableForAll"
+            (click)="toggleSameTimetable()"
+            role="switch"
+            [attr.aria-checked]="sameTimetableForAll"
+          >
+            <span class="so-toggle-thumb"></span>
+          </button>
+          <div class="toggle-text">
+            <b>Same timetable for all classes</b>
+            <span>Turn off to customise date/time per class</span>
+          </div>
+        </div>
+      </div>
+
+      @if (!formClassIds.length) {
+        <div class="empty-hint">Select at least one class above to start building the timetable.</div>
+      } @else {
+        @if (!sameTimetableForAll) {
+          <div class="class-tabs">
+            @for (classId of formClassIds; track classId) {
+              <button
+                type="button"
+                class="tab-btn"
+                [class.active]="activeClassTab === classId"
+                (click)="switchClassTab(classId)"
+              >
+                {{ classTabLabel(classId) }}
+              </button>
+            }
+          </div>
+          <div class="tab-copy-row">
+            <button type="button" class="btn-link" (click)="copyActiveTabToAll()">
+              Copy this class's timetable to all other selected classes
+            </button>
+          </div>
+        }
+
+        <div class="subj-table-wrap">
+          <table class="subj-table">
+            <thead>
+              <tr>
+                <th class="col-subject">Subject</th>
+                <th>Date</th>
+                <th>Start time</th>
+                <th>End time</th>
+                <th>Invigilator</th>
+                <th>Room</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of activeSubjectRows; track row.id) {
+                <tr>
+                  <td>
+                    <app-form-field
+                      type="select"
+                      [(ngModel)]="row.subjectId"
+                      [options]="subjectOptionsForRow(row)"
+                      emptyOptionLabel="Select subject"
+                    />
+                  </td>
+                  <td>
+                    <app-form-field type="date" [(ngModel)]="row.examDate" />
+                  </td>
+                  <td>
+                    <app-form-field type="time" [(ngModel)]="row.startTime" />
+                  </td>
+                  <td>
+                    <app-form-field type="time" [(ngModel)]="row.endTime" />
+                  </td>
+                  <td>
+                    <app-form-field
+                      type="select"
+                      [(ngModel)]="row.invigilatorId"
+                      [options]="employeeOptions"
+                      emptyOptionLabel="Not assigned"
+                    />
+                  </td>
+                  <td>
+                    <app-form-field
+                      type="text"
+                      [(ngModel)]="row.roomNo"
+                      placeholder="Optional"
+                    />
+                  </td>
+                  <td class="col-actions">
+                    <button
+                      type="button"
+                      class="row-remove"
+                      title="Remove subject"
+                      (click)="removeSubjectRow(row.id)"
+                    >
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="empty-row">No subjects added yet</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <button type="button" class="add-row-btn" (click)="addSubjectRow()">
+          <mat-icon>add</mat-icon> Add subject
+        </button>
+      }
+    </div>
+
+    <div class="footer-actions bulk-footer">
+      <div class="footer-hint summary">
+        This will create <b>{{ bulkSlotCount }}</b> exam slot(s) across
+        <b>{{ formClassIds.length }}</b> class(es).
+      </div>
+      <app-action-button
+        type="save"
+        [label]="saving ? 'Creating...' : 'Create Schedule'"
+        [icon]="saving ? 'hourglass_empty' : 'check_circle'"
+        [disabled]="saving || !canCreateBulk"
         (action)="save()"
       />
     </div>

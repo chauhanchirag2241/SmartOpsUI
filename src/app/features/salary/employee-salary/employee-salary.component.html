@@ -1,7 +1,7 @@
 <div class="fees-page salary-page list-page-shell">
   <app-list-page-header
     title="Salary Management — Employee Salary"
-    subtitle="Assign published structure and per-employee component amounts"
+    subtitle="Assign salary structure and per-employee component amounts"
   />
 
   <app-page-toolbar
@@ -116,59 +116,6 @@
           </div>
         </div>
       </ng-container>
-    </div>
-  </div>
-
-  <div class="overlay" [class.show]="showAssignModal" (click)="showAssignModal = false">
-    <div class="modal modal-lg" (click)="$event.stopPropagation()">
-      <div class="mh">
-        <div class="mt"><mat-icon>assignment</mat-icon> Assign component-wise salary</div>
-        <button type="button" class="mc-btn" (click)="showAssignModal = false"><mat-icon>close</mat-icon></button>
-      </div>
-      <div class="mb">
-        <div class="field">
-          <label>Salary structure <span class="req">*</span></label>
-          <select
-            [(ngModel)]="assignForm.salaryStructureVersionId"
-            (ngModelChange)="onAssignVersionChange()"
-            [disabled]="loadingAssignVersions"
-          >
-            <option *ngFor="let v of assignableVersions" [value]="v.id">
-              {{ v.versionLabel }} ({{ v.statusLabel }})
-            </option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Effective date <span class="req">*</span></label>
-          <input type="date" [(ngModel)]="assignForm.effectiveDate" />
-        </div>
-        <p class="info-chip">
-          <mat-icon>info</mat-icon>
-          Structure defaults come from the published version. Override amounts per employee (e.g. different basic or HRA).
-        </p>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Component</th>
-              <th>Calculation</th>
-              <th style="text-align: right; width: 140px">Value for employee</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of assignForm.componentValues">
-              <td style="font-weight: 500">{{ row.name }}</td>
-              <td><span class="badge b-gray">{{ row.calculationTypeLabel }}</span></td>
-              <td style="text-align: right">
-                <input type="number" class="amt-input" [(ngModel)]="row.value" style="width: 120px" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="mf">
-        <button type="button" class="btn-cancel" (click)="showAssignModal = false">Cancel</button>
-        <button type="button" class="btn-save" (click)="saveAssignment()"><mat-icon>check</mat-icon> Save</button>
-      </div>
     </div>
   </div>
 </div>

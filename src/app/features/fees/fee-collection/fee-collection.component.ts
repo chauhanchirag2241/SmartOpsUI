@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 
 import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
+import { FeeCollectionService } from '../../../core/services/fee-collection.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
 import { StudentFilter } from '../../../shared/enums/table-filters.enum';
 import type {
@@ -17,6 +18,8 @@ import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
+import { catchError, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-fee-collection',
@@ -30,6 +33,7 @@ export class FeeCollectionComponent implements OnInit {
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly classService = inject(ClassService);
   private readonly studentService = inject(StudentService);
+  private readonly feeCollectionService = inject(FeeCollectionService);
   private readonly snackBar = inject(NotificationService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
@@ -202,19 +206,53 @@ export class FeeCollectionComponent implements OnInit {
         StudentFilter.Active,
         classIds,
       )
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        switchMap((res: any) => {
+          if (
+            requestSeq !== this.studentsRequestSeq ||
+            yearKey !== this.ayContext.effectiveYearKey()
+          ) {
+            return of(null);
+          }
+          const items = (res?.items || []) as Record<string, unknown>[];
+          const mapped = items.map((row) => this.mapRow(row));
+          const ids = mapped
+            .map((r) => String(r['studentId'] ?? ''))
+            .filter((id) => !!id);
+          if (!ids.length) {
+            return of({ mapped, totalCount: res?.totalCount || 0 });
+          }
+          return this.feeCollectionService.getStudentSummaries(ids).pipe(
+            catchError(() => of([])),
+            switchMap((summaries) => {
+              const byId = new Map(
+                (summaries || []).map((s) => [String(s.studentId).toLowerCase(), s]),
+              );
+              for (const row of mapped) {
+                const s = byId.get(String(row['studentId']).toLowerCase());
+                if (!s) continue;
+                row['totalDue'] = this.formatMoney(s.totalDue);
+                row['paid'] = this.formatMoney(s.totalPaid);
+                row['balance'] = this.formatMoney(s.totalPending);
+                row['collectionStatus'] = s.status || 'Pending';
+              }
+              return of({ mapped, totalCount: res?.totalCount || 0 });
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
-        next: (res: any) => {
+        next: (result) => {
+          if (!result) return;
           if (
             requestSeq !== this.studentsRequestSeq ||
             yearKey !== this.ayContext.effectiveYearKey()
           ) {
             return;
           }
-          this.students = (res?.items || []).map((row: Record<string, unknown>) =>
-            this.mapRow(row),
-          );
-          this.totalStudents = res?.totalCount || 0;
+          this.students = result.mapped;
+          this.totalStudents = result.totalCount;
           this.refreshView();
         },
         error: () => {
@@ -228,6 +266,10 @@ export class FeeCollectionComponent implements OnInit {
           this.refreshView();
         },
       });
+  }
+
+  private formatMoney(n: number): string {
+    return `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
   }
 
   private mapRow(row: Record<string, unknown>): Record<string, unknown> {
@@ -247,7 +289,6 @@ export class FeeCollectionComponent implements OnInit {
       className: classParts[0]?.trim() || '—',
       section: classParts[1]?.trim() || '—',
       admissionNo: row['admNo'] ?? row['admissionNo'] ?? '—',
-      // Payment summaries will wire to collection APIs later.
       totalDue: '—',
       paid: '—',
       balance: '—',

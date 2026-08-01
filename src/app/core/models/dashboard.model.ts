@@ -44,7 +44,6 @@ export interface IDashboardSummary {
 export interface IAttendanceToday {
   present: number;
   absent: number;
-  leave: number;
   late: number;
   presentPercent: number;
   dateLabel: string;
@@ -100,7 +99,6 @@ export interface IClassOverview {
   present: number;
   late: number;
   absent: number;
-  onLeave: number;
   feeCollectedToday: number;
 }
 

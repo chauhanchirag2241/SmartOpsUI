@@ -1,14 +1,12 @@
 export enum AttendanceStatus {
   Present = 1,
   Absent = 2,
-  Leave = 3,
-  Late = 4,
+  Late = 3,
 }
 
 export const AttendanceStatusLabel: Record<AttendanceStatus, string> = {
   [AttendanceStatus.Present]: 'Present',
   [AttendanceStatus.Absent]: 'Absent',
-  [AttendanceStatus.Leave]: 'Leave',
   [AttendanceStatus.Late]: 'Late',
 };
 

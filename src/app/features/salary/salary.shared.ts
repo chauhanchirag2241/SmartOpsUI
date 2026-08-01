@@ -146,8 +146,6 @@ export function normalizeSalaryStructureVersion(raw: any) {
     status: Number(pick(raw, 'status', 'Status') ?? 0),
     statusLabel,
     effectiveDate: String(pick(raw, 'effectiveDate', 'EffectiveDate') ?? ''),
-    publishedOn: pick(raw, 'publishedOn', 'PublishedOn') as string | null,
-    activatedOn: pick(raw, 'activatedOn', 'ActivatedOn') as string | null,
     componentCount: Number(pick(raw, 'componentCount', 'ComponentCount') ?? 0),
     hasAssignedEmployees: Boolean(pick(raw, 'hasAssignedEmployees', 'HasAssignedEmployees')),
     isLocked: Boolean(pick(raw, 'isLocked', 'IsLocked')),

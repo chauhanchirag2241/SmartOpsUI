@@ -23,8 +23,7 @@
     <div class="kbd-grid">
       <div class="kbd-row"><kbd class="kbd-key">P</kbd> Mark present</div>
       <div class="kbd-row"><kbd class="kbd-key">A</kbd> Mark absent</div>
-      <div class="kbd-row"><kbd class="kbd-key">L</kbd> Mark leave</div>
-      <div class="kbd-row"><kbd class="kbd-key">T</kbd> Mark late</div>
+      <div class="kbd-row"><kbd class="kbd-key">L</kbd> Mark late</div>
       <div class="kbd-row"><kbd class="kbd-key">↑ ↓</kbd> Navigate</div>
       <div class="kbd-row"><kbd class="kbd-key">Ctrl+Z</kbd> Undo last</div>
       <div class="kbd-row"><kbd class="kbd-key">/</kbd> Focus search</div>
@@ -47,22 +46,20 @@
     (advancedFiltersCleared)="onToolbarFiltersCleared()"
   >
     <div toolbarFilters class="st-table-filters">
-      <label class="table-filter-section-label" for="att-class-filter">Class</label>
-      <select
-        id="att-class-filter"
-        class="sel-filter sel-filter-lg"
-        [ngModel]="selectedClassId"
+      <app-form-field
+        label="Class"
+        type="select"
+        variant="filter"
+        [(ngModel)]="selectedClassId"
+        [options]="classFilterOptions"
         (ngModelChange)="onClassChanged($event)"
-      >
-        <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
-      </select>
-      <label class="table-filter-section-label" for="att-date-filter">Date</label>
-      <input
-        id="att-date-filter"
+      />
+      <app-form-field
+        label="Date"
         type="date"
-        class="sel-filter sel-filter-lg att-date-filter"
-        [ngModel]="selectedDate"
-        [max]="maxDate"
+        variant="filter"
+        [(ngModel)]="selectedDate"
+        [maxDate]="maxDate"
         (ngModelChange)="onDateChanged($event)"
       />
     </div>
@@ -82,10 +79,6 @@
       <div class="sum-icon si-r"><mat-icon>cancel</mat-icon></div>
       <div><div class="sum-val">{{ stats.absent }}</div><div class="sum-label">Absent</div></div>
     </div>
-    <div class="sum-card" [class.active-filter]="curFilter === 'leave'" (click)="filterBy('leave')">
-      <div class="sum-icon si-a"><mat-icon>event_busy</mat-icon></div>
-      <div><div class="sum-val">{{ stats.leave }}</div><div class="sum-label">Leave</div></div>
-    </div>
     <div class="sum-card" [class.active-filter]="curFilter === 'late'" (click)="filterBy('late')">
       <div class="sum-icon si-l"><mat-icon>schedule</mat-icon></div>
       <div><div class="sum-val">{{ stats.late }}</div><div class="sum-label">Late</div></div>
@@ -101,7 +94,6 @@
     <div class="progress-bar">
       <div class="pb-present" [style.width.%]="stats.pPct"></div>
       <div class="pb-absent" [style.width.%]="stats.aPct"></div>
-      <div class="pb-leave" [style.width.%]="stats.lPct"></div>
       <div class="pb-late" [style.width.%]="stats.ltPct"></div>
     </div>
   </div>
@@ -111,7 +103,6 @@
     <span class="bulk-label">Mark all:</span>
     <button class="bulk-btn bb-p" (click)="markAll('present')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon>Present</button>
     <button class="bulk-btn bb-a" (click)="markAll('absent')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">cancel</mat-icon>Absent</button>
-    <button class="bulk-btn bb-l" (click)="markAll('leave')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">event_busy</mat-icon>Leave</button>
     <button class="bulk-btn bb-lt" (click)="markAll('late')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">schedule</mat-icon>Late</button>
     <button class="bulk-btn bb-r" (click)="markAll('')"><mat-icon style="font-size: 16px; width: 16px; height: 16px;">refresh</mat-icon>Reset</button>
     <div class="sep"></div>
@@ -139,8 +130,7 @@
         <div class="stu-actions">
           <div class="sa-btn sa-p" (click)="setStatus(s.id, 'present', $event)" title="Present (P)">P</div>
           <div class="sa-btn sa-a" (click)="setStatus(s.id, 'absent', $event)" title="Absent (A)">A</div>
-          <div class="sa-btn sa-l" (click)="setStatus(s.id, 'leave', $event)" title="Leave (L)">L</div>
-          <div class="sa-btn sa-lt" (click)="setStatus(s.id, 'late', $event)" title="Late (T)">Late</div>
+          <div class="sa-btn sa-lt" (click)="setStatus(s.id, 'late', $event)" title="Late (L)">L</div>
         </div>
         <div class="note-badge" (click)="openNote(s.id, $event)" [title]="notes[s.id] || 'Add note'">
           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">notes</mat-icon>
@@ -161,10 +151,9 @@
         <div class="list-btns">
           <button class="lb-btn lb-p" [class.active]="status[s.id] === 'present'" (click)="setStatus(s.id, 'present', $event)">P</button>
           <button class="lb-btn lb-a" [class.active]="status[s.id] === 'absent'" (click)="setStatus(s.id, 'absent', $event)">A</button>
-          <button class="lb-btn lb-l" [class.active]="status[s.id] === 'leave'" (click)="setStatus(s.id, 'leave', $event)">L</button>
-          <button class="lb-btn lb-lt" [class.active]="status[s.id] === 'late'" (click)="setStatus(s.id, 'late', $event)">Late</button>
+          <button class="lb-btn lb-lt" [class.active]="status[s.id] === 'late'" (click)="setStatus(s.id, 'late', $event)">L</button>
         </div>
-        <div class="note-badge" style="position:static;display:flex" *ngIf="['absent','leave','late'].includes(status[s.id])" (click)="openNote(s.id, $event)">
+        <div class="note-badge" style="position:static;display:flex" *ngIf="['absent','late'].includes(status[s.id])" (click)="openNote(s.id, $event)">
           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">notes</mat-icon>
         </div>
       </div>
@@ -181,7 +170,7 @@
   <div class="note-modal" *ngIf="noteTargetId" (click)="closeNote()">
     <div class="note-box" (click)="$event.stopPropagation()">
       <h3>Add note for {{ students[focusIdx]?.name }}</h3>
-      <textarea [(ngModel)]="tempNote" rows="4" placeholder="Reason for absence / leave..." maxlength="200"></textarea>
+      <textarea [(ngModel)]="tempNote" rows="4" placeholder="Reason for absence / late..." maxlength="200"></textarea>
       <div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px">{{ tempNote.length }}/200</div>
       <div class="note-footer">
         <button class="nb-cancel" (click)="closeNote()">Cancel</button>

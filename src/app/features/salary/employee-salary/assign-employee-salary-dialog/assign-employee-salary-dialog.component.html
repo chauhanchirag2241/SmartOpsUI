@@ -1,0 +1,65 @@
+<app-erp-dialog-shell
+  [title]="data.existingSalaryStructureVersionId ? 'Edit component-wise salary' : 'Assign component-wise salary'"
+  [subtitle]="data.employeeName"
+  [width]="dialogWidth"
+  saveLabel="Save"
+  saveIcon="check"
+  savingLabel="Saving salary..."
+  [saving]="saving"
+  [saveDisabled]="form.invalid || loadingComponents || !componentRows.length"
+  (cancel)="ref.close(false)"
+  (save)="save()"
+>
+  <form [formGroup]="form" class="assign-salary-form" (ngSubmit)="save()">
+    <div class="grid2">
+      <app-dynamic-field [config]="versionField" [group]="form" />
+      <app-dynamic-field [config]="effectiveDateField" [group]="form" />
+    </div>
+
+    <p class="info-chip">
+      <mat-icon>info</mat-icon>
+      Structure defaults come from the selected version. Override amounts per employee (e.g. different
+      basic or HRA).
+    </p>
+
+    @if (loadingComponents) {
+      <p class="page-sub">Loading components…</p>
+    } @else {
+      <table class="data-table assign-comp-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Calculation</th>
+            <th class="col-value">Value for employee</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of componentRows; track row.salaryVersionComponentId) {
+            <tr>
+              <td class="comp-name">{{ row.name }}</td>
+              <td><span class="badge b-gray">{{ row.calculationTypeLabel }}</span></td>
+              <td class="col-value">
+                <div class="field amount-field">
+                  <input
+                    type="number"
+                    class="form-control"
+                    [value]="row.value"
+                    (input)="onAmountChange(row, $any($event.target).value)"
+                    min="0"
+                    step="any"
+                    [attr.aria-label]="row.name + ' amount'"
+                  />
+                </div>
+              </td>
+            </tr>
+          }
+          @if (!componentRows.length) {
+            <tr>
+              <td colspan="3" class="empty-panel">No components in this structure.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </form>
+</app-erp-dialog-shell>

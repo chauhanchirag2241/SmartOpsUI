@@ -98,17 +98,11 @@ export class ClassGroupDetailComponent implements OnInit {
   }
 
   get canViewSubject(): boolean {
-    return (
-      this.permissionService.canView(MenuCodes.Subjects) ||
-      this.permissionService.canView(MenuCodes.Classes)
-    );
+    return this.permissionService.canView(MenuCodes.Classes);
   }
 
   get canViewPeriods(): boolean {
-    return (
-      this.permissionService.canView(MenuCodes.AcademicPeriods) ||
-      this.permissionService.canView(MenuCodes.Classes)
-    );
+    return this.permissionService.canView(MenuCodes.Classes);
   }
 
   get canEdit(): boolean {
@@ -124,39 +118,25 @@ export class ClassGroupDetailComponent implements OnInit {
   }
 
   get canAddSubject(): boolean {
-    return (
-      !this.isView &&
-      (this.permissionService.canAdd(MenuCodes.Subjects) || this.permissionService.canAdd(MenuCodes.Classes))
-    );
+    return !this.isView && this.permissionService.canAdd(MenuCodes.Classes);
   }
 
   get canEditSubject(): boolean {
-    return (
-      !this.isView &&
-      (this.permissionService.canEdit(MenuCodes.Subjects) || this.permissionService.canEdit(MenuCodes.Classes))
-    );
+    return !this.isView && this.permissionService.canEdit(MenuCodes.Classes);
   }
 
   get canDeleteSubject(): boolean {
-    return (
-      !this.isView &&
-      (this.permissionService.canDelete(MenuCodes.Subjects) || this.permissionService.canDelete(MenuCodes.Classes))
-    );
+    return !this.isView && this.permissionService.canDelete(MenuCodes.Classes);
   }
 
   get canEditPeriods(): boolean {
-    return (
-      !this.isView &&
-      (this.permissionService.canEdit(MenuCodes.AcademicPeriods) ||
-        this.permissionService.canEdit(MenuCodes.Classes))
-    );
+    return !this.isView && this.permissionService.canEdit(MenuCodes.Classes);
   }
 
   get canAddPeriods(): boolean {
     return (
       !this.isView &&
-      (this.permissionService.canEdit(MenuCodes.AcademicPeriods) ||
-        this.permissionService.canAdd(MenuCodes.Classes) ||
+      (this.permissionService.canAdd(MenuCodes.Classes) ||
         this.permissionService.canEdit(MenuCodes.Classes))
     );
   }
@@ -397,11 +377,7 @@ export class ClassGroupDetailComponent implements OnInit {
   loadPeriods(): void {
     this.academicPeriodService.getClassSetup(this.classGroupId).subscribe({
       next: (setup) => {
-        this.periodDraft = (setup?.periods ?? []).map((p, i) => ({
-          id: p.id,
-          periodIndex: p.periodIndex || i + 1,
-          name: p.name,
-        }));
+        this.periodDraft = this.mapPeriodsFromApi(setup?.periods);
         this.syncPeriodTable();
       },
       error: () =>
@@ -412,9 +388,21 @@ export class ClassGroupDetailComponent implements OnInit {
     });
   }
 
+  private mapPeriodsFromApi(rows: unknown): AcademicPeriodRow[] {
+    return (Array.isArray(rows) ? rows : []).map((raw: any, i: number) => {
+      const id = String(raw?.id ?? raw?.Id ?? '').trim();
+      return {
+        id: id || undefined,
+        periodIndex: Number(raw?.periodIndex ?? raw?.PeriodIndex) || i + 1,
+        name: String(raw?.name ?? raw?.Name ?? '').trim(),
+      };
+    }).filter((p) => !!p.name);
+  }
+
   private syncPeriodTable(): void {
     this.periods = this.periodDraft.map((p, i) => ({
       ...p,
+      id: p.id ?? '',
       periodIndex: i + 1,
       _index: i,
     }));
@@ -422,20 +410,20 @@ export class ClassGroupDetailComponent implements OnInit {
   }
 
   private savePeriods(successMessage: string): void {
-    const periods = this.periodDraft.map((p, i) => ({
-      periodIndex: i + 1,
-      name: String(p.name ?? '').trim(),
-    }));
+    const periods: AcademicPeriodRow[] = this.periodDraft.map((p, i) => {
+      const id = String(p.id ?? '').trim();
+      return {
+        ...(id ? { id } : {}),
+        periodIndex: i + 1,
+        name: String(p.name ?? '').trim(),
+      };
+    });
 
     this.loader.showManualImmediate('Saving periods...');
     this.academicPeriodService.saveClassSetup(this.classGroupId, { periods }).subscribe({
       next: (setup) => {
         this.loader.hideManual();
-        this.periodDraft = (setup?.periods ?? periods).map((p, i) => ({
-          id: p.id,
-          periodIndex: p.periodIndex || i + 1,
-          name: p.name,
-        }));
+        this.periodDraft = this.mapPeriodsFromApi(setup?.periods);
         this.syncPeriodTable();
         this.snackBar.open(successMessage, 'Close', { duration: 2500, panelClass: 'snack-success' });
       },
@@ -448,6 +436,19 @@ export class ClassGroupDetailComponent implements OnInit {
         this.loadPeriods();
       },
     });
+  }
+
+  /** Prefer row.id so edit never loses the period id (table _index can be wrong after filter/sort). */
+  private resolvePeriodDraftIndex(row?: Record<string, unknown>): number {
+    const rowId = String(row?.['id'] ?? '').trim();
+    if (rowId) {
+      const byId = this.periodDraft.findIndex((p) => String(p.id ?? '').trim() === rowId);
+      if (byId >= 0) {
+        return byId;
+      }
+    }
+    const idx = Number(row?.['_index']);
+    return Number.isFinite(idx) && idx >= 0 ? idx : -1;
   }
 
   openPeriodDialog(row?: Record<string, unknown>, viewOnly = false): void {
@@ -499,7 +500,7 @@ export class ClassGroupDetailComponent implements OnInit {
         const duplicate = this.periodDraft.some(
           (p, i) =>
             p.name.trim().toLowerCase() === name.toLowerCase() &&
-            i !== Number(row?.['_index'] ?? -1),
+            i !== this.resolvePeriodDraftIndex(row),
         );
         if (duplicate) {
           this.snackBar.open('Period names must be unique', 'Close', {
@@ -509,9 +510,14 @@ export class ClassGroupDetailComponent implements OnInit {
           return;
         }
 
-        if (row && row['_index'] != null) {
-          const index = Number(row['_index']);
-          this.periodDraft[index] = { ...this.periodDraft[index], name };
+        const index = this.resolvePeriodDraftIndex(row);
+        if (row && index >= 0 && this.periodDraft[index]) {
+          const existing = this.periodDraft[index];
+          this.periodDraft[index] = {
+            ...existing,
+            id: existing.id || String(row['id'] ?? '').trim() || undefined,
+            name,
+          };
           this.savePeriods('Period updated');
         } else {
           this.periodDraft = [...this.periodDraft, { periodIndex: this.periodDraft.length + 1, name }];
@@ -752,7 +758,7 @@ export class ClassGroupDetailComponent implements OnInit {
 
   deletePeriod(row: Record<string, unknown>): void {
     if (!this.canEditPeriods) return;
-    const index = Number(row['_index']);
+    const index = this.resolvePeriodDraftIndex(row);
     const ref = this.dialog.open(DeleteConfirmDialogComponent, {
       data: {
         title: 'Delete period?',
@@ -767,7 +773,7 @@ export class ClassGroupDetailComponent implements OnInit {
     });
 
     ref.afterClosed().subscribe((ok) => {
-      if (!ok || Number.isNaN(index)) return;
+      if (!ok || index < 0) return;
       this.periodDraft = this.periodDraft.filter((_, i) => i !== index);
       if (!this.periodDraft.length) {
         this.snackBar.open('Add at least one academic period before saving an empty list.', 'Close', {

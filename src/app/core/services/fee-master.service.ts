@@ -202,7 +202,12 @@ export class FeeMasterService {
     feeMasterId: string,
     studentId: string,
     data: {
-      amounts: { feeHeadId: string; amount?: number | null; isExcluded?: boolean | null }[];
+      amounts: {
+        feeHeadId: string;
+        academicPeriodId?: string | null;
+        amount?: number | null;
+        isExcluded?: boolean | null;
+      }[];
     },
   ): Observable<void> {
     return this.api.put<void>(`fees/master/${feeMasterId}/students/${studentId}`, data);
@@ -218,14 +223,26 @@ export interface FeeStudentHeadAmountDto {
   feeHeadName: string;
   isMandatory: boolean;
   isEditable: boolean;
+  academicPeriodId?: string | null;
+  periodLabel?: string | null;
+  periodIndex?: number | null;
   defaultAmount?: number | null;
   amount?: number | null;
   isExcluded: boolean;
   hasOverride: boolean;
 }
 
+export interface FeeStudentPeriodGroupDto {
+  academicPeriodId: string;
+  periodLabel: string;
+  periodIndex: number;
+  heads: FeeStudentHeadAmountDto[];
+}
+
 export interface FeeStudentDetailDto {
   studentId: string;
   studentName: string;
+  isPeriodWise?: boolean;
   heads: FeeStudentHeadAmountDto[];
+  periods?: FeeStudentPeriodGroupDto[];
 }

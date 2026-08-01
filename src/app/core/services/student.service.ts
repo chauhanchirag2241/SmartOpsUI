@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import { stripAadhaarDigits } from '../../shared/utils/form-validators.util';
+import { toDateOnlyString } from '../../shared/utils/date-only.util';
 
 @Injectable({ providedIn: 'root' })
 export class StudentService {
@@ -18,6 +19,7 @@ export class StudentService {
     sortDirection: string | null = null,
     filter: StudentFilter = StudentFilter.All,
     classIds: string[] | null = null,
+    academicYearId?: string | null,
   ): Observable<any> {
     let params = new HttpParams()
       .set('pageIndex', pageIndex.toString())
@@ -39,7 +41,10 @@ export class StudentService {
       }
     }
 
-    return this.api.get('students', params);
+    const headers = academicYearId
+      ? { 'X-Academic-Year-Id': academicYearId }
+      : undefined;
+    return this.api.get('students', params, undefined, headers);
   }
 
   createStudent(studentData: any): Observable<any> {
@@ -81,8 +86,9 @@ export class StudentService {
         {
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
           academicYearId: studentData.academicYearId,
-          classId: studentData.classId,
-          rollNumber: studentData.rollNumber
+          classGroupId: studentData.classGroupId,
+          classId: studentData.classId || null,
+          rollNumber: studentData.classId ? studentData.rollNumber || null : null,
         }
       ],
       previousSchools: studentData.prevSchool ? [
@@ -108,6 +114,8 @@ export class StudentService {
     const academic = studentData.academics?.[0];
     const payload = {
       id: id,
+      userId: studentData.userId || undefined,
+      branchId: studentData.branchId || undefined,
       admissionNo: studentData.admissionNo,
       firstName: studentData.firstName,
       middleName: studentData.middleName,
@@ -144,8 +152,9 @@ export class StudentService {
           id: studentData.academicRecordId ?? academic?.id ?? undefined,
           admissionDate: this.toDateOnlyString(studentData.admissionDate),
           academicYearId: studentData.academicYearId,
-          classId: studentData.classId,
-          rollNumber: studentData.rollNumber,
+          classGroupId: studentData.classGroupId,
+          classId: studentData.classId || null,
+          rollNumber: studentData.classId ? studentData.rollNumber || null : null,
         }
       ],
       previousSchools: studentData.prevSchool ? [
@@ -191,29 +200,7 @@ export class StudentService {
   }
 
   private toDateOnlyString(value: unknown): string | null {
-    if (!value) {
-      return null;
-    }
-
-    if (value instanceof Date) {
-      const year = value.getFullYear();
-      const month = String(value.getMonth() + 1).padStart(2, '0');
-      const day = String(value.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    const text = String(value);
-    if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
-      return text.substring(0, 10);
-    }
-
-    const parts = text.split(/[-/]/);
-    if (parts.length === 3) {
-      const [day, month, year] = parts;
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-
-    return null;
+    return toDateOnlyString(value);
   }
 
   promoteStudents(payload: {
@@ -225,6 +212,14 @@ export class StudentService {
     errors: string[];
   }> {
     return this.api.post('students/promote', payload);
+  }
+
+  updateRollNumbers(payload: {
+    academicYearId: string;
+    classId: string;
+    students: { studentId: string; rollNumber?: string | null }[];
+  }): Observable<{ updatedCount: number; errors: string[] }> {
+    return this.api.put('students/roll-numbers', payload);
   }
 
   uploadPhoto(id: string, file: File): Observable<any> {

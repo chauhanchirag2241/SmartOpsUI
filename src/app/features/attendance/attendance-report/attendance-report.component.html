@@ -99,7 +99,6 @@
         <div style="display:flex;gap:6px;align-items:center">
           <span class="badge b-green">P = Present</span>
           <span class="badge b-red">A = Absent</span>
-          <span class="badge b-amber">L = Leave</span>
           <span class="badge b-purple">Lt = Late</span>
           <span class="badge b-gray">Su = Sunday</span>
         </div>
@@ -111,13 +110,13 @@
               <th class="reg-roll" rowspan="2">Roll</th>
               <th class="reg-name" rowspan="2" style="padding:7px 8px;text-align:left">Student name</th>
               <th [colSpan]="daysInMonth().length" style="text-align:center">{{reportData().month}}/{{reportData().year}}</th>
-              <th class="reg-sum" colspan="5" style="text-align:center">Summary</th>
+              <th class="reg-sum" colspan="4" style="text-align:center">Summary</th>
             </tr>
             <tr>
               <th *ngFor="let day of daysInMonth()" class="day-col" [class.sun]="isSunday(day)">
                 {{day}}
               </th>
-              <th class="reg-sum">P</th><th class="reg-sum">A</th><th class="reg-sum">L</th><th class="reg-sum">Lt</th><th class="reg-sum">%</th>
+              <th class="reg-sum">P</th><th class="reg-sum">A</th><th class="reg-sum">Lt</th><th class="reg-sum">%</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +128,6 @@
                   [class.rc-H]="isSunday(day)"
                   [class.rc-P]="student.dailyStatus[day] === 'P'"
                   [class.rc-A]="student.dailyStatus[day] === 'A'"
-                  [class.rc-L]="student.dailyStatus[day] === 'L'"
                   [class.rc-late]="student.dailyStatus[day] === 'late'"
                   [class.rc-empty]="!student.dailyStatus[day]">
                   <ng-container *ngIf="isSunday(day)">Su</ng-container>
@@ -140,7 +138,6 @@
 
               <td class="reg-cell reg-sum" style="color:var(--g600)">{{student.totalPresent}}</td>
               <td class="reg-cell reg-sum" style="color:#A32D2D">{{student.totalAbsent}}</td>
-              <td class="reg-cell reg-sum" style="color:#854F0B">{{student.totalLeave}}</td>
               <td class="reg-cell reg-sum" style="color:#5B21B6">{{student.totalLate}}</td>
               <td class="reg-cell reg-sum" [style.color]="student.attendancePercentage >= 75 ? 'var(--g600)' : '#A32D2D'" style="font-weight:700">
                 {{student.attendancePercentage}}%
@@ -163,7 +160,6 @@
             <th style="min-width:160px">Student</th>
             <th style="text-align:center;color:var(--g600)">P</th>
             <th style="text-align:center;color:#A32D2D">A</th>
-            <th style="text-align:center;color:#854F0B">L</th>
             <th style="text-align:center;color:#5B21B6">Lt</th>
             <th style="min-width:110px">Attendance %</th>
             <th>Status</th>
@@ -181,7 +177,6 @@
               </td>
               <td style="text-align:center;font-weight:500;color:var(--g600)">{{student.totalPresent}}</td>
               <td style="text-align:center;font-weight:500;color:#A32D2D">{{student.totalAbsent}}</td>
-              <td style="text-align:center;font-weight:500;color:#854F0B">{{student.totalLeave}}</td>
               <td style="text-align:center;font-weight:500;color:#5B21B6">{{student.totalLate}}</td>
               <td>
                 <div style="display:flex;align-items:center;gap:5px">

@@ -194,18 +194,6 @@ export class AddEmployeeComponent implements OnInit {
       label: 'Joining date',
       validations: [{ name: 'required', message: 'Joining date is required', validator: Validators.required }],
     },
-    employmentType: {
-      type: 'badges',
-      controlName: 'employmentType',
-      label: 'Employment type',
-      options: [
-        { label: 'Full-time', value: 'Full-time' },
-        { label: 'Part-time', value: 'Part-time' },
-        { label: 'Contract', value: 'Contract' },
-        { label: 'Visiting', value: 'Visiting' },
-      ],
-      validations: [{ name: 'required', message: 'Employment type is required', validator: Validators.required }],
-    },
     relation: {
       type: 'select',
       controlName: 'relation',
@@ -230,18 +218,6 @@ export class AddEmployeeComponent implements OnInit {
         { label: 'HOD', value: 'HOD' },
         { label: 'Principal', value: 'Principal' },
         { label: 'Vice Principal', value: 'Vice Principal' },
-      ],
-    },
-    salaryGrade: {
-      type: 'select',
-      controlName: 'salaryGrade',
-      label: 'Salary grade',
-      placeholder: 'Select',
-      options: [
-        { label: 'Grade 1', value: 'Grade 1' },
-        { label: 'Grade 2', value: 'Grade 2' },
-        { label: 'Grade 3', value: 'Grade 3' },
-        { label: 'Grade 4', value: 'Grade 4' },
       ],
     },
     employeeTypeId: {
@@ -281,15 +257,6 @@ export class AddEmployeeComponent implements OnInit {
       options: [
         { label: 'Enabled', value: 'Enabled' },
         { label: 'Disabled', value: 'Disabled' },
-      ],
-    },
-    sendWelcomeEmail: {
-      type: 'select',
-      controlName: 'sendWelcomeEmail',
-      label: 'Send welcome email',
-      options: [
-        { label: 'Yes — send credentials', value: 'Yes — send credentials' },
-        { label: 'No', value: 'No' },
       ],
     },
     mobile: {
@@ -470,7 +437,7 @@ export class AddEmployeeComponent implements OnInit {
   readonly personalFields = ['firstName', 'lastName', 'dob', 'gender', 'bloodGroup', 'aadhaarNumber', 'panNumber'];
   readonly contactFields = ['mobile', 'alternateMobile', 'email', 'address'];
   readonly emergencyContactFields = ['emergencyContactName', 'relation', 'emergencyContactMobile'];
-  readonly employmentFields = ['employeeCode', 'joiningDate', 'designation', 'experience', 'salaryGrade', 'employmentType'];
+  readonly employmentFields = ['employeeCode', 'joiningDate', 'designation', 'experience'];
   readonly qualificationFields = ['degree', 'university', 'year', 'percentage'];
   readonly bankFields = ['accountNumber', 'ifscCode', 'bankName'];
   readonly organizationFields = [
@@ -480,7 +447,6 @@ export class AddEmployeeComponent implements OnInit {
     'reportingManagerId',
     'portalRoleId',
     'username',
-    'sendWelcomeEmail',
   ];
   readonly scheduleFields = ['shiftStartTime', 'shiftEndTime'];
 
@@ -585,8 +551,6 @@ export class AddEmployeeComponent implements OnInit {
         joiningDate: ['', Validators.required],
         designation: [null],
         experience: [0, experienceValidator()],
-        salaryGrade: [''],
-        employmentType: ['Full-time'],
         qualifications: this.fb.array([this.createQualificationRow()]),
         bankDetails: this.fb.group({
           accountNumber: ['', bankAccountValidator()],
@@ -601,7 +565,6 @@ export class AddEmployeeComponent implements OnInit {
         reportingManagerId: [null],
         portalAccess: ['Enabled'],
         username: [{ value: '', disabled: true }],
-        sendWelcomeEmail: ['Yes — send credentials'],
       }),
       schedule: this.fb.group({
         shiftStartTime: [null, shiftStartTimeValidator()],
@@ -813,9 +776,6 @@ export class AddEmployeeComponent implements OnInit {
     if (field === 'portalRoleId' || field === 'username') {
       return this.isPortalAccessEnabled;
     }
-    if (field === 'sendWelcomeEmail') {
-      return this.mode === 'add' && this.isPortalAccessEnabled;
-    }
     return true;
   }
 
@@ -908,8 +868,6 @@ export class AddEmployeeComponent implements OnInit {
             joiningDate: this.toLocalDate(data.joiningDate),
             designation: data.designation,
             experience: clampExperienceValue(data.experience),
-            salaryGrade: data.salaryGrade,
-            employmentType: data.employmentType,
             bankDetails: {
               accountNumber: data.bankAccountNumber ? sanitizeBankAccountInput(String(data.bankAccountNumber)) : '',
               ifscCode: data.bankIfscCode ? sanitizeIfscInput(String(data.bankIfscCode)) : '',
@@ -986,11 +944,6 @@ export class AddEmployeeComponent implements OnInit {
   setGender(gender: string): void {
     if (this.mode === 'view') return;
     this.employeeForm.get('personal.gender')?.setValue(gender);
-  }
-
-  setEmploymentType(type: string): void {
-    if (this.mode === 'view') return;
-    this.employeeForm.get('professional.employmentType')?.setValue(type);
   }
 
   get shiftTimeError(): string {

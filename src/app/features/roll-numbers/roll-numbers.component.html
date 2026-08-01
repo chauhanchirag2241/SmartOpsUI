@@ -1,0 +1,139 @@
+<section class="roll-numbers-page">
+  <div class="topbar">
+    <span
+      [appPageChrome]="'Roll Numbers'"
+      [pageChromeSubtitle]="'Assign and edit student roll numbers by class'"
+    ></span>
+    <div class="topbar-actions">
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="!canAutoGenerate"
+        (click)="autoGenerate()"
+      >
+        <mat-icon>auto_fix</mat-icon>
+        Auto generate
+      </button>
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="!canSave"
+        (click)="onSave()"
+      >
+        <mat-icon>save</mat-icon>
+        {{ saving ? 'Saving…' : 'Save' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="roll-setup">
+    <p class="roll-hint">
+      Academic year: <strong>{{ academicYearLabel || '—' }}</strong>.
+      Select a class to load students, edit roll numbers, or auto-generate by student name order.
+    </p>
+
+    <div class="roll-filters">
+      <app-form-field
+        label="Class"
+        type="select"
+        [required]="true"
+        [(ngModel)]="classId"
+        (ngModelChange)="onClassChange()"
+        [options]="classOptions"
+        emptyOptionLabel="Select class"
+        [disabled]="saving || loading"
+      />
+
+      @if (classId) {
+        <app-form-field
+          label="Search"
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Name, admission no, roll…"
+          [disabled]="loading"
+        />
+      }
+    </div>
+
+    @if (!classes.length && !loading) {
+      <span class="field-note field-note--error">No classes in this academic year.</span>
+    }
+
+    @if (resultErrors.length) {
+      <div class="roll-errors">
+        <div class="roll-errors-title">Could not save:</div>
+        <ul>
+          @for (err of resultErrors; track err) {
+            <li>{{ err }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  @if (!classId) {
+    <div class="roll-empty">
+      <mat-icon>format_list_numbered</mat-icon>
+      <div>Select a <strong>Class</strong> to manage roll numbers.</div>
+    </div>
+  } @else if (loading) {
+    <div class="roll-empty">
+      <mat-icon>hourglass_empty</mat-icon>
+      <div>Loading students…</div>
+    </div>
+  } @else if (!rows.length) {
+    <div class="roll-empty">
+      <mat-icon>groups</mat-icon>
+      <div>No active students in this class.</div>
+    </div>
+  } @else {
+    <div class="card">
+      <div class="card-title">
+        <mat-icon>groups</mat-icon>
+        Students
+        <span class="badge b-green">{{ filteredRows.length }}</span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table roll-table">
+          <thead>
+            <tr>
+              <th style="width: 72px">#</th>
+              <th>Student</th>
+              <th style="width: 140px">Admission No.</th>
+              <th>Class</th>
+              <th style="width: 140px">Roll number</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of filteredRows; track row.id; let i = $index) {
+              <tr>
+                <td class="muted">{{ i + 1 }}</td>
+                <td>
+                  <div class="cell-user">
+                    <div class="av av-g">{{ initials(row.name) }}</div>
+                    <div>
+                      <div>{{ row.name }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ row.admNo || '—' }}</td>
+                <td>{{ row.class || '—' }}</td>
+                <td>
+                  <input
+                    class="form-control roll-input"
+                    type="text"
+                    [(ngModel)]="row.rollNumber"
+                    [disabled]="!canEdit || saving"
+                    maxlength="50"
+                    placeholder="—"
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

@@ -99,10 +99,15 @@ export class AddStudentComponent implements OnInit {
   studentForm: FormGroup;
   currentTab = 0;
   isSaving = false;
-  classes: any[] = [];
+  classGroups: any[] = [];
+  sections: any[] = [];
   selectedPhoto: SelectedUploadFile | null = null;
   selectedDocuments: Record<string, SelectedUploadFile> = {};
   private academicRecordId = '';
+  /** Retained from GET so PUT can send FKs the form never edits. */
+  private loadedUserId = '';
+  private loadedBranchId = '';
+  private suppressClassHandlers = false;
 
   readonly tabs = [
     { label: 'Personal info', hint: 'Step 1 of 4 — Personal information' },
@@ -113,7 +118,7 @@ export class AddStudentComponent implements OnInit {
 
   readonly footerHints = [
     'Fill all required fields to continue',
-    'Select class and section',
+    'Select class group (section and roll number are optional)',
     'Upload required documents',
     'Review all details before submitting',
   ];
@@ -345,21 +350,28 @@ export class AddStudentComponent implements OnInit {
         { name: 'required', message: 'Admission date is required', validator: Validators.required },
       ],
     },
-    class: {
+    classGroup: {
       type: 'select',
-      controlName: 'classId',
-      label: 'Class',
-      placeholder: 'Select class',
+      controlName: 'classGroupId',
+      label: 'Class group',
+      placeholder: 'Select class group',
       options: [],
       validations: [
-        { name: 'required', message: 'Class is required', validator: Validators.required },
+        { name: 'required', message: 'Class group is required', validator: Validators.required },
       ],
+    },
+    section: {
+      type: 'select',
+      controlName: 'classId',
+      label: 'Section',
+      placeholder: 'Select section (optional)',
+      options: [],
     },
     rollNumber: {
       type: 'input',
       controlName: 'rollNumber',
       label: 'Roll number',
-      placeholder: 'Auto generated',
+      placeholder: 'Auto when section selected',
       disabled: true,
     },
     prevSchool: {
@@ -457,7 +469,7 @@ export class AddStudentComponent implements OnInit {
           title: 'Class & section',
           icon: 'co_present',
           layout: 'grid3',
-          fields: ['class', 'rollNumber'],
+          fields: ['classGroup', 'section', 'rollNumber'],
         },
         {
           title: 'Previous school',
@@ -513,7 +525,7 @@ export class AddStudentComponent implements OnInit {
       'motherEmail',
       'motherOcc',
     ],
-    1: ['admissionDate', 'admissionNo', 'class', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
+    1: ['admissionDate', 'admissionNo', 'classGroup', 'prevSchool', 'prevClass', 'percentage', 'tcNo'],
     2: ['remarks', 'customFields'],
   };
 
@@ -538,7 +550,9 @@ export class AddStudentComponent implements OnInit {
       icon: 'school',
       items: [
         { label: 'Academic Year', key: 'academicYearLabel' },
-        { label: 'Class', key: 'classId' },
+        { label: 'Class group', key: 'classGroupId' },
+        { label: 'Section', key: 'classId' },
+        { label: 'Roll number', key: 'rollNumber' },
         { label: 'Admission No.', key: 'admissionNo' },
         { label: 'Admission Date', key: 'admissionDate' },
       ],
@@ -593,7 +607,8 @@ export class AddStudentComponent implements OnInit {
 
       admissionDate: ['', Validators.required],
       academicYearId: ['', Validators.required],
-      classId: ['', Validators.required],
+      classGroupId: ['', Validators.required],
+      classId: [''],
       rollNumber: [{ value: '', disabled: true }],
       prevSchool: ['', maxLengthValidator(PREV_SCHOOL_MAX_LENGTH)],
       prevClass: ['', alphanumericValidator(PREV_CLASS_MAX_LENGTH)],
@@ -620,7 +635,7 @@ export class AddStudentComponent implements OnInit {
       });
     }
 
-    this.loadClasses(yearId || undefined);
+    this.loadClassGroups(yearId || undefined);
     this.setupClassSelectionHandlers();
     if (this.studentId && this.mode !== 'add') {
       this.loadStudentData(this.studentId);
@@ -647,10 +662,31 @@ export class AddStudentComponent implements OnInit {
   }
 
   private setupClassSelectionHandlers() {
+    this.studentForm.get('classGroupId')?.valueChanges.subscribe((classGroupId) => {
+      if (this.suppressClassHandlers) {
+        return;
+      }
+      this.studentForm.patchValue({ classId: '', rollNumber: '' }, { emitEvent: false });
+      this.sections = [];
+      this.configs['section'].options = [];
+      if (classGroupId) {
+        this.loadSections(String(classGroupId));
+      }
+      this.cdr.detectChanges();
+    });
+
     this.studentForm.get('classId')?.valueChanges.subscribe((classId) => {
+      if (this.suppressClassHandlers) {
+        return;
+      }
       const yearId = this.resolveAcademicYearId();
-      if (this.mode === 'add' && yearId && classId) {
-        this.generateRollNumber(yearId, classId);
+      if (!classId) {
+        this.studentForm.patchValue({ rollNumber: '' }, { emitEvent: false });
+        this.cdr.detectChanges();
+        return;
+      }
+      if (yearId) {
+        this.generateRollNumber(yearId, String(classId));
       }
     });
   }
@@ -674,19 +710,41 @@ export class AddStudentComponent implements OnInit {
     });
   }
 
-  loadClasses(academicYearId?: string, afterLoad?: () => void) {
+  loadClassGroups(academicYearId?: string, afterLoad?: () => void) {
     const yearId = academicYearId || this.ayContext.effectiveYearId() || undefined;
-    this.classService.getClassDropdown(yearId).subscribe({
-      next: (classes) => {
-        this.classes = classes || [];
-        this.configs['class'].options = this.classes.map((c: any) => ({
+    this.classService.getClassDropdown(yearId, 'group').subscribe({
+      next: (groups) => {
+        this.classGroups = groups || [];
+        this.configs['classGroup'].options = this.classGroups.map((c: any) => ({
           label: c.name,
           value: c.id,
         }));
         this.cdr.detectChanges();
         afterLoad?.();
       },
-      error: () => this.snackBar.open('Error loading classes', 'Close', { duration: 3000 }),
+      error: () => this.snackBar.open('Error loading class groups', 'Close', { duration: 3000 }),
+    });
+  }
+
+  loadSections(classGroupId: string, afterLoad?: () => void) {
+    if (!classGroupId) {
+      this.sections = [];
+      this.configs['section'].options = [];
+      afterLoad?.();
+      return;
+    }
+
+    this.classService.getSectionsByClassGroup(classGroupId).subscribe({
+      next: (sections) => {
+        this.sections = sections || [];
+        this.configs['section'].options = this.sections.map((s) => ({
+          label: s.name,
+          value: s.id,
+        }));
+        this.cdr.detectChanges();
+        afterLoad?.();
+      },
+      error: () => this.snackBar.open('Error loading sections', 'Close', { duration: 3000 }),
     });
   }
 
@@ -745,18 +803,34 @@ export class AddStudentComponent implements OnInit {
       next: (data: any) => {
         const academic = this.resolveAcademicRecord(data.academics);
         const yearId = String(academic?.academicYearId ?? academic?.AcademicYearId ?? '');
-        const apply = () => {
+        const classGroupId = String(
+          academic?.classGroupId ?? academic?.ClassGroupId ?? '',
+        ).trim();
+        const classId = String(academic?.classId ?? academic?.ClassId ?? '').trim();
+
+        const finish = () => {
           this.patchForm(data, academic);
           if (this.mode === 'view') {
             this.studentForm.disable({ emitEvent: false });
           }
           this.cdr.detectChanges();
         };
-        if (yearId) {
-          this.loadClasses(yearId, apply);
-        } else {
-          apply();
-        }
+
+        this.loadClassGroups(yearId || undefined, () => {
+          if (!classGroupId) {
+            finish();
+            return;
+          }
+          this.loadSections(classGroupId, () => {
+            finish();
+            if (classId) {
+              // Ensure section value sticks after options load
+              this.suppressClassHandlers = true;
+              this.studentForm.patchValue({ classId }, { emitEvent: false });
+              this.suppressClassHandlers = false;
+            }
+          });
+        });
       },
       error: () => this.snackBar.open('Error loading student data', 'Close', { duration: 3000 }),
     });
@@ -766,6 +840,7 @@ export class AddStudentComponent implements OnInit {
     const father = data.parents?.find((p: any) => p.relationType === 'Father');
     const mother = data.parents?.find((p: any) => p.relationType === 'Mother');
     const prevSchool = data.previousSchools?.[0];
+    this.suppressClassHandlers = true;
     this.studentForm.patchValue({
       admissionNo: data.admissionNo,
       firstName: data.firstName,
@@ -793,8 +868,9 @@ export class AddStudentComponent implements OnInit {
 
       admissionDate: this.toLocalDate(academic?.admissionDate),
       academicYearId: academic?.academicYearId ?? this.ayContext.effectiveYearId(),
-      classId: academic?.classId,
-      rollNumber: academic?.rollNumber,
+      classGroupId: academic?.classGroupId ?? academic?.ClassGroupId ?? '',
+      classId: academic?.classId ?? academic?.ClassId ?? '',
+      rollNumber: academic?.rollNumber ?? '',
 
       prevSchool: prevSchool?.schoolName,
       prevClass: prevSchool?.lastClassPassed,
@@ -810,8 +886,11 @@ export class AddStudentComponent implements OnInit {
         }),
       ),
     });
+    this.suppressClassHandlers = false;
 
     this.academicRecordId = String(academic?.id ?? academic?.Id ?? '');
+    this.loadedUserId = String(data.userId ?? data.UserId ?? '').trim();
+    this.loadedBranchId = String(data.branchId ?? data.BranchId ?? '').trim();
   }
 
   goTab(index: number) {
@@ -895,13 +974,16 @@ export class AddStudentComponent implements OnInit {
       ...rawValue,
       academicYearId: yearId,
       academicRecordId: this.academicRecordId || undefined,
+      userId: this.loadedUserId || undefined,
+      branchId: this.loadedBranchId || undefined,
       academics: [
         {
           id: this.academicRecordId || undefined,
           admissionDate: rawValue.admissionDate,
           academicYearId: yearId,
-          classId: rawValue.classId,
-          rollNumber: rawValue.rollNumber,
+          classGroupId: rawValue.classGroupId,
+          classId: rawValue.classId || null,
+          rollNumber: rawValue.classId ? rawValue.rollNumber || null : null,
         },
       ],
     };
@@ -1048,8 +1130,12 @@ export class AddStudentComponent implements OnInit {
       return '';
     }
 
+    if (key === 'classGroupId') {
+      return this.classGroups.find((item) => String(item.id) === String(raw))?.name ?? '';
+    }
+
     if (key === 'classId') {
-      return this.classes.find((item) => String(item.id) === String(raw))?.name ?? '';
+      return this.sections.find((item) => String(item.id) === String(raw))?.name ?? '';
     }
 
     return '';

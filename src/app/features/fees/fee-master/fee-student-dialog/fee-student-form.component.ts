@@ -16,6 +16,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import {
   FeeMasterService,
   FeeStudentHeadAmountDto,
+  FeeStudentPeriodGroupDto,
 } from '../../../../core/services/fee-master.service';
 import { StudentService } from '../../../../core/services/student.service';
 import { ClassService } from '../../../../core/services/class.service';
@@ -62,6 +63,8 @@ export class FeeStudentFormComponent implements OnInit {
   alreadyAssignedIds = new Set<string>();
 
   heads: FeeStudentHeadAmountDto[] = [];
+  periods: FeeStudentPeriodGroupDto[] = [];
+  isPeriodWise = false;
   staged: StagedStudent[] = [];
 
   form: FormGroup = this.fb.group({});
@@ -77,12 +80,20 @@ export class FeeStudentFormComponent implements OnInit {
     );
   }
 
-  isExcluded(feeHeadId: string): boolean {
-    return !!this.form.get(`ex_${feeHeadId}`)?.value;
+  headKey(h: FeeStudentHeadAmountDto): string {
+    return h.academicPeriodId ? `${h.feeHeadId}_${h.academicPeriodId}` : h.feeHeadId;
   }
 
-  toggleExcluded(feeHeadId: string): void {
-    const ctrl = this.form.get(`ex_${feeHeadId}`);
+  isExcluded(h: FeeStudentHeadAmountDto): boolean {
+    return !!this.form.get(`ex_${this.headKey(h)}`)?.value;
+  }
+
+  isAmountEditable(h: FeeStudentHeadAmountDto): boolean {
+    return this.mode === 'add' || !!h.isEditable || this.isStudentWise || !!h.hasOverride;
+  }
+
+  toggleExcluded(h: FeeStudentHeadAmountDto): void {
+    const ctrl = this.form.get(`ex_${this.headKey(h)}`);
     if (!ctrl) return;
     ctrl.setValue(!ctrl.value);
   }
@@ -230,10 +241,12 @@ export class FeeStudentFormComponent implements OnInit {
     if (!this.studentId) return;
 
     const amounts = this.heads.map((h) => {
-      const excluded = !!this.form.get(`ex_${h.feeHeadId}`)?.value;
-      const amount = this.readAmount(h.feeHeadId);
+      const key = this.headKey(h);
+      const excluded = !!this.form.get(`ex_${key}`)?.value;
+      const amount = this.readAmount(key);
       return {
         feeHeadId: h.feeHeadId,
+        academicPeriodId: h.academicPeriodId ?? null,
         amount: excluded ? null : amount,
         isExcluded: !h.isMandatory ? excluded : false,
       };
@@ -260,8 +273,8 @@ export class FeeStudentFormComponent implements OnInit {
     });
   }
 
-  private readAmount(feeHeadId: string): number | null {
-    const raw = this.form.get(`amt_${feeHeadId}`)?.value;
+  private readAmount(controlKey: string): number | null {
+    const raw = this.form.get(`amt_${controlKey}`)?.value;
     if (raw === null || raw === undefined || raw === '') return null;
     const n = Number(raw);
     return Number.isFinite(n) ? n : null;
@@ -349,6 +362,8 @@ export class FeeStudentFormComponent implements OnInit {
     this.feeMasterService.getFeeStudent(this.feeMasterId, studentId).subscribe({
       next: (detail) => {
         this.studentName = detail.studentName;
+        this.isPeriodWise = !!detail.isPeriodWise;
+        this.periods = detail.periods || [];
         this.heads = detail.heads || [];
         this.buildFormControls();
         this.cdr.detectChanges();
@@ -365,13 +380,14 @@ export class FeeStudentFormComponent implements OnInit {
   private buildFormControls(): void {
     const group: Record<string, FormControl> = {};
     for (const h of this.heads) {
-      const editable = this.mode === 'add' || h.isEditable;
-      group[`amt_${h.feeHeadId}`] = new FormControl({
+      const key = this.headKey(h);
+      const editable = this.isAmountEditable(h);
+      group[`amt_${key}`] = new FormControl({
         value: h.amount ?? h.defaultAmount ?? null,
         disabled: !editable,
       });
       if (!h.isMandatory && this.mode === 'edit') {
-        group[`ex_${h.feeHeadId}`] = new FormControl(h.isExcluded);
+        group[`ex_${key}`] = new FormControl(h.isExcluded);
       }
     }
     this.form = this.fb.group(group);

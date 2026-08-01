@@ -167,6 +167,26 @@ export interface SaveExamScheduleRequest {
   invigilatorId?: string | null;
 }
 
+export interface BulkExamScheduleSlot {
+  classId: string;
+  subjectId: string;
+  examDate: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  roomNo?: string | null;
+  invigilatorId?: string | null;
+}
+
+export interface BulkCreateExamSchedulesRequest {
+  examId: string;
+  slots: BulkExamScheduleSlot[];
+}
+
+export interface BulkCreateExamSchedulesResult {
+  createdCount: number;
+  created: ExamScheduleItem[];
+}
+
 // ── Marks entry ──────────────────────────────────────────────
 
 export interface ExamComponentMark {
@@ -413,6 +433,12 @@ export class ExamService {
 
   createSchedule(data: SaveExamScheduleRequest): Observable<ExamScheduleItem> {
     return this.api.post<ExamScheduleItem>('exam-schedules', data);
+  }
+
+  bulkCreateSchedules(
+    data: BulkCreateExamSchedulesRequest,
+  ): Observable<BulkCreateExamSchedulesResult> {
+    return this.api.post<BulkCreateExamSchedulesResult>('exam-schedules/bulk', data);
   }
 
   updateSchedule(id: string, data: SaveExamScheduleRequest): Observable<ExamScheduleItem> {

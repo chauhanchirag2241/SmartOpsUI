@@ -17,6 +17,7 @@ import { PermissionService } from '../../../../core/services/permission.service'
 import { MenuCodes } from '../../../../core/constants/menu-codes';
 import { AcademicYearContextService } from '../../../../core/services/academic-year-context.service';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { formatDateOnlyDisplay } from '../../../../shared/utils/date-only.util';
 import {
   FeeCollectionDetail,
   FeeCollectionHistoryRow,
@@ -168,6 +169,10 @@ export class FeeCollectionDetailComponent implements OnInit {
     return 'pending';
   }
 
+  cardTrackId(card: FeeCollectionMasterCard): string {
+    return `${card.feeMasterId}:${card.academicPeriodId ?? ''}`;
+  }
+
   openCollect(card: FeeCollectionMasterCard): void {
     if (!this.canCollect || !card.canCollect) {
       if (card.isPublished === false) {
@@ -226,18 +231,7 @@ export class FeeCollectionDetailComponent implements OnInit {
   }
 
   formatDate(value: string | null | undefined): string {
-    if (!value) return '—';
-    const raw = String(value).trim();
-    const isoDay = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
-    if (isoDay) {
-      return `${isoDay[3]}-${isoDay[2]}-${isoDay[1]}`;
-    }
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw;
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+    return formatDateOnlyDisplay(value);
   }
 
   formatPaymentMethod(value: string | null | undefined): string {

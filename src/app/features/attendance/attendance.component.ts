@@ -12,6 +12,8 @@ import { AttendanceStatus } from '../../modules/school/attendance/enums/attendan
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
 import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
+import { FormFieldComponent } from '../../shared/form-controls/form-field';
+import type { FormFieldOption } from '../../shared/form-controls/form-field';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import { DeleteDialogData } from '../../shared/interfaces/delete-dialog.interface';
@@ -25,7 +27,7 @@ interface Student {
 }
 
 interface AttendanceStatusMap {
-  [key: string]: string; // '' | 'present' | 'absent' | 'leave' | 'late'
+  [key: string]: string; // '' | 'present' | 'absent' | 'late'
 }
 
 interface AttendanceNote {
@@ -35,7 +37,17 @@ interface AttendanceNote {
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, MatDialogModule, AvatarComponent, PageToolbarComponent, PageChromeDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    MatDialogModule,
+    AvatarComponent,
+    PageToolbarComponent,
+    PageChromeDirective,
+    FormFieldComponent,
+  ],
   templateUrl: './attendance.component.html',
   styleUrl: './attendance.component.css'
 })
@@ -107,6 +119,13 @@ export class AttendanceComponent implements OnInit {
 
   get selectedClassName(): string {
     return this.classes.find(c => c.id === this.selectedClassId)?.name || 'Select class';
+  }
+
+  get classFilterOptions(): FormFieldOption[] {
+    return (this.classes || []).map((c) => ({
+      label: String(c.name ?? ''),
+      value: String(c.id ?? ''),
+    }));
   }
 
   onClassChanged(classId: string): void {
@@ -244,7 +263,7 @@ export class AttendanceComponent implements OnInit {
 
   cardClick(id: string) {
     if (!this.canEditAttendance) return;
-    const cycles: { [key: string]: string } = { '': 'present', 'present': 'absent', 'absent': 'leave', 'leave': 'late', 'late': '' };
+    const cycles: { [key: string]: string } = { '': 'present', 'present': 'absent', 'absent': 'late', 'late': '' };
     const prev = this.status[id];
     this.status[id] = cycles[prev];
     this.pushHistory(id, prev, this.status[id]);
@@ -361,23 +380,20 @@ export class AttendanceComponent implements OnInit {
     const vals = this.students.map(s => this.status[s.id] || '');
     const p = vals.filter(s => s === 'present').length;
     const a = vals.filter(s => s === 'absent').length;
-    const l = vals.filter(s => s === 'leave').length;
     const lt = vals.filter(s => s === 'late').length;
     const tot = this.students.length;
-    const marked = p + a + l + lt;
+    const marked = p + a + lt;
     const pct = tot > 0 ? Math.round((marked / tot) * 100) : 0;
     
     return {
       total: tot,
       present: p,
       absent: a,
-      leave: l,
       late: lt,
       marked,
       pct,
       pPct: tot > 0 ? (p / tot) * 100 : 0,
       aPct: tot > 0 ? (a / tot) * 100 : 0,
-      lPct: tot > 0 ? (l / tot) * 100 : 0,
       ltPct: tot > 0 ? (lt / tot) * 100 : 0
     };
   }
@@ -385,7 +401,7 @@ export class AttendanceComponent implements OnInit {
   showToast(id: string) {
     const s = this.students.find(x => x.id === id);
     const st = this.status[id];
-    const labels: { [key: string]: string } = { 'present': 'Present', 'absent': 'Absent', 'leave': 'Leave', 'late': 'Late', '': 'Unmarked' };
+    const labels: { [key: string]: string } = { 'present': 'Present', 'absent': 'Absent', 'late': 'Late', '': 'Unmarked' };
     this.snackBar.open(`${s?.name} → ${labels[st]}`, 'Undo', { duration: 2000 })
       .onAction().subscribe(() => this.undo());
   }
@@ -477,14 +493,13 @@ export class AttendanceComponent implements OnInit {
     const map: Record<string, AttendanceStatus> = {
       present: AttendanceStatus.Present,
       absent: AttendanceStatus.Absent,
-      leave: AttendanceStatus.Leave,
       late: AttendanceStatus.Late
     };
 
     return map[status];
   }
 
-  /** API may return status as number (1–4) or string enum ("Present", …). */
+  /** API may return status as number (1–3) or string enum ("Present", …). */
   private parseStatusFromApi(status: unknown): string {
     if (status == null || status === '') {
       return '';
@@ -493,7 +508,6 @@ export class AttendanceComponent implements OnInit {
     const numericMap: Record<number, string> = {
       [AttendanceStatus.Present]: 'present',
       [AttendanceStatus.Absent]: 'absent',
-      [AttendanceStatus.Leave]: 'leave',
       [AttendanceStatus.Late]: 'late',
     };
 
@@ -505,12 +519,10 @@ export class AttendanceComponent implements OnInit {
     const stringMap: Record<string, string> = {
       present: 'present',
       absent: 'absent',
-      leave: 'leave',
       late: 'late',
       '1': 'present',
       '2': 'absent',
-      '3': 'leave',
-      '4': 'late',
+      '3': 'late',
     };
 
     return stringMap[normalized] || '';
@@ -552,7 +564,7 @@ export class AttendanceComponent implements OnInit {
     const sid = vis[this.focusIdx]?.id;
     if (!sid) return;
 
-    const keyMap: { [key: string]: string } = { 'p': 'present', 'a': 'absent', 'l': 'leave', 't': 'late', ' ': 'cycle' };
+    const keyMap: { [key: string]: string } = { 'p': 'present', 'a': 'absent', 'l': 'late', ' ': 'cycle' };
     const action = keyMap[event.key.toLowerCase()];
     
     if (action === 'cycle') {

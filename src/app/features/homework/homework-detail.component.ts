@@ -20,6 +20,7 @@ import {
   homeworkStatusBadgeClass,
   homeworkSubjectBadgeClass,
 } from './homework.shared';
+import { todayDateOnlyString } from '../../shared/utils/date-only.util';
 
 const GUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -256,7 +257,7 @@ export class HomeworkDetailComponent implements OnInit {
         return {
           ...row,
           status: nextStatus,
-          submittedOn: row.submittedOn || new Date().toISOString().split('T')[0],
+          submittedOn: row.submittedOn || todayDateOnlyString(),
         };
       }
       return { ...row, status: nextStatus, submittedOn: '', marks: null, remark: '' };
@@ -270,7 +271,7 @@ export class HomeworkDetailComponent implements OnInit {
       status: s.status,
       submittedOn:
         s.status === HomeworkSubmissionStatus.Submitted || s.status === HomeworkSubmissionStatus.Late
-          ? s.submittedOn || new Date().toISOString().split('T')[0]
+          ? s.submittedOn || todayDateOnlyString()
           : null,
       marks: s.marks,
       remark: s.remark?.trim() || null,

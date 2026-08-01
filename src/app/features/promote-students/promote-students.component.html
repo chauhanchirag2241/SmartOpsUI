@@ -1,0 +1,118 @@
+<section class="promote-students-page">
+  <div class="topbar">
+    <span
+      [appPageChrome]="'Promote Students'"
+      [pageChromeSubtitle]="'Move students from one academic year and class to the next'"
+    ></span>
+  </div>
+
+  <div class="promote-setup">
+    <p class="promote-hint">
+      Choose source and target year/class. Students from the source class appear below — select them and promote.
+      Old enrollment will be closed; a new class enrollment will be created.
+    </p>
+
+    <div class="promote-fields">
+      <app-form-field
+        label="From academic year"
+        type="select"
+        [required]="true"
+        [(ngModel)]="sourceYearId"
+        (ngModelChange)="onSourceYearChange()"
+        [options]="sourceYearOptions"
+        emptyOptionLabel="Select year"
+        [disabled]="promoting"
+      />
+
+      <app-form-field
+        label="From class"
+        type="select"
+        [required]="true"
+        [(ngModel)]="sourceClassId"
+        (ngModelChange)="onSourceClassChange()"
+        [options]="sourceClassOptions"
+        emptyOptionLabel="Select class"
+        [disabled]="promoting || !sourceYearId || !sourceClasses.length"
+      />
+
+      <app-form-field
+        label="To academic year"
+        type="select"
+        [required]="true"
+        [(ngModel)]="targetYearId"
+        (ngModelChange)="onTargetYearChange()"
+        [options]="targetYearOptions"
+        emptyOptionLabel="Select year"
+        [disabled]="promoting"
+      />
+
+      <app-form-field
+        label="To class"
+        type="select"
+        [required]="true"
+        [(ngModel)]="targetClassId"
+        (ngModelChange)="onTargetClassChange()"
+        [options]="targetClassOptions"
+        emptyOptionLabel="Select class"
+        [disabled]="promoting || !targetYearId || !targetClasses.length"
+      />
+    </div>
+
+    @if (sourceYearId && !sourceClasses.length) {
+      <span class="field-note field-note--error">No classes in source year.</span>
+    }
+    @if (targetYearId && !targetClasses.length) {
+      <span class="field-note field-note--error">No classes in target year. Create classes first.</span>
+    }
+
+    <div class="promote-actions">
+      <label class="check-row">
+        <input type="checkbox" [(ngModel)]="autoRollNumber" [disabled]="promoting" />
+        Auto-assign roll numbers in target class
+      </label>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="!canClickPromote"
+        (click)="onPromoteClick()"
+      >
+        <mat-icon>upgrade</mat-icon>
+        {{ promoting ? 'Promoting…' : 'Promote' }}
+      </button>
+    </div>
+
+    @if (sourceYearId && targetYearId && sourceYearId === targetYearId) {
+      <div class="promote-errors">
+        <div class="promote-errors-title">Target year must be different from source year.</div>
+      </div>
+    }
+
+    @if (resultErrors.length) {
+      <div class="promote-errors">
+        <div class="promote-errors-title">Could not promote:</div>
+        <ul>
+          @for (err of resultErrors; track err) {
+            <li>{{ err }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  @if (showStudentsTable) {
+    <app-smart-data-table
+      [config]="tableConfig"
+      [data]="students"
+      [serverSide]="true"
+      [totalRecords]="totalStudents"
+      [rowClassFn]="studentRowClass"
+      (pageChange)="onPageChange($event)"
+    />
+  } @else {
+    <div class="promote-empty">
+      <mat-icon>upgrade</mat-icon>
+      <div>Select <strong>From academic year</strong> and <strong>From class</strong> to load students.</div>
+    </div>
+  }
+</section>

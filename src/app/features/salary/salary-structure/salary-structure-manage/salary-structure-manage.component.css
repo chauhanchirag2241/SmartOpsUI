@@ -1,0 +1,70 @@
+:host {
+  display: block;
+}
+
+.page-sub {
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.lock-hint,
+.paid-archived-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  background: var(--g50, #f3f8eb);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 14px;
+}
+
+.lock-hint mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.b-amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+.b-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.b-green {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+.b-gray {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.basic-edit-input {
+  border: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #f9fafb;
+  max-width: 220px;
+}

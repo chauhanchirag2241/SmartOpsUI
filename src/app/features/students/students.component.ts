@@ -8,10 +8,6 @@ import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { AddStudentComponent } from './add-student/add-student.component';
-import {
-  PromoteStudentsDialogComponent,
-  PromoteStudentRow,
-} from './promote-students-dialog/promote-students-dialog.component';
 import { StudentService } from '../../core/services/student.service';
 import { ClassService } from '../../core/services/class.service';
 
@@ -20,7 +16,6 @@ import { DeleteConfirmDialogComponent } from '../../shared/components/delete-con
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import type {
   DataTableAction,
-  DataTableBulkAction,
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
@@ -38,7 +33,6 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
     MatSnackBarModule,
     MatDialogModule,
     AddStudentComponent,
-    PromoteStudentsDialogComponent,
   ],
   templateUrl: './students.component.html',
   styleUrl: './students.component.css',
@@ -68,8 +62,6 @@ export class StudentsComponent implements OnInit {
   classOptions: { id: string; name: string }[] = [];
   readonly selectedClassIds = new Set<string>();
   classFilterDropdownOpen = false;
-  showPromoteModal = false;
-  promoteStudents: PromoteStudentRow[] = [];
 
   private listState = {
     pageIndex: 1,
@@ -372,17 +364,6 @@ export class StudentsComponent implements OnInit {
     ],
     actionVisibleFn: (action, row) => this.isStudentActionVisible(action, row),
 
-    bulkActions: [
-      { label: 'Promote to next year', icon: 'upgrade' },
-    ],
-    bulkActionVisibleFn: (action, selectedRows) => {
-      if (action.label === 'Promote to next year') {
-        // Hide option if any selected student is deleted/inactive
-        return !selectedRows.some((row) => row['isActive'] === false);
-      }
-      return true;
-    },
-
     searchPlaceholder: 'Search by name, admission no...',
     searchKeys: ['name', 'admNo', 'class', 'email'],
     itemLabel: 'students',
@@ -508,69 +489,6 @@ export class StudentsComponent implements OnInit {
 
   onAddButtonClicked(): void {
     this.openAddForm();
-  }
-
-  openPromoteDialog(rows: Record<string, unknown>[]): void {
-    if (this.ayContext.isReadOnlyScope()) {
-      this.snackBar.open(
-        'Promote is not allowed while viewing a past academic year.',
-        'Close',
-        { duration: 4000, panelClass: 'snack-warning' },
-      );
-      return;
-    }
-    if (!this.permissionService.canEdit(MenuCodes.Students)) {
-      return;
-    }
-    const active = rows.filter((r) => r['isActive'] !== false);
-    const promotable = active.filter((r) => r['enrollmentIsActive'] !== false);
-    if (!promotable.length) {
-      const alreadyPromoted = active.length > 0 && active.every((r) => r['enrollmentIsActive'] === false);
-      this.snackBar.open(
-        alreadyPromoted
-          ? 'Selected student(s) are already promoted from this academic year. Refresh the list or switch to the target year.'
-          : 'Select students with an active enrollment in the current academic year to promote.',
-        'Close',
-        { duration: 5000, panelClass: 'snack-warning' },
-      );
-      return;
-    }
-    if (promotable.length < active.length) {
-      this.snackBar.open(
-        `${active.length - promotable.length} selected student(s) skipped — already promoted from this year.`,
-        'Close',
-        { duration: 4000, panelClass: 'snack-info' },
-      );
-    }
-    this.promoteStudents = promotable.map((r) => ({
-      id: String(r['id'] ?? ''),
-      name: String(r['name'] ?? 'Student'),
-      class: String(r['class'] ?? ''),
-    }));
-    this.showPromoteModal = true;
-    this.cdr.detectChanges();
-  }
-
-  onPromoteCompleted(): void {
-    this.showPromoteModal = false;
-    this.promoteStudents = [];
-    this.loadStudents();
-  }
-
-  onBulkActionClicked(event: {
-    action: DataTableBulkAction;
-    selectedRows: Record<string, unknown>[];
-  }): void {
-    if (event.action.label === 'Promote to next year') {
-      this.openPromoteDialog(event.selectedRows);
-      return;
-    }
-    
-    this.snackBar.open(
-      `${event.action.label} → ${event.selectedRows.length} student(s)`,
-      'Close',
-      { duration: 3000, panelClass: 'snack-info' },
-    );
   }
 
   private getInitials(name: string): string {

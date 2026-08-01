@@ -13,7 +13,6 @@
       (advancedFiltersCleared)="onAdvancedFiltersCleared()"
       (actionClicked)="onActionClicked($event)"
       (exportClicked)="onExportClicked()"
-      (bulkActionClicked)="onBulkActionClicked($event)"
       (addButtonClicked)="onAddButtonClicked()"
     >
       <div tableFilters class="st-table-filters">
@@ -52,13 +51,6 @@
         </div>
       </div>
     </app-smart-data-table>
-
-    <app-promote-students-dialog
-      [visible]="showPromoteModal"
-      [students]="promoteStudents"
-      (closed)="showPromoteModal = false"
-      (completed)="onPromoteCompleted()"
-    />
   } @else {
     <app-add-student
       [mode]="formMode"

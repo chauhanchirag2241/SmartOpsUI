@@ -81,53 +81,110 @@
       <div class="student-avatar">{{ studentInitial }}</div>
       <div>
         <div class="student-title">{{ studentName }}</div>
-        <div class="student-sub">Class-group default amounts shown until overridden</div>
+        <div class="student-sub">
+          @if (isPeriodWise) {
+            Period-wise defaults shown until overridden
+          } @else {
+            Class-group default amounts shown until overridden
+          }
+        </div>
       </div>
     </div>
 
     <div class="heads-list">
-      <div class="section-title">Fee head amounts</div>
+      <div class="section-title">
+        {{ isPeriodWise ? 'Period-wise fee head amounts' : 'Fee head amounts' }}
+      </div>
       <form [formGroup]="form">
-        @for (h of heads; track h.feeHeadId) {
-          <div class="head-row" [class.excluded]="isExcluded(h.feeHeadId)">
-            @if (!h.isMandatory) {
-              <button
-                type="button"
-                class="include-tick"
-                [class.off]="isExcluded(h.feeHeadId)"
-                [attr.title]="isExcluded(h.feeHeadId) ? 'Click to include' : 'Click to exclude'"
-                (click)="toggleExcluded(h.feeHeadId)"
-              >
-                <mat-icon>{{ isExcluded(h.feeHeadId) ? 'remove' : 'check' }}</mat-icon>
-              </button>
-            } @else {
-              <span class="include-spacer" aria-hidden="true"></span>
-            }
+        @if (isPeriodWise && periods.length) {
+          @for (period of periods; track period.academicPeriodId) {
+            <div class="period-group">
+              <div class="period-group-title">{{ period.periodLabel }}</div>
+              @for (h of period.heads; track headKey(h)) {
+                <div class="head-row" [class.excluded]="isExcluded(h)">
+                  @if (!h.isMandatory) {
+                    <button
+                      type="button"
+                      class="include-tick"
+                      [class.off]="isExcluded(h)"
+                      [attr.title]="isExcluded(h) ? 'Click to include' : 'Click to exclude'"
+                      (click)="toggleExcluded(h)"
+                    >
+                      <mat-icon>{{ isExcluded(h) ? 'remove' : 'check' }}</mat-icon>
+                    </button>
+                  } @else {
+                    <span class="include-spacer" aria-hidden="true"></span>
+                  }
 
-            <div class="head-meta">
-              <div class="head-name">{{ h.feeHeadName }}</div>
-              <div class="head-flags">
-                @if (h.isMandatory) {
-                  <span class="flag">Mandatory</span>
-                }
-                @if (!h.isEditable) {
-                  <span class="flag muted">Not editable</span>
-                }
-                @if (h.defaultAmount != null) {
-                  <span class="flag muted">Default {{ h.defaultAmount | number: '1.2-2' }}</span>
-                }
+                  <div class="head-meta">
+                    <div class="head-name">{{ h.feeHeadName }}</div>
+                    <div class="head-flags">
+                      @if (h.isMandatory) {
+                        <span class="flag">Mandatory</span>
+                      }
+                      @if (!isAmountEditable(h)) {
+                        <span class="flag muted">Not editable</span>
+                      }
+                      @if (h.defaultAmount != null) {
+                        <span class="flag muted">Default {{ h.defaultAmount | number: '1.2-2' }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="head-controls">
+                    <input
+                      class="field-input amount-input"
+                      type="number"
+                      [formControlName]="'amt_' + headKey(h)"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        } @else {
+          @for (h of heads; track headKey(h)) {
+            <div class="head-row" [class.excluded]="isExcluded(h)">
+              @if (!h.isMandatory) {
+                <button
+                  type="button"
+                  class="include-tick"
+                  [class.off]="isExcluded(h)"
+                  [attr.title]="isExcluded(h) ? 'Click to include' : 'Click to exclude'"
+                  (click)="toggleExcluded(h)"
+                >
+                  <mat-icon>{{ isExcluded(h) ? 'remove' : 'check' }}</mat-icon>
+                </button>
+              } @else {
+                <span class="include-spacer" aria-hidden="true"></span>
+              }
+
+              <div class="head-meta">
+                <div class="head-name">{{ h.feeHeadName }}</div>
+                <div class="head-flags">
+                  @if (h.isMandatory) {
+                    <span class="flag">Mandatory</span>
+                  }
+                  @if (!isAmountEditable(h)) {
+                    <span class="flag muted">Not editable</span>
+                  }
+                  @if (h.defaultAmount != null) {
+                    <span class="flag muted">Default {{ h.defaultAmount | number: '1.2-2' }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="head-controls">
+                <input
+                  class="field-input amount-input"
+                  type="number"
+                  [formControlName]="'amt_' + headKey(h)"
+                  placeholder="0.00"
+                />
               </div>
             </div>
-
-            <div class="head-controls">
-              <input
-                class="field-input amount-input"
-                type="number"
-                [formControlName]="'amt_' + h.feeHeadId"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
+          }
         }
       </form>
     </div>

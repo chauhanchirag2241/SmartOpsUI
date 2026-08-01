@@ -3,6 +3,7 @@ import { HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { stripAadhaarDigits } from '../../shared/utils/form-validators.util';
+import { toDateOnlyString } from '../../shared/utils/date-only.util';
 
 export interface EmployeeDropdownItem {
   id: string;
@@ -24,6 +25,7 @@ export class EmployeeService {
     sortColumn: string | null = null,
     sortDirection: string | null = null,
     filter: unknown = null,
+    teachersOnly = false,
   ): Observable<any> {
     let params = new HttpParams()
       .set('pageIndex', pageIndex.toString())
@@ -33,6 +35,7 @@ export class EmployeeService {
     if (sortColumn) params = params.set('sortColumn', sortColumn);
     if (sortDirection) params = params.set('sortDirection', sortDirection);
     if (filter !== null && filter !== undefined) params = params.set('filter', filter.toString());
+    if (teachersOnly) params = params.set('teachersOnly', 'true');
 
     return this.api.get<any>('employees', params);
   }
@@ -113,29 +116,7 @@ export class EmployeeService {
   }
 
   private formatDate(date: unknown): string | null {
-    if (!date) {
-      return null;
-    }
-    if (date instanceof Date) {
-      if (isNaN(date.getTime())) {
-        return null;
-      }
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return date;
-    }
-    const d = new Date(date as string);
-    if (isNaN(d.getTime())) {
-      return null;
-    }
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return toDateOnlyString(date);
   }
 
   private emptyGuidToNull(value: unknown): string | null {
@@ -176,8 +157,6 @@ export class EmployeeService {
         joiningDate: this.formatDate(employee.professional.joiningDate),
         designation: employee.professional.designation || null,
         experience: Number(employee.professional.experience || 0),
-        salaryGrade: employee.professional.salaryGrade,
-        employmentType: employee.professional.employmentType,
         qualifications: this.mapQualifications(employee.professional.qualifications),
         bankDetails: {
           accountNumber: employee.professional.bankDetails?.accountNumber,
@@ -242,8 +221,6 @@ export class EmployeeService {
       joiningDate: this.formatDate(employee.professional.joiningDate),
       designation: employee.professional.designation || null,
       experience: Number(employee.professional.experience || 0),
-      salaryGrade: employee.professional.salaryGrade,
-      employmentType: employee.professional.employmentType,
       qualifications: this.mapQualifications(employee.professional.qualifications).join('; '),
       bankAccountNumber: employee.professional.bankDetails?.accountNumber,
       bankIfscCode: employee.professional.bankDetails?.ifscCode,

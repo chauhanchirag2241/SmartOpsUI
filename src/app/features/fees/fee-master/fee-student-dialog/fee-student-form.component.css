@@ -204,6 +204,23 @@
   gap: 8px;
 }
 
+.period-group {
+  margin-bottom: 6px;
+  padding: 10px 12px 6px;
+  border: 0.5px solid var(--border-color, #dce6ce);
+  border-radius: var(--radius-md, 8px);
+  background: #fafcfa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.period-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--secondary-color, #3b6d11);
+}
+
 .head-row {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto;

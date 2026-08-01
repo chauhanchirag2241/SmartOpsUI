@@ -57,7 +57,7 @@ export const routes: Routes = [
       {
         path: 'subjects/:id/history',
         canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.Subjects, permission: 'view', entityKind: 'subject' },
+        data: { menuCode: MenuCodes.Classes, permission: 'view', entityKind: 'subject' },
         loadComponent: () =>
           import('./shared/pages/entity-history/entity-history.component').then(
             (m) => m.EntityHistoryComponent,
@@ -66,7 +66,7 @@ export const routes: Routes = [
       {
         path: 'academic-periods/:id/history',
         canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.AcademicPeriods, permission: 'view', entityKind: 'academic-period' },
+        data: { menuCode: MenuCodes.Classes, permission: 'view', entityKind: 'academic-period' },
         loadComponent: () =>
           import('./shared/pages/entity-history/entity-history.component').then(
             (m) => m.EntityHistoryComponent,
@@ -74,8 +74,10 @@ export const routes: Routes = [
       },
       {
         path: 'teachers',
-        redirectTo: 'employees',
-        pathMatch: 'full',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.Teachers, permission: 'view' },
+        loadComponent: () =>
+          import('./features/teachers/teachers.component').then((m) => m.TeachersComponent),
       },
       {
         path: 'employees',
@@ -94,27 +96,29 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'class-subject-teacher-mapping',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.ClassMappings, permission: 'view' },
-        loadComponent: () =>
-          import('./features/class-subject-teacher-mapping/class-subject-teacher-mapping.component').then(
-            (m) => m.ClassSubjectTeacherMappingComponent,
-          ),
-      },
-      {
-        path: 'subjects',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.Subjects, permission: 'view' },
-        loadComponent: () =>
-          import('./features/subjects/subjects.component').then((m) => m.SubjectsComponent),
-      },
-      {
         path: 'shifts',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.Shifts, permission: 'view' },
         loadComponent: () =>
           import('./features/shifts/shifts.component').then((m) => m.ShiftsComponent),
+      },
+      {
+        path: 'promote-students',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.PromoteStudents, permission: 'view' },
+        loadComponent: () =>
+          import('./features/promote-students/promote-students.component').then(
+            (m) => m.PromoteStudentsComponent,
+          ),
+      },
+      {
+        path: 'roll-numbers',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.RollNumbers, permission: 'view' },
+        loadComponent: () =>
+          import('./features/roll-numbers/roll-numbers.component').then(
+            (m) => m.RollNumbersComponent,
+          ),
       },
       {
         path: 'shifts/:id/history',
@@ -245,15 +249,6 @@ export const routes: Routes = [
         data: { menuCode: MenuCodes.SalaryPayroll, permission: 'view' },
         loadComponent: () =>
           import('./features/salary/payroll/payroll.component').then((m) => m.PayrollComponent),
-      },
-      {
-        path: 'academic-periods',
-        canActivate: [permissionGuard],
-        data: { menuCode: MenuCodes.AcademicPeriods, permission: 'view' },
-        loadComponent: () =>
-          import('./features/academic-period-management/academic-period-management.component').then(
-            (m) => m.AcademicPeriodManagementComponent,
-          ),
       },
       {
         path: 'leave/staff',

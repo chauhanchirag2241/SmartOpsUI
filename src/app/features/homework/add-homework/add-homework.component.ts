@@ -18,6 +18,7 @@ import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-fie
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { FormTab } from '../../../shared/interfaces/form-layout';
 import { enumToOptions } from '../../../shared/enums/field-options.enum';
+import { toDateOnlyString } from '../../../shared/utils/date-only.util';
 
 @Component({
   selector: 'app-add-homework',
@@ -159,8 +160,8 @@ export class AddHomeworkComponent implements OnInit {
     const req: CreateHomeworkRequest = {
       ...formVal,
       title: formVal.title.trim(),
-      assignDate: formVal.assignDate ? formVal.assignDate.toISOString().split('T')[0] : null,
-      dueDate: formVal.dueDate ? formVal.dueDate.toISOString().split('T')[0] : null,
+      assignDate: toDateOnlyString(formVal.assignDate),
+      dueDate: toDateOnlyString(formVal.dueDate),
     };
 
     const call = this.homeworkId && this.mode === 'edit'

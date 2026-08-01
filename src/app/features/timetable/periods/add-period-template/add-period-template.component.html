@@ -48,7 +48,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (ctrl of periods.controls; track $index; let i = $index) {
+          @for (ctrl of periods.controls; track ctrl; let i = $index) {
             <tr [formGroupName]="i" [class.tt-break-row]="ctrl.get('isBreak')?.value">
               <td>{{ ctrl.get('periodOrder')?.value }}</td>
               <td><input type="text" formControlName="name" /></td>
@@ -88,7 +88,7 @@
     }
 
     <div formArrayName="dayOverrides">
-      @for (ov of dayOverrides.controls; track $index; let oi = $index) {
+      @for (ov of dayOverrides.controls; track ov; let oi = $index) {
         <div class="tt-override-block" [formGroupName]="oi">
           <div class="tt-override-head">
             <strong>{{ dayLabel(ov.get('dayOfWeek')?.value) }}</strong>
@@ -128,7 +128,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (ctrl of overridePeriods(oi).controls; track $index; let i = $index) {
+                  @for (ctrl of overridePeriods(oi).controls; track ctrl; let i = $index) {
                     <tr [formGroupName]="i" [class.tt-break-row]="ctrl.get('isBreak')?.value">
                       <td>{{ ctrl.get('periodOrder')?.value }}</td>
                       <td><input type="text" formControlName="name" /></td>

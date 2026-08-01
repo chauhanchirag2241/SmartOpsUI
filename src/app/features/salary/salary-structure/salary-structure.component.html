@@ -1,79 +1,27 @@
 <div class="fees-page fee-structure-page">
-  <app-smart-data-table
-    *ngIf="!loading"
-    [config]="tableConfig"
-    [data]="versions"
-    [rowClassFn]="versionRowClass"
-    [initialFilterValue]="currentStatusFilter"
-    [filterPanelActive]="tableFilterPanelActive"
-    (filterChanged)="onFilterChanged($event)"
-    (advancedFiltersCleared)="onTableFiltersCleared()"
-    (actionClicked)="onActionClicked($event)"
-    (addButtonClicked)="onAddButtonClicked()"
-  >
-  </app-smart-data-table>
-  <div *ngIf="loading" class="empty-panel">Loading salary structures...</div>
-
-  <div *ngIf="selectedVersion" class="card manage-panel">
-    <div class="card-header">
-      <div class="card-title">
-        <mat-icon>list_alt</mat-icon>
-        {{ selectedVersion.versionLabel }}
-        <span class="badge" [ngClass]="statusClass(selectedVersion.statusLabel)">{{ selectedVersion.statusLabel }}</span>
-      </div>
-      <div class="card-header-actions">
-        <button type="button" class="btn-cancel" (click)="closeManagePanel()">Close</button>
-        <button *ngIf="canManageVersions && !selectedVersion.isLocked" type="button" class="btn-primary" (click)="openAddComponent()">
-          <mat-icon>add</mat-icon> Add component
-        </button>
-      </div>
-    </div>
-
-    <p *ngIf="selectedVersion.isLocked" class="lock-hint">
-      <mat-icon>lock</mat-icon>
-      This structure is locked after publish. Use <strong>Create new version</strong> to change components.
-    </p>
-    <p
-      *ngIf="selectedVersion.hasAssignedEmployees && selectedVersion.statusLabel === 'Archived'"
-      class="paid-archived-hint"
+  @if (showManage && selectedVersionId) {
+    <app-salary-structure-manage
+      [versionId]="selectedVersionId"
+      [initialTab]="manageInitialTab"
+      (cancel)="closeManage()"
+      (changed)="onManageChanged()"
+    />
+  } @else {
+    <app-smart-data-table
+      *ngIf="!loading"
+      [config]="tableConfig"
+      [data]="versions"
+      [rowClassFn]="versionRowClass"
+      [initialFilterValue]="currentStatusFilter"
+      [filterPanelActive]="tableFilterPanelActive"
+      (filterChanged)="onFilterChanged($event)"
+      (advancedFiltersCleared)="onTableFiltersCleared()"
+      (actionClicked)="onActionClicked($event)"
+      (addButtonClicked)="onAddButtonClicked()"
     >
-      Employees are assigned under this archived structure — records are preserved.
-    </p>
-
-    <div *ngIf="loadingComponents" class="empty-panel">Loading components...</div>
-    <table class="data-table" *ngIf="!loadingComponents">
-      <thead>
-        <tr>
-          <th>Component</th>
-          <th>Type</th>
-          <th>Calculation</th>
-          <th>Default value</th>
-          <th>Taxable</th>
-          <th style="width: 70px" *ngIf="canManageVersions && !selectedVersion.isLocked">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let c of components">
-          <td style="font-weight: 500">
-            {{ c.name }}
-            <span *ngIf="c.shortCode" class="paid-hint">{{ c.shortCode }}</span>
-          </td>
-          <td><span class="badge" [ngClass]="typeClass(c.componentTypeLabel)">{{ c.componentTypeLabel }}</span></td>
-          <td><span class="badge b-gray">{{ c.calculationTypeLabel }}</span></td>
-          <td>{{ formatValueDisplay(c.calculationTypeLabel, c.value) }}</td>
-          <td><span class="badge" [ngClass]="c.isTaxable ? 'b-amber' : 'b-gray'">{{ c.isTaxable ? 'Yes' : 'No' }}</span></td>
-          <td *ngIf="canManageVersions && !selectedVersion.isLocked">
-            <button type="button" class="act-btn del" title="Delete" (click)="deleteComponent(c)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="!components.length">
-          <td [attr.colspan]="selectedVersion.isLocked ? 5 : 6" class="empty-panel">No components yet.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    </app-smart-data-table>
+    <div *ngIf="loading" class="empty-panel">Loading salary structures...</div>
+  }
 
   <div class="overlay" [class.show]="showCreateVersionModal" (click)="showCreateVersionModal = false">
     <div class="modal" (click)="$event.stopPropagation()">
@@ -99,57 +47,6 @@
       <div class="mf">
         <button type="button" class="btn-cancel" (click)="showCreateVersionModal = false">Cancel</button>
         <button type="button" class="btn-save" (click)="createVersion()"><mat-icon>check</mat-icon> Create</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay" [class.show]="showComponentModal" (click)="showComponentModal = false">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="mh">
-        <div class="mt"><mat-icon>add</mat-icon> Add salary component</div>
-        <button type="button" class="mc-btn" (click)="showComponentModal = false"><mat-icon>close</mat-icon></button>
-      </div>
-      <div class="mb">
-        <div class="field">
-          <label>Component name <span class="req">*</span></label>
-          <input [(ngModel)]="componentForm.name" placeholder="e.g. Basic, HRA, PF" />
-        </div>
-        <div class="field">
-          <label>Short code</label>
-          <input [(ngModel)]="componentForm.shortCode" placeholder="e.g. BASIC" />
-        </div>
-        <div class="grid2">
-          <div class="field">
-            <label>Type</label>
-            <select [(ngModel)]="componentForm.componentType">
-              <option *ngFor="let o of componentTypeOptions" [ngValue]="o.value">{{ o.label }}</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Calculation</label>
-            <select [(ngModel)]="componentForm.calculationType">
-              <option *ngFor="let o of calculationTypeOptions" [ngValue]="o.value">{{ o.label }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid2">
-          <div class="field">
-            <label>Default value</label>
-            <input type="number" [(ngModel)]="componentForm.value" />
-          </div>
-          <div class="field row-toggle">
-            <label>Taxable</label>
-            <label class="toggle">
-              <input type="checkbox" [(ngModel)]="componentForm.isTaxable" />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="mf">
-        <button type="button" class="btn-cancel" (click)="showComponentModal = false">Cancel</button>
-        <button type="button" class="btn-save" (click)="saveComponent()"><mat-icon>check</mat-icon> Add</button>
       </div>
     </div>
   </div>

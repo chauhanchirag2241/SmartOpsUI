@@ -1,0 +1,90 @@
+<span
+  [appPageChrome]="teacherName || 'Teacher'"
+  [pageChromeSubtitle]="'Manage teacher profile and class / subject rights'"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+@if (loading) {
+  <p class="page-sub">Loading…</p>
+} @else {
+  <div class="tabs" role="tablist">
+    @for (tab of tabs; track tab.label; let i = $index) {
+      <div
+        class="tab"
+        [class.active]="currentTab === i"
+        [class.done]="currentTab > i"
+        (click)="goTab(i)"
+        role="tab"
+      >
+        <div class="tab-num">{{ i + 1 }}</div>
+        {{ tab.label }}
+      </div>
+    }
+  </div>
+
+  @if (currentTab === 0) {
+    <div class="card basic-detail-card">
+      <div class="card-title">
+        <mat-icon>badge</mat-icon>
+        Teacher information
+      </div>
+      <div class="basic-detail-grid">
+        @for (field of infoFields; track field.label) {
+          <div class="basic-detail-field">
+            <div class="basic-detail-label">{{ field.label }}</div>
+            <div class="basic-detail-value">{{ field.value }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (currentTab === 1) {
+    <app-smart-data-table
+      [config]="assignmentTableConfig"
+      [data]="classGroups"
+      [totalRecords]="classGroups.length"
+      (addButtonClicked)="openAssignDialog()"
+    >
+      <ng-template #rowDetail let-row>
+        <div class="subject-detail">
+          @if (!subjectsForClass(row).length) {
+            <p class="empty-hint">No subjects assigned for this class.</p>
+          } @else {
+            <table class="subject-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  @if (canEdit) {
+                    <th class="col-actions">Action</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (subject of subjectsForClass(row); track subject['id']) {
+                  <tr>
+                    <td>{{ subject['subjectName'] || '—' }}</td>
+                    @if (canEdit) {
+                      <td class="col-actions">
+                        <button
+                          type="button"
+                          class="btn-remove"
+                          (click)="removeSubject(subject)"
+                          title="Remove permission"
+                        >
+                          <mat-icon>delete</mat-icon>
+                          Remove
+                        </button>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </ng-template>
+    </app-smart-data-table>
+  }
+}

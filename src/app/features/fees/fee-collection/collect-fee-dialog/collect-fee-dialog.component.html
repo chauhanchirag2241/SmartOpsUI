@@ -2,7 +2,7 @@
   <div class="collect-modal-head">
     <div>
       <h3>Collect Fee</h3>
-      <p>{{ data.card.feeName }}</p>
+      <p>{{ dialogSubtitle }}</p>
     </div>
     <button type="button" class="close-x" (click)="cancel()" aria-label="Close">
       <mat-icon>close</mat-icon>
@@ -17,11 +17,9 @@
           {{ row.feeHeadName }}
           <small>
             Due ₹{{ row.dueAmount | number: '1.0-2' }} · Paid ₹{{ row.paidAmount | number: '1.0-2' }}
+            · Pending ₹{{ row.balance | number: '1.0-2' }}
             @if (row.isMandatory) {
               · Mandatory
-            }
-            @if (!row.isEditable) {
-              · Locked
             }
           </small>
         </div>
@@ -30,8 +28,9 @@
           <input
             type="number"
             [(ngModel)]="row.collectAmount"
-            [disabled]="!row.selected || !row.isEditable"
+            [disabled]="!row.selected"
             (change)="onAmountChange(row)"
+            (blur)="onAmountChange(row)"
             min="0"
             [attr.max]="row.balance"
             step="0.01"

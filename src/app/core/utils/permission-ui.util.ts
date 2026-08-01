@@ -78,7 +78,10 @@ function isBulkActionAllowed(
   if (action.danger || action.label.toLowerCase().includes('delete')) {
     return permissionService.canDelete(menuCode);
   }
-  if (action.label.toLowerCase().includes('edit')) {
+  if (
+    action.label.toLowerCase().includes('edit') ||
+    action.label.toLowerCase().includes('promote')
+  ) {
     return permissionService.canEdit(menuCode);
   }
   return permissionService.canView(menuCode);

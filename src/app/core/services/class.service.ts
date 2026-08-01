@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { HttpParams } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { ClassFilter } from '../../shared/enums/table-filters.enum';
@@ -87,6 +87,20 @@ export class ClassService {
       params = params.set('scope', 'group');
     }
     return this.api.get<any[]>('class/dropdown', params.keys().length ? params : undefined);
+  }
+
+  /** Sections under a class group (label = section name). */
+  getSectionsByClassGroup(classGroupId: string): Observable<{ id: string; name: string }[]> {
+    return this.getClasses(1, 200, '', null, null, 'Active', classGroupId).pipe(
+      map((res: any) => {
+        const rows = res?.items ?? res?.Items ?? [];
+        return rows.map((row: any) => {
+          const id = String(row.id ?? row.Id ?? '');
+          const section = String(row.section ?? row.Section ?? '').trim();
+          return { id, name: section || id };
+        });
+      }),
+    );
   }
 
   createClass(classData: any): Observable<any> {

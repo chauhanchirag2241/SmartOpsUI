@@ -10,6 +10,7 @@ import { EmployeeService } from '../../core/services/employee.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { StaffFilter } from '../../shared/enums/table-filters.enum';
 import type {
   DataTableAction,
@@ -25,7 +26,14 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule, MatDialogModule, AddEmployeeComponent],
+  imports: [
+    SmartDataTableComponent,
+    MatIconModule,
+    MatSnackBarModule,
+    MatDialogModule,
+    AddEmployeeComponent,
+    PageChromeDirective,
+  ],
   templateUrl: './employees.component.html',
   styleUrl: './employees.component.css',
 })
@@ -48,83 +56,12 @@ export class EmployeesComponent implements OnInit {
   currentFilter: StaffFilter = StaffFilter.Active;
   employees: Record<string, unknown>[] = [];
 
-  ngOnInit(): void {
-    this.tableConfig = this.buildTableConfig();
-    this.loadEmployees();
-  }
-
-  loadEmployees(
-    pageIndex = 1,
-    pageSize = 10,
-    searchQuery = '',
-    sortColumn: string | null = null,
-    sortDirection: string | null = null,
-    filter: StaffFilter = this.currentFilter,
-  ): void {
-    this.employeeService
-      .getEmployees(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
-      .subscribe({
-        next: (res: any) => {
-          this.employees = res?.items || [];
-          this.totalEmployees = res?.totalCount || 0;
-          this.cdr.detectChanges();
-        },
-        error: (err: any) => {
-          console.error('Error loading employees:', err);
-          this.employees = [];
-          this.totalEmployees = 0;
-          this.cdr.detectChanges();
-          this.snackBar.open('Failed to load employees', 'Close', {
-            duration: 3000,
-            panelClass: 'snack-error',
-          });
-        },
-      });
-  }
-
-  openAddForm(): void {
-    if (!this.permissionService.canAdd(MenuCodes.Employees)) return;
-    this.formMode = 'add';
-    this.selectedEmployeeId = undefined;
-    this.showAddForm = true;
-  }
-
-  closeAddForm(): void {
-    this.showAddForm = false;
-  }
-
-  onEmployeeSaved(): void {
-    this.showAddForm = false;
-    this.loadEmployees();
-  }
-
-  onPageChange(event: any): void {
-    const filterValue = event.currentFilter ? (event.currentFilter as unknown as StaffFilter) : this.currentFilter;
-    this.loadEmployees(
-      event.pageIndex,
-      event.pageSize,
-      event.searchQuery,
-      event.sortColumn,
-      event.sortDirection,
-      filterValue,
-    );
-  }
-
-  onFilterChanged(filter: DataTableFilter | null): void {
-    if (filter) {
-      this.currentFilter = Number(filter.value) as StaffFilter;
-    } else {
-      this.currentFilter = StaffFilter.All;
-    }
-    this.loadEmployees();
-  }
-
-  tableConfig!: DataTableConfig;
-
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Employees',
       subtitle: 'Manage faculty and staff members',
+      // List title is owned by [appPageChrome] in the template.
+      syncPageChrome: false,
       showAddButton: true,
       addButtonText: 'Add employee',
       addButtonIcon: 'add',
@@ -197,6 +134,78 @@ export class EmployeesComponent implements OnInit {
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],
   };
+
+  tableConfig: DataTableConfig = this.buildTableConfig();
+
+  ngOnInit(): void {
+    this.loadEmployees();
+  }
+
+  loadEmployees(
+    pageIndex = 1,
+    pageSize = 10,
+    searchQuery = '',
+    sortColumn: string | null = null,
+    sortDirection: string | null = null,
+    filter: StaffFilter = this.currentFilter,
+  ): void {
+    this.employeeService
+      .getEmployees(pageIndex, pageSize, searchQuery, sortColumn, sortDirection, filter)
+      .subscribe({
+        next: (res: any) => {
+          this.employees = res?.items || [];
+          this.totalEmployees = res?.totalCount || 0;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading employees:', err);
+          this.employees = [];
+          this.totalEmployees = 0;
+          this.cdr.detectChanges();
+          this.snackBar.open('Failed to load employees', 'Close', {
+            duration: 3000,
+            panelClass: 'snack-error',
+          });
+        },
+      });
+  }
+
+  openAddForm(): void {
+    if (!this.permissionService.canAdd(MenuCodes.Employees)) return;
+    this.formMode = 'add';
+    this.selectedEmployeeId = undefined;
+    this.showAddForm = true;
+  }
+
+  closeAddForm(): void {
+    this.showAddForm = false;
+  }
+
+  onEmployeeSaved(): void {
+    this.showAddForm = false;
+    this.loadEmployees();
+  }
+
+  onPageChange(event: any): void {
+    const filterValue = event.currentFilter ? (event.currentFilter as unknown as StaffFilter) : this.currentFilter;
+    this.loadEmployees(
+      event.pageIndex,
+      event.pageSize,
+      event.searchQuery,
+      event.sortColumn,
+      event.sortDirection,
+      filterValue,
+    );
+  }
+
+  onFilterChanged(filter: DataTableFilter | null): void {
+    if (filter) {
+      this.currentFilter = Number(filter.value) as StaffFilter;
+    } else {
+      this.currentFilter = StaffFilter.All;
+    }
+    this.loadEmployees();
+  }
 
   employeeRowClass = (row: Record<string, unknown>): string => {
     return row['isActive'] === false ? 'row-inactive' : '';

@@ -17,6 +17,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import type { FormFieldOption, FormFieldType, FormFieldVariant } from './form-field.types';
+import { parseDateOnly, toDateOnlyString } from '../../utils/date-only.util';
 
 let nextId = 0;
 
@@ -60,6 +61,9 @@ export class FormFieldComponent implements ControlValueAccessor {
   @Input() min: number | null = null;
   @Input() max: number | null = null;
   @Input() step: number | string | null = null;
+  /** Date-only min/max for `type="date"` (YYYY-MM-DD string or Date). */
+  @Input() minDate: string | Date | null = null;
+  @Input() maxDate: string | Date | null = null;
   @Input() inputId = `app-ff-${++nextId}`;
   @Input() disabled = false;
 
@@ -113,7 +117,15 @@ export class FormFieldComponent implements ControlValueAccessor {
 
   onDatePicked(date: Date | null): void {
     this.dateValue = date;
-    this.emit(this.formatDate(date));
+    this.emit(toDateOnlyString(date) ?? '');
+  }
+
+  get dateMinBound(): Date | null {
+    return this.parseDate(this.minDate);
+  }
+
+  get dateMaxBound(): Date | null {
+    return this.parseDate(this.maxDate);
   }
 
   trackOption(index: number, option: FormFieldOption): string {
@@ -121,22 +133,6 @@ export class FormFieldComponent implements ControlValueAccessor {
   }
 
   private parseDate(value: unknown): Date | null {
-    if (!value) return null;
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
-    }
-    const raw = String(value).slice(0, 10);
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-    if (!m) return null;
-    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
-  private formatDate(value: Date | null): string {
-    if (!value || Number.isNaN(value.getTime())) return '';
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, '0');
-    const d = String(value.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return parseDateOnly(value);
   }
 }

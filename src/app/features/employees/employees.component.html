@@ -1,5 +1,9 @@
 <section class="employees-page">
   @if (!showAddForm) {
+    <span
+      [appPageChrome]="'Employees'"
+      [pageChromeSubtitle]="'Manage faculty and staff members'"
+    ></span>
     <app-smart-data-table
       [config]="tableConfig"
       [data]="employees"

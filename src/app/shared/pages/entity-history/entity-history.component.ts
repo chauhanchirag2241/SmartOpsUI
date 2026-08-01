@@ -33,7 +33,7 @@ const ROUTE_CONFIG: Record<EntityHistoryKind, EntityHistoryRouteConfig> = {
   student: { listRoute: '/students', entityType: 'student' },
   employee: { listRoute: '/employees', entityType: 'employee' },
   class: { listRoute: '/classes', entityType: 'class' },
-  subject: { listRoute: '/subjects', entityType: 'subject' },
+  subject: { listRoute: '/classes', entityType: 'subject' },
   shift: { listRoute: '/shifts', entityType: 'shift' },
   period: { listRoute: '/timetable/periods', entityType: 'period' },
   'academic-period': { listRoute: '/classes', entityType: 'academic-period' },

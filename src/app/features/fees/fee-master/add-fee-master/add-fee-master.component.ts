@@ -35,19 +35,16 @@ import {
 import { FeeMasterService } from '../../../../core/services/fee-master.service';
 import { ClassService } from '../../../../core/services/class.service';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { parseDateOnly, toDateOnlyString } from '../../../../shared/utils/date-only.util';
 import { MappingOption } from '../../../../shared/mapping/mapping.types';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 function dueOnOrAfterPublished(group: AbstractControl): ValidationErrors | null {
-  const published = group.get('publishedOn')?.value as Date | null;
-  const due = group.get('defaultDueDate')?.value as Date | null;
+  const published = parseDateOnly(group.get('publishedOn')?.value);
+  const due = parseDateOnly(group.get('defaultDueDate')?.value);
   if (!published || !due) return null;
-  const p = new Date(published);
-  const d = new Date(due);
-  p.setHours(0, 0, 0, 0);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime() < p.getTime() ? { dueBeforePublished: true } : null;
+  return due.getTime() < published.getTime() ? { dueBeforePublished: true } : null;
 }
 
 @Component({
@@ -261,15 +258,11 @@ export class AddFeeMasterComponent implements OnInit {
   }
 
   private syncDueMinDate(published: Date | null): void {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = parseDateOnly(new Date())!;
     let min = today;
-    if (published) {
-      const p = new Date(published);
-      p.setHours(0, 0, 0, 0);
-      if (p.getTime() > today.getTime()) {
-        min = p;
-      }
+    const p = parseDateOnly(published);
+    if (p && p.getTime() > today.getTime()) {
+      min = p;
     }
     this.configs['defaultDueDate'] = {
       ...this.configs['defaultDueDate'],
@@ -361,17 +354,10 @@ export class AddFeeMasterComponent implements OnInit {
   }
 
   private toDate(value: string | null | undefined): Date | null {
-    if (!value) return null;
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? null : d;
+    return parseDateOnly(value);
   }
 
   private toApiDate(value: unknown): string | null {
-    if (!value) return null;
-    if (value instanceof Date) {
-      return value.toISOString().split('T')[0];
-    }
-    const d = new Date(String(value));
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+    return toDateOnlyString(value);
   }
 }

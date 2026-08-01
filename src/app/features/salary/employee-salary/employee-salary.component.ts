@@ -3,14 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NotificationService } from '../../../core/services/notification.service';
 import { EmployeeSalaryService } from '../../../core/services/employee-salary.service';
-import { SalaryStructureService } from '../../../core/services/salary-structure.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
+import { ERP_FORM_DIALOG_WIDTH } from '../../../shared/constants/dialog.constants';
 import {
   asArray,
   extractApiError,
@@ -18,35 +19,38 @@ import {
   formatValueDisplay,
   normalizeEmployeeDetail,
   normalizeEmployeeListItem,
-  normalizeSalaryStructureVersion,
-  normalizeSalaryVersionComponent,
   studentInitials,
 } from '../salary.shared';
-
-function toDateInputValue(value: string | null | undefined): string {
-  if (!value) return '';
-  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : '';
-}
+import {
+  AssignEmployeeSalaryDialogComponent,
+  AssignEmployeeSalaryDialogData,
+} from './assign-employee-salary-dialog/assign-employee-salary-dialog.component';
 
 @Component({
   selector: 'app-employee-salary',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, ListPageHeaderComponent, PageToolbarComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    MatDialogModule,
+    ListPageHeaderComponent,
+    PageToolbarComponent,
+  ],
   templateUrl: './employee-salary.component.html',
   styleUrl: '../salary.shared.css',
 })
 export class EmployeeSalaryComponent implements OnInit {
   private readonly service = inject(EmployeeSalaryService);
-  private readonly structureService = inject(SalaryStructureService);
   private readonly permissionService = inject(PermissionService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
 
   employees: ReturnType<typeof normalizeEmployeeListItem>[] = [];
-  assignableVersions: ReturnType<typeof normalizeSalaryStructureVersion>[] = [];
   selectedEmployeeId: string | null = null;
   detail: ReturnType<typeof normalizeEmployeeDetail> | null = null;
 
@@ -58,27 +62,12 @@ export class EmployeeSalaryComponent implements OnInit {
 
   loadingList = false;
   loadingDetail = false;
-  loadingAssignVersions = false;
-  showAssignModal = false;
-  assignForm = {
-    salaryStructureVersionId: '',
-    effectiveDate: '',
-    componentValues: [] as {
-      salaryVersionComponentId: string;
-      value: number;
-      name: string;
-      calculationTypeLabel: string;
-      defaultValue: number;
-    }[],
-  };
 
   formatInr = formatInr;
   formatValueDisplay = formatValueDisplay;
   studentInitials = studentInitials;
 
   ngOnInit(): void {
-    this.assignForm.effectiveDate = new Date().toISOString().split('T')[0];
-    this.loadAssignableVersions();
     this.loadEmployees();
   }
 
@@ -95,24 +84,6 @@ export class EmployeeSalaryComponent implements OnInit {
   onToolbarSearchSubmit(q: string): void {
     this.search = q;
     this.loadEmployees();
-  }
-
-  loadAssignableVersions(): void {
-    this.loadingAssignVersions = true;
-    this.structureService.getVersions().subscribe({
-      next: (list) => {
-        this.assignableVersions = asArray(list)
-          .map(normalizeSalaryStructureVersion)
-          .filter((v) => v.statusLabel === 'Published' || v.statusLabel === 'Active');
-        this.loadingAssignVersions = false;
-        this.refresh();
-      },
-      error: () => {
-        this.loadingAssignVersions = false;
-        this.assignableVersions = [];
-        this.refresh();
-      },
-    });
   }
 
   loadEmployees(): void {
@@ -168,91 +139,31 @@ export class EmployeeSalaryComponent implements OnInit {
 
   openAssignModal(): void {
     if (!this.permissionService.canEdit(MenuCodes.SalaryEmployees) || !this.detail) return;
-    if (!this.assignableVersions.length) {
-      this.toast('Publish a salary structure first (Salary Structure page)', true);
-      return;
-    }
 
-    const versionId =
-      this.detail.salaryStructureVersionId &&
-      this.assignableVersions.some((v) => v.id === this.detail!.salaryStructureVersionId)
-        ? this.detail.salaryStructureVersionId!
-        : this.assignableVersions[0].id;
-
-    this.assignForm = {
-      salaryStructureVersionId: versionId,
-      effectiveDate: toDateInputValue(this.detail.effectiveDate) || new Date().toISOString().split('T')[0],
-      componentValues: [],
-    };
-    this.showAssignModal = true;
-    this.loadAssignComponents(versionId);
-  }
-
-  onAssignVersionChange(): void {
-    this.loadAssignComponents(this.assignForm.salaryStructureVersionId);
-  }
-
-  private loadAssignComponents(versionId: string): void {
-    if (!versionId || !this.detail) return;
-    this.structureService.getVersionDetail(versionId).subscribe({
-      next: (raw) => {
-        const components = asArray(raw?.components ?? raw?.Components).map(normalizeSalaryVersionComponent);
-        const existing = new Map(
-          this.detail!.components.map((c) => [c.salaryVersionComponentId, c.value]),
-        );
-        this.assignForm.componentValues = components.map((m) => ({
-          salaryVersionComponentId: m.id,
-          name: m.name,
-          calculationTypeLabel: m.calculationTypeLabel,
-          defaultValue: m.value,
-          value: existing.get(m.id) ?? m.value,
-        }));
-        this.refresh();
-      },
-      error: (e) => this.toast(extractApiError(e, 'Failed to load structure components'), true),
-    });
-  }
-
-  assignVersionLabel(versionId: string): string {
-    const v = this.assignableVersions.find((x) => x.id === versionId);
-    return v ? `${v.versionLabel} (${v.statusLabel})` : '—';
-  }
-
-  saveAssignment(): void {
-    if (!this.selectedEmployeeId) return;
-    if (!this.assignForm.salaryStructureVersionId) {
-      this.toast('Select a salary structure version', true);
-      return;
-    }
-    if (!this.assignForm.effectiveDate) {
-      this.toast('Effective date is required', true);
-      return;
-    }
-    const components = this.assignForm.componentValues
-      .map((c) => ({
+    const data: AssignEmployeeSalaryDialogData = {
+      employeeId: this.detail.employeeRecordId,
+      employeeName: this.detail.employeeName,
+      existingSalaryStructureVersionId: this.detail.salaryStructureVersionId,
+      existingEffectiveDate: this.detail.effectiveDate,
+      existingComponentValues: this.detail.components.map((c) => ({
         salaryVersionComponentId: c.salaryVersionComponentId,
-        value: Number(c.value),
-      }))
-      .filter((c) => Number.isFinite(c.value) && c.value > 0);
-    if (!components.length) {
-      this.toast('Enter at least one component value', true);
-      return;
-    }
-    this.service
-      .assignOrUpdate(this.selectedEmployeeId, {
-        salaryStructureVersionId: this.assignForm.salaryStructureVersionId,
-        effectiveDate: this.assignForm.effectiveDate,
-        components,
+        value: c.value,
+      })),
+    };
+
+    this.dialog
+      .open(AssignEmployeeSalaryDialogComponent, {
+        data,
+        panelClass: 'erp-dialog',
+        disableClose: true,
+        width: ERP_FORM_DIALOG_WIDTH,
+        maxWidth: '94vw',
       })
-      .subscribe({
-        next: (raw) => {
-          this.detail = normalizeEmployeeDetail(raw);
-          this.showAssignModal = false;
-          this.loadEmployees();
-          this.toast('Employee salary saved');
-          this.refresh();
-        },
-        error: (e) => this.toast(extractApiError(e, 'Save failed'), true),
+      .afterClosed()
+      .subscribe((saved) => {
+        if (!saved || !this.selectedEmployeeId) return;
+        this.selectEmployee(this.selectedEmployeeId);
+        this.loadEmployees();
       });
   }
 

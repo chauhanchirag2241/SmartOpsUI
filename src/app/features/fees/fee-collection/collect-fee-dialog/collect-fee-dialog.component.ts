@@ -46,12 +46,21 @@ export class CollectFeeDialogComponent implements OnInit {
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: CollectFeeDialogData) {}
 
+  get dialogSubtitle(): string {
+    const card = this.data.card;
+    if (card.periodLabel) {
+      return `${card.feeName} — ${card.periodLabel}`;
+    }
+    return card.feeName;
+  }
+
   ngOnInit(): void {
     this.rows = (this.data.card.heads || [])
       .filter((h) => h.balance > 0)
       .map((h) => ({
         ...h,
         selected: h.isMandatory,
+        // Default to remaining balance; user can lower for partial collection.
         collectAmount: h.balance,
       }));
   }
@@ -66,10 +75,6 @@ export class CollectFeeDialogComponent implements OnInit {
   }
 
   onAmountChange(row: CollectRow): void {
-    if (!row.isEditable) {
-      row.collectAmount = row.balance;
-      return;
-    }
     const n = Number(row.collectAmount);
     if (!Number.isFinite(n) || n < 0) {
       row.collectAmount = 0;

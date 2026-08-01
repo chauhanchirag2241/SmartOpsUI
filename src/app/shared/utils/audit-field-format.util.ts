@@ -3,7 +3,6 @@ import {
   BloodGroup,
   Gender,
   Medium,
-  Section,
   SubjectCategory,
   SubjectType,
 } from '../enums/field-options.enum';
@@ -14,7 +13,10 @@ import {
   inquiryStatusLabel,
 } from './front-office-enum.util';
 
-/** Maps stored audit values (often 1-based ints) to UI labels. */
+const GUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Maps stored audit values (often 1-based ints or GUIDs) to UI labels. */
 export function formatAuditFieldValue(
   entityType: AuditHistoryEntityType,
   field: string,
@@ -27,9 +29,18 @@ export function formatAuditFieldValue(
 
   const normalizedField = field.replace(/\s/g, '').toLowerCase();
   const trimmedValue = value.trim();
-  const lookupValue = lookupLabels[trimmedValue.toLowerCase()];
-  if (lookupValue) {
-    return lookupValue;
+
+  // Resolve any GUID via shared id→name lookup (branch, class group, shift, subject, …)
+  if (GUID_RE.test(trimmedValue)) {
+    const lookupValue = lookupLabels[trimmedValue.toLowerCase()];
+    if (lookupValue) {
+      return lookupValue;
+    }
+  } else {
+    const lookupValue = lookupLabels[trimmedValue.toLowerCase()];
+    if (lookupValue) {
+      return lookupValue;
+    }
   }
 
   const mapped = mapFieldValue(entityType, normalizedField, trimmedValue);
@@ -41,6 +52,16 @@ function mapFieldValue(
   field: string,
   value: string,
 ): string | null {
+  // Shared boolean / active flags on any entity
+  if (
+    field === 'isactive' ||
+    field === 'iscurrent' ||
+    field === 'isanonymous' ||
+    field === 'autofollowup'
+  ) {
+    return mapBooleanLabel(value);
+  }
+
   switch (entityType) {
     case 'class':
       return mapClassField(field, value);
@@ -48,6 +69,8 @@ function mapFieldValue(
       return mapSubjectField(field, value);
     case 'academic-year':
       return mapAcademicYearField(field, value);
+    case 'academic-period':
+      return null;
     case 'student':
     case 'employee':
       return mapPersonField(field, value);
@@ -75,8 +98,6 @@ function mapComplaintField(field: string, value: string): string | null {
   switch (field) {
     case 'status':
       return complaintStatusLabel(value);
-    case 'isanonymous':
-      return mapBooleanLabel(value);
     default:
       return null;
   }
@@ -86,8 +107,6 @@ function mapAdmissionInquiryField(field: string, value: string): string | null {
   switch (field) {
     case 'status':
       return inquiryStatusLabel(value);
-    case 'autofollowup':
-      return mapBooleanLabel(value);
     case 'streamgroup':
       return mapStreamGroup(value);
     default:
@@ -95,14 +114,8 @@ function mapAdmissionInquiryField(field: string, value: string): string | null {
   }
 }
 
-function mapAcademicYearField(field: string, value: string): string | null {
-  switch (field) {
-    case 'iscurrent':
-    case 'isactive':
-      return mapBooleanLabel(value);
-    default:
-      return null;
-  }
+function mapAcademicYearField(_field: string, _value: string): string | null {
+  return null;
 }
 
 function mapBooleanLabel(value: string): string | null {
@@ -114,15 +127,13 @@ function mapBooleanLabel(value: string): string | null {
 
 function mapClassField(field: string, value: string): string | null {
   switch (field) {
-    case 'section':
-      return intToEnumLabel(Section, value);
     case 'medium':
       return intToEnumLabel(Medium, value);
-    case 'shift':
-    case 'shiftid':
-      return null;
     case 'streamgroup':
       return mapStreamGroup(value);
+    // Section is free text now — do not map via A/B/C enum indexes
+    case 'section':
+      return value || null;
     default:
       return null;
   }

@@ -59,7 +59,7 @@ export interface TimetableSlotDialogResult {
           </div>
           @if (!data.subjects.length) {
             <p class="form-hint">
-              No subjects available. Add subjects in Subject Master first.
+              No subjects available. Map subjects to this class in Class–Subject–Teacher Mapping first.
             </p>
           }
         </div>
