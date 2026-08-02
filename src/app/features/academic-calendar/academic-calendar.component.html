@@ -1,0 +1,380 @@
+<div class="ac-page">
+  <span
+    [appPageChrome]="'Academic Calendar'"
+    [pageChromeSubtitle]="'Manage branch holidays, events, and weekends. Attendance and payroll use these working days.'"
+  ></span>
+
+  <div class="legend-row">
+    <button
+      type="button"
+      class="legend-chip"
+      [class.off]="!filters.weekend"
+      (click)="toggleFilter('weekend')"
+    >
+      <span class="legend-dot weekend"></span> Weekend / off day
+    </button>
+    <button
+      type="button"
+      class="legend-chip"
+      [class.off]="!filters.holiday"
+      (click)="toggleFilter('holiday')"
+    >
+      <span class="legend-dot holiday"></span> Holiday / non-working
+    </button>
+    <button
+      type="button"
+      class="legend-chip"
+      [class.off]="!filters.event"
+      (click)="toggleFilter('event')"
+    >
+      <span class="legend-dot event"></span> Event
+    </button>
+
+    <div class="legend-actions">
+      <button type="button" class="link-btn" (click)="openTypesModal()">
+        <mat-icon>palette</mat-icon> Event types
+      </button>
+      @if (canEdit) {
+        <button type="button" class="link-btn" (click)="openWeekendModal()">
+          <mat-icon>calendar_month</mat-icon> Weekend settings
+        </button>
+      }
+      @if (canAdd) {
+        <button type="button" class="btn-add-entry" (click)="openAddEntry()">
+          <mat-icon>add</mat-icon> Add entry
+        </button>
+      }
+      @if (loading) {
+        <span class="ac-loading">Loading…</span>
+      }
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-box">
+      <div class="num">{{ summary.workingDays }}</div>
+      <div class="lbl">Working days</div>
+    </div>
+    <div class="summary-box holiday">
+      <div class="num">{{ summary.holidays }}</div>
+      <div class="lbl">Holidays</div>
+    </div>
+    <div class="summary-box event">
+      <div class="num">{{ summary.events }}</div>
+      <div class="lbl">Events</div>
+    </div>
+    <div class="summary-box weekend">
+      <div class="num">{{ summary.weekends }}</div>
+      <div class="lbl">Weekend / off days</div>
+    </div>
+  </div>
+
+  <div class="cal-card">
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button type="button" class="nav-btn" (click)="changeMonth(-1)" aria-label="Previous month">‹</button>
+        <button type="button" class="nav-btn" (click)="changeMonth(1)" aria-label="Next month">›</button>
+        <button type="button" class="today-btn" (click)="goToday()">Today</button>
+        <app-month-year-picker
+          class="ac-month-year"
+          inputId="academic-calendar-month-year"
+          [showLabel]="false"
+          appearance="filter"
+          [(month)]="currentMonth"
+          [(year)]="currentYear"
+          (periodChange)="onPeriodChange($event)"
+        />
+      </div>
+      <div class="view-toggle">
+        <button type="button" [class.active]="viewMode === 'month'" (click)="setView('month')">Month</button>
+        <button type="button" [class.active]="viewMode === 'list'" (click)="setView('list')">List</button>
+      </div>
+    </div>
+
+    @if (viewMode === 'month') {
+      <table class="cal-grid">
+        <thead>
+          <tr>
+            @for (d of dowNames; track d) {
+              <th>{{ d }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (week of [0, 1, 2, 3, 4, 5]; track week) {
+            <tr>
+              @for (cell of dayCells.slice(week * 7, week * 7 + 7); track cell.key) {
+                <td
+                  class="day-cell"
+                  [class.other-month]="cell.otherMonth"
+                  [class.weekend-cell]="cell.isWeekend && filters.weekend"
+                  [class.is-today]="cell.isToday"
+                  (click)="openAddForDate(cell.key)"
+                >
+                  <span class="day-num">{{ cell.day }}</span>
+                  @if (canAdd) {
+                    <button
+                      type="button"
+                      class="day-add-btn"
+                      (click)="openAddForDate(cell.key, $event)"
+                      aria-label="Add entry"
+                    >+</button>
+                  }
+                  @for (ev of cell.events; track ev.id) {
+                    <div
+                      class="entry-bar"
+                      [class.holiday]="eventKind(ev) === 'holiday'"
+                      [class.event]="eventKind(ev) === 'event'"
+                      [style]="eventBarStyle(ev)"
+                      (click)="openEditEventBar(ev, $event)"
+                      [title]="ev.title"
+                    >{{ ev.title }}</div>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="list-view">
+        @if (listRows.length === 0) {
+          <div class="list-empty">
+            No entries for {{ monthNames[monthIndex] }} {{ currentYear }} with current filters.
+          </div>
+        } @else {
+          @for (row of listRows; track row.event.id) {
+            <div class="list-row">
+              <div class="list-date">
+                <div class="dd">{{ row.date.getDate() }}</div>
+                <div class="mon">{{ monthNames[row.date.getMonth()].slice(0, 3) }}</div>
+              </div>
+              <div class="list-day">{{ dowNames[row.date.getDay()] }}</div>
+              <div class="list-title">{{ row.event.title }}</div>
+              <div class="list-type-badge" [class]="row.kind">
+                {{ row.kind === 'holiday' ? 'Holiday' : 'Event' }}
+              </div>
+              <div class="list-actions">
+                <button type="button" class="icon-btn" (click)="openEditEventBar(row.event, $event)" aria-label="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Add / Edit entry modal -->
+@if (showEventModal) {
+  <div class="overlay show" (click)="closeEventModal()">
+    <div class="modal modal-entry" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3>{{ eventPanelMode === 'edit' ? 'Edit calendar entry' : 'Add calendar entry' }}</h3>
+        <p>{{ eventForm.value.startDate || 'Choose a date and type' }}</p>
+      </div>
+      <form class="modal-body" [formGroup]="eventForm" (ngSubmit)="saveEvent()">
+        <div class="f-row">
+          <app-form-field
+            label="Start date"
+            type="date"
+            formControlName="startDate"
+            [required]="true"
+            [fullWidth]="true"
+          />
+          <app-form-field
+            label="End date"
+            type="date"
+            formControlName="endDate"
+            [required]="true"
+            [fullWidth]="true"
+          />
+        </div>
+
+        <div class="f">
+          <label>Type</label>
+          <div class="type-options">
+            @for (t of eventTypes; track t.id) {
+              <button
+                type="button"
+                class="type-opt"
+                [class.active]="eventForm.value.eventTypeId === t.id"
+                [class.sel-holiday]="t.isNonWorkingDefault"
+                [class.sel-event]="!t.isNonWorkingDefault"
+                (click)="eventForm.patchValue({ eventTypeId: t.id, isNonWorkingDay: t.isNonWorkingDefault })"
+              >{{ t.name }}</button>
+            }
+          </div>
+        </div>
+
+        <app-form-field
+          label="Title"
+          type="text"
+          formControlName="title"
+          [required]="true"
+          [fullWidth]="true"
+          placeholder="e.g. Holiday because of rain"
+        />
+        <app-form-field
+          label="Description"
+          type="textarea"
+          formControlName="description"
+          [fullWidth]="true"
+          placeholder="Optional details"
+          [rows]="2"
+        />
+
+        <div class="f audience-row">
+          <label>Applicable to</label>
+          <div class="audience-checks">
+            <label class="chk"><input type="checkbox" formControlName="appliesToStudents" /> Students</label>
+            <label class="chk"><input type="checkbox" formControlName="appliesToTeachers" /> Teachers</label>
+            <label class="chk"><input type="checkbox" formControlName="appliesToStaff" /> Staff</label>
+            <label class="chk">
+              <input
+                type="checkbox"
+                [checked]="appliesToClass"
+                (change)="onAppliesToClassChange($any($event.target).checked)"
+              />
+              Class
+            </label>
+          </div>
+        </div>
+
+        @if (appliesToClass) {
+          <app-form-field label="Classes" [fullWidth]="true">
+            <app-multi-select-chips
+              [options]="classOptions"
+              [(selectedIds)]="selectedClassIds"
+              placeholder="Select classes"
+              searchPlaceholder="Search class"
+            />
+            <p class="field-hint">Event applies only to students in the selected classes.</p>
+          </app-form-field>
+        }
+
+        <div class="f">
+          <label class="chk">
+            <input type="checkbox" formControlName="isNonWorkingDay" />
+            Non-working day (affects attendance / payroll)
+          </label>
+        </div>
+      </form>
+      <div class="modal-foot">
+        @if (eventPanelMode === 'edit' && canDelete) {
+          <button type="button" class="btn-danger-modal" (click)="deleteCurrentEvent()">Delete</button>
+        } @else {
+          <span></span>
+        }
+        <div class="modal-foot-right">
+          <app-action-button type="cancel" (action)="closeEventModal()" />
+          @if ((eventPanelMode === 'add' && canAdd) || (eventPanelMode === 'edit' && canEdit)) {
+            <app-action-button type="save" (action)="saveEvent()" />
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Event types modal -->
+@if (showTypesModal) {
+  <div class="overlay show" (click)="closeTypesModal()">
+    <div class="modal modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3>Event types</h3>
+        <p>School-wide categories used on the calendar</p>
+      </div>
+      <div class="modal-body">
+        <ul class="ac-type-list">
+          @for (t of eventTypes; track t.id) {
+            <li>
+              <span class="ac-type-color" [style.background]="t.color"></span>
+              <div class="ac-type-meta">
+                <strong>{{ t.name }}</strong>
+                <small>{{ t.code }}@if (t.isNonWorkingDefault) { · non-working default }</small>
+              </div>
+              @if (canEdit) {
+                <button type="button" class="icon-btn" (click)="editType(t)" aria-label="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              @if (canDelete) {
+                <button type="button" class="icon-btn" (click)="deleteType(t)" aria-label="Delete">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+
+        @if (canAdd || canEdit) {
+          <form class="ac-type-form" [formGroup]="typeForm" (ngSubmit)="saveType()">
+            <p class="ac-type-form-title">{{ editingTypeId ? 'Edit type' : 'Add type' }}</p>
+            <div class="f-row">
+              <app-form-field label="Name" type="text" formControlName="name" [required]="true" [fullWidth]="true" />
+              <app-form-field label="Code" type="text" formControlName="code" [required]="true" [fullWidth]="true" />
+            </div>
+            <div class="f-row">
+              <app-color-picker formControlName="color" label="Color" />
+              <app-form-field
+                label="Order"
+                type="number"
+                formControlName="displayOrder"
+                [fullWidth]="true"
+                [min]="0"
+              />
+            </div>
+            <label class="chk">
+              <input type="checkbox" formControlName="isNonWorkingDefault" />
+              Default non-working
+            </label>
+          </form>
+        }
+      </div>
+      <div class="modal-foot">
+        <span></span>
+        <div class="modal-foot-right">
+          <app-action-button type="cancel" label="Close" (action)="closeTypesModal()" />
+          @if (canAdd || canEdit) {
+            <app-action-button
+              type="save"
+              [label]="editingTypeId ? 'Update' : 'Create'"
+              (action)="saveType()"
+            />
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Weekend settings modal -->
+@if (showWeekendModal) {
+  <div class="overlay show" (click)="closeWeekendModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3>Weekend settings</h3>
+        <p>Off days for the active branch</p>
+      </div>
+      <form class="modal-body" [formGroup]="weekendForm">
+        <label class="chk"><input type="checkbox" formControlName="sundayOff" /> Sunday</label>
+        <label class="chk"><input type="checkbox" formControlName="mondayOff" /> Monday</label>
+        <label class="chk"><input type="checkbox" formControlName="tuesdayOff" /> Tuesday</label>
+        <label class="chk"><input type="checkbox" formControlName="wednesdayOff" /> Wednesday</label>
+        <label class="chk"><input type="checkbox" formControlName="thursdayOff" /> Thursday</label>
+        <label class="chk"><input type="checkbox" formControlName="fridayOff" /> Friday</label>
+        <label class="chk"><input type="checkbox" formControlName="saturdayOff" /> Saturday</label>
+      </form>
+      <div class="modal-foot">
+        <span></span>
+        <div class="modal-foot-right">
+          <app-action-button type="cancel" (action)="closeWeekendModal()" />
+          <app-action-button type="save" (action)="saveWeekend()" />
+        </div>
+      </div>
+    </div>
+  </div>
+}

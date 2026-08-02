@@ -103,6 +103,15 @@ export const routes: Routes = [
           import('./features/shifts/shifts.component').then((m) => m.ShiftsComponent),
       },
       {
+        path: 'academic-calendar',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.AcademicCalendar, permission: 'view' },
+        loadComponent: () =>
+          import('./features/academic-calendar/academic-calendar.component').then(
+            (m) => m.AcademicCalendarComponent,
+          ),
+      },
+      {
         path: 'promote-students',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.PromoteStudents, permission: 'view' },

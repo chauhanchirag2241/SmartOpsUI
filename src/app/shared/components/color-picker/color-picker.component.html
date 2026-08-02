@@ -1,0 +1,48 @@
+<div class="cp-wrap" [class.is-disabled]="isDisabled">
+  @if (showLabel && label) {
+    <label class="cp-label" [attr.for]="inputId">{{ label }}</label>
+  }
+
+  <div class="cp-control">
+    <label class="cp-swatch" [attr.for]="inputId" [style.background]="displayHex" title="Pick color">
+      <input
+        class="cp-native"
+        type="color"
+        [id]="inputId"
+        [ngModel]="displayHex"
+        [disabled]="isDisabled"
+        (ngModelChange)="onNativeChange($event)"
+        (blur)="onHexBlur()"
+      />
+    </label>
+
+    <input
+      class="cp-hex"
+      type="text"
+      maxlength="7"
+      spellcheck="false"
+      [value]="displayHex"
+      [disabled]="isDisabled"
+      (input)="onHexInput($any($event.target).value)"
+      (blur)="onHexBlur()"
+      aria-label="Color hex value"
+    />
+  </div>
+
+  @if (presets.length) {
+    <div class="cp-presets" role="list">
+      @for (p of presets; track p) {
+        <button
+          type="button"
+          class="cp-preset"
+          role="listitem"
+          [class.active]="displayHex.toUpperCase() === p.toUpperCase()"
+          [style.background]="p"
+          [disabled]="isDisabled"
+          [attr.aria-label]="'Select ' + p"
+          (click)="selectPreset(p)"
+        ></button>
+      }
+    </div>
+  }
+</div>

@@ -15,6 +15,7 @@ export const MenuCodes = {
   Teachers: 'TEACHERS',
   Classes: 'CLASSES',
   Shifts: 'SHIFTS',
+  AcademicCalendar: 'ACADEMIC_CALENDAR',
   PromoteStudents: 'PROMOTE_STUDENTS',
   RollNumbers: 'ROLL_NUMBERS',
   AcademicYears: 'ACADEMIC_YEARS',
