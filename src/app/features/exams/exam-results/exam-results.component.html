@@ -1,61 +1,143 @@
 <section class="exam-results-page">
-  @if (activeTab === 'sheet') {
+  @if (view === 'list') {
     <app-smart-data-table
-      [config]="tableConfig"
-      [data]="rows"
-      (actionClicked)="onActionClicked($event)"
+      [config]="listTableConfig"
+      [data]="listRows"
+      (actionClicked)="onListActionClicked($event)"
       (exportClicked)="exportCsv()"
     >
       <div headerActions class="header-actions no-print">
         @if (canEdit) {
-          <button
-            type="button"
-            class="btn-outline"
-            [disabled]="calculating || !selectedClassId || sheet?.resultDeclared"
-            (click)="calculate()"
-          >
-            <mat-icon>calculate</mat-icon>
-            {{ calculating ? 'Calculating...' : 'Calculate result' }}
-          </button>
-          <button
-            type="button"
-            class="btn-primary"
-            [disabled]="declaring || !sheet || sheet.rows.length === 0 || sheet.resultDeclared"
-            (click)="declare()"
-          >
-            <mat-icon>campaign</mat-icon>
-            {{ declaring ? 'Declaring...' : sheet?.resultDeclared ? 'Declared' : 'Declare result' }}
-          </button>
+          <app-action-button
+            type="save"
+            label="Calculate result"
+            icon="calculate"
+            (action)="openCalculateScreen()"
+          />
         }
       </div>
 
       <div tableFilters class="st-table-filters no-print">
-        <div class="filter-field">
-          <label>Exam</label>
-          <select [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
-            <option value="">Select exam</option>
-            @for (e of exams; track e.id) {
-              <option [value]="e.id">{{ e.name }} ({{ e.examGroupName }})</option>
-            }
-          </select>
-        </div>
-        <div class="filter-field">
-          <label>Class</label>
-          <select [(ngModel)]="selectedClassId" (ngModelChange)="loadSheet()">
-            <option value="">Select class</option>
-            @for (c of examClasses; track c.classId) {
-              <option [value]="c.classId">{{ c.className }}</option>
-            }
-          </select>
-        </div>
+        <app-form-field
+          label="Exam"
+          type="select"
+          variant="filter"
+          [(ngModel)]="filterExamId"
+          [options]="examOptions"
+          emptyOptionLabel="Select exam"
+          (ngModelChange)="onFilterExamChange()"
+        />
+        <app-form-field
+          label="Class"
+          type="select"
+          variant="filter"
+          [(ngModel)]="filterClassId"
+          [options]="filterClassOptions"
+          emptyOptionLabel="Select class"
+          (ngModelChange)="onFilterClassChange()"
+        />
       </div>
     </app-smart-data-table>
+  } @else if (view === 'calculate') {
+    <span
+      [appPageChrome]="'Calculate result'"
+      [pageChromeShowBack]="true"
+      (pageChromeBack)="closeCalculateScreen()"
+    ></span>
+    <p class="form-hint">
+      Choose the exam and class, calculate marks into a result sheet, then declare when ready.
+    </p>
+
+    @if (calcError) {
+      <div class="error-banner">{{ calcError }}</div>
+    }
+
+    <div class="card">
+      <div class="card-title"><mat-icon>tune</mat-icon> Exam &amp; class</div>
+      <div class="grid2">
+        <app-form-field
+          label="Exam"
+          type="select"
+          [required]="true"
+          [(ngModel)]="calcExamId"
+          [options]="examOptions"
+          emptyOptionLabel="Select exam"
+          (ngModelChange)="onCalcExamChange()"
+        />
+        <app-form-field
+          label="Class"
+          type="select"
+          [required]="true"
+          [(ngModel)]="calcClassId"
+          [options]="calcClassOptions"
+          emptyOptionLabel="Select class"
+          [disabled]="!calcExamId"
+          (ngModelChange)="onCalcClassChange()"
+        />
+      </div>
+      <div class="calc-actions">
+        <app-action-button
+          type="save"
+          [label]="calculating ? 'Calculating...' : 'Calculate result'"
+          [icon]="calculating ? 'hourglass_empty' : 'calculate'"
+          [disabled]="calculating || !canRunCalculate"
+          (action)="calculate()"
+        />
+        @if (calcSheet?.resultDeclared) {
+          <span class="declared-pill">Declared</span>
+        }
+      </div>
+    </div>
+
+    <div class="card calc-sheet-card">
+      <div class="card-title">
+        <mat-icon>table_chart</mat-icon>
+        Result sheet
+        @if (calcSheet) {
+          <span class="card-title-meta">
+            {{ calcSheet.rows.length }} student(s)
+            · Pass {{ calcSheet.passCount }}
+            · Fail {{ calcSheet.failCount }}
+          </span>
+        }
+      </div>
+
+      @if (!calcSheet?.rows?.length) {
+        <div class="empty-panel">
+          <mat-icon>calculate</mat-icon>
+          Select exam and class, then click Calculate result to build the sheet.
+        </div>
+      } @else {
+        <app-smart-data-table
+          [config]="calcTableConfig"
+          [data]="calcRows"
+          (actionClicked)="onCalcActionClicked($event)"
+        />
+      }
+    </div>
+
+    <div class="footer-actions no-print">
+      <div class="footer-hint">
+        @if (calcSheet?.resultDeclared) {
+          Results are declared and locked for this exam / class.
+        } @else {
+          Review the sheet above, then declare to publish and lock results.
+        }
+      </div>
+      <app-action-button
+        type="save"
+        [label]="declaring ? 'Declaring...' : 'Declare result'"
+        [icon]="declaring ? 'hourglass_empty' : 'campaign'"
+        [disabled]="declaring || !canDeclare"
+        (action)="declare()"
+      />
+    </div>
   } @else {
     <div class="topbar no-print">
       <span
         [appPageChrome]="'Report card'"
         [pageChromeShowBack]="true"
-        (pageChromeBack)="backToSheet()"
+        (pageChromeBack)="backFromReportCard()"
       ></span>
       <button type="button" class="btn-primary" [disabled]="!reportCard" (click)="print()">
         <mat-icon>print</mat-icon> Print / PDF

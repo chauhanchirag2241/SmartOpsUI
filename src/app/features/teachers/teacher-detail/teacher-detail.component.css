@@ -107,3 +107,49 @@
   width: 16px;
   height: 16px;
 }
+
+.btn-reactivate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #3b6d11;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.btn-reactivate:hover {
+  background: #f3f8ec;
+}
+
+.btn-reactivate mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.row-inactive td {
+  color: var(--text-secondary, #6b7280);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #e8f5d8;
+  color: #3b6d11;
+}
+
+.status-badge.inactive {
+  background: #fcebeb;
+  color: #a32d2d;
+}

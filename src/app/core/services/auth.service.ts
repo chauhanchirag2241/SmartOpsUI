@@ -139,7 +139,7 @@ export class AuthService {
 
   private mapRole(role?: string): UserRole {
     const normalized = role ?? '';
-    const known: UserRole[] = ['teacher', 'student', 'admin', 'Admin', 'Accountant', 'SmartOpsAdmin', 'School Admin'];
+    const known: UserRole[] = ['teacher', 'admin', 'Admin', 'Accountant', 'SmartOpsAdmin', 'School Admin'];
     if (known.includes(normalized as UserRole)) {
       return normalized as UserRole;
     }

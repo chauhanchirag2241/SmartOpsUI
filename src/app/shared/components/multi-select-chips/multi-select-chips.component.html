@@ -10,18 +10,22 @@
     (keydown.space)="togglePanel($event)"
   >
     <div class="sms-chips">
-      @for (chip of visibleChips; track chip.id) {
-        <span class="sms-chip" [class.is-locked]="isLocked(chip.id)">
-          <span class="sms-chip-label">{{ chip.name }}</span>
-          @if (!disabled && !isLocked(chip.id)) {
-            <span class="sms-chip-remove" (click)="remove(chip.id, $event)">
-              <mat-icon>close</mat-icon>
-            </span>
-          }
-        </span>
-      }
-      @if (overflowCount > 0) {
-        <span class="sms-overflow">+{{ overflowCount }}</span>
+      @if (selectedIds.length > maxVisibleChips) {
+        <span class="sms-summary">{{ selectionSummary }}</span>
+      } @else {
+        @for (chip of visibleChips; track chip.id) {
+          <span class="sms-chip" [class.is-locked]="isLocked(chip.id)">
+            <span class="sms-chip-label">{{ chip.name }}</span>
+            @if (!disabled && !isLocked(chip.id)) {
+              <span class="sms-chip-remove" (click)="remove(chip.id, $event)">
+                <mat-icon>close</mat-icon>
+              </span>
+            }
+          </span>
+        }
+        @if (overflowCount > 0) {
+          <span class="sms-overflow">+{{ overflowCount }}</span>
+        }
       }
       @if (!selectedIds.length) {
         <span class="sms-placeholder">{{ placeholder }}</span>
@@ -30,7 +34,7 @@
 
     <span class="sms-actions">
       @if (selectedIds.length && !disabled && selectedIds.some((id) => !isLocked(id))) {
-        <span class="sms-clear" (click)="clearAll($event)">
+        <span class="sms-clear" (click)="clearAll($event)" title="Clear">
           <mat-icon>close</mat-icon>
         </span>
       }
@@ -50,6 +54,30 @@
         />
         <mat-icon class="sms-search-icon">search</mat-icon>
       </div>
+
+      @if (showBulkActions) {
+        <div class="sms-bulk-row">
+          <label class="sms-bulk-select">
+              <mat-checkbox
+                [checked]="allFilteredSelected"
+                [indeterminate]="someFilteredSelected"
+                [disabled]="!selectableFilteredOptions.length"
+                color="primary"
+                (change)="toggleSelectAll()"
+                (click)="$event.stopPropagation()"
+              />
+            <span class="sms-bulk-label">{{ selectAllLabel }}</span>
+          </label>
+          <button
+            type="button"
+            class="sms-bulk-clear"
+            [disabled]="!selectedIds.some((id) => !isLocked(id))"
+            (click)="clearAllFromPanel($event)"
+          >
+            Clear
+          </button>
+        </div>
+      }
 
       <div class="sms-options">
         @if (singleSelect) {
@@ -78,6 +106,7 @@
               <mat-checkbox
                 [checked]="isSelected(opt.id)"
                 [disabled]="isLocked(opt.id)"
+                color="primary"
                 (change)="toggleOption(opt.id, $event.checked)"
                 (click)="$event.stopPropagation()"
               />

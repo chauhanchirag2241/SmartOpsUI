@@ -1,16 +1,16 @@
-@if (config.header) {
+@if (uiConfig.header) {
   <header class="page-header page-header-actions-only">
     <div class="page-header-actions">
       <ng-content select="[headerActions]" />
-      @if (config.header.showAddButton) {
+      @if (uiConfig.header.showAddButton) {
         <button
           type="button"
-          [class]="config.header.addButtonClass ?? 'btn-primary'"
+          [class]="uiConfig.header.addButtonClass ?? 'btn-primary'"
           id="add-button"
           (click)="onAddButtonClick()"
         >
-          <mat-icon>{{ config.header.addButtonIcon ?? 'add' }}</mat-icon>
-          {{ config.header.addButtonText ?? 'Add' }}
+          <mat-icon>{{ uiConfig.header.addButtonIcon ?? 'add' }}</mat-icon>
+          {{ uiConfig.header.addButtonText ?? 'Add' }}
         </button>
       }
     </div>
@@ -19,11 +19,11 @@
 
 <div class="table-wrap">
   <div class="toolbar">
-    @if (config.showSearch !== false) {
+    @if (uiConfig.showSearch !== false) {
       <div class="search-wrap">
         <input
           type="text"
-          [placeholder]="config.searchPlaceholder ?? 'Search...'"
+          [placeholder]="uiConfig.searchPlaceholder ?? 'Search...'"
           [(ngModel)]="searchQuery"
           (input)="onSearchInput()"
           (keydown.enter)="onSearchSubmit()"
@@ -35,8 +35,8 @@
       </div>
     }
 
-    @if (config.filters?.length && !config.filtersInPanel) {
-      @for (filter of config.filters; track filter.value) {
+    @if (uiConfig.filters?.length && !uiConfig.filtersInPanel) {
+      @for (filter of uiConfig.filters; track filter.value) {
         <button
           type="button"
           class="filter-chip"
@@ -50,7 +50,7 @@
     }
 
     <div class="toolbar-right">
-      @if (config.showColumnToggle !== false) {
+      @if (uiConfig.showColumnToggle !== false) {
         <div class="col-drop">
           <button type="button" class="icon-btn" (click)="toggleColMenu($event)">
             <mat-icon>view_column</mat-icon>
@@ -71,14 +71,14 @@
         </div>
       }
 
-      @if (config.showExport !== false) {
+      @if (uiConfig.showExport !== false) {
         <button type="button" class="icon-btn" (click)="onExportClick()">
           <mat-icon>download</mat-icon>
           Export
         </button>
       }
 
-      @if (config.filtersInPanel) {
+      @if (uiConfig.filtersInPanel) {
         <div class="filter-drop">
           <button
             type="button"
@@ -117,11 +117,11 @@
               </div>
               <div class="table-filter-menu-body" (click)="onFilterBodyClick($event)">
                 <ng-content select="[tableFilters]"></ng-content>
-                @if (config.filters?.length) {
+                @if (uiConfig.filters?.length) {
                   <div class="table-filter-section">
                     <span class="table-filter-section-label">Status</span>
                     <div class="table-filter-chips">
-                      @for (filter of config.filters; track filter.value) {
+                      @for (filter of uiConfig.filters; track filter.value) {
                         <button
                           type="button"
                           class="filter-chip"
@@ -172,7 +172,7 @@
           @if (isExpandable) {
             <th class="th-expand" aria-label="Expand"></th>
           }
-          @if (config.selectable !== false) {
+          @if (uiConfig.selectable !== false) {
             <th class="th-check">
               <input
                 type="checkbox"
@@ -202,7 +202,7 @@
             </th>
           }
 
-          @if (config.actions?.length) {
+          @if (uiConfig.actions?.length) {
             <th class="th-actions">
               <span class="actions-dots">···</span>
             </th>
@@ -234,7 +234,7 @@
                   </button>
                 </td>
               }
-              @if (config.selectable !== false) {
+              @if (uiConfig.selectable !== false) {
                 <td class="td-check" (click)="$event.stopPropagation()">
                   <input
                     type="checkbox"
@@ -318,12 +318,12 @@
                 </td>
               }
 
-              @if (config.actions?.length) {
+              @if (uiConfig.actions?.length) {
                 <td class="td-actions" (click)="$event.stopPropagation()">
-                  @if (config.actionsLayout === 'inline') {
+                  @if (uiConfig.actionsLayout === 'inline') {
                     <div class="inline-actions">
-                      @for (action of config.actions; track action.label) {
-                        @if (!config.actionVisibleFn || config.actionVisibleFn(action, row)) {
+                      @for (action of uiConfig.actions; track action.label) {
+                        @if (!uiConfig.actionVisibleFn || uiConfig.actionVisibleFn(action, row)) {
                           <button
                             type="button"
                             class="inline-action-btn"
@@ -374,7 +374,7 @@
   <div class="table-footer">
     <div class="foot-info">
       Showing <b>{{ showingStart }}–{{ showingEnd }}</b> of
-      <b>{{ serverSide ? totalRecords : filteredData.length }}</b> {{ config.itemLabel ?? 'records' }}
+      <b>{{ serverSide ? totalRecords : filteredData.length }}</b> {{ uiConfig.itemLabel ?? 'records' }}
     </div>
     <div class="page-size">
       Rows per page
@@ -428,8 +428,8 @@
   [style.top.px]="ctxMenuTop"
   [style.left.px]="ctxMenuLeft"
 >
-  @for (action of config.actions ?? []; track trackContextAction($index, action)) {
-    @if (!config.actionVisibleFn || config.actionVisibleFn(action, ctxMenuRow)) {
+  @for (action of uiConfig.actions ?? []; track trackContextAction($index, action)) {
+    @if (!uiConfig.actionVisibleFn || uiConfig.actionVisibleFn(action, ctxMenuRow)) {
       @if (action.separatorBefore) {
         <div class="ctx-sep"></div>
       }

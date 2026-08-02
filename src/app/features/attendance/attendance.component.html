@@ -2,19 +2,20 @@
   <!-- Topbar -->
   <div class="topbar">
     <span
-      style="flex:1"
       [appPageChrome]="'Attendance'"
       [pageChromeSubtitle]="selectedClassName + ' · ' + displaySelectedDate"
     ></span>
-    <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
-      <mat-icon>keyboard</mat-icon>
-      <span>Shortcuts</span>
-    </button>
-    <button *ngIf="canEditAttendance" class="save-btn" (click)="submitAttendance()" [disabled]="isSubmitting">
-      <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
-      <mat-icon class="spinning" *ngIf="isSubmitting">sync</mat-icon>
-      {{ isSubmitting ? 'Submitting...' : 'Submit' }}
-    </button>
+    <div class="topbar-actions">
+      <button class="icon-btn" (click)="toggleKbd()" aria-label="Keyboard shortcuts">
+        <mat-icon>keyboard</mat-icon>
+        <span>Shortcuts</span>
+      </button>
+      <button *ngIf="canEditAttendance" class="save-btn" (click)="submitAttendance()" [disabled]="isSubmitting">
+        <mat-icon *ngIf="!isSubmitting">check_circle</mat-icon>
+        <mat-icon class="spinning" *ngIf="isSubmitting">sync</mat-icon>
+        {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+      </button>
+    </div>
   </div>
 
   <!-- Keyboard Shortcuts Panel -->

@@ -7,6 +7,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
+import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
@@ -25,6 +26,7 @@ import {
     ReactiveFormsModule,
     MatIconModule,
     PageChromeDirective,
+    ActionButtonComponent,
     DynamicFieldComponent,
   ],
   templateUrl: './hall-tickets.component.html',

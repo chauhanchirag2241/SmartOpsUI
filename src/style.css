@@ -1863,13 +1863,25 @@ input[type='checkbox'] {
 
 .page-toolbar-wrap {
   margin-bottom: 8px;
-  /* Standalone toolbar: do not clip the Filter dropdown (inherits overflow:hidden from .table-wrap) */
+  /* Standalone toolbar: do not clip Filter / multi-select dropdowns */
+  overflow: visible;
+}
+
+/* Must beat .table-wrap { overflow:hidden } — both classes are on the same element. */
+.table-wrap.page-toolbar-wrap {
   overflow: visible;
 }
 
 .page-toolbar-wrap > .toolbar {
   border-bottom: none;
   border-radius: inherit;
+  overflow: visible;
+}
+
+.page-toolbar-wrap .toolbar-right {
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .page-toolbar-wrap .filter-drop {

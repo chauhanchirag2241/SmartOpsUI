@@ -1,3 +1,121 @@
+.st-table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.slot-detail {
+  padding: 4px 8px 8px 36px;
+}
+
+.exam-class-block {
+  margin-bottom: 14px;
+}
+
+.exam-class-block:last-child {
+  margin-bottom: 0;
+}
+
+.exam-class-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin: 0 0 6px;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.slot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.slot-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  padding: 6px 8px;
+  border-bottom: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  white-space: nowrap;
+}
+
+.slot-table td {
+  padding: 8px;
+  border-bottom: 0.5px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  vertical-align: middle;
+}
+
+.slot-table tr:last-child td {
+  border-bottom: none;
+}
+
+.slot-table .col-actions {
+  width: 88px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-slot-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #1e40af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.btn-slot-action:hover {
+  background: #eff6ff;
+}
+
+.btn-slot-action.danger {
+  color: #b91c1c;
+}
+
+.btn-slot-action.danger:hover {
+  background: #fef2f2;
+}
+
+.btn-slot-action mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.slot-table .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.slot-table .badge.b-amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.slot-table .badge.b-green {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.slot-table .badge.b-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .error-banner {
   background: #fcebeb;
   color: #a32d2d;
@@ -6,13 +124,6 @@
   padding: 8px 12px;
   font-size: 12px;
   margin-bottom: 10px;
-}
-
-.st-table-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
 }
 
 .timetable-card-title {
@@ -113,6 +224,13 @@
   display: flex;
   justify-content: flex-end;
   padding: 8px 0 4px;
+}
+
+.tab-hint {
+  margin: 4px 0 10px;
+  font-size: 12.5px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.4;
 }
 
 .btn-link {

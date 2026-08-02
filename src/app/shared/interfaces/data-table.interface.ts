@@ -81,7 +81,15 @@ export interface DataTableAction {
   danger?: boolean;
   /** Whether to show a separator before this item */
   separatorBefore?: boolean;
-  }
+  /**
+   * Explicit CRUD permission required for this action.
+   * When omitted, inferred from label/danger (edit/delete/view/…).
+   */
+  permission?: DataTableActionPermission;
+}
+
+/** CRUD permission kind used by action menus and bulk actions. */
+export type DataTableActionPermission = 'view' | 'add' | 'edit' | 'delete' | 'export';
 
 /**
  * A single bulk action shown when rows are selected.
@@ -93,7 +101,9 @@ export interface DataTableBulkAction {
   icon: string;
   /** Whether this is a danger/destructive action */
   danger?: boolean;
-  }
+  /** Explicit CRUD permission; inferred from label when omitted */
+  permission?: DataTableActionPermission;
+}
 
 /**
  * Header configuration for the data table.
@@ -158,6 +168,19 @@ export interface DataTableConfig {
   itemLabel?: string;
   /** Header configuration */
   header?: DataTableHeader;
+  /**
+   * When set, smart-data-table hides Add / Export / actions by live permissions
+   * for this menu (also used by `applyModuleTablePermissions`).
+   */
+  permissionMenuCode?: string;
+  /** Unfiltered action list for live permission re-evaluation */
+  permissionSourceActions?: DataTableAction[];
+  /** Unfiltered bulk actions for live permission re-evaluation */
+  permissionSourceBulkActions?: DataTableBulkAction[];
+  /** Whether Add was requested before permission filtering */
+  permissionSourceShowAdd?: boolean;
+  /** Whether Export was requested before permission filtering */
+  permissionSourceShowExport?: boolean;
   /** Optional per-row filter for context menu actions */
   actionVisibleFn?: (action: DataTableAction, row: Record<string, unknown>) => boolean;
   /** Optional filter for bulk actions based on selected rows */

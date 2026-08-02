@@ -722,7 +722,10 @@ export class AddStudentComponent implements OnInit {
         this.cdr.detectChanges();
         afterLoad?.();
       },
-      error: () => this.snackBar.open('Error loading class groups', 'Close', { duration: 3000 }),
+      error: () => {
+        this.snackBar.open('Error loading class groups', 'Close', { duration: 3000 });
+        afterLoad?.();
+      },
     });
   }
 
@@ -744,7 +747,11 @@ export class AddStudentComponent implements OnInit {
         this.cdr.detectChanges();
         afterLoad?.();
       },
-      error: () => this.snackBar.open('Error loading sections', 'Close', { duration: 3000 }),
+      error: () => {
+        // Teachers may lack Classes.View — still show the student profile.
+        this.snackBar.open('Error loading sections', 'Close', { duration: 3000 });
+        afterLoad?.();
+      },
     });
   }
 

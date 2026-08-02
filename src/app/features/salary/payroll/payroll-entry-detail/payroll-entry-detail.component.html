@@ -1,0 +1,127 @@
+<span
+  [appPageChrome]="payslip?.employeeName || 'Payroll details'"
+  [pageChromeSubtitle]="monthLabel ? 'Payslip — ' + monthLabel + ' ' + (payslip?.payYear || '') : 'Payroll entry'"
+  [pageChromeShowBack]="true"
+  (pageChromeBack)="cancel.emit()"
+></span>
+
+<div *ngIf="loading" class="empty-panel">Loading payroll details...</div>
+
+<ng-container *ngIf="!loading && payslip">
+  <div class="card">
+    <div class="card-title"><mat-icon>badge</mat-icon> Payroll details</div>
+    <div class="basic-detail-grid">
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Employee</div>
+        <div class="basic-detail-value">{{ payslip.employeeName }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Employee code</div>
+        <div class="basic-detail-value">{{ payslip.employeeCode || '—' }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Department</div>
+        <div class="basic-detail-value">{{ payslip.department || '—' }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Designation</div>
+        <div class="basic-detail-value">{{ payslip.designation || '—' }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Period</div>
+        <div class="basic-detail-value">{{ monthLabel }} {{ payslip.payYear }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Net salary</div>
+        <div class="basic-detail-value">{{ formatInr(payslip.netSalary) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><mat-icon>event_available</mat-icon> Attendance</div>
+    <div class="attendance-option-group readonly">
+      <div class="attendance-option-title">Salary calculation</div>
+      <div class="attendance-radio static" [class.active]="!payslip.useAttendanceWiseSalary">
+        <mat-icon>{{ payslip.useAttendanceWiseSalary ? 'radio_button_unchecked' : 'radio_button_checked' }}</mat-icon>
+        <span>
+          <strong>Full salary</strong>
+          <span class="attendance-option-hint">No attendance-based cut for this payroll run.</span>
+        </span>
+      </div>
+      <div class="attendance-radio static" [class.active]="payslip.useAttendanceWiseSalary">
+        <mat-icon>{{ payslip.useAttendanceWiseSalary ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+        <span>
+          <strong>Attendance-wise</strong>
+          <span class="attendance-option-hint">Salary prorated from staff attendance for this month.</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="basic-detail-grid att-cut-grid" *ngIf="payslip.useAttendanceWiseSalary">
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Working days</div>
+        <div class="basic-detail-value">{{ payslip.workingDays }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Present days</div>
+        <div class="basic-detail-value">{{ payslip.presentDays }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Days cut</div>
+        <div class="basic-detail-value" [class.cut-value]="payslip.daysCut > 0">{{ payslip.daysCut }}</div>
+      </div>
+      <div class="basic-detail-field">
+        <div class="basic-detail-label">Amount cut</div>
+        <div class="basic-detail-value" [class.cut-value]="payslip.attendanceCutAmount > 0">
+          {{ payslip.attendanceCutAmount > 0 ? formatInr(payslip.attendanceCutAmount) : '—' }}
+        </div>
+      </div>
+    </div>
+    <p class="field-hint" *ngIf="payslip.useAttendanceWiseSalary && payslip.daysCut === 0">
+      No attendance cut for this employee in {{ monthLabel }} {{ payslip.payYear }}.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><mat-icon>receipt_long</mat-icon> Earnings &amp; deductions</div>
+    <div class="payslip payslip-embedded">
+      <table class="ps-comp-table">
+        <thead>
+          <tr>
+            <th style="text-align: left">Earnings</th>
+            <th style="text-align: right">Amount (₹)</th>
+            <th style="text-align: left">Deductions</th>
+            <th style="text-align: right">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of payslipRows()">
+            <td>{{ row.earning }}</td>
+            <td style="text-align: right">{{ row.earning ? (row.earningAmt | number) : '' }}</td>
+            <td>{{ row.deduction }}</td>
+            <td style="text-align: right" [class.cut-value]="row.deduction === 'Attendance cut'">
+              {{ row.deduction ? (row.deductionAmt | number) : '' }}
+            </td>
+          </tr>
+          <tr style="background: var(--input-bg)">
+            <td style="font-weight: 500">Gross earnings</td>
+            <td style="text-align: right; font-weight: 500">{{ payslip.grossSalary | number }}</td>
+            <td style="font-weight: 500">Total deductions</td>
+            <td style="text-align: right; font-weight: 500; color: #a32d2d">{{ payslip.totalDeductions | number }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="ps-total"><span>Net salary payable</span><span>{{ formatInr(payslip.netSalary) }}</span></div>
+      <div class="ps-bank" *ngIf="payslip.bankName || payslip.bankAccountNumber">
+        <div *ngIf="payslip.bankName">Bank: {{ payslip.bankName }}</div>
+        <div *ngIf="payslip.bankAccountNumber">A/C: {{ payslip.bankAccountNumber }}</div>
+        <div *ngIf="payslip.bankIfscCode">IFSC: {{ payslip.bankIfscCode }}</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<div class="footer-actions view-mode-footer">
+  <app-action-button type="back" (action)="cancel.emit()" />
+</div>

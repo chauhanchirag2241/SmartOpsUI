@@ -7,23 +7,29 @@
   <app-page-toolbar
     searchPlaceholder="Search employee..."
     [searchValue]="search"
-    [filterPanelActive]="toolbarFilterActive"
+    [searchDisabled]="!selectedEmployeeTypeIds.length"
+    [showFilter]="false"
     (searchSubmitted)="onToolbarSearchSubmit($event)"
-    (advancedFiltersCleared)="onToolbarFiltersCleared()"
   >
-    <div toolbarFilters class="st-table-filters">
-      <label class="table-filter-section-label" for="emp-sal-dept-filter">Department</label>
-      <select id="emp-sal-dept-filter" class="sel-filter sel-filter-lg" [(ngModel)]="departmentFilter" (ngModelChange)="loadEmployees()">
-        <option value="All">All departments</option>
-        <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
-      </select>
-      <label class="table-filter-section-label" for="emp-sal-desig-filter">Designation</label>
-      <select id="emp-sal-desig-filter" class="sel-filter sel-filter-lg" [(ngModel)]="designationFilter" (ngModelChange)="loadEmployees()">
-        <option value="All">All designations</option>
-        <option *ngFor="let d of designations" [value]="d">{{ d }}</option>
-      </select>
+    <div toolbarRight class="emp-type-toolbar">
+      <app-form-field label="Employee type" variant="filter">
+        <app-multi-select-chips
+          [options]="employeeTypeOptions"
+          [(selectedIds)]="selectedEmployeeTypeIds"
+          placeholder="Select employee type"
+          searchPlaceholder="Search type"
+          [compact]="true"
+          (selectedIdsChange)="onEmployeeTypesChange()"
+        />
+      </app-form-field>
+      <span class="filter-hint">
+        @if (!selectedEmployeeTypeIds.length) {
+          Select type to load list
+        } @else {
+          {{ employees.length }} employees
+        }
+      </span>
     </div>
-    <span toolbarRight class="filter-hint">{{ employees.length }} employees</span>
   </app-page-toolbar>
 
   <div class="emp-layout">
@@ -38,13 +44,24 @@
         <div class="s-av">{{ studentInitials(e.employeeName) }}</div>
         <div style="flex: 1; min-width: 0">
           <div class="cell-name" style="font-size: 12px">{{ e.employeeName }}</div>
-          <div style="font-size: 10px; color: var(--muted)">{{ e.designation || '—' }}</div>
+          <div style="font-size: 10px; color: var(--muted)">
+            {{ e.employeeType || e.designation || '—' }}
+          </div>
         </div>
         <div style="font-size: 10px; font-weight: 500; color: var(--g600)">
           {{ e.netSalary != null ? formatInr(e.netSalary) : '—' }}
         </div>
       </div>
-      <div *ngIf="!loadingList && !employees.length" class="empty-panel" style="padding: 16px">No employees found.</div>
+      <div *ngIf="!loadingList && !selectedEmployeeTypeIds.length" class="empty-panel" style="padding: 16px">
+        Select employee type in Filter to see employees.
+      </div>
+      <div
+        *ngIf="!loadingList && selectedEmployeeTypeIds.length && !employees.length"
+        class="empty-panel"
+        style="padding: 16px"
+      >
+        No employees found.
+      </div>
     </div>
 
     <div>

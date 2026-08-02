@@ -50,12 +50,13 @@
       <ng-template #rowDetail let-row>
         <div class="subject-detail">
           @if (!subjectsForClass(row).length) {
-            <p class="empty-hint">No subjects assigned for this class.</p>
+            <p class="empty-hint">No subjects assigned for this class group.</p>
           } @else {
             <table class="subject-table">
               <thead>
                 <tr>
                   <th>Subject</th>
+                  <th>Status</th>
                   @if (canEdit) {
                     <th class="col-actions">Action</th>
                   }
@@ -63,19 +64,40 @@
               </thead>
               <tbody>
                 @for (subject of subjectsForClass(row); track subject['id']) {
-                  <tr>
+                  <tr [class.row-inactive]="subject['isActive'] === false">
                     <td>{{ subject['subjectName'] || '—' }}</td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        [class.active]="subject['isActive'] !== false"
+                        [class.inactive]="subject['isActive'] === false"
+                      >
+                        {{ subject['isActive'] === false ? 'Inactive' : 'Active' }}
+                      </span>
+                    </td>
                     @if (canEdit) {
                       <td class="col-actions">
-                        <button
-                          type="button"
-                          class="btn-remove"
-                          (click)="removeSubject(subject)"
-                          title="Remove permission"
-                        >
-                          <mat-icon>delete</mat-icon>
-                          Remove
-                        </button>
+                        @if (subject['isActive'] !== false) {
+                          <button
+                            type="button"
+                            class="btn-remove"
+                            (click)="removeSubject(subject)"
+                            title="Mark inactive"
+                          >
+                            <mat-icon>delete</mat-icon>
+                            Remove
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn-reactivate"
+                            (click)="reactivateSubject(subject)"
+                            title="Reactivate"
+                          >
+                            <mat-icon>restart_alt</mat-icon>
+                            Reactivate
+                          </button>
+                        }
                       </td>
                     }
                   </tr>
@@ -86,5 +108,15 @@
         </div>
       </ng-template>
     </app-smart-data-table>
+  }
+
+  @if (currentTab === 2) {
+    <app-smart-data-table
+      [config]="classTeacherTableConfig"
+      [data]="classTeacherRows"
+      [totalRecords]="classTeacherRows.length"
+      (addButtonClicked)="openAssignClassTeacherDialog()"
+      (actionClicked)="onClassTeacherAction($event)"
+    />
   }
 }

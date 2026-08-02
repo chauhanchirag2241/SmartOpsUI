@@ -9,6 +9,7 @@ import { UserService } from '../../core/services/user.service';
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { AddUserComponent } from './add-user/add-user.component';
 import type { DataTableAction, DataTableConfig } from '../../shared/components/smart-data-table';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-users',
@@ -29,7 +30,7 @@ export class UsersComponent implements OnInit {
   selectedUserId?: string;
   users: Record<string, unknown>[] = [];
 
-  tableConfig: DataTableConfig = {
+  private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Users',
       subtitle: 'Manage school portal users and roles',
@@ -68,8 +69,8 @@ export class UsersComponent implements OnInit {
       },
     ],
     actions: [
-      { label: 'View', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'View', icon: 'visibility', iconColor: '#639922', permission: 'view' },
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF', permission: 'edit' },
     ],
     searchPlaceholder: 'Search by username or email...',
     searchKeys: ['username', 'email'],
@@ -78,18 +79,14 @@ export class UsersComponent implements OnInit {
     pageSizeOptions: [10, 25, 50],
   };
 
-  ngOnInit(): void {
-    if (!this.permissionService.canAdd(MenuCodes.Users)) {
-      this.tableConfig = {
-        ...this.tableConfig,
-        header: {
-          title: 'Users',
-          subtitle: 'Manage school portal users and roles',
-          showAddButton: false,
-        },
-      };
-    }
+  tableConfig!: DataTableConfig;
 
+  ngOnInit(): void {
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.Users,
+    );
     this.loadUsers();
   }
 
@@ -125,6 +122,7 @@ export class UsersComponent implements OnInit {
   }
 
   openAddForm(): void {
+    if (!this.permissionService.canAdd(MenuCodes.Users)) return;
     this.formMode = 'add';
     this.selectedUserId = undefined;
     this.showAddForm = true;
@@ -146,10 +144,12 @@ export class UsersComponent implements OnInit {
   onActionClicked(event: { action: DataTableAction; row: Record<string, unknown> }): void {
     const id = event.row['id'] as string;
     if (event.action.label === 'View') {
+      if (!this.permissionService.canView(MenuCodes.Users)) return;
       this.formMode = 'view';
       this.selectedUserId = id;
       this.showAddForm = true;
     } else if (event.action.label === 'Edit') {
+      if (!this.permissionService.canEdit(MenuCodes.Users)) return;
       this.formMode = 'edit';
       this.selectedUserId = id;
       this.showAddForm = true;

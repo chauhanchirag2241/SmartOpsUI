@@ -1,7 +1,9 @@
 import { NgClass, NgStyle, NgTemplateOutlet, DatePipe } from '@angular/common';
 import {
+  ChangeDetectorRef,
   Component,
   ContentChild,
+  DestroyRef,
   ElementRef,
   EventEmitter,
   HostListener,
@@ -15,6 +17,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -29,7 +32,10 @@ import { AvatarColorService } from '../../services/avatar-color.service';
 import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filter-panel.util';
 import { naturalTextCompare } from '../../utils/natural-sort.util';
 import { DateRangeFilterComponent } from '../date-range-filter/date-range-filter.component';
+import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { PageChromeService } from '../../../core/services/page-chrome.service';
+import { PermissionService } from '../../../core/services/permission.service';
+import { filterTableConfigByPermissions } from '../../../core/utils/permission-ui.util';
 import { formatDateOnlyDisplay } from '../../utils/date-only.util';
 
 @Component({
@@ -42,10 +48,20 @@ import { formatDateOnlyDisplay } from '../../utils/date-only.util';
 export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   private readonly avatarColor = inject(AvatarColorService);
   private readonly pageChrome = inject(PageChromeService);
+  private readonly permissionService = inject(PermissionService);
+  private readonly ayContext = inject(AcademicYearContextService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
   /** Projected date-range filter inside the filter modal (optional). */
   @ContentChild(DateRangeFilterComponent) dateRangeFilter?: DateRangeFilterComponent;
   /** Table configuration object */
   @Input() config!: DataTableConfig;
+
+  /**
+   * Permission-filtered view of `config` (Add / Export / row actions / bulk).
+   * Falls back to `config` when no `permissionMenuCode` is set.
+   */
+  uiConfig: DataTableConfig = { columns: [] };
 
   /** Data array to display */
   @Input() data: Record<string, unknown>[] = [];
@@ -162,30 +178,30 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   get visibleColumns(): DataTableColumn[] {
-    return this.config?.columns?.filter((col) => this.columnVisibility[col.key] !== false) ?? [];
+    return this.uiConfig?.columns?.filter((col) => this.columnVisibility[col.key] !== false) ?? [];
   }
 
   get visibleBulkActions(): DataTableBulkAction[] {
-    const actions = this.config?.bulkActions ?? [];
-    if (!this.config?.bulkActionVisibleFn) return actions;
+    const actions = this.uiConfig?.bulkActions ?? [];
+    if (!this.uiConfig?.bulkActionVisibleFn) return actions;
     const selectedData = this.getSelectedRows();
-    return actions.filter(action => this.config.bulkActionVisibleFn!(action, selectedData));
+    return actions.filter(action => this.uiConfig.bulkActionVisibleFn!(action, selectedData));
   }
 
   get totalColumnsCount(): number {
     let count = this.visibleColumns.length;
-    if (this.config?.expandableRows) count++;
-    if (this.config?.selectable !== false) count++;
-    if (this.config?.actions?.length) count++;
+    if (this.uiConfig?.expandableRows) count++;
+    if (this.uiConfig?.selectable !== false) count++;
+    if (this.uiConfig?.actions?.length) count++;
     return count;
   }
 
   get isExpandable(): boolean {
-    return !!this.config?.expandableRows && !!this.rowDetailTemplate;
+    return !!this.uiConfig?.expandableRows && !!this.rowDetailTemplate;
   }
 
   getRowExpandKey(row: Record<string, unknown>, index: number): string {
-    const key = this.config?.expandRowKey;
+    const key = this.uiConfig?.expandRowKey;
     if (key && row[key] != null && String(row[key]).trim() !== '') {
       return String(row[key]);
     }
@@ -203,7 +219,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
     event?.stopPropagation();
     const key = this.getRowExpandKey(row, index);
     const willExpand = !this.expandedRowKeys.has(key);
-    if (this.config?.expandAccordion !== false) {
+    if (this.uiConfig?.expandAccordion !== false) {
       this.expandedRowKeys.clear();
     }
     if (willExpand) {
@@ -277,12 +293,23 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.refreshUiConfig();
     this.initDefaults();
     this.applyFilters();
     this.syncPageChrome();
+
+    this.permissionService.permissions$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.refreshUiConfig();
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['config']) {
+      this.refreshUiConfig();
+    }
     if (changes['data'] || changes['config'] || changes['totalRecords']) {
       this.initDefaults();
       if (this.serverSide) {
@@ -306,8 +333,25 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
     this.pageChrome.clear(this);
   }
 
+  private refreshUiConfig(): void {
+    if (!this.config) {
+      return;
+    }
+    const menuCode = this.config.permissionMenuCode;
+    if (!menuCode) {
+      this.uiConfig = this.config;
+      return;
+    }
+    this.uiConfig = filterTableConfigByPermissions(
+      this.config,
+      this.permissionService,
+      menuCode,
+      this.ayContext.isReadOnlyScope(),
+    );
+  }
+
   private syncPageChrome(): void {
-    const header = this.config?.header;
+    const header = this.uiConfig?.header ?? this.config?.header;
     if (header?.syncPageChrome === false) {
       return;
     }
@@ -320,6 +364,9 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private initDefaults(): void {
+    if (!this.uiConfig && this.config) {
+      this.refreshUiConfig();
+    }
     if (!this.config) return;
 
     // Init column visibility
@@ -657,8 +704,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   private estimateContextMenuHeight(rowIndex: number): number {
     const globalIdx = (this.currentPage - 1) * this.pageSize + rowIndex;
     const row = this.filteredData[globalIdx] ?? {};
-    const actions = (this.config.actions ?? []).filter(
-      (action) => !this.config.actionVisibleFn || this.config.actionVisibleFn(action, row),
+    const actions = (this.uiConfig.actions ?? []).filter(
+      (action) => !this.uiConfig.actionVisibleFn || this.uiConfig.actionVisibleFn(action, row),
     );
 
     const itemHeight = 36;

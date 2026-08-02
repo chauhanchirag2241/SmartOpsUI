@@ -45,6 +45,7 @@
           [(ngModel)]="formGroupId"
           [options]="groupFilterOptions"
           emptyOptionLabel="Select group"
+          (ngModelChange)="onFormGroupChange()"
         />
         <app-form-field
           label="Exam name"
@@ -58,18 +59,6 @@
           type="select"
           [(ngModel)]="formExamType"
           [options]="examTypeOptions"
-        />
-        <app-form-field
-          label="Start date"
-          type="date"
-          [required]="true"
-          [(ngModel)]="formStartDate"
-        />
-        <app-form-field
-          label="End date"
-          type="date"
-          [required]="true"
-          [(ngModel)]="formEndDate"
         />
         <app-form-field
           label="Min pass %"
@@ -92,13 +81,14 @@
           [(ngModel)]="formDescription"
           placeholder="Optional notes"
         />
-        <app-form-field label="Classes" [required]="true" [fullWidth]="true">
+        <app-form-field label="Classes" [fullWidth]="true">
           <app-multi-select-chips
             [options]="classOptions"
             [(selectedIds)]="formClassIds"
-            placeholder="Select classes"
+            placeholder="Select classes (optional)"
             searchPlaceholder="Search class"
           />
+          <p class="field-hint">{{ formClassHint }}</p>
         </app-form-field>
       </div>
     </div>
@@ -141,9 +131,14 @@
           </div>
         }
       </div>
-      <button type="button" class="btn-outline add-row" (click)="addComponentRow()">
-        <mat-icon>add</mat-icon> Add component
-      </button>
+      <div class="add-component-actions">
+        <app-action-button
+          type="add"
+          label="Add component"
+          icon="add"
+          (action)="addComponentRow()"
+        />
+      </div>
     </div>
 
     <div class="footer-actions">

@@ -8,7 +8,7 @@
     />
   } @else {
     <span [appPageChrome]="formMode === 'edit' ? 'Edit exam group' : 'New exam group'" [pageChromeShowBack]="true" (pageChromeBack)="closeForm()"></span>
-    <p class="form-hint">Exams inside the group inherit its default grade scale. Academic year is set per exam.</p>
+    <p class="form-hint">Exams inside the group inherit its default grade scale. Academic year is set per exam. Teachers only see groups mapped to their class groups.</p>
 
     @if (formError) {
       <div class="error-banner">{{ formError }}</div>
@@ -37,6 +37,15 @@
           [options]="gradeScaleOptions"
           emptyOptionLabel="None"
         />
+        <div class="class-select-block">
+          <label class="field-label">Class groups</label>
+          <app-multi-select-chips
+            [options]="classGroupOptions"
+            [(selectedIds)]="formClassGroupIds"
+            placeholder="Select class groups (optional)"
+            searchPlaceholder="Search class group…"
+          />
+        </div>
         <app-form-field
           label="Description"
           type="textarea"

@@ -8,6 +8,7 @@ import { RoleDto, RoleService } from '../../core/services/role.service';
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { AddRoleComponent } from './add-role/add-role.component';
 import type { DataTableAction, DataTableConfig } from '../../shared/components/smart-data-table';
+import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util';
 
 @Component({
   selector: 'app-roles',
@@ -27,7 +28,7 @@ export class RolesComponent implements OnInit {
   selectedRoleId?: string;
   roles: Record<string, unknown>[] = [];
 
-  tableConfig: DataTableConfig = {
+  private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Roles',
       subtitle: 'Manage roles and permissions for school users',
@@ -57,8 +58,8 @@ export class RolesComponent implements OnInit {
       },
     ],
     actions: [
-      { label: 'View', icon: 'visibility', iconColor: '#639922' },
-      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
+      { label: 'View', icon: 'visibility', iconColor: '#639922', permission: 'view' },
+      { label: 'Edit', icon: 'edit', iconColor: '#1E40AF', permission: 'edit' },
     ],
     searchPlaceholder: 'Search by role name...',
     searchKeys: ['name', 'description', 'permissionsPreview'],
@@ -67,17 +68,14 @@ export class RolesComponent implements OnInit {
     pageSizeOptions: [10, 25, 50],
   };
 
+  tableConfig!: DataTableConfig;
+
   ngOnInit(): void {
-    if (!this.permissionService.canEdit(MenuCodes.Roles)) {
-      this.tableConfig = {
-        ...this.tableConfig,
-        header: {
-          title: 'Roles',
-          subtitle: 'Manage roles and permissions for school users',
-          showAddButton: false,
-        },
-      };
-    }
+    this.tableConfig = applyModuleTablePermissions(
+      this.baseTableConfig,
+      this.permissionService,
+      MenuCodes.Roles,
+    );
     this.loadRoles();
   }
 
@@ -94,7 +92,7 @@ export class RolesComponent implements OnInit {
   }
 
   onAddButtonClicked(): void {
-    if (!this.permissionService.canEdit(MenuCodes.Roles)) return;
+    if (!this.permissionService.canAdd(MenuCodes.Roles)) return;
     this.formMode = 'add';
     this.selectedRoleId = undefined;
     this.showAddForm = true;

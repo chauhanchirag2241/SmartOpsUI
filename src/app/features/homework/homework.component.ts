@@ -90,6 +90,35 @@ export class HomeworkComponent implements OnInit {
       next: (c) => (this.classes = c || []),
       error: () => this.snackBar.open('Failed to load classes', 'Close', { duration: 3000 }),
     });
+    this.reloadSubjectFilterOptions();
+  }
+
+  onClassFilterChanged(): void {
+    this.subjectFilter = '';
+    this.reloadSubjectFilterOptions();
+    this.loadList();
+  }
+
+  private reloadSubjectFilterOptions(): void {
+    if (this.classFilter) {
+      const yearId = this.ayContext.effectiveYearId() || undefined;
+      this.classService.getTeachingSubjectsForClass(this.classFilter, yearId).subscribe({
+        next: (rows) => {
+          this.subjects = (rows || []).map((s: any) => ({
+            id: s.id ?? s.Id,
+            name: s.name ?? s.Name,
+            subjectName: s.name ?? s.Name,
+          }));
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.subjects = [];
+          this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 });
+        },
+      });
+      return;
+    }
+
     this.subjectService.getSubjectDropdown().subscribe({
       next: (s) => (this.subjects = s || []),
       error: () => this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 }),
@@ -166,6 +195,7 @@ export class HomeworkComponent implements OnInit {
     this.subjectFilter = '';
     this.chipFilter = 'all';
     this.searchQuery = '';
+    this.reloadSubjectFilterOptions();
     this.loadList();
   }
 

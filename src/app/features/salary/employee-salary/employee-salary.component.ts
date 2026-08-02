@@ -6,11 +6,15 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NotificationService } from '../../../core/services/notification.service';
 import { EmployeeSalaryService } from '../../../core/services/employee-salary.service';
+import { UserTypeService, UserTypeDto } from '../../../core/services/user-type.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { PermissionService } from '../../../core/services/permission.service';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { ListPageHeaderComponent } from '../../../shared/components/list-page-header/list-page-header.component';
 import { PageToolbarComponent } from '../../../shared/components/page-toolbar/page-toolbar.component';
+import { FormFieldComponent } from '../../../shared/form-controls/form-field';
+import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { ERP_FORM_DIALOG_WIDTH } from '../../../shared/constants/dialog.constants';
 import {
   asArray,
@@ -26,6 +30,18 @@ import {
   AssignEmployeeSalaryDialogData,
 } from './assign-employee-salary-dialog/assign-employee-salary-dialog.component';
 
+/** Staff user types shown in Employee Salary filter (excludes Student / Admin). */
+const STAFF_TYPE_NAMES = new Set(
+  [
+    'Teacher',
+    'Accountant',
+    'Non-academic staff',
+    'Office staff',
+    'Front Office Executive',
+    'Principal',
+  ].map((n) => n.toLowerCase()),
+);
+
 @Component({
   selector: 'app-employee-salary',
   standalone: true,
@@ -37,12 +53,15 @@ import {
     MatDialogModule,
     ListPageHeaderComponent,
     PageToolbarComponent,
+    FormFieldComponent,
+    MultiSelectChipsComponent,
   ],
   templateUrl: './employee-salary.component.html',
   styleUrl: '../salary.shared.css',
 })
 export class EmployeeSalaryComponent implements OnInit {
   private readonly service = inject(EmployeeSalaryService);
+  private readonly userTypeService = inject(UserTypeService);
   private readonly permissionService = inject(PermissionService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly snackBar = inject(NotificationService);
@@ -55,10 +74,9 @@ export class EmployeeSalaryComponent implements OnInit {
   detail: ReturnType<typeof normalizeEmployeeDetail> | null = null;
 
   search = '';
-  designationFilter = 'All';
-  departmentFilter = 'All';
-  designations: string[] = [];
-  departments: string[] = [];
+  /** Multi-select employee type ids — empty by default (list stays empty until selected). */
+  selectedEmployeeTypeIds: string[] = [];
+  employeeTypeOptions: MappingOption[] = [];
 
   loadingList = false;
   loadingDetail = false;
@@ -68,16 +86,20 @@ export class EmployeeSalaryComponent implements OnInit {
   studentInitials = studentInitials;
 
   ngOnInit(): void {
-    this.loadEmployees();
+    this.userTypeService.getUserTypes().subscribe({
+      next: (types) => {
+        this.employeeTypeOptions = this.mapStaffTypeOptions(types ?? []);
+        this.refresh();
+      },
+      error: () => {
+        this.employeeTypeOptions = [];
+        this.toast('Failed to load employee types', true);
+        this.refresh();
+      },
+    });
   }
 
-  get toolbarFilterActive(): boolean {
-    return this.departmentFilter !== 'All' || this.designationFilter !== 'All';
-  }
-
-  onToolbarFiltersCleared(): void {
-    this.departmentFilter = 'All';
-    this.designationFilter = 'All';
+  onEmployeeTypesChange(): void {
     this.loadEmployees();
   }
 
@@ -87,21 +109,21 @@ export class EmployeeSalaryComponent implements OnInit {
   }
 
   loadEmployees(): void {
+    if (!this.selectedEmployeeTypeIds.length) {
+      this.employees = [];
+      this.selectedEmployeeId = null;
+      this.detail = null;
+      this.loadingList = false;
+      this.refresh();
+      return;
+    }
+
     this.loadingList = true;
     this.refresh();
-    this.service.getEmployees(this.search, undefined, this.designationFilter).subscribe({
+    this.service.getEmployees(this.search, this.selectedEmployeeTypeIds).subscribe({
       next: (list) => {
-        let items = asArray(list).map(normalizeEmployeeListItem);
-        if (this.departmentFilter !== 'All') {
-          items = items.filter((e) => e.department === this.departmentFilter);
-        }
+        const items = asArray(list).map(normalizeEmployeeListItem);
         this.employees = items;
-        this.designations = [
-          ...new Set(items.map((e) => e.designation).filter((d): d is string => !!d)),
-        ].sort();
-        this.departments = [
-          ...new Set(items.map((e) => e.department).filter((d): d is string => !!d)),
-        ].sort();
         if (this.selectedEmployeeId && !items.some((e) => e.employeeRecordId === this.selectedEmployeeId)) {
           this.selectedEmployeeId = null;
           this.detail = null;
@@ -169,6 +191,19 @@ export class EmployeeSalaryComponent implements OnInit {
 
   canEdit(): boolean {
     return !this.ayContext.isReadOnlyScope() && this.permissionService.canEdit(MenuCodes.SalaryEmployees);
+  }
+
+  private mapStaffTypeOptions(types: UserTypeDto[]): MappingOption[] {
+    return types
+      .filter((t) => {
+        const name = (t.name || t.code || '').trim().toLowerCase();
+        return STAFF_TYPE_NAMES.has(name);
+      })
+      .map((t) => ({
+        id: String(t.id),
+        name: t.name || t.code || String(t.id),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private toast(msg: string, isError = false): void {

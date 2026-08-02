@@ -4,15 +4,24 @@
       [appPageChrome]="'Hall Tickets'"
       [pageChromeSubtitle]="'Auto-generate and print hall tickets for an exam'"
     ></span>
-    <button type="button" class="btn-outline" [disabled]="tickets.length === 0" (click)="printAll()">
-      <mat-icon>print</mat-icon> Print all
-    </button>
-    @if (canGenerate) {
-      <button type="button" class="btn-primary" [disabled]="generating" (click)="generate()">
-        <mat-icon>confirmation_number</mat-icon>
-        {{ generating ? 'Generating...' : 'Generate hall tickets' }}
-      </button>
-    }
+    <div class="topbar-actions">
+      <app-action-button
+        type="cancel"
+        label="Print all"
+        icon="print"
+        [disabled]="tickets.length === 0"
+        (action)="printAll()"
+      />
+      @if (canGenerate) {
+        <app-action-button
+          type="save"
+          [label]="generating ? 'Generating...' : 'Generate hall tickets'"
+          [icon]="generating ? 'hourglass_empty' : 'confirmation_number'"
+          [disabled]="generating"
+          (action)="generate()"
+        />
+      }
+    </div>
   </div>
 
   <div class="filter-row no-print">
@@ -56,10 +65,12 @@
                 </div>
                 <div class="ticket-meta">
                   <span>{{ ticket.examName }}</span>
-                  <span>
-                    {{ ticket.startDate | date: 'dd MMM' }} –
-                    {{ ticket.endDate | date: 'dd MMM yyyy' }}
-                  </span>
+                  @if (ticket.startDate && ticket.endDate) {
+                    <span>
+                      {{ ticket.startDate | date: 'dd MMM' }} –
+                      {{ ticket.endDate | date: 'dd MMM yyyy' }}
+                    </span>
+                  }
                 </div>
               </div>
             </div>

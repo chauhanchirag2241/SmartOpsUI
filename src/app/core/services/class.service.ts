@@ -89,6 +89,21 @@ export class ClassService {
     return this.api.get<any[]>('class/dropdown', params.keys().length ? params : undefined);
   }
 
+  /**
+   * Subjects the current user may assign for a section.
+   * Teachers: CST mappings for that class. Admins: all subjects of the class group.
+   */
+  getTeachingSubjectsForClass(classId: string, academicYearId?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (academicYearId) {
+      params = params.set('academicYearId', academicYearId);
+    }
+    return this.api.get<any[]>(
+      `class/${classId}/teaching-subjects`,
+      params.keys().length ? params : undefined,
+    );
+  }
+
   /** Sections under a class group (label = section name). */
   getSectionsByClassGroup(classGroupId: string): Observable<{ id: string; name: string }[]> {
     return this.getClasses(1, 200, '', null, null, 'Active', classGroupId).pipe(

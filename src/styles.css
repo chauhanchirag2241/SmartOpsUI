@@ -302,12 +302,23 @@ body {
   --mdc-checkbox-unselected-focus-state-layer-color: #639922;
   --mdc-checkbox-unselected-hover-state-layer-color: #639922;
   --mdc-checkbox-unselected-pressed-state-layer-color: #639922;
+  --mat-checkbox-selected-icon-color: #639922;
+  --mat-checkbox-selected-checkmark-color: #fff;
+  --mat-checkbox-selected-focus-icon-color: #639922;
+  --mat-checkbox-selected-hover-icon-color: #639922;
+  --mat-checkbox-selected-pressed-icon-color: #639922;
 }
 
 .mat-mdc-checkbox.mat-mdc-checkbox-checked .mdc-checkbox__background,
-.mat-mdc-checkbox.mat-mdc-checkbox-indeterminate .mdc-checkbox__background {
+.mat-mdc-checkbox.mat-mdc-checkbox-indeterminate .mdc-checkbox__background,
+.mat-mdc-checkbox .mdc-checkbox--selected .mdc-checkbox__background,
+.mat-mdc-checkbox .mdc-checkbox--indeterminate .mdc-checkbox__background {
   background-color: #639922 !important;
   border-color: #639922 !important;
+}
+
+.mat-mdc-checkbox .mdc-checkbox__mixedmark {
+  border-color: #fff !important;
 }
 
 .mat-mdc-checkbox:hover .mdc-checkbox__background {

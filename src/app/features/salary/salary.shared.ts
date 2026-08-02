@@ -186,6 +186,7 @@ export function normalizeEmployeeListItem(raw: any) {
     employeeName: String(pick(raw, 'employeeName', 'EmployeeName') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
+    employeeType: String(pick(raw, 'employeeType', 'EmployeeType') ?? ''),
     netSalary: pick(raw, 'netSalary', 'NetSalary') as number | null,
     hasAssignment: Boolean(pick(raw, 'hasAssignment', 'HasAssignment')),
   };
@@ -228,20 +229,46 @@ export function normalizeEmployeeDetail(raw: any) {
 }
 
 export function normalizePayrollRun(raw: any) {
-  const entries = asArray<any>(pick(raw, 'entries', 'Entries')).map((e) => ({
-    id: String(pick(e, 'id', 'Id') ?? ''),
-    employeeRecordId: String(pick(e, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
-    employeeName: String(pick(e, 'employeeName', 'EmployeeName') ?? ''),
-    department: String(pick(e, 'department', 'Department') ?? ''),
-    basicSalary: Number(pick(e, 'basicSalary', 'BasicSalary') ?? 0),
-    hraAmount: Number(pick(e, 'hraAmount', 'HraAmount') ?? 0),
-    allowances: Number(pick(e, 'allowances', 'Allowances') ?? 0),
-    grossSalary: Number(pick(e, 'grossSalary', 'GrossSalary') ?? 0),
-    totalDeductions: Number(pick(e, 'totalDeductions', 'TotalDeductions') ?? 0),
-    netSalary: Number(pick(e, 'netSalary', 'NetSalary') ?? 0),
-    status: Number(pick(e, 'status', 'Status') ?? 0),
-    statusLabel: String(pick(e, 'statusLabel', 'StatusLabel') ?? ''),
-  }));
+  const mapLine = (l: any) => ({
+    name: String(pick(l, 'name', 'Name') ?? ''),
+    amount: Number(pick(l, 'amount', 'Amount') ?? 0),
+  });
+  const entries = asArray<any>(pick(raw, 'entries', 'Entries')).map((e) => {
+    const workingDays = Number(pick(e, 'workingDays', 'WorkingDays') ?? 0);
+    const presentDays = Number(pick(e, 'presentDays', 'PresentDays') ?? 0);
+    const daysCut = Number(pick(e, 'daysCut', 'DaysCut') ?? Math.max(0, workingDays - presentDays));
+    const attendanceCutAmount = Number(pick(e, 'attendanceCutAmount', 'AttendanceCutAmount') ?? 0);
+    const perDayCutAmount = Number(
+      pick(e, 'perDayCutAmount', 'PerDayCutAmount') ??
+        (daysCut > 0 && attendanceCutAmount > 0
+          ? attendanceCutAmount / daysCut
+          : workingDays > 0
+            ? Number(pick(e, 'grossSalary', 'GrossSalary') ?? 0) / workingDays
+            : 0),
+    );
+    return {
+      id: String(pick(e, 'id', 'Id') ?? ''),
+      employeeRecordId: String(pick(e, 'employeeRecordId', 'EmployeeRecordId') ?? ''),
+      employeeName: String(pick(e, 'employeeName', 'EmployeeName') ?? ''),
+      department: String(pick(e, 'department', 'Department') ?? ''),
+      basicSalary: Number(pick(e, 'basicSalary', 'BasicSalary') ?? 0),
+      hraAmount: Number(pick(e, 'hraAmount', 'HraAmount') ?? 0),
+      allowances: Number(pick(e, 'allowances', 'Allowances') ?? 0),
+      grossSalary: Number(pick(e, 'grossSalary', 'GrossSalary') ?? 0),
+      totalDeductions: Number(pick(e, 'totalDeductions', 'TotalDeductions') ?? 0),
+      netSalary: Number(pick(e, 'netSalary', 'NetSalary') ?? 0),
+      workingDays,
+      presentDays,
+      daysCut,
+      attendanceCutAmount,
+      perDayCutAmount,
+      useFullSalaryOverride: Boolean(pick(e, 'useFullSalaryOverride', 'UseFullSalaryOverride')),
+      status: Number(pick(e, 'status', 'Status') ?? 0),
+      statusLabel: String(pick(e, 'statusLabel', 'StatusLabel') ?? ''),
+      earnings: asArray<any>(pick(e, 'earnings', 'Earnings')).map(mapLine),
+      deductions: asArray<any>(pick(e, 'deductions', 'Deductions')).map(mapLine),
+    };
+  });
   return {
     id: String(pick(raw, 'id', 'Id') ?? ''),
     payYear: Number(pick(raw, 'payYear', 'PayYear') ?? 0),
@@ -263,6 +290,8 @@ export function normalizePayslip(raw: any) {
     name: String(pick(l, 'name', 'Name') ?? ''),
     amount: Number(pick(l, 'amount', 'Amount') ?? 0),
   });
+  const workingDays = Number(pick(raw, 'workingDays', 'WorkingDays') ?? 0);
+  const presentDays = Number(pick(raw, 'presentDays', 'PresentDays') ?? 0);
   return {
     entryId: String(pick(raw, 'entryId', 'EntryId') ?? ''),
     payYear: Number(pick(raw, 'payYear', 'PayYear') ?? 0),
@@ -271,8 +300,11 @@ export function normalizePayslip(raw: any) {
     employeeCode: String(pick(raw, 'employeeCode', 'EmployeeCode') ?? pick(raw, 'employeeId', 'EmployeeId') ?? ''),
     department: String(pick(raw, 'department', 'Department') ?? ''),
     designation: String(pick(raw, 'designation', 'Designation') ?? ''),
-    workingDays: Number(pick(raw, 'workingDays', 'WorkingDays') ?? 0),
-    presentDays: Number(pick(raw, 'presentDays', 'PresentDays') ?? 0),
+    useAttendanceWiseSalary: Boolean(pick(raw, 'useAttendanceWiseSalary', 'UseAttendanceWiseSalary')),
+    workingDays,
+    presentDays,
+    daysCut: Number(pick(raw, 'daysCut', 'DaysCut') ?? Math.max(0, workingDays - presentDays)),
+    attendanceCutAmount: Number(pick(raw, 'attendanceCutAmount', 'AttendanceCutAmount') ?? 0),
     basicSalary: Number(pick(raw, 'basicSalary', 'BasicSalary') ?? 0),
     grossSalary: Number(pick(raw, 'grossSalary', 'GrossSalary') ?? 0),
     totalDeductions: Number(pick(raw, 'totalDeductions', 'TotalDeductions') ?? 0),

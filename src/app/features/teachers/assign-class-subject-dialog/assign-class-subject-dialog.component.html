@@ -1,6 +1,6 @@
 <app-erp-dialog-shell
   title="Assign class & subject"
-  subtitle="Pick classes, then add subjects once — permissions for all selected classes are created together."
+  subtitle="Pick class groups, then add subjects — one permission record is stored per class group."
   [width]="dialogWidth"
   saveLabel="Assign"
   saveIcon="rule"
@@ -11,7 +11,7 @@
   (save)="assign()"
 >
   <p class="form-hint">
-    Grant {{ data.teacherName || 'this teacher' }} rights for multiple classes and subjects in one go.
+    Grant {{ data.teacherName || 'this teacher' }} rights for multiple class groups and subjects in one go.
   </p>
 
   @if (formError) {
@@ -19,14 +19,14 @@
   }
 
   <div class="card">
-    <div class="card-title"><mat-icon>class</mat-icon> Classes</div>
-    <app-form-field label="Classes" [required]="true">
+    <div class="card-title"><mat-icon>class</mat-icon> Class groups</div>
+    <app-form-field label="Class groups" [required]="true">
       <app-multi-select-chips
         [options]="classMultiOptions"
-        [(selectedIds)]="formClassIds"
-        placeholder="Select classes"
-        searchPlaceholder="Search class"
-        (selectedIdsChange)="onClassesChange()"
+        [(selectedIds)]="formClassGroupIds"
+        placeholder="Select class groups"
+        searchPlaceholder="Search class group"
+        (selectedIdsChange)="onClassGroupsChange()"
       />
     </app-form-field>
   </div>
@@ -34,61 +34,24 @@
   <div class="card timetable-card">
     <div class="card-title timetable-card-title">
       <span class="title-left"><mat-icon>menu_book</mat-icon> Subjects</span>
-      <div class="same-toggle" [class.disabled]="!canUseSameSubjects && !sameSubjectsForAll">
-        <button
-          type="button"
-          class="so-toggle"
-          [class.on]="sameSubjectsForAll"
-          [disabled]="!canUseSameSubjects && !sameSubjectsForAll"
-          (click)="toggleSameSubjects()"
-          role="switch"
-          [attr.aria-checked]="sameSubjectsForAll"
-          [attr.aria-disabled]="!canUseSameSubjects && !sameSubjectsForAll"
-        >
-          <span class="so-toggle-thumb"></span>
-        </button>
-        <div class="toggle-text">
-          <b>Same subjects for all classes</b>
-          <span>{{ sameSubjectsToggleHint }}</span>
-        </div>
-      </div>
     </div>
 
-    @if (!formClassIds.length) {
-      <div class="empty-hint">Select at least one class above to start assigning subjects.</div>
+    @if (!formClassGroupIds.length) {
+      <div class="empty-hint">Select at least one class group above to start assigning subjects.</div>
     } @else {
-      @if (showClassTabs) {
+      @if (showGroupTabs) {
         <div class="class-tabs">
-          @for (classId of formClassIds; track classId) {
+          @for (groupId of formClassGroupIds; track groupId) {
             <button
               type="button"
               class="tab-btn"
-              [class.active]="activeClassTab === classId"
-              (click)="switchClassTab(classId)"
+              [class.active]="activeGroupTab === groupId"
+              (click)="switchGroupTab(groupId)"
             >
-              {{ classTabLabel(classId) }}
+              {{ groupTabLabel(groupId) }}
             </button>
           }
         </div>
-        @if (canCopySubjectsToSiblingClasses) {
-          <div class="tab-copy-row">
-            <button type="button" class="btn-link" (click)="copyActiveTabToAll()">
-              Copy this class's subjects to other sections in the same class group
-            </button>
-          </div>
-        }
-      }
-
-      @if (showClassTeacherControl) {
-        <label class="class-teacher-bar">
-          <mat-checkbox
-            [checked]="isClassTeacherForActiveClass"
-            (change)="onClassTeacherToggle($event.checked)"
-          >
-            Class teacher for {{ classTeacherTargetLabel }}
-          </mat-checkbox>
-          <span class="class-teacher-bar-hint">Stored on the class — not per subject</span>
-        </label>
       }
 
       <div class="subj-table-wrap">
@@ -138,7 +101,7 @@
   </div>
 
   <div class="bulk-summary">
-    This will create <b>{{ permissionCount }}</b> permission(s) across
-    <b>{{ formClassIds.length }}</b> class(es).
+    This will create <b>{{ formClassGroupIds.length }}</b> class-group record(s) with
+    <b>{{ permissionCount }}</b> subject selection(s).
   </div>
 </app-erp-dialog-shell>

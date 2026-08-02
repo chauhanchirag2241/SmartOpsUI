@@ -14,19 +14,89 @@
           variant="filter"
           [(ngModel)]="selectedExamId"
           [options]="examOptions"
-          emptyOptionLabel="Select exam"
-          (ngModelChange)="onExamChange()"
+          emptyOptionLabel="All exams"
+          (ngModelChange)="onFilterExamChange()"
         />
-        <app-form-field
-          label="Class"
-          type="select"
-          variant="filter"
-          [(ngModel)]="selectedClassId"
-          [options]="examClassOptions"
-          emptyOptionLabel="All classes"
-          (ngModelChange)="loadSchedules()"
-        />
+        <app-form-field label="Class" variant="filter">
+          <app-multi-select-chips
+            [options]="filterClassMultiOptions"
+            [(selectedIds)]="selectedClassIds"
+            placeholder="All classes"
+            searchPlaceholder="Search class"
+            (selectedIdsChange)="onFilterClassesChange()"
+          />
+        </app-form-field>
       </div>
+      <ng-template #rowDetail let-row>
+        <div class="slot-detail">
+          @if (!classGroupsForExam(row).length) {
+            <p class="empty-hint">No subjects scheduled for this exam yet.</p>
+          } @else {
+            @for (group of classGroupsForExam(row); track group.classId) {
+              <div class="exam-class-block">
+                <div class="exam-class-title">{{ group.className }}</div>
+                <table class="slot-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Subject</th>
+                      <th>Time</th>
+                      <th>Room</th>
+                      <th>Invigilator</th>
+                      <th>Max marks</th>
+                      <th>Status</th>
+                      @if (canEditSchedule || canDeleteSchedule) {
+                        <th class="col-actions">Actions</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (slot of group.slots; track slot.id) {
+                      <tr>
+                        <td>{{ formatSlotDate(slot.examDate) }}</td>
+                        <td>{{ slot.subjectName || '—' }}</td>
+                        <td>{{ timeRange(slot) }}</td>
+                        <td>{{ slot.roomNo || '—' }}</td>
+                        <td>{{ slot.invigilatorName || '—' }}</td>
+                        <td>{{ slot.maxMarks ?? '—' }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="statusBadgeClass(slot.status)">
+                            {{ slot.status || 'Upcoming' }}
+                          </span>
+                        </td>
+                        @if (canEditSchedule || canDeleteSchedule) {
+                          <td class="col-actions">
+                            @if (canEditSchedule) {
+                              <button
+                                type="button"
+                                class="btn-slot-action"
+                                (click)="editSlot(slot)"
+                                title="Edit"
+                              >
+                                <mat-icon>edit</mat-icon>
+                              </button>
+                            }
+                            @if (canDeleteSchedule) {
+                              <button
+                                type="button"
+                                class="btn-slot-action danger"
+                                (click)="deleteSchedule(slot)"
+                                title="Delete"
+                              >
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+        </div>
+      </ng-template>
     </app-smart-data-table>
   } @else if (formMode === 'edit') {
     <span
@@ -60,6 +130,7 @@
           [options]="formExamClassOptions"
           emptyOptionLabel="Select class"
           [disabled]="!formExamId"
+          (ngModelChange)="onEditClassChange()"
         />
         <app-form-field
           label="Subject"
@@ -146,28 +217,47 @@
     <div class="card timetable-card">
       <div class="card-title timetable-card-title">
         <span class="title-left"><mat-icon>calendar_month</mat-icon> Subject Timetable</span>
-        <div class="same-toggle">
-          <button
-            type="button"
-            class="so-toggle"
-            [class.on]="sameTimetableForAll"
-            (click)="toggleSameTimetable()"
-            role="switch"
-            [attr.aria-checked]="sameTimetableForAll"
-          >
-            <span class="so-toggle-thumb"></span>
-          </button>
-          <div class="toggle-text">
-            <b>Same timetable for all classes</b>
-            <span>Turn off to customise date/time per class</span>
+        @if (canUseSameTimetableToggle) {
+          <div class="same-toggle">
+            <button
+              type="button"
+              class="so-toggle"
+              [class.on]="sameTimetableForAll"
+              (click)="toggleSameTimetable()"
+              role="switch"
+              [attr.aria-checked]="sameTimetableForAll"
+            >
+              <span class="so-toggle-thumb"></span>
+            </button>
+            <div class="toggle-text">
+              <b>Same timetable for all sections</b>
+              <span>Turn off to customise date/time per section</span>
+            </div>
           </div>
-        </div>
+        }
       </div>
 
       @if (!formClassIds.length) {
         <div class="empty-hint">Select at least one class above to start building the timetable.</div>
       } @else {
-        @if (!sameTimetableForAll) {
+        @if (hasMultipleClassGroups) {
+          <div class="class-tabs">
+            @for (groupId of selectedClassGroupIds; track groupId) {
+              <button
+                type="button"
+                class="tab-btn"
+                [class.active]="activeGroupTab === groupId"
+                (click)="switchGroupTab(groupId)"
+              >
+                {{ groupTabLabel(groupId) }}
+              </button>
+            }
+          </div>
+          <p class="tab-hint">
+            Different class groups have different subjects — set a timetable per group. It applies to
+            every selected section in that group.
+          </p>
+        } @else if (!sameTimetableForAll && canUseSameTimetableToggle) {
           <div class="class-tabs">
             @for (classId of formClassIds; track classId) {
               <button
@@ -182,7 +272,7 @@
           </div>
           <div class="tab-copy-row">
             <button type="button" class="btn-link" (click)="copyActiveTabToAll()">
-              Copy this class's timetable to all other selected classes
+              Copy this section's timetable to all other selected sections
             </button>
           </div>
         }

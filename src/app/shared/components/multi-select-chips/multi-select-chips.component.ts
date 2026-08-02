@@ -53,10 +53,36 @@ export class MultiSelectChipsComponent {
     return this.options.filter((o) => o.name.toLowerCase().includes(term));
   }
 
+  /** Selectable options in the current (filtered) list — excludes locked. */
+  get selectableFilteredOptions(): MappingOption[] {
+    return this.filteredOptions.filter((o) => !this.isLocked(o.id));
+  }
+
+  get allFilteredSelected(): boolean {
+    const selectable = this.selectableFilteredOptions;
+    return selectable.length > 0 && selectable.every((o) => this.isSelected(o.id));
+  }
+
+  get someFilteredSelected(): boolean {
+    const selectable = this.selectableFilteredOptions;
+    return selectable.some((o) => this.isSelected(o.id)) && !this.allFilteredSelected;
+  }
+
+  get selectAllLabel(): string {
+    return this.allFilteredSelected ? 'Unselect all' : 'Select all';
+  }
+
   get selectedOptions(): MappingOption[] {
     return this.selectedIds
       .map((id) => this.options.find((o) => o.id === id))
       .filter((o): o is MappingOption => !!o);
+  }
+
+  get selectionSummary(): string {
+    const n = this.selectedOptions.length;
+    if (n === 0) return '';
+    if (n === 1) return this.selectedOptions[0].name;
+    return `${n} selected`;
   }
 
   get visibleChips(): MappingOption[] {
@@ -65,6 +91,10 @@ export class MultiSelectChipsComponent {
 
   get overflowCount(): number {
     return Math.max(0, this.selectedOptions.length - this.maxVisibleChips);
+  }
+
+  get showBulkActions(): boolean {
+    return !this.singleSelect && this.filteredOptions.length > 0;
   }
 
   isSelected(id: string): boolean {
@@ -115,12 +145,37 @@ export class MultiSelectChipsComponent {
     this.selectedIdsChange.emit(this.selectedIds.filter((x) => x !== id));
   }
 
+  /** Select / unselect all currently visible (filtered) options. */
+  toggleSelectAll(event?: Event): void {
+    event?.stopPropagation();
+    if (this.disabled || this.singleSelect) return;
+
+    const selectableIds = this.selectableFilteredOptions.map((o) => o.id);
+    if (!selectableIds.length) return;
+
+    if (this.allFilteredSelected) {
+      const drop = new Set(selectableIds);
+      const next = this.selectedIds.filter((id) => !drop.has(id) || this.isLocked(id));
+      this.selectedIdsChange.emit(next);
+    } else {
+      const next = new Set(this.selectedIds);
+      for (const id of selectableIds) next.add(id);
+      this.selectedIdsChange.emit([...next]);
+    }
+    this.cdr.markForCheck();
+  }
+
   clearAll(event: Event): void {
     event.stopPropagation();
-    if (this.disabled || !this.selectedIds.length) return;
+    if (this.disabled) return;
     const locked = this.lockedIds.filter((id) => this.selectedIds.includes(id));
+    if (!this.selectedIds.length && !locked.length) return;
     this.selectedIdsChange.emit(locked);
     this.cdr.markForCheck();
+  }
+
+  clearAllFromPanel(event: Event): void {
+    this.clearAll(event);
   }
 
   @HostListener('document:click', ['$event'])

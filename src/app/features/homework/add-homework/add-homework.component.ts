@@ -1,10 +1,10 @@
-import { Component, EventEmitter, Output, Input, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnDestroy, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { Subscription } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ClassService } from '../../../core/services/class.service';
-import { SubjectService } from '../../../core/services/subject.service';
 import {
   HomeworkService,
   HomeworkPriority,
@@ -17,7 +17,6 @@ import { PageChromeDirective } from '../../../shared/directives/page-chrome.dire
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import { FormTab } from '../../../shared/interfaces/form-layout';
-import { enumToOptions } from '../../../shared/enums/field-options.enum';
 import { toDateOnlyString } from '../../../shared/utils/date-only.util';
 
 @Component({
@@ -27,7 +26,7 @@ import { toDateOnlyString } from '../../../shared/utils/date-only.util';
   templateUrl: './add-homework.component.html',
   styleUrl: './add-homework.component.css',
 })
-export class AddHomeworkComponent implements OnInit {
+export class AddHomeworkComponent implements OnInit, OnDestroy {
   @Input() mode: 'add' | 'edit' = 'add';
   @Input() homeworkId: string | null = null;
   @Input() initialForm?: CreateHomeworkRequest;
@@ -36,12 +35,12 @@ export class AddHomeworkComponent implements OnInit {
   @Output() saved = new EventEmitter<void>();
 
   private classService = inject(ClassService);
-  private subjectService = inject(SubjectService);
   private homeworkService = inject(HomeworkService);
   private snackBar = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   private ayContext = inject(AcademicYearContextService);
   private fb = inject(FormBuilder);
+  private readonly subs = new Subscription();
 
   homeworkForm!: FormGroup;
   isSaving = false;
@@ -109,7 +108,14 @@ export class AddHomeworkComponent implements OnInit {
       submissionType: [HomeworkSubmissionType.Physical],
     });
 
-    this.loadDropdowns();
+    this.subs.add(
+      this.homeworkForm.get('classId')!.valueChanges.subscribe((classId: string) => {
+        this.onClassChanged(classId);
+      }),
+    );
+
+    this.loadClasses();
+
     if (this.initialForm) {
       this.homeworkForm.patchValue({
         ...this.initialForm,
@@ -123,26 +129,75 @@ export class AddHomeworkComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+  }
+
   get canManageHomework(): boolean {
     return !this.ayContext.isReadOnlyScope();
   }
 
-  loadDropdowns(): void {
+  private loadClasses(): void {
     this.classService.getClassDropdown().subscribe({
       next: (c) => {
         const arr = c || [];
-        this.configs['classId'].options = arr.map((item: any) => ({ label: item.name, value: item.id }));
+        this.configs['classId'].options = arr.map((item: any) => ({
+          label: item.name ?? item.Name,
+          value: item.id ?? item.Id,
+        }));
         this.cdr.detectChanges();
       },
       error: () => this.snackBar.open('Failed to load classes', 'Close', { duration: 3000 }),
     });
-    this.subjectService.getSubjectDropdown().subscribe({
-      next: (s) => {
-        const arr = s || [];
-        this.configs['subjectId'].options = arr.map((item: any) => ({ label: item.subjectName || item.name, value: item.id }));
+  }
+
+  private onClassChanged(classId: string): void {
+    const keepSubject =
+      this.mode === 'edit' &&
+      !!this.initialForm?.subjectId &&
+      this.initialForm?.classId === classId
+        ? this.initialForm.subjectId
+        : '';
+
+    this.homeworkForm.patchValue({ subjectId: keepSubject || '' }, { emitEvent: false });
+    this.configs['subjectId'].options = [];
+    this.cdr.detectChanges();
+
+    if (!classId) {
+      return;
+    }
+
+    this.loadSubjectsForClass(classId, keepSubject || undefined);
+  }
+
+  private loadSubjectsForClass(classId: string, preferredSubjectId?: string): void {
+    const yearId = this.ayContext.effectiveYearId() || undefined;
+    this.classService.getTeachingSubjectsForClass(classId, yearId).subscribe({
+      next: (rows) => {
+        const options = (rows || []).map((item: any) => ({
+          label: String(item.name ?? item.Name ?? item.subjectName ?? item.SubjectName ?? ''),
+          value: String(item.id ?? item.Id ?? ''),
+        })).filter((o) => o.value && o.label);
+
+        this.configs['subjectId'].options = options;
+
+        const current = String(this.homeworkForm.get('subjectId')?.value ?? '');
+        const preferred = preferredSubjectId ? String(preferredSubjectId) : '';
+        const next =
+          (preferred && options.some((o) => o.value === preferred) && preferred) ||
+          (current && options.some((o) => o.value === current) && current) ||
+          '';
+
+        if (next !== current) {
+          this.homeworkForm.patchValue({ subjectId: next }, { emitEvent: false });
+        }
         this.cdr.detectChanges();
       },
-      error: () => this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 }),
+      error: () => {
+        this.configs['subjectId'].options = [];
+        this.snackBar.open('Failed to load subjects for this class', 'Close', { duration: 3000 });
+        this.cdr.detectChanges();
+      },
     });
   }
 

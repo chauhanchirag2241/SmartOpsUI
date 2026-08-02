@@ -83,6 +83,8 @@ export class ExamListComponent implements OnInit {
   rows: Record<string, unknown>[] = [];
   groups: ExamGroup[] = [];
   gradeScales: ExamGradeScale[] = [];
+  /** All section classes (with classGroupId) — filtered by selected exam group for the form. */
+  private allClassOptions: { id: string; name: string; classGroupId?: string }[] = [];
   classOptions: MappingOption[] = [];
   tableConfig!: DataTableConfig;
 
@@ -94,7 +96,22 @@ export class ExamListComponent implements OnInit {
   }
 
   get classFilterOptions(): FormFieldOption[] {
-    return this.classOptions.map((c) => ({ label: c.name, value: c.id }));
+    return this.allClassOptions.map((c) => ({ label: c.name, value: c.id }));
+  }
+
+  get formClassHint(): string {
+    if (!this.formGroupId) {
+      return 'Select an exam group first to load its class sections.';
+    }
+    const group = this.groups.find((g) => g.id === this.formGroupId);
+    const mapped = group?.classGroupIds?.length ?? 0;
+    if (!mapped) {
+      return 'This exam group has no class groups mapped yet. Map them on the Exam Groups screen, or leave classes empty.';
+    }
+    if (!this.classOptions.length) {
+      return 'No section classes found for the mapped class groups.';
+    }
+    return 'Only sections under this exam group’s class groups are listed.';
   }
 
   get gradeScaleOptions(): FormFieldOption[] {
@@ -110,8 +127,6 @@ export class ExamListComponent implements OnInit {
   formGroupId = '';
   formName = '';
   formExamType = 'Unit Test';
-  formStartDate = '';
-  formEndDate = '';
   formMinPassPercent: number | null = 33;
   formGradeScaleId = '';
   formDescription = '';
@@ -138,7 +153,6 @@ export class ExamListComponent implements OnInit {
       },
       { key: 'examGroupName', label: 'Group', sortable: true },
       { key: 'classesLabel', label: 'Classes' },
-      { key: 'dateRange', label: 'Dates', sortable: true },
       { key: 'totalMaxMarks', label: 'Max marks', sortable: true },
       {
         key: 'statusLabel',
@@ -227,6 +241,11 @@ export class ExamListComponent implements OnInit {
     this.examService.getGroups().subscribe({
       next: (groups) => {
         this.groups = groups ?? [];
+        this.refreshFormClassOptions();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.groups = [];
         this.cdr.detectChanges();
       },
     });
@@ -235,16 +254,47 @@ export class ExamListComponent implements OnInit {
         this.gradeScales = scales ?? [];
         this.cdr.detectChanges();
       },
-    });
-    this.classService.getClassDropdown().subscribe({
-      next: (classes) => {
-        this.classOptions = (classes ?? []).map((c: { id: string; name: string }) => ({
-          id: c.id,
-          name: c.name,
-        }));
+      error: () => {
+        this.gradeScales = [];
         this.cdr.detectChanges();
       },
     });
+    this.classService.getClassDropdown().subscribe({
+      next: (classes) => {
+        this.allClassOptions = (classes ?? []).map((c: any) => ({
+          id: String(c.id ?? c.Id ?? ''),
+          name: String(c.name ?? c.Name ?? ''),
+          classGroupId: String(c.classGroupId ?? c.ClassGroupId ?? '').trim() || undefined,
+        }));
+        this.refreshFormClassOptions();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.allClassOptions = [];
+        this.classOptions = [];
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  onFormGroupChange(): void {
+    this.refreshFormClassOptions(true);
+  }
+
+  /** Limit form class picker to sections under the selected exam group's mapped class groups. */
+  private refreshFormClassOptions(pruneSelection = false): void {
+    const group = this.groups.find((g) => g.id === this.formGroupId);
+    const allowed = new Set((group?.classGroupIds ?? []).map((id) => String(id)));
+    this.classOptions = !this.formGroupId || allowed.size === 0
+      ? []
+      : this.allClassOptions
+          .filter((c) => !!c.classGroupId && allowed.has(c.classGroupId))
+          .map((c) => ({ id: c.id, name: c.name }));
+
+    if (pruneSelection || this.formClassIds.length) {
+      const valid = new Set(this.classOptions.map((c) => c.id));
+      this.formClassIds = this.formClassIds.filter((id) => valid.has(id));
+    }
   }
 
   loadList(): void {
@@ -259,7 +309,6 @@ export class ExamListComponent implements OnInit {
             ...exam,
             exam: exam.name,
             classesLabel: this.classNames(exam) || '—',
-            dateRange: this.formatDateRange(exam.startDate, exam.endDate),
           }));
           this.cdr.detectChanges();
         },
@@ -278,20 +327,6 @@ export class ExamListComponent implements OnInit {
     return (exam.classes ?? []).map((c) => c.className).join(', ');
   }
 
-  formatDateRange(start: string, end: string): string {
-    const fmt = (d: string) => {
-      if (!d) return '—';
-      const date = new Date(d);
-      if (Number.isNaN(date.getTime())) return d.substring(0, 10);
-      return date.toLocaleDateString(undefined, {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    };
-    return `${fmt(start)} – ${fmt(end)}`;
-  }
-
   isExamActionVisible(action: DataTableAction, row: Record<string, unknown>): boolean {
     const status = row['status'] as ExamStatus;
     const resultDeclared = !!row['resultDeclared'];
@@ -308,8 +343,6 @@ export class ExamListComponent implements OnInit {
     this.formGroupId = this.filterGroupId || this.groups[0]?.id || '';
     this.formName = '';
     this.formExamType = 'Unit Test';
-    this.formStartDate = '';
-    this.formEndDate = '';
     this.formMinPassPercent = 33;
     this.formGradeScaleId = '';
     this.formDescription = '';
@@ -320,6 +353,7 @@ export class ExamListComponent implements OnInit {
       { name: 'Oral', maxMarks: 10, passingMarks: 3 },
     ];
     this.formError = '';
+    this.refreshFormClassOptions();
     this.showForm = true;
   }
 
@@ -356,8 +390,6 @@ export class ExamListComponent implements OnInit {
         this.formGroupId = detail.examGroupId;
         this.formName = detail.name;
         this.formExamType = detail.examType;
-        this.formStartDate = detail.startDate?.substring(0, 10) ?? '';
-        this.formEndDate = detail.endDate?.substring(0, 10) ?? '';
         this.formMinPassPercent = detail.minPassPercent;
         this.formGradeScaleId = detail.gradeScaleId ?? '';
         this.formDescription = detail.description ?? '';
@@ -369,6 +401,7 @@ export class ExamListComponent implements OnInit {
           passingMarks: c.passingMarks ?? null,
         }));
         this.formError = '';
+        this.refreshFormClassOptions();
         this.showForm = true;
         this.cdr.detectChanges();
       },
@@ -397,9 +430,6 @@ export class ExamListComponent implements OnInit {
   private validate(): string | null {
     if (!this.formGroupId) return 'Select an exam group.';
     if (!this.formName.trim()) return 'Exam name is required.';
-    if (!this.formStartDate || !this.formEndDate) return 'Start and end dates are required.';
-    if (this.formEndDate < this.formStartDate) return 'End date cannot be before start date.';
-    if (!this.formClassIds.length) return 'Select at least one class.';
     if (!this.componentRows.length) return 'Add at least one mark component.';
     for (const row of this.componentRows) {
       if (!row.name.trim()) return 'Every mark component needs a name.';
@@ -432,8 +462,6 @@ export class ExamListComponent implements OnInit {
       name: this.formName.trim(),
       examType: this.formExamType,
       academicPeriodId: null,
-      startDate: this.formStartDate,
-      endDate: this.formEndDate,
       minPassPercent: this.formMinPassPercent ?? 33,
       gradeScaleId: this.formGradeScaleId || null,
       description: this.formDescription.trim() || null,

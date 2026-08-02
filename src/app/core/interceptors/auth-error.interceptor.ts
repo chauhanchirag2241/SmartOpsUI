@@ -7,6 +7,11 @@ function isAuthApiUrl(url: string): boolean {
   return url.includes('/auth/login') || url.includes('/auth/refresh');
 }
 
+/**
+ * Only unauthenticated (401) responses end the session.
+ * 403 Forbidden means the user is signed in but lacks a permission —
+ * logging out was kicking teachers to the login page on Students / Exams.
+ */
 export const authErrorInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
 
@@ -16,7 +21,7 @@ export const authErrorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => err);
       }
 
-      if ((err.status === 401 || err.status === 403) && !isAuthApiUrl(req.url)) {
+      if (err.status === 401 && !isAuthApiUrl(req.url)) {
         auth.expireSession();
         return EMPTY;
       }

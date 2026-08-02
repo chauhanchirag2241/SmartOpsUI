@@ -47,6 +47,8 @@ export interface ExamGroup {
   evaluationType: ExamEvaluationType;
   evaluationTypeLabel: string;
   examCount: number;
+  classGroupIds?: string[];
+  classGroupNames?: string | null;
 }
 
 export interface SaveExamGroupRequest {
@@ -54,6 +56,7 @@ export interface SaveExamGroupRequest {
   description?: string | null;
   gradeScaleId?: string | null;
   evaluationType: ExamEvaluationType;
+  classGroupIds: string[];
 }
 
 // ── Exams ────────────────────────────────────────────────────
@@ -77,6 +80,8 @@ export interface ExamMarkComponent {
 export interface ExamClassInfo {
   classId: string;
   className: string;
+  classGroupId: string;
+  classGroupName: string;
 }
 
 export interface ExamListItem {
@@ -85,8 +90,6 @@ export interface ExamListItem {
   examType: string;
   examGroupId: string;
   examGroupName: string;
-  startDate: string;
-  endDate: string;
   status: ExamStatus;
   statusLabel: string;
   resultDeclared: boolean;
@@ -102,8 +105,6 @@ export interface ExamDetail {
   name: string;
   examType: string;
   academicPeriodId?: string | null;
-  startDate: string;
-  endDate: string;
   minPassPercent: number;
   gradeScaleId?: string | null;
   status: ExamStatus;
@@ -120,8 +121,6 @@ export interface SaveExamRequest {
   name: string;
   examType: string;
   academicPeriodId?: string | null;
-  startDate: string;
-  endDate: string;
   minPassPercent: number;
   gradeScaleId?: string | null;
   description?: string | null;
@@ -339,8 +338,8 @@ export interface HallTicket {
   seatNo?: string | null;
   examId: string;
   examName: string;
-  startDate: string;
-  endDate: string;
+  startDate?: string | null;
+  endDate?: string | null;
   schedule: HallTicketSchedule[];
 }
 

@@ -149,7 +149,7 @@
 
 .sms-panel {
   position: absolute;
-  z-index: 40;
+  z-index: 1200;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
@@ -197,6 +197,61 @@
   width: 20px;
   height: 20px;
   pointer-events: none;
+}
+
+.sms-bulk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 0.5px solid var(--border-color);
+  background: var(--card);
+}
+
+.sms-bulk-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sms-bulk-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sms-bulk-clear {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--g600, #3b6d11);
+  text-decoration: underline;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sms-bulk-clear:hover:not(:disabled) {
+  color: var(--secondary-color, #639922);
+}
+
+.sms-bulk-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.sms-summary {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--g700, #3b6d11);
 }
 
 .sms-options {
@@ -305,16 +360,40 @@
   height: 20px;
 }
 
-:host ::ng-deep .sms-option .mdc-checkbox__background {
+:host ::ng-deep .sms-option .mat-mdc-checkbox,
+:host ::ng-deep .sms-bulk-select .mat-mdc-checkbox {
+  --mdc-checkbox-selected-checkmark-color: #fff;
+  --mdc-checkbox-selected-icon-color: var(--primary-color, #639922);
+  --mdc-checkbox-selected-hover-icon-color: var(--primary-color, #639922);
+  --mdc-checkbox-selected-focus-icon-color: var(--primary-color, #639922);
+  --mdc-checkbox-selected-pressed-icon-color: var(--primary-color, #639922);
+  --mat-checkbox-selected-icon-color: var(--primary-color, #639922);
+  --mat-checkbox-selected-checkmark-color: #fff;
+}
+
+:host ::ng-deep .sms-option .mdc-checkbox__background,
+:host ::ng-deep .sms-bulk-select .mdc-checkbox__background {
   border-color: var(--border-color) !important;
 }
 
 :host ::ng-deep .sms-option .mat-mdc-checkbox-checked .mdc-checkbox__background,
-:host ::ng-deep .sms-option .mat-mdc-checkbox-indeterminate .mdc-checkbox__background {
-  border-color: var(--primary-color) !important;
-  background-color: var(--primary-color) !important;
+:host ::ng-deep .sms-option .mat-mdc-checkbox-indeterminate .mdc-checkbox__background,
+:host ::ng-deep .sms-bulk-select .mat-mdc-checkbox-checked .mdc-checkbox__background,
+:host ::ng-deep .sms-bulk-select .mat-mdc-checkbox-indeterminate .mdc-checkbox__background,
+:host ::ng-deep .sms-option .mdc-checkbox--selected .mdc-checkbox__background,
+:host ::ng-deep .sms-option .mdc-checkbox--indeterminate .mdc-checkbox__background,
+:host ::ng-deep .sms-bulk-select .mdc-checkbox--selected .mdc-checkbox__background,
+:host ::ng-deep .sms-bulk-select .mdc-checkbox--indeterminate .mdc-checkbox__background {
+  border-color: var(--primary-color, #639922) !important;
+  background-color: var(--primary-color, #639922) !important;
 }
 
-:host ::ng-deep .sms-option .mat-mdc-checkbox:hover .mdc-checkbox__background {
-  border-color: var(--g400) !important;
+:host ::ng-deep .sms-option .mat-mdc-checkbox:hover .mdc-checkbox__background,
+:host ::ng-deep .sms-bulk-select .mat-mdc-checkbox:hover .mdc-checkbox__background {
+  border-color: var(--g400, #639922) !important;
+}
+
+:host ::ng-deep .sms-bulk-select .mdc-checkbox__mixedmark {
+  border-color: #fff !important;
+  background-color: #fff !important;
 }

@@ -1,0 +1,28 @@
+<div class="myp-wrap" [class.myp-filter]="appearance === 'filter'" [class.myp-field]="appearance === 'field'">
+  @if (showLabel && label) {
+    <label class="myp-label" [attr.for]="inputId">{{ label }}</label>
+  }
+
+  <div class="myp-control">
+    <span class="myp-icon" aria-hidden="true">
+      <mat-icon>calendar_month</mat-icon>
+    </span>
+    <p-datepicker
+      [inputId]="inputId"
+      [(ngModel)]="pickerDate"
+      view="month"
+      dateFormat="MM yy"
+      [readonlyInput]="true"
+      [showIcon]="false"
+      [disabled]="isDisabled"
+      [placeholder]="placeholder"
+      [minDate]="minDate ?? undefined"
+      [maxDate]="maxDate ?? undefined"
+      appendTo="body"
+      styleClass="myp-datepicker"
+      fluid
+      (ngModelChange)="onPickerModelChange($event)"
+      (onSelect)="onPickerSelect()"
+    />
+  </div>
+</div>

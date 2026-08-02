@@ -5,20 +5,22 @@
       [appPageChrome]="'Homework'"
       [pageChromeSubtitle]="'Create and manage homework for your classes'"
     ></span>
-    <div class="view-toggle">
-      <button type="button" class="vt-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')" title="Grid view">
-        <mat-icon>grid_view</mat-icon>
-      </button>
-      <button type="button" class="vt-btn" [class.active]="viewMode === 'list'" (click)="setView('list')" title="List view">
-        <mat-icon>view_list</mat-icon>
-      </button>
+    <div class="topbar-actions">
+      <div class="view-toggle">
+        <button type="button" class="vt-btn" [class.active]="viewMode === 'grid'" (click)="setView('grid')" title="Grid view">
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button type="button" class="vt-btn" [class.active]="viewMode === 'list'" (click)="setView('list')" title="List view">
+          <mat-icon>view_list</mat-icon>
+        </button>
+      </div>
+      @if (canManageHomework) {
+        <button type="button" class="create-btn" (click)="openCreate()">
+          <mat-icon>add</mat-icon>
+          Create homework
+        </button>
+      }
     </div>
-    @if (canManageHomework) {
-      <button type="button" class="create-btn" (click)="openCreate()">
-        <mat-icon>add</mat-icon>
-        Create homework
-      </button>
-    }
   </div>
 
   <div class="stats">
@@ -49,7 +51,7 @@
   >
     <div toolbarFilters class="st-table-filters">
       <label class="table-filter-section-label" for="hw-class-filter">Class</label>
-      <select id="hw-class-filter" class="sel-filter sel-filter-lg" [(ngModel)]="classFilter" (ngModelChange)="loadList()">
+      <select id="hw-class-filter" class="sel-filter sel-filter-lg" [(ngModel)]="classFilter" (ngModelChange)="onClassFilterChanged()">
         <option value="">All classes</option>
         <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
       </select>

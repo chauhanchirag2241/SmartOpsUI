@@ -17,8 +17,11 @@ import { ActionButtonComponent } from '../../../shared/components/action-button/
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormFieldComponent } from '../../../shared/form-controls/form-field';
 import type { FormFieldOption } from '../../../shared/form-controls/form-field';
+import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
+import { ClassService } from '../../../core/services/class.service';
 import {
   ExamService,
   ExamGroup,
@@ -38,12 +41,14 @@ import {
     ActionButtonComponent,
     PageChromeDirective,
     FormFieldComponent,
+    MultiSelectChipsComponent,
   ],
   templateUrl: './exam-groups.component.html',
   styleUrl: './exam-groups.component.css',
 })
 export class ExamGroupsComponent implements OnInit {
   private examService = inject(ExamService);
+  private classService = inject(ClassService);
   private snackBar = inject(NotificationService);
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
@@ -55,6 +60,7 @@ export class ExamGroupsComponent implements OnInit {
 
   rows: Record<string, unknown>[] = [];
   gradeScales: ExamGradeScale[] = [];
+  classGroupOptions: MappingOption[] = [];
   tableConfig!: DataTableConfig;
 
   showForm = false;
@@ -67,6 +73,7 @@ export class ExamGroupsComponent implements OnInit {
   formDescription = '';
   formGradeScaleId = '';
   formEvaluationType: ExamEvaluationType = ExamEvaluationType.Marks;
+  formClassGroupIds: string[] = [];
 
   readonly evaluationTypeOptions: FormFieldOption[] = [
     { label: 'Marks', value: ExamEvaluationType.Marks },
@@ -97,6 +104,11 @@ export class ExamGroupsComponent implements OnInit {
         avatarConfig: { nameKey: 'name', subtitleKey: 'description' },
       },
       {
+        key: 'classGroupNames',
+        label: 'Class groups',
+        sortable: true,
+      },
+      {
         key: 'evaluationTypeLabel',
         label: 'Evaluation',
         cellType: 'badge',
@@ -116,7 +128,7 @@ export class ExamGroupsComponent implements OnInit {
       { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
     searchPlaceholder: 'Search exam groups...',
-    searchKeys: ['name', 'description', 'gradeScaleName'],
+    searchKeys: ['name', 'description', 'gradeScaleName', 'classGroupNames'],
     itemLabel: 'groups',
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50],
@@ -131,6 +143,7 @@ export class ExamGroupsComponent implements OnInit {
       MenuCodes.ExamGroups,
       this.ayContext.isReadOnlyScope(),
     );
+    this.loadClassGroups();
     this.load();
     this.examService.getGradeScales().subscribe({
       next: (scales) => {
@@ -148,6 +161,7 @@ export class ExamGroupsComponent implements OnInit {
           group: g.name,
           description: g.description || '—',
           gradeScaleName: g.gradeScaleName || '—',
+          classGroupNames: g.classGroupNames || '—',
           evaluationTypeLabel: g.evaluationTypeLabel || 'Marks',
           examCountLabel: `${g.examCount} exam${g.examCount === 1 ? '' : 's'}`,
         }));
@@ -163,6 +177,18 @@ export class ExamGroupsComponent implements OnInit {
     });
   }
 
+  private loadClassGroups(): void {
+    this.classService.getClassDropdown(undefined, 'group').subscribe({
+      next: (rows) => {
+        this.classGroupOptions = (rows || []).map((c: { id: string; name?: string }) => ({
+          id: String(c.id),
+          name: String(c.name ?? ''),
+        }));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   onAddButtonClicked(): void {
     this.formMode = 'add';
     this.editingId = null;
@@ -170,6 +196,7 @@ export class ExamGroupsComponent implements OnInit {
     this.formDescription = '';
     this.formGradeScaleId = this.gradeScales.find((s) => s.isDefault)?.id ?? '';
     this.formEvaluationType = ExamEvaluationType.Marks;
+    this.formClassGroupIds = [];
     this.formError = '';
     this.showForm = true;
   }
@@ -195,6 +222,7 @@ export class ExamGroupsComponent implements OnInit {
       this.formDescription = group.description ?? '';
       this.formGradeScaleId = group.gradeScaleId ?? '';
       this.formEvaluationType = group.evaluationType;
+      this.formClassGroupIds = (group.classGroupIds ?? []).map((id) => String(id));
       this.formError = '';
       this.showForm = true;
     } else if (event.action.label === 'Delete') {
@@ -213,6 +241,7 @@ export class ExamGroupsComponent implements OnInit {
       description: this.formDescription.trim() || null,
       gradeScaleId: this.formGradeScaleId || null,
       evaluationType: Number(this.formEvaluationType) as ExamEvaluationType,
+      classGroupIds: this.formClassGroupIds,
     };
 
     this.saving = true;

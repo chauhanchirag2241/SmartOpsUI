@@ -15,14 +15,28 @@ import {
   formatInr,
   MONTH_OPTIONS,
   normalizePayrollRun,
-  normalizePayslip,
   payrollStatusBadgeClass,
 } from '../salary.shared';
+import { PayrollProcessComponent } from './payroll-process/payroll-process.component';
+import { PayrollEntryDetailComponent } from './payroll-entry-detail/payroll-entry-detail.component';
+import {
+  MonthYearPickerComponent,
+  type MonthYearValue,
+} from '../../../shared/components/month-year-picker';
 
 @Component({
   selector: 'app-payroll',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, SmartDataTableComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    SmartDataTableComponent,
+    PayrollProcessComponent,
+    PayrollEntryDetailComponent,
+    MonthYearPickerComponent,
+  ],
   templateUrl: './payroll.component.html',
   styleUrl: '../salary.shared.css',
 })
@@ -34,17 +48,15 @@ export class PayrollComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
 
-  monthOptions = MONTH_OPTIONS;
   payYear = new Date().getFullYear();
   payMonth = new Date().getMonth() + 1;
 
   payroll: ReturnType<typeof normalizePayrollRun> | null = null;
   loading = false;
 
-  showProcessModal = false;
-  showPayslipModal = false;
-  processForm = { useAttendanceWiseSalary: false };
-  payslip: ReturnType<typeof normalizePayslip> | null = null;
+  showProcessScreen = false;
+  showEntryDetail = false;
+  selectedEntryId: string | null = null;
 
   formatInr = formatInr;
   payrollStatusBadgeClass = payrollStatusBadgeClass;
@@ -63,6 +75,8 @@ export class PayrollComponent implements OnInit {
       { key: 'department', label: 'Department', sortable: true },
       { key: 'grossDisplay', label: 'Gross', sortable: true, align: 'right', width: '100px' },
       { key: 'deductionsDisplay', label: 'Deductions', sortable: true, align: 'right', width: '100px' },
+      { key: 'attendanceCutDisplay', label: 'Att. cut', sortable: true, align: 'right', width: '100px' },
+      { key: 'daysCutDisplay', label: 'Days cut', sortable: true, align: 'right', width: '90px' },
       { key: 'netDisplay', label: 'Net salary', sortable: true, align: 'right', width: '110px' },
       {
         key: 'statusLabel',
@@ -76,7 +90,7 @@ export class PayrollComponent implements OnInit {
       },
     ],
     filtersInPanel: true,
-    actions: [{ label: 'Payslip', icon: 'receipt', iconColor: '#639922' }],
+    actions: [{ label: 'View', icon: 'visibility', iconColor: '#3b6d11' }],
     searchPlaceholder: 'Search employee...',
     searchKeys: ['employeeName', 'department'],
     itemLabel: 'entries',
@@ -92,8 +106,20 @@ export class PayrollComponent implements OnInit {
       this.canMarkPaid() && (this.payroll?.entries.length ?? 0) > 0
         ? [{ label: 'Mark paid', icon: 'check_circle' }]
         : undefined;
+    const showAttCols = !!this.payroll?.useAttendanceWiseSalary;
+    const columns = showAttCols
+      ? this.baseTableConfig.columns
+      : this.baseTableConfig.columns.filter(
+          (c) => c.key !== 'attendanceCutDisplay' && c.key !== 'daysCutDisplay',
+        );
+    const actions: DataTableAction[] = [{ label: 'View', icon: 'visibility', iconColor: '#3b6d11' }];
+    if (this.canMarkPaid()) {
+      actions.push({ label: 'Edit', icon: 'edit', iconColor: '#185fa5' });
+    }
     return {
       ...this.baseTableConfig,
+      columns,
+      actions,
       header: {
         ...this.baseTableConfig.header!,
         showAddButton: this.canProcess(),
@@ -108,21 +134,19 @@ export class PayrollComponent implements OnInit {
       ...e,
       grossDisplay: formatInr(e.grossSalary),
       deductionsDisplay: formatInr(e.totalDeductions),
+      attendanceCutDisplay: e.attendanceCutAmount > 0 ? formatInr(e.attendanceCutAmount) : '—',
+      daysCutDisplay: e.daysCut > 0 ? String(e.daysCut) : '—',
       netDisplay: formatInr(e.netSalary),
     }));
   }
 
   get monthLabel(): string {
-    return this.monthOptions.find((m) => m.value === this.payMonth)?.label ?? '';
+    return MONTH_OPTIONS.find((m) => m.value === this.payMonth)?.label ?? '';
   }
 
   get tableFilterPanelActive(): boolean {
     const now = new Date();
     return this.payMonth !== now.getMonth() + 1 || this.payYear !== now.getFullYear();
-  }
-
-  get yearOptions(): number[] {
-    return [this.payYear - 1, this.payYear, this.payYear + 1];
   }
 
   loadPayroll(): void {
@@ -152,31 +176,28 @@ export class PayrollComponent implements OnInit {
     this.loadPayroll();
   }
 
-  openProcessModal(): void {
+  onPeriodFilterChange(period: MonthYearValue): void {
+    this.payMonth = period.month;
+    this.payYear = period.year;
+    this.loadPayroll();
+  }
+
+  openProcessScreen(): void {
     if (!this.permissionService.canAdd(MenuCodes.SalaryPayroll)) return;
-    this.processForm = {
-      useAttendanceWiseSalary: this.payroll?.useAttendanceWiseSalary ?? false,
-    };
-    this.showProcessModal = true;
+    this.showProcessScreen = true;
+    this.showEntryDetail = false;
+    this.selectedEntryId = null;
     this.refresh();
   }
 
-  processPayroll(): void {
-    this.service
-      .processPayroll({
-        payYear: this.payYear,
-        payMonth: this.payMonth,
-        useAttendanceWiseSalary: this.processForm.useAttendanceWiseSalary,
-      })
-      .subscribe({
-        next: (raw) => {
-          this.payroll = normalizePayrollRun(raw);
-          this.showProcessModal = false;
-          this.toast('Payroll processed');
-          this.refresh();
-        },
-        error: (e) => this.toast(extractApiError(e, 'Process failed'), true),
-      });
+  closeProcessScreen(): void {
+    this.showProcessScreen = false;
+    this.refresh();
+  }
+
+  onPayrollProcessed(): void {
+    this.showProcessScreen = false;
+    this.loadPayroll();
   }
 
   onBulkActionClicked(event: { action: DataTableBulkAction; selectedRows: Record<string, unknown>[] }): void {
@@ -192,24 +213,32 @@ export class PayrollComponent implements OnInit {
   }
 
   onActionClicked(event: { action: DataTableAction; row: Record<string, unknown> }): void {
-    if (event.action.label === 'Payslip') {
-      this.openPayslip(String(event.row['id'] ?? ''));
+    if (event.action.label === 'View' || event.action.label === 'Edit') {
+      this.openEntryDetail(String(event.row['id'] ?? ''));
     }
   }
 
-  openPayslip(entryId: string): void {
-    this.service.getPayslip(entryId).subscribe({
-      next: (raw) => {
-        this.payslip = normalizePayslip(raw);
-        this.showPayslipModal = true;
-        this.refresh();
-      },
-      error: (e) => this.toast(extractApiError(e, 'Failed to load payslip'), true),
-    });
+  openEntryDetail(entryId: string): void {
+    if (!entryId) return;
+    this.selectedEntryId = entryId;
+    this.showEntryDetail = true;
+    this.showProcessScreen = false;
+    this.refresh();
+  }
+
+  closeEntryDetail(): void {
+    this.showEntryDetail = false;
+    this.selectedEntryId = null;
+    this.refresh();
   }
 
   canProcess(): boolean {
-    return !this.ayContext.isReadOnlyScope() && this.permissionService.canAdd(MenuCodes.SalaryPayroll);
+    const alreadyProcessed = this.payroll?.statusLabel === 'Processed';
+    return (
+      !alreadyProcessed &&
+      !this.ayContext.isReadOnlyScope() &&
+      this.permissionService.canAdd(MenuCodes.SalaryPayroll)
+    );
   }
 
   canMarkPaid(): boolean {
@@ -218,23 +247,6 @@ export class PayrollComponent implements OnInit {
 
   onExportClicked(): void {
     this.toast('Export will be available in a future update');
-  }
-
-  payslipRows(): { earning: string; earningAmt: number; deduction: string; deductionAmt: number }[] {
-    if (!this.payslip) return [];
-    const max = Math.max(this.payslip.earnings.length, this.payslip.deductions.length);
-    const rows: { earning: string; earningAmt: number; deduction: string; deductionAmt: number }[] = [];
-    for (let i = 0; i < max; i++) {
-      const er = this.payslip.earnings[i];
-      const dr = this.payslip.deductions[i];
-      rows.push({
-        earning: er?.name ?? '',
-        earningAmt: er?.amount ?? 0,
-        deduction: dr?.name ?? '',
-        deductionAmt: dr?.amount ?? 0,
-      });
-    }
-    return rows;
   }
 
   private toast(msg: string, isError = false): void {
