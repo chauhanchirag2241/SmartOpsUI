@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -69,6 +70,8 @@ export class ExamScheduleComponent implements OnInit {
   private permissions = inject(PermissionService);
   private ayContext = inject(AcademicYearContextService);
   private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   exams: ExamListItem[] = [];
   employees: EmployeeDropdownItem[] = [];
@@ -293,9 +296,18 @@ export class ExamScheduleComponent implements OnInit {
       MenuCodes.ExamSchedule,
       this.ayContext.isReadOnlyScope(),
     );
+
+    const examIdFromQuery = String(this.route.snapshot.queryParamMap.get('examId') ?? '').trim();
+    if (examIdFromQuery) {
+      this.selectedExamId = examIdFromQuery;
+    }
+
     this.examService.getExams().subscribe({
       next: (exams) => {
         this.exams = exams ?? [];
+        if (this.selectedExamId && !this.exams.some((e) => e.id === this.selectedExamId)) {
+          this.selectedExamId = '';
+        }
         this.refreshList();
         this.cdr.detectChanges();
       },
@@ -320,6 +332,12 @@ export class ExamScheduleComponent implements OnInit {
   onFilterExamChange(): void {
     const allowed = new Set(this.filterClassMultiOptions.map((c) => c.id));
     this.selectedClassIds = this.selectedClassIds.filter((id) => allowed.has(id));
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { examId: this.selectedExamId || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
     this.refreshList();
   }
 

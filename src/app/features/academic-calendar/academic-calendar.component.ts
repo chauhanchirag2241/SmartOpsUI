@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup, FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -82,6 +83,7 @@ export class AcademicCalendarComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly router = inject(Router);
 
   readonly menuCode = MenuCodes.AcademicCalendar;
   readonly monthNames = MONTH_NAMES;
@@ -115,6 +117,7 @@ export class AcademicCalendarComponent implements OnInit {
   showWeekendModal = false;
   eventPanelMode: 'add' | 'edit' = 'add';
   editingEventId: string | null = null;
+  editingEvent: CalendarEventDto | null = null;
   editingTypeId: string | null = null;
 
   eventForm: FormGroup = this.fb.group({
@@ -222,6 +225,7 @@ export class AcademicCalendarComponent implements OnInit {
 
   closeEventModal(): void {
     this.showEventModal = false;
+    this.editingEvent = null;
     this.appliesToClass = false;
     this.selectedClassIds = [];
   }
@@ -489,6 +493,24 @@ export class AcademicCalendarComponent implements OnInit {
     return 'event';
   }
 
+  isExamEvent(ev: CalendarEventDto | null | undefined): boolean {
+    return !!ev?.sourceExamId || (ev?.eventTypeCode || '').toUpperCase() === 'EXAM';
+  }
+
+  eventDisplayTitle(ev: CalendarEventDto): string {
+    const classes = (ev.classNames ?? []).filter(Boolean);
+    if (classes.length === 0) return ev.title;
+    const short = classes.length <= 2 ? classes.join(', ') : `${classes.slice(0, 2).join(', ')} +${classes.length - 2}`;
+    return `${ev.title} · ${short}`;
+  }
+
+  viewExamSchedule(): void {
+    const examId = this.editingEvent?.sourceExamId;
+    if (!examId) return;
+    this.closeEventModal();
+    void this.router.navigate(['/exams/schedule'], { queryParams: { examId } });
+  }
+
   eventBarStyle(ev: CalendarEventDto): Record<string, string> {
     const kind = this.eventKind(ev);
     const bg = ev.color || (kind === 'holiday' ? '#C0392B' : '#3355A8');
@@ -498,6 +520,7 @@ export class AcademicCalendarComponent implements OnInit {
   private openAddEvent(start: string, end: string): void {
     this.eventPanelMode = 'add';
     this.editingEventId = null;
+    this.editingEvent = null;
     this.showEventModal = true;
     this.showTypesModal = false;
     this.showWeekendModal = false;
@@ -521,6 +544,7 @@ export class AcademicCalendarComponent implements OnInit {
   private openEditEvent(ev: CalendarEventDto): void {
     this.eventPanelMode = 'edit';
     this.editingEventId = ev.id;
+    this.editingEvent = ev;
     this.showEventModal = true;
     this.showTypesModal = false;
     this.showWeekendModal = false;

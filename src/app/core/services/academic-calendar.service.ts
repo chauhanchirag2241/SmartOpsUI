@@ -60,6 +60,8 @@ export interface CalendarEventDto {
   isNonWorkingDay: boolean;
   color: string;
   classIds?: string[];
+  classNames?: string[];
+  sourceExamId?: string | null;
 }
 
 export interface CreateCalendarEventDto {

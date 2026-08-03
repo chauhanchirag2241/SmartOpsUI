@@ -125,10 +125,11 @@
                       class="entry-bar"
                       [class.holiday]="eventKind(ev) === 'holiday'"
                       [class.event]="eventKind(ev) === 'event'"
+                      [class.exam]="isExamEvent(ev)"
                       [style]="eventBarStyle(ev)"
                       (click)="openEditEventBar(ev, $event)"
-                      [title]="ev.title"
-                    >{{ ev.title }}</div>
+                      [title]="eventDisplayTitle(ev)"
+                    >{{ eventDisplayTitle(ev) }}</div>
                   }
                 </td>
               }
@@ -150,9 +151,14 @@
                 <div class="mon">{{ monthNames[row.date.getMonth()].slice(0, 3) }}</div>
               </div>
               <div class="list-day">{{ dowNames[row.date.getDay()] }}</div>
-              <div class="list-title">{{ row.event.title }}</div>
-              <div class="list-type-badge" [class]="row.kind">
-                {{ row.kind === 'holiday' ? 'Holiday' : 'Event' }}
+              <div class="list-title">
+                {{ row.event.title }}
+                @if ((row.event.classNames ?? []).length) {
+                  <small class="list-classes">{{ (row.event.classNames ?? []).join(', ') }}</small>
+                }
+              </div>
+              <div class="list-type-badge" [class]="row.kind" [class.exam]="isExamEvent(row.event)">
+                {{ isExamEvent(row.event) ? 'Exam' : (row.kind === 'holiday' ? 'Holiday' : 'Event') }}
               </div>
               <div class="list-actions">
                 <button type="button" class="icon-btn" (click)="openEditEventBar(row.event, $event)" aria-label="Edit">
@@ -175,6 +181,19 @@
         <h3>{{ eventPanelMode === 'edit' ? 'Edit calendar entry' : 'Add calendar entry' }}</h3>
         <p>{{ eventForm.value.startDate || 'Choose a date and type' }}</p>
       </div>
+      @if (isExamEvent(editingEvent)) {
+        <div class="exam-link-banner">
+          <div class="exam-link-text">
+            <strong>Exam schedule</strong>
+            @if ((editingEvent?.classNames ?? []).length) {
+              <span>{{ (editingEvent?.classNames ?? []).join(', ') }}</span>
+            }
+          </div>
+          <button type="button" class="btn-view-schedule" (click)="viewExamSchedule()">
+            <mat-icon>open_in_new</mat-icon> View schedule
+          </button>
+        </div>
+      }
       <form class="modal-body" [formGroup]="eventForm" (ngSubmit)="saveEvent()">
         <div class="f-row">
           <app-form-field
