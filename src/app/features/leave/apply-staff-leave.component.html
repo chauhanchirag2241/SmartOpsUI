@@ -40,32 +40,42 @@
       Leave details
     </div>
     <div class="grid2">
+      <app-form-field
+        label="From date"
+        type="date"
+        [(ngModel)]="form.fromDate"
+        [required]="true"
+      />
+      <app-form-field
+        label="To date"
+        type="date"
+        [(ngModel)]="form.toDate"
+        [required]="true"
+      />
       <div class="field">
-        <label for="staff-from">From date</label>
-        <input id="staff-from" type="date" class="form-control" [(ngModel)]="form.fromDate" />
+        @if (loadingTypes) {
+          <p class="form-hint" style="margin: 0">Loading leave types…</p>
+        } @else {
+          <app-form-field
+            label="Leave type"
+            type="select"
+            [(ngModel)]="form.leaveTypeId"
+            [options]="leaveTypeOptions"
+            [required]="true"
+          />
+          @if (remainingBalanceLabel) {
+            <p class="form-hint balance-hint">{{ remainingBalanceLabel }}</p>
+          }
+        }
       </div>
-      <div class="field">
-        <label for="staff-to">To date</label>
-        <input id="staff-to" type="date" class="form-control" [(ngModel)]="form.toDate" />
-      </div>
-      <div class="field">
-        <label for="staff-type">Leave type</label>
-        <select id="staff-type" class="form-control" [(ngModel)]="form.leaveType">
-          <option [ngValue]="LeaveType.Casual">Casual</option>
-          <option [ngValue]="LeaveType.Sick">Sick</option>
-          <option [ngValue]="LeaveType.Other">Other</option>
-        </select>
-      </div>
-      <div class="field full">
-        <label for="staff-reason">Reason</label>
-        <textarea
-          id="staff-reason"
-          class="form-control"
-          [(ngModel)]="form.reason"
-          rows="4"
-          placeholder="Reason for leave…"
-        ></textarea>
-      </div>
+      <app-form-field
+        label="Reason"
+        type="textarea"
+        [(ngModel)]="form.reason"
+        placeholder="Reason for leave…"
+        [rows]="4"
+        [fullWidth]="true"
+      />
     </div>
   </div>
 

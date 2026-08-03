@@ -1,13 +1,18 @@
 import { CommonModule } from '@angular/common';
 import {
+  CdkConnectedOverlay,
+  CdkOverlayOrigin,
+  ConnectedPosition,
+} from '@angular/cdk/overlay';
+import {
   ChangeDetectorRef,
   Component,
   ElementRef,
   EventEmitter,
   HostBinding,
-  HostListener,
   Input,
   Output,
+  ViewChild,
   inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -18,13 +23,23 @@ import { MappingOption } from '../../mapping/mapping.types';
 @Component({
   selector: 'app-multi-select-chips',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatCheckboxModule, MatIconModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatIconModule,
+    CdkConnectedOverlay,
+    CdkOverlayOrigin,
+  ],
   templateUrl: './multi-select-chips.component.html',
   styleUrl: './multi-select-chips.component.css',
 })
 export class MultiSelectChipsComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('origin', { read: CdkOverlayOrigin }) origin?: CdkOverlayOrigin;
+  @ViewChild('controlEl') controlEl?: ElementRef<HTMLElement>;
 
   @Input() options: MappingOption[] = [];
   @Input() selectedIds: string[] = [];
@@ -41,6 +56,24 @@ export class MultiSelectChipsComponent {
 
   panelOpen = false;
   searchTerm = '';
+  overlayWidth: number | string = '100%';
+
+  readonly overlayPositions: ConnectedPosition[] = [
+    {
+      originX: 'start',
+      originY: 'bottom',
+      overlayX: 'start',
+      overlayY: 'top',
+      offsetY: 6,
+    },
+    {
+      originX: 'start',
+      originY: 'top',
+      overlayX: 'start',
+      overlayY: 'bottom',
+      offsetY: -6,
+    },
+  ];
 
   @HostBinding('class.compact')
   get compactHostClass(): boolean {
@@ -108,10 +141,25 @@ export class MultiSelectChipsComponent {
   togglePanel(event: Event): void {
     if (this.disabled) return;
     event.stopPropagation();
-    this.panelOpen = !this.panelOpen;
     if (this.panelOpen) {
-      this.searchTerm = '';
+      this.closePanel();
+      return;
     }
+    this.openPanel();
+  }
+
+  openPanel(): void {
+    if (this.disabled) return;
+    this.syncOverlayWidth();
+    this.searchTerm = '';
+    this.panelOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closePanel(): void {
+    if (!this.panelOpen) return;
+    this.panelOpen = false;
+    this.searchTerm = '';
     this.cdr.markForCheck();
   }
 
@@ -134,9 +182,7 @@ export class MultiSelectChipsComponent {
     if (this.disabled) return;
     const next = id ? [id] : [];
     this.selectedIdsChange.emit(next);
-    this.panelOpen = false;
-    this.searchTerm = '';
-    this.cdr.markForCheck();
+    this.closePanel();
   }
 
   remove(id: string, event: Event): void {
@@ -178,14 +224,10 @@ export class MultiSelectChipsComponent {
     this.clearAll(event);
   }
 
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.panelOpen) return;
-    const target = event.target as Node | null;
-    if (target && !this.host.nativeElement.contains(target)) {
-      this.panelOpen = false;
-      this.searchTerm = '';
-      this.cdr.markForCheck();
-    }
+  private syncOverlayWidth(): void {
+    const width =
+      this.controlEl?.nativeElement.getBoundingClientRect().width ??
+      this.host.nativeElement.getBoundingClientRect().width;
+    this.overlayWidth = width > 0 ? width : '100%';
   }
 }

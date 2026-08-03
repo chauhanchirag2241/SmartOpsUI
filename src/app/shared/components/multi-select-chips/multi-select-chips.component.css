@@ -148,16 +148,18 @@
 }
 
 .sms-panel {
-  position: absolute;
-  z-index: 1200;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
   background: var(--card);
   border: 0.5px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   overflow: hidden;
+}
+
+.sms-panel-overlay {
+  width: 100%;
+  min-width: 220px;
+  /* Escape dialog overflow:hidden — rendered in CDK overlay pane */
+  z-index: 1000;
 }
 
 .sms-search {
@@ -360,6 +362,9 @@
   height: 20px;
 }
 
+/* Works for in-flow + CDK overlay (panel is outside :host in DOM) */
+.sms-panel ::ng-deep .sms-option .mat-mdc-checkbox,
+.sms-panel ::ng-deep .sms-bulk-select .mat-mdc-checkbox,
 :host ::ng-deep .sms-option .mat-mdc-checkbox,
 :host ::ng-deep .sms-bulk-select .mat-mdc-checkbox {
   --mdc-checkbox-selected-checkmark-color: #fff;
@@ -371,11 +376,21 @@
   --mat-checkbox-selected-checkmark-color: #fff;
 }
 
+.sms-panel ::ng-deep .sms-option .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-bulk-select .mdc-checkbox__background,
 :host ::ng-deep .sms-option .mdc-checkbox__background,
 :host ::ng-deep .sms-bulk-select .mdc-checkbox__background {
   border-color: var(--border-color) !important;
 }
 
+.sms-panel ::ng-deep .sms-option .mat-mdc-checkbox-checked .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-option .mat-mdc-checkbox-indeterminate .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-bulk-select .mat-mdc-checkbox-checked .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-bulk-select .mat-mdc-checkbox-indeterminate .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-option .mdc-checkbox--selected .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-option .mdc-checkbox--indeterminate .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-bulk-select .mdc-checkbox--selected .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-bulk-select .mdc-checkbox--indeterminate .mdc-checkbox__background,
 :host ::ng-deep .sms-option .mat-mdc-checkbox-checked .mdc-checkbox__background,
 :host ::ng-deep .sms-option .mat-mdc-checkbox-indeterminate .mdc-checkbox__background,
 :host ::ng-deep .sms-bulk-select .mat-mdc-checkbox-checked .mdc-checkbox__background,
@@ -388,11 +403,14 @@
   background-color: var(--primary-color, #639922) !important;
 }
 
+.sms-panel ::ng-deep .sms-option .mat-mdc-checkbox:hover .mdc-checkbox__background,
+.sms-panel ::ng-deep .sms-bulk-select .mat-mdc-checkbox:hover .mdc-checkbox__background,
 :host ::ng-deep .sms-option .mat-mdc-checkbox:hover .mdc-checkbox__background,
 :host ::ng-deep .sms-bulk-select .mat-mdc-checkbox:hover .mdc-checkbox__background {
   border-color: var(--g400, #639922) !important;
 }
 
+.sms-panel ::ng-deep .sms-bulk-select .mdc-checkbox__mixedmark,
 :host ::ng-deep .sms-bulk-select .mdc-checkbox__mixedmark {
   border-color: #fff !important;
   background-color: #fff !important;

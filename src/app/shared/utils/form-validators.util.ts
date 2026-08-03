@@ -577,7 +577,7 @@ export function formatTimeDisplay(raw: unknown): string {
   const [h, m] = normalized.split(':').map(Number);
   const date = new Date();
   date.setHours(h, m, 0, 0);
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 }
 
 export function formatShiftRangeDisplay(start: unknown, end: unknown): string {

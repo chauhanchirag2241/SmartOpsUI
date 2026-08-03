@@ -66,55 +66,135 @@
     }
 
     @if (activeTab === 'permissions') {
-      <div class="card">
-        <div class="card-title">
-          <mat-icon>verified_user</mat-icon>
-          Menu permissions
-          @if (canEdit) {
-            <button type="button" class="link-btn" (click)="selectAllPermissions(true)">Select all</button>
-            <button type="button" class="link-btn" (click)="selectAllPermissions(false)">Clear all</button>
-            <button type="button" class="link-btn" (click)="expandAllMenuGroups()">Expand all</button>
-            <button type="button" class="link-btn" (click)="collapseAllMenuGroups()">Collapse all</button>
-          }
-        </div>
-        <div class="menu-permission-table">
-          <div class="menu-permission-header">
-            <span>Menu</span>
-            <span>View</span>
-            <span>Add</span>
-            <span>Edit</span>
-            <span>Delete</span>
-            <span>Export</span>
+      <div class="card menu-perm-card">
+        <div class="menu-perm-toolbar">
+          <div class="menu-perm-toolbar-title">
+            <span class="menu-perm-ic"><mat-icon>verified_user</mat-icon></span>
+            Menu permissions
           </div>
-          @for (row of menuPermissionRows; track trackMenu($index, row.menu)) {
-            <div
-              class="menu-permission-row"
-              [class.menu-permission-parent]="row.hasChildren"
-              [class.menu-permission-child]="row.depth > 0"
-            >
-              <div class="menu-permission-name" [style.--menu-depth]="row.depth">
-                @if (row.hasChildren) {
-                  <button
-                    type="button"
-                    class="menu-expand-btn"
-                    [attr.aria-expanded]="isMenuExpanded(row.menu.menuId)"
-                    [attr.aria-label]="isMenuExpanded(row.menu.menuId) ? 'Collapse ' + row.menu.menuName : 'Expand ' + row.menu.menuName"
-                    (click)="toggleMenuExpand(row.menu.menuId)"
-                  >
-                    <mat-icon>{{ isMenuExpanded(row.menu.menuId) ? 'expand_more' : 'chevron_right' }}</mat-icon>
-                  </button>
-                } @else {
-                  <span class="menu-expand-spacer" aria-hidden="true"></span>
-                }
-                <span class="menu-permission-label">{{ row.menu.menuName }}</span>
-              </div>
-              <label><input type="checkbox" [checked]="row.menu.canView" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canView', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="row.menu.canAdd" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canAdd', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="row.menu.canEdit" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canEdit', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="row.menu.canDelete" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canDelete', $any($event.target).checked)" /></label>
-              <label><input type="checkbox" [checked]="row.menu.canExport" [disabled]="!canEdit" (change)="setMenuPermission(row.menu, 'canExport', $any($event.target).checked)" /></label>
+          <div class="menu-perm-toolbar-actions">
+            <label class="menu-perm-search">
+              <mat-icon>search</mat-icon>
+              <input
+                type="search"
+                placeholder="Search menu…"
+                [value]="menuSearchQuery"
+                (input)="onMenuSearch($any($event.target).value)"
+              />
+            </label>
+            @if (canEdit) {
+              <button type="button" class="menu-perm-tool-btn" (click)="selectAllPermissions(true)">
+                Select all
+              </button>
+              <button type="button" class="menu-perm-tool-btn" (click)="selectAllPermissions(false)">
+                Clear all
+              </button>
+            }
+            <button type="button" class="menu-perm-tool-btn" (click)="expandAllMenuGroups()">
+              Expand all
+            </button>
+            <button type="button" class="menu-perm-tool-btn" (click)="collapseAllMenuGroups()">
+              Collapse all
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-perm-summary">
+          <div>
+            <b>{{ menuPermissionSummary.menusWithAnyPermission }}</b>
+            / {{ menuPermissionSummary.totalMenus }} menu items have at least one permission
+          </div>
+          <div>
+            <b>{{ menuPermissionSummary.menusWithView }}</b> menu items visible (View)
+          </div>
+          <div>Tip: enabling Add / Edit / Delete / Export automatically enables View</div>
+        </div>
+
+        <div class="menu-perm-scroll">
+          <div class="menu-permission-table" role="table" aria-label="Menu permissions">
+            <div class="menu-permission-header" role="row">
+              <span role="columnheader">Menu</span>
+              <span role="columnheader">View</span>
+              <span role="columnheader">Add</span>
+              <span role="columnheader">Edit</span>
+              <span role="columnheader">Delete</span>
+              <span role="columnheader">Export</span>
             </div>
-          }
+
+            @for (row of menuPermissionRows; track trackMenu($index, row.menu)) {
+              <div
+                class="menu-permission-row"
+                role="row"
+                [class.menu-permission-parent]="row.hasChildren"
+                [class.menu-permission-child]="row.depth > 0"
+              >
+                <div class="menu-permission-name" [style.--menu-depth]="row.depth">
+                  @for (_ of depthPads(row.depth); track _) {
+                    <span class="menu-tree-guide" aria-hidden="true"></span>
+                  }
+                  @if (row.hasChildren) {
+                    <button
+                      type="button"
+                      class="menu-expand-btn"
+                      [class.collapsed]="!isMenuExpanded(row.menu.menuId) && !menuSearchQuery.trim()"
+                      [attr.aria-expanded]="isMenuExpanded(row.menu.menuId) || !!menuSearchQuery.trim()"
+                      [attr.aria-label]="
+                        isMenuExpanded(row.menu.menuId) ? 'Collapse ' + row.menu.menuName : 'Expand ' + row.menu.menuName
+                      "
+                      (click)="toggleMenuExpand(row.menu.menuId)"
+                    >
+                      <mat-icon>expand_more</mat-icon>
+                    </button>
+                  } @else {
+                    <span class="menu-expand-spacer" aria-hidden="true"></span>
+                  }
+                  <span
+                    class="menu-permission-label"
+                    [class.is-group]="row.hasChildren"
+                  >{{ row.menu.menuName }}</span>
+                  @if (row.grantedBadge) {
+                    <span class="menu-perm-badge">
+                      {{ row.grantedBadge.granted }}/{{ row.grantedBadge.total }}
+                    </span>
+                  }
+                  @if (canEdit) {
+                    <button type="button" class="menu-row-grant-btn" (click)="rowGrantAll(row.menu.menuId)">
+                      {{ isRowFullyGranted(row) ? 'Revoke all' : 'Grant all' }}
+                    </button>
+                  }
+                </div>
+
+                @if (row.hasChildren) {
+                  @for (field of permFields; track field) {
+                    <label class="menu-perm-check">
+                      <input
+                        type="checkbox"
+                        [checked]="groupCheckboxState(row.menu.menuId, field) === 'all'"
+                        [indeterminate]="groupCheckboxState(row.menu.menuId, field) === 'some'"
+                        [disabled]="!canEdit"
+                        (change)="onGroupColToggle(row.menu.menuId, field, $any($event.target).checked)"
+                      />
+                    </label>
+                  }
+                } @else {
+                  @for (field of permFields; track field) {
+                    <label class="menu-perm-check">
+                      <input
+                        type="checkbox"
+                        [checked]="row.menu[field]"
+                        [disabled]="!canEdit"
+                        (change)="setMenuPermission(row.menu, field, $any($event.target).checked)"
+                      />
+                    </label>
+                  }
+                }
+              </div>
+            } @empty {
+              <p class="menu-perm-empty">
+                {{ menuSearchQuery.trim() ? 'No menu items match your search.' : 'No menus available.' }}
+              </p>
+            }
+          </div>
         </div>
       </div>
     }

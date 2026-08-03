@@ -1,0 +1,17 @@
+<div class="progress-bar" [style.--pb-height.px]="height">
+  <div class="progress-bar__track" role="progressbar" [attr.aria-valuenow]="value" aria-valuemin="0" aria-valuemax="100">
+    @for (seg of resolvedSegments; track $index) {
+      <div
+        class="progress-bar__seg"
+        [style.width.%]="seg.percent"
+        [style.background]="toneColor(seg)"
+      ></div>
+    }
+  </div>
+  @if (leftCaption || rightCaption) {
+    <div class="progress-bar__caption">
+      <span>{{ leftCaption }}</span>
+      <span>{{ rightCaption }}</span>
+    </div>
+  }
+</div>

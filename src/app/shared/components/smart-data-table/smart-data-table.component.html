@@ -308,7 +308,7 @@
                       @if (isEmptyCellValue(cellVal)) {
                         <span class="cell-empty">—</span>
                       } @else {
-                        {{ $any(cellVal) | date:'dd MMM yyyy, h:mm a' }}
+                        {{ $any(cellVal) | date:'dd MMM yyyy, HH:mm' }}
                       }
                     }
                     @default {

@@ -32,6 +32,7 @@ import {
   ExamScheduleItem,
   BulkExamScheduleSlot,
 } from '../../../core/services/exam.service';
+import { todayDateOnlyString } from '../../../shared/utils/date-only.util';
 
 interface ScheduleSubjectRow {
   id: number;
@@ -354,7 +355,7 @@ export class ExamScheduleComponent implements OnInit {
       const classes = this.formExamClasses;
       this.formClassId = classes[0]?.classId ?? '';
       this.formExamDate =
-        this.formExamDate || new Date().toISOString().substring(0, 10);
+        this.formExamDate || todayDateOnlyString();
       void this.ensureSubjectsLoaded([this.classGroupIdForClass(this.formClassId)].filter(Boolean) as string[]);
       return;
     }
@@ -675,7 +676,7 @@ export class ExamScheduleComponent implements OnInit {
     if (item.status) return item.status;
     const date = item.examDate?.substring(0, 10);
     if (!date) return 'Upcoming';
-    const today = new Date().toISOString().substring(0, 10);
+    const today = todayDateOnlyString();
     if (date < today) return 'Completed';
     if (date === today) return 'Today';
     return 'Upcoming';
@@ -1029,7 +1030,7 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   private newSubjectRow(): ScheduleSubjectRow {
-    const defaultDate = new Date().toISOString().substring(0, 10);
+    const defaultDate = todayDateOnlyString();
     return {
       id: this.rowSeq++,
       subjectId: '',
@@ -1042,7 +1043,7 @@ export class ExamScheduleComponent implements OnInit {
   }
 
   private seedDefaultDateOnRows(): void {
-    const defaultDate = new Date().toISOString().substring(0, 10);
+    const defaultDate = todayDateOnlyString();
     this.uniformRows = this.uniformRows.map((r) => ({
       ...r,
       examDate: r.examDate || defaultDate,

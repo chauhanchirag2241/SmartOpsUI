@@ -121,6 +121,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'bulk-import/students',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.StudentBulkImport, permission: 'view' },
+        loadComponent: () =>
+          import('./features/bulk-import/student-bulk-import/student-bulk-import.component').then(
+            (m) => m.StudentBulkImportComponent,
+          ),
+      },
+      {
         path: 'roll-numbers',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.RollNumbers, permission: 'view' },
@@ -272,6 +281,27 @@ export const routes: Routes = [
         data: { menuCode: MenuCodes.LeaveStudent, permission: 'view' },
         loadComponent: () =>
           import('./features/leave/student-leave.component').then((m) => m.StudentLeaveComponent),
+      },
+      {
+        path: 'leave/types',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.LeaveTypes, permission: 'view' },
+        loadComponent: () =>
+          import('./features/leave/leave-types.component').then((m) => m.LeaveTypesComponent),
+      },
+      {
+        path: 'leave/policies',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.LeavePolicies, permission: 'view' },
+        loadComponent: () =>
+          import('./features/leave/leave-policies.component').then((m) => m.LeavePoliciesComponent),
+      },
+      {
+        path: 'leave/balances',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.LeaveBalances, permission: 'view' },
+        loadComponent: () =>
+          import('./features/leave/leave-balances.component').then((m) => m.LeaveBalancesComponent),
       },
       {
         path: 'my-actions',

@@ -41,6 +41,14 @@ export class ApiService {
     });
   }
 
+  getBlob(endpoint: string, params?: HttpParams): Observable<Blob> {
+    return this.http.get(this.toUrl(endpoint), { params, responseType: 'blob' });
+  }
+
+  postFormData<T>(endpoint: string, body: FormData, params?: HttpParams): Observable<T> {
+    return this.http.post<T>(this.toUrl(endpoint), body, { params });
+  }
+
   private toUrl(endpoint: string): string {
     return `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
   }

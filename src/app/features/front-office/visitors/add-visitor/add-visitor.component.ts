@@ -18,6 +18,7 @@ import { SELECT_PLACEHOLDER } from '../../../../shared/constants/form.constants'
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
 import { getUserFacingApiError } from '../../../../shared/utils/api-error.util';
+import { toLocalDateTimeString } from '../../../../shared/utils/date-time.util';
 
 @Component({
   selector: 'app-add-visitor',
@@ -224,9 +225,6 @@ export class AddVisitorComponent implements OnInit {
   }
 
   private toIso(value: unknown): string | null {
-    if (!value) return null;
-    if (value instanceof Date) return value.toISOString();
-    const d = new Date(String(value));
-    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    return toLocalDateTimeString(value);
   }
 }

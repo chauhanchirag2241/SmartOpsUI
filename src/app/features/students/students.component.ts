@@ -2,7 +2,6 @@
 import { Component, DestroyRef, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -12,6 +11,7 @@ import { StudentService } from '../../core/services/student.service';
 import { ClassService } from '../../core/services/class.service';
 
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
+import { MultiSelectChipsComponent } from '../../shared/components/multi-select-chips/multi-select-chips.component';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
 import { StudentFilter } from '../../shared/enums/table-filters.enum';
 import type {
@@ -19,6 +19,7 @@ import type {
   DataTableConfig,
   DataTableFilter,
 } from '../../shared/components/smart-data-table';
+import { MappingOption } from '../../shared/mapping/mapping.types';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { PermissionService } from '../../core/services/permission.service';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
@@ -29,7 +30,7 @@ import { applyModuleTablePermissions } from '../../core/utils/permission-ui.util
   standalone: true,
   imports: [
     SmartDataTableComponent,
-    MatIconModule,
+    MultiSelectChipsComponent,
     MatSnackBarModule,
     MatDialogModule,
     AddStudentComponent,
@@ -59,9 +60,8 @@ export class StudentsComponent implements OnInit {
   totalStudents = 0;
   currentFilter: StudentFilter = StudentFilter.Active;
 
-  classOptions: { id: string; name: string }[] = [];
-  readonly selectedClassIds = new Set<string>();
-  classFilterDropdownOpen = false;
+  classOptions: MappingOption[] = [];
+  selectedClassIds: string[] = [];
 
   private listState = {
     pageIndex: 1,
@@ -72,19 +72,7 @@ export class StudentsComponent implements OnInit {
   };
 
   get classFilterPanelActive(): boolean {
-    return this.selectedClassIds.size > 0;
-  }
-
-  get classFilterSummary(): string {
-    const count = this.selectedClassIds.size;
-    if (!count) {
-      return 'All classes';
-    }
-    if (count === 1) {
-      const id = Array.from(this.selectedClassIds)[0];
-      return this.classOptions.find((c) => c.id === id)?.name ?? '1 class selected';
-    }
-    return `${count} classes selected`;
+    return this.selectedClassIds.length > 0;
   }
 
   ngOnInit(): void {
@@ -127,7 +115,7 @@ export class StudentsComponent implements OnInit {
   ): void {
     this.listState = { pageIndex, pageSize, searchQuery, sortColumn, sortDirection };
 
-    const classIds = this.selectedClassIds.size ? Array.from(this.selectedClassIds) : null;
+    const classIds = this.selectedClassIds.length ? [...this.selectedClassIds] : null;
     const requestSeq = ++this.studentsRequestSeq;
     const yearKey = this.ayContext.effectiveYearKey();
     this.students = [];
@@ -230,27 +218,13 @@ export class StudentsComponent implements OnInit {
     this.clearClassFilter(false);
   }
 
-  toggleClassFilterDropdown(event: Event): void {
-    event.stopPropagation();
-    this.classFilterDropdownOpen = !this.classFilterDropdownOpen;
-  }
-
-  isClassSelected(classId: string): boolean {
-    return this.selectedClassIds.has(classId);
-  }
-
-  toggleClassSelection(classId: string, checked: boolean): void {
-    if (checked) {
-      this.selectedClassIds.add(classId);
-    } else {
-      this.selectedClassIds.delete(classId);
-    }
+  onClassFilterChange(ids: string[]): void {
+    this.selectedClassIds = ids;
     this.reloadWithClassFilter();
   }
 
   clearClassFilter(reload = true): void {
-    this.selectedClassIds.clear();
-    this.classFilterDropdownOpen = false;
+    this.selectedClassIds = [];
     if (reload) {
       this.reloadWithClassFilter();
     }

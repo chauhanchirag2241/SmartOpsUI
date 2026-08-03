@@ -13,6 +13,7 @@ export interface LeaveListItem {
   toDate: string;
   dayCount: number;
   leaveTypeLabel?: string | null;
+  leaveTypeId?: string | null;
   status: string;
   statusLabel: string;
   createdOn: string;
@@ -59,6 +60,27 @@ export function asApproverArray(data: unknown): LeaveApprover[] {
       name: String(r['name'] ?? r['Name'] ?? '—'),
     };
   });
+}
+
+/** Labels for LeaveLedgerTxnType enum values. */
+export function ledgerTxnTypeLabel(txnType: number | string | null | undefined): string {
+  const n = typeof txnType === 'string' ? Number(txnType) : txnType;
+  switch (n) {
+    case 1:
+      return 'Accrual';
+    case 2:
+      return 'Usage';
+    case 3:
+      return 'Reverse';
+    case 4:
+      return 'Manual adjust';
+    case 5:
+      return 'Carry forward';
+    case 6:
+      return 'Lapse';
+    default:
+      return txnType != null && String(txnType).trim() ? String(txnType) : '—';
+  }
 }
 
 export function noticeStatusBadgeClass(statusLabel: string): string {

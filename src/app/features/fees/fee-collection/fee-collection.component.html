@@ -12,46 +12,13 @@
     <div tableFilters class="st-table-filters">
       <div class="table-filter-section">
         <span class="table-filter-section-label">Class</span>
-        <div class="fee-collection-class-multiselect">
-          <button
-            type="button"
-            class="fee-collection-class-select-btn"
-            (click)="toggleClassFilterDropdown($event)"
-          >
-            <span>{{ classFilterSummary }}</span>
-            <mat-icon>{{
-              classFilterDropdownOpen ? 'expand_less' : 'expand_more'
-            }}</mat-icon>
-          </button>
-          @if (classFilterDropdownOpen) {
-            <div class="fee-collection-class-options">
-              @for (cls of classOptions; track cls.id) {
-                <label class="fee-collection-class-option">
-                  <input
-                    type="checkbox"
-                    [checked]="isClassSelected(cls.id)"
-                    (change)="toggleClassSelection(cls.id, $any($event.target).checked)"
-                  />
-                  <span>{{ cls.name }}</span>
-                </label>
-              }
-              @if (!classOptions.length) {
-                <span class="fee-collection-class-option">No classes available</span>
-              }
-            </div>
-          }
-        </div>
-        @if (!allClassesSelected && selectedClassIds.size) {
-          <div class="fee-collection-class-filter-actions">
-            <button
-              type="button"
-              class="fee-collection-class-filter-clear"
-              (click)="clearClassFilter()"
-            >
-              Select all classes
-            </button>
-          </div>
-        }
+        <app-multi-select-chips
+          [options]="classOptions"
+          [selectedIds]="selectedClassIds"
+          placeholder="Select classes"
+          searchPlaceholder="Search class…"
+          (selectedIdsChange)="onClassFilterChange($event)"
+        />
       </div>
     </div>
   </app-smart-data-table>

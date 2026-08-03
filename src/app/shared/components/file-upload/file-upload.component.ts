@@ -54,4 +54,14 @@ export class FileUploadComponent {
     this.previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
     this.fileSelected.emit({ file, previewUrl: this.previewUrl });
   }
+
+  /** Clears the selected file (e.g. after a rejected file type or a completed upload). */
+  reset(): void {
+    if (this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+    }
+    this.previewUrl = null;
+    this.fileName = '';
+    this.hasFile = false;
+  }
 }

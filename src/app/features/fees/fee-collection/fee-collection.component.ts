@@ -1,7 +1,6 @@
 import { Component, DestroyRef, OnInit, ChangeDetectorRef, NgZone, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../../core/services/notification.service';
 
@@ -9,6 +8,8 @@ import { StudentService } from '../../../core/services/student.service';
 import { ClassService } from '../../../core/services/class.service';
 import { FeeCollectionService } from '../../../core/services/fee-collection.service';
 import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import { MultiSelectChipsComponent } from '../../../shared/components/multi-select-chips/multi-select-chips.component';
+import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { StudentFilter } from '../../../shared/enums/table-filters.enum';
 import type {
   DataTableAction,
@@ -24,7 +25,7 @@ import { switchMap } from 'rxjs/operators';
 @Component({
   selector: 'app-fee-collection',
   standalone: true,
-  imports: [SmartDataTableComponent, MatIconModule, MatSnackBarModule],
+  imports: [SmartDataTableComponent, MultiSelectChipsComponent, MatSnackBarModule],
   templateUrl: './fee-collection.component.html',
   styleUrl: './fee-collection.component.css',
 })
@@ -41,15 +42,13 @@ export class FeeCollectionComponent implements OnInit {
   private readonly router = inject(Router);
 
   private studentsRequestSeq = 0;
-  allClassesSelected = true;
 
   students: Record<string, unknown>[] = [];
   totalStudents = 0;
   tableConfig!: DataTableConfig;
 
-  classOptions: { id: string; name: string }[] = [];
-  readonly selectedClassIds = new Set<string>();
-  classFilterDropdownOpen = false;
+  classOptions: MappingOption[] = [];
+  selectedClassIds: string[] = [];
 
   private listState = {
     pageIndex: 1,
@@ -109,20 +108,13 @@ export class FeeCollectionComponent implements OnInit {
   get classFilterPanelActive(): boolean {
     if (!this.classOptions.length) return false;
     if (this.allClassesSelected) return false;
-    return this.selectedClassIds.size > 0 && this.selectedClassIds.size < this.classOptions.length;
+    return this.selectedClassIds.length > 0 && this.selectedClassIds.length < this.classOptions.length;
   }
 
-  get classFilterSummary(): string {
-    if (!this.classOptions.length || this.allClassesSelected) {
-      return 'All classes';
-    }
-    const count = this.selectedClassIds.size;
-    if (!count) return 'No classes';
-    if (count === 1) {
-      const id = Array.from(this.selectedClassIds)[0];
-      return this.classOptions.find((c) => c.id === id)?.name ?? '1 class';
-    }
-    return `${count} classes`;
+  get allClassesSelected(): boolean {
+    return (
+      this.classOptions.length > 0 && this.selectedClassIds.length === this.classOptions.length
+    );
   }
 
   ngOnInit(): void {
@@ -161,12 +153,13 @@ export class FeeCollectionComponent implements OnInit {
   }
 
   private selectAllClasses(reload: boolean): void {
-    this.selectedClassIds.clear();
-    for (const cls of this.classOptions) {
-      this.selectedClassIds.add(cls.id);
-    }
-    this.allClassesSelected = true;
+    this.selectedClassIds = this.classOptions.map((cls) => cls.id);
     if (reload) this.loadStudents(1);
+  }
+
+  onClassFilterChange(ids: string[]): void {
+    this.selectedClassIds = ids;
+    this.loadStudents(1);
   }
 
   loadStudents(
@@ -181,8 +174,8 @@ export class FeeCollectionComponent implements OnInit {
     const classIds =
       !this.classOptions.length || this.allClassesSelected
         ? null
-        : this.selectedClassIds.size
-          ? Array.from(this.selectedClassIds)
+        : this.selectedClassIds.length
+          ? [...this.selectedClassIds]
           : [];
 
     // Empty selection → no rows
@@ -314,32 +307,6 @@ export class FeeCollectionComponent implements OnInit {
 
   onAdvancedFiltersCleared(): void {
     this.selectAllClasses(true);
-    this.classFilterDropdownOpen = false;
-  }
-
-  toggleClassFilterDropdown(event: Event): void {
-    event.stopPropagation();
-    this.classFilterDropdownOpen = !this.classFilterDropdownOpen;
-  }
-
-  isClassSelected(classId: string): boolean {
-    return this.selectedClassIds.has(classId);
-  }
-
-  toggleClassSelection(classId: string, checked: boolean): void {
-    if (checked) {
-      this.selectedClassIds.add(classId);
-    } else {
-      this.selectedClassIds.delete(classId);
-    }
-    this.allClassesSelected =
-      this.classOptions.length > 0 && this.selectedClassIds.size === this.classOptions.length;
-    this.loadStudents(1);
-  }
-
-  clearClassFilter(): void {
-    this.selectAllClasses(true);
-    this.classFilterDropdownOpen = false;
   }
 
   onActionClicked(event: { action: DataTableAction; row: Record<string, unknown> }): void {

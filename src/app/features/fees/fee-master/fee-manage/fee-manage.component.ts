@@ -101,8 +101,7 @@ export class FeeManageComponent implements OnInit {
   totalStudents = 0;
   studentTableConfig!: DataTableConfig;
   selectedStudentClassIds: string[] = [];
-  classOptions: { id: string; name: string }[] = [];
-  studentClassFilterDropdownOpen = false;
+  classOptions: MappingOption[] = [];
   private studentSearch = '';
   private studentSortColumn: string | null = null;
   private studentSortDirection: string | null = null;
@@ -316,46 +315,15 @@ export class FeeManageComponent implements OnInit {
 
   onStudentClassIdsChange(ids: string[]): void {
     this.selectedStudentClassIds = ids;
-    this.loadStudents();
+    this.loadStudents(1);
   }
 
   get studentClassFilterActive(): boolean {
     return this.selectedStudentClassIds.length > 0;
   }
 
-  get studentClassFilterSummary(): string {
-    const count = this.selectedStudentClassIds.length;
-    if (!count) return 'All classes';
-    if (count === 1) {
-      const id = this.selectedStudentClassIds[0];
-      return this.classOptions.find((c) => c.id === id)?.name || '1 class';
-    }
-    return `${count} classes`;
-  }
-
-  toggleStudentClassFilterDropdown(event: Event): void {
-    event.stopPropagation();
-    this.studentClassFilterDropdownOpen = !this.studentClassFilterDropdownOpen;
-  }
-
-  isStudentClassSelected(classId: string): boolean {
-    return this.selectedStudentClassIds.includes(classId);
-  }
-
-  toggleStudentClassSelection(classId: string, checked: boolean): void {
-    if (checked) {
-      if (!this.selectedStudentClassIds.includes(classId)) {
-        this.selectedStudentClassIds = [...this.selectedStudentClassIds, classId];
-      }
-    } else {
-      this.selectedStudentClassIds = this.selectedStudentClassIds.filter((id) => id !== classId);
-    }
-    this.loadStudents(1);
-  }
-
   clearStudentClassFilter(): void {
     this.selectedStudentClassIds = [];
-    this.studentClassFilterDropdownOpen = false;
     this.loadStudents(1);
   }
 

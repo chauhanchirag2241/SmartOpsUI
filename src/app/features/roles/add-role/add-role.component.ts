@@ -25,14 +25,25 @@ import { PageChromeDirective } from '../../../shared/directives/page-chrome.dire
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 import {
+  GroupColState,
+  MenuPermField,
   MenuPermissionDisplayRow,
+  MenuPermissionSummary,
   MenuPermissionTreeNode,
+  applyPermChange,
   buildMenuPermissionTree,
   collectExpandableMenuIds,
-  collectMenuDescendants,
+  computeMenuPermissionSummary,
+  findTreeNode,
   flattenVisibleMenuRows,
+  groupColState,
+  isSubtreeFullyGranted,
+  rowPermissionCount,
+  setSubtreeAllPermissions,
+  setSubtreePermission,
 } from '../menu-permission-tree.util';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
+
 interface RoleUserRow {
   id: string;
   username: string;
@@ -73,6 +84,12 @@ export class AddRoleComponent implements OnInit {
   menuPermissionTree: MenuPermissionTreeNode[] = [];
   menuPermissionRows: MenuPermissionDisplayRow[] = [];
   expandedMenuIds = new Set<string>();
+  menuSearchQuery = '';
+  menuPermissionSummary: MenuPermissionSummary = {
+    totalMenus: 0,
+    menusWithAnyPermission: 0,
+    menusWithView: 0,
+  };
   dashboardWidgetPermissions: IRoleDashboardWidgetPermission[] = [];
 
   readonly configs: Record<string, FormFieldConfig> = {
@@ -189,19 +206,57 @@ export class AddRoleComponent implements OnInit {
     }
   }
 
-  setMenuPermission(
-    menu: IRoleMenuPermission,
-    field: 'canView' | 'canAdd' | 'canEdit' | 'canDelete' | 'canExport',
-    checked: boolean,
-  ): void {
+  setMenuPermission(menu: IRoleMenuPermission, field: MenuPermField, checked: boolean): void {
     if (!this.canEdit) {
       return;
     }
-    menu[field] = checked;
-    for (const child of collectMenuDescendants(this.menuPermissions, menu.menuId)) {
-      child[field] = checked;
+    const node = findTreeNode(this.menuPermissionTree, menu.menuId);
+    if (node?.children.length) {
+      setSubtreePermission(node, field, checked);
+    } else {
+      applyPermChange(menu, field, checked);
     }
-    this.cdr.markForCheck();
+    this.refreshMenuPermissionUi();
+  }
+
+  onGroupColToggle(menuId: string, field: MenuPermField, checked: boolean): void {
+    if (!this.canEdit) return;
+    const node = findTreeNode(this.menuPermissionTree, menuId);
+    if (!node) return;
+    setSubtreePermission(node, field, checked);
+    this.refreshMenuPermissionUi();
+  }
+
+  rowGrantAll(menuId: string): void {
+    if (!this.canEdit) return;
+    const node = findTreeNode(this.menuPermissionTree, menuId);
+    if (!node) return;
+    if (node.children.length > 0) {
+      setSubtreeAllPermissions(node, !isSubtreeFullyGranted(node));
+    } else {
+      const grant = rowPermissionCount(node.menu) !== 5;
+      setSubtreeAllPermissions(node, grant);
+    }
+    this.refreshMenuPermissionUi();
+  }
+
+  isRowFullyGranted(row: MenuPermissionDisplayRow): boolean {
+    if (row.hasChildren) {
+      const node = findTreeNode(this.menuPermissionTree, row.menu.menuId);
+      return !!node && isSubtreeFullyGranted(node);
+    }
+    return rowPermissionCount(row.menu) === 5;
+  }
+
+  groupCheckboxState(menuId: string, field: MenuPermField): GroupColState | 'leaf' {
+    const node = findTreeNode(this.menuPermissionTree, menuId);
+    if (!node || node.children.length === 0) return 'leaf';
+    return groupColState(node, field);
+  }
+
+  onMenuSearch(query: string): void {
+    this.menuSearchQuery = query;
+    this.rebuildMenuPermissionRows();
   }
 
   toggleMenuExpand(menuId: string): void {
@@ -238,7 +293,7 @@ export class AddRoleComponent implements OnInit {
       m.canDelete = checked;
       m.canExport = checked;
     });
-    this.cdr.markForCheck();
+    this.refreshMenuPermissionUi();
   }
 
   setWidgetPermission(widget: IRoleDashboardWidgetPermission, checked: boolean): void {
@@ -349,6 +404,18 @@ export class AddRoleComponent implements OnInit {
     return menu.menuId || `${menu.menuCode}-${index}`;
   }
 
+  depthPads(depth: number): number[] {
+    return depth > 0 ? Array.from({ length: depth }, (_, i) => i) : [];
+  }
+
+  readonly permFields: MenuPermField[] = [
+    'canView',
+    'canAdd',
+    'canEdit',
+    'canDelete',
+    'canExport',
+  ];
+
   private loadRole(id: string): void {
     this.roleService.getRole(id).subscribe({
       next: (role) => {
@@ -440,14 +507,21 @@ export class AddRoleComponent implements OnInit {
         this.expandedMenuIds.add(id);
       }
     }
-    this.rebuildMenuPermissionRows();
+    this.refreshMenuPermissionUi();
   }
 
   private rebuildMenuPermissionRows(): void {
     this.menuPermissionRows = flattenVisibleMenuRows(
       this.menuPermissionTree,
       this.expandedMenuIds,
+      this.menuSearchQuery,
     );
+    this.cdr.markForCheck();
+  }
+
+  private refreshMenuPermissionUi(): void {
+    this.menuPermissionSummary = computeMenuPermissionSummary(this.menuPermissions);
+    this.rebuildMenuPermissionRows();
   }
 
   private saveRoleUsersAndFinish(): void {

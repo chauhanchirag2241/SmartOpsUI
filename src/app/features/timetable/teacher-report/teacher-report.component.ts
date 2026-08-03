@@ -26,6 +26,7 @@ import { MappingOption } from '../../../shared/mapping/mapping.types';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { FormFieldComponent } from '../../../shared/form-controls/form-field';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
+import { todayDateOnlyString } from '../../../shared/utils/date-only.util';
 
 const DAYS = [
   { day: 1, label: 'Mon' },
@@ -68,7 +69,7 @@ export class TeacherReportComponent implements OnInit {
   classOptions: MappingOption[] = [];
   subjectOptions: MappingOption[] = [];
 
-  asOf = new Date().toISOString().slice(0, 10);
+  asOf = todayDateOnlyString();
   selectedTeacherIds: string[] = [];
   selectedClassIds: string[] = [];
   selectedSubjectIds: string[] = [];

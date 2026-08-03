@@ -1,6 +1,9 @@
 <div class="sms" [class.open]="panelOpen" [class.disabled]="disabled">
   <div
+    #controlEl
     class="sms-control"
+    cdkOverlayOrigin
+    #origin="cdkOverlayOrigin"
     [class.is-disabled]="disabled"
     role="combobox"
     [attr.aria-expanded]="panelOpen"
@@ -42,8 +45,19 @@
     </span>
   </div>
 
-  @if (panelOpen && !disabled) {
-    <div class="sms-panel" (click)="$event.stopPropagation()">
+  <ng-template
+    cdkConnectedOverlay
+    [cdkConnectedOverlayOrigin]="origin"
+    [cdkConnectedOverlayOpen]="panelOpen && !disabled"
+    [cdkConnectedOverlayPositions]="overlayPositions"
+    [cdkConnectedOverlayWidth]="overlayWidth"
+    [cdkConnectedOverlayPush]="true"
+    [cdkConnectedOverlayViewportMargin]="8"
+    [cdkConnectedOverlayHasBackdrop]="false"
+    (overlayOutsideClick)="closePanel()"
+    (detach)="closePanel()"
+  >
+    <div class="sms-panel sms-panel-overlay" (click)="$event.stopPropagation()">
       <div class="sms-search">
         <input
           type="text"
@@ -58,14 +72,14 @@
       @if (showBulkActions) {
         <div class="sms-bulk-row">
           <label class="sms-bulk-select">
-              <mat-checkbox
-                [checked]="allFilteredSelected"
-                [indeterminate]="someFilteredSelected"
-                [disabled]="!selectableFilteredOptions.length"
-                color="primary"
-                (change)="toggleSelectAll()"
-                (click)="$event.stopPropagation()"
-              />
+            <mat-checkbox
+              [checked]="allFilteredSelected"
+              [indeterminate]="someFilteredSelected"
+              [disabled]="!selectableFilteredOptions.length"
+              color="primary"
+              (change)="toggleSelectAll()"
+              (click)="$event.stopPropagation()"
+            />
             <span class="sms-bulk-label">{{ selectAllLabel }}</span>
           </label>
           <button
@@ -118,5 +132,5 @@
         }
       </div>
     </div>
-  }
+  </ng-template>
 </div>

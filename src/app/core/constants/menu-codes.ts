@@ -29,6 +29,9 @@ export const MenuCodes = {
   SalaryPayroll: 'SALARY_PAYROLL',
   LeaveStaff: 'LEAVE_STAFF',
   LeaveStudent: 'LEAVE_STUDENT',
+  LeaveTypes: 'LEAVE_TYPES',
+  LeavePolicies: 'LEAVE_POLICIES',
+  LeaveBalances: 'LEAVE_BALANCES',
   MyActions: 'MY_ACTIONS',
   FrontOffice: 'FRONT_OFFICE',
   VisitorBook: 'VISITOR_BOOK',
@@ -53,6 +56,8 @@ export const MenuCodes = {
   FeeManagement: 'FEE_MANAGEMENT',
   FeeMaster: 'FEE_MASTER',
   FeeCollection: 'FEE_COLLECTION',
+  BulkImport: 'BULK_IMPORT',
+  StudentBulkImport: 'STUDENT_BULK_IMPORT',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

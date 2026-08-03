@@ -25,3 +25,9 @@
   height: 18px;
   color: var(--primary-color);
 }
+
+.balance-hint {
+  margin: 6px 0 0;
+  color: var(--primary-color, #639922);
+  font-weight: 500;
+}

@@ -1,0 +1,298 @@
+<section class="bulk-import-page">
+  <div class="topbar">
+    <span
+      [appPageChrome]="'Student Bulk Import'"
+      [pageChromeSubtitle]="'Upload an Excel file to validate and import students (and optional StudentWise fee assignments)'"
+    ></span>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper" aria-label="Import steps">
+    <div class="step" [class.active]="stepIndex === 0 && !step2Done" [class.done]="step1Done">
+      <div class="step-circle">{{ step1Done ? '✓' : '1' }}</div>
+      <div class="step-label">Prepare &amp; Upload</div>
+    </div>
+    <div class="step-line" [class.done]="step2Done || stepIndex >= 1"></div>
+    <div class="step" [class.active]="stepIndex === 1 && !step3Done" [class.done]="step2Done">
+      <div class="step-circle">{{ step2Done ? '✓' : '2' }}</div>
+      <div class="step-label">Validate</div>
+    </div>
+    <div class="step-line" [class.done]="step3Done"></div>
+    <div class="step" [class.active]="stepIndex === 2 || step3Done" [class.done]="step3Done">
+      <div class="step-circle">{{ step3Done ? '✓' : '3' }}</div>
+      <div class="step-label">Review &amp; Import</div>
+    </div>
+  </div>
+
+  @if (commitResult && !commitResult.fileError) {
+    <div class="success-banner">
+      <mat-icon>check_circle</mat-icon>
+      <span>
+        {{ commitResult.createdStudents }} student record(s) imported successfully
+        @if (commitResult.feeAssignmentsApplied) {
+          ({{ commitResult.feeAssignmentsApplied }} fee assignment(s)).
+        } @else {
+          .
+        }
+        @if (commitResult.failures.length) {
+          {{ commitResult.failures.length }} row(s) failed during import — see Failures tab.
+        }
+      </span>
+    </div>
+  }
+
+  <!-- Step 1 -->
+  <div class="card import-card">
+    <div class="card-head">
+      <span class="card-head-ic"><mat-icon>download</mat-icon></span>
+      Step 1 — Download template &amp; upload data
+    </div>
+    <div class="card-body">
+      <div class="instructions">
+        <ul>
+          <li>
+            <b>Academic year</b> comes from the year selected in Settings / header
+            (<b>{{ academicYearLabel }}</b>).
+          </li>
+          <li>
+            Download the template below and fill the <b>Students</b> sheet. The
+            <b>FeeAssignments</b> sheet is optional.
+          </li>
+          <li>
+            <b>ClassWise</b> fees apply automatically from the class group — only
+            <b>StudentWise</b> overrides need the fee sheet.
+          </li>
+          <li>Once filled, upload the file here and click <b>Validate</b> before importing.</li>
+        </ul>
+      </div>
+
+      <div class="upload-row">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="downloadTemplate()"
+          [disabled]="validating || importing"
+        >
+          <mat-icon>download</mat-icon>
+          Download template
+        </button>
+
+        <div class="file-field">
+          <app-file-upload
+            mode="document"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            [disabled]="validating || importing"
+            (fileSelected)="onFileSelected($event)"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="validate()"
+          [disabled]="!selectedFile || !academicYearId || validating || importing || !canAdd"
+        >
+          <mat-icon>fact_check</mat-icon>
+          {{ validating ? 'Validating…' : 'Validate' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  @if (validation && !validation.fileError) {
+    <div class="card import-card" #summaryCard>
+      <div class="card-head">
+        <span class="card-head-ic"><mat-icon>bar_chart</mat-icon></span>
+        Step 2 — Validation summary
+      </div>
+      <div class="card-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="lbl">Students total</div>
+            <div class="val">{{ validation.totalStudents }}</div>
+          </div>
+          <div class="stat-box valid">
+            <div class="lbl">Valid</div>
+            <div class="val">{{ validation.validStudents }}</div>
+          </div>
+          <div class="stat-box invalid">
+            <div class="lbl">Invalid</div>
+            <div class="val">{{ validation.invalidStudents }}</div>
+          </div>
+          <div class="stat-box">
+            <div class="lbl">Fee rows</div>
+            <div class="val">{{ validation.totalFeeAssignments }}</div>
+          </div>
+          <div class="stat-box valid">
+            <div class="lbl">Fee valid</div>
+            <div class="val">{{ validation.validFeeAssignments }}</div>
+          </div>
+          <div class="stat-box invalid">
+            <div class="lbl">Fee invalid</div>
+            <div class="val">{{ validation.invalidFeeAssignments }}</div>
+          </div>
+        </div>
+
+        @if (validation.totalStudents > 0) {
+          <app-progress-bar
+            [segments]="progressSegments"
+            [leftCaption]="progressLeftCaption"
+            [rightCaption]="progressRightCaption"
+          />
+        }
+
+        @if (commonIssues.length) {
+          <div class="issues-box">
+            <div class="issues-box-title">
+              <mat-icon>warning</mat-icon>
+              Most common issues — fix these and many errors clear
+            </div>
+            @for (issue of commonIssues; track issue.label) {
+              <div class="issue-item">
+                <span>{{ issue.label }}</span>
+                <span class="issue-count">{{ issue.count }} rows</span>
+              </div>
+            }
+            <div class="issues-hint">
+              Correct the Excel sheet (or add missing Class Groups under Academic Setup → Classes), then
+              re-upload and validate again.
+            </div>
+          </div>
+        }
+
+        <div class="action-row">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="downloadErrorFile()"
+            [disabled]="!validation.errorFileBase64 || validating || importing"
+          >
+            <mat-icon>file_download</mat-icon>
+            Download error file
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="importValid()"
+            [disabled]="!canImport"
+          >
+            <mat-icon>upload</mat-icon>
+            {{
+              importing
+                ? 'Importing…'
+                : canImport
+                  ? 'Import all records'
+                  : 'Fix invalid rows to import'
+            }}
+          </button>
+        </div>
+        @if (!canImport && validation.invalidStudents + validation.invalidFeeAssignments > 0) {
+          <p class="import-gate-hint">
+            Import is enabled only when the entire file is valid. Fix Invalid rows (and download the error file), then
+            validate again.
+          </p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Validation tables: all rows (valid + invalid) — hidden after successful import -->
+  @if (!showImportResults && studentTableData.length) {
+    <div class="list-data-card card">
+      <app-smart-data-table
+        [config]="studentTableConfig"
+        [data]="studentTableData"
+        [rowClassFn]="validationRowClass"
+      >
+        <ng-template #customCell let-row let-column="column">
+          @if (column.key === 'errors') {
+            <span class="err-msg">{{ row['errors'] }}</span>
+          } @else {
+            {{ row[column.key] }}
+          }
+        </ng-template>
+      </app-smart-data-table>
+    </div>
+  }
+
+  @if (!showImportResults && feeTableData.length) {
+    <div class="list-data-card card">
+      <app-smart-data-table
+        [config]="feeTableConfig"
+        [data]="feeTableData"
+        [rowClassFn]="validationRowClass"
+      >
+        <ng-template #customCell let-row let-column="column">
+          @if (column.key === 'errors') {
+            <span class="err-msg">{{ row['errors'] }}</span>
+          } @else {
+            {{ row[column.key] }}
+          }
+        </ng-template>
+      </app-smart-data-table>
+    </div>
+  }
+
+  <!-- Post-import results: Failures | Active / Inactive -->
+  @if (showImportResults) {
+    <div class="card import-card">
+      <div class="card-head">
+        <span class="card-head-ic"><mat-icon>table_chart</mat-icon></span>
+        Import results
+      </div>
+      <div class="card-body">
+        <div class="class-tabs" role="tablist" aria-label="Import result tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            role="tab"
+            [class.active]="importResultTab === 'failures'"
+            [attr.aria-selected]="importResultTab === 'failures'"
+            (click)="switchImportResultTab('failures')"
+          >
+            Failures ({{ failureTableData.length }})
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            role="tab"
+            [class.active]="importResultTab === 'imported'"
+            [attr.aria-selected]="importResultTab === 'imported'"
+            (click)="switchImportResultTab('imported')"
+          >
+            Active / Inactive ({{ importedTableData.length }})
+          </button>
+        </div>
+
+        @if (importResultTab === 'failures') {
+          <div class="list-data-card">
+            <app-smart-data-table
+              [config]="failureTableConfig"
+              [data]="failureTableData"
+              [rowClassFn]="failureRowClass"
+            >
+              <ng-template #customCell let-row let-column="column">
+                @if (column.key === 'errors') {
+                  <span class="err-msg">{{ row['errors'] }}</span>
+                } @else {
+                  {{ row[column.key] }}
+                }
+              </ng-template>
+            </app-smart-data-table>
+          </div>
+        }
+
+        @if (importResultTab === 'imported') {
+          <div class="list-data-card">
+            <app-smart-data-table
+              [config]="importedTableConfig"
+              [data]="importedTableData"
+              [rowClassFn]="importedRowClass"
+            />
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 
+/** @deprecated Prefer leaveTypeId from LeaveTypeService. Kept for older rows. */
 export enum LeaveType {
   Casual = 1,
   Sick = 2,
@@ -12,6 +13,8 @@ export enum LeaveType {
 export interface CreateLeaveRequest {
   fromDate: string;
   toDate: string;
+  leaveTypeId?: string | null;
+  /** @deprecated Prefer leaveTypeId */
   leaveType?: LeaveType | null;
   reason?: string | null;
   submitImmediately?: boolean;
