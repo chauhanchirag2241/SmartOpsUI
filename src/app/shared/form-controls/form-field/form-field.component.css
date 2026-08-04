@@ -38,7 +38,41 @@
   width: 100%;
 }
 
+.field-datetime :host ::ng-deep,
+.field-datetime ::ng-deep .fo-datetime-picker,
+.field-datetime ::ng-deep .p-datepicker,
+.field-datetime ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
 :host ::ng-deep .field-date .mat-mdc-form-field-subscript-wrapper,
 :host ::ng-deep .field-select .mat-mdc-form-field-subscript-wrapper {
   display: none;
+}
+
+/* Match portal input height / look for datetime */
+:host ::ng-deep .fo-datetime-picker.p-datepicker,
+:host ::ng-deep .p-datepicker.fo-datetime-picker {
+  width: 100%;
+}
+
+:host ::ng-deep .fo-datetime-picker .p-inputtext,
+:host ::ng-deep .fo-datetime-picker input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--input-bg, var(--card, #fff));
+  border: 0.5px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: none;
+}
+
+:host ::ng-deep .fo-datetime-picker .p-datepicker-input-icon-container,
+:host ::ng-deep .fo-datetime-picker .p-datepicker-dropdown {
+  color: var(--text-secondary);
 }

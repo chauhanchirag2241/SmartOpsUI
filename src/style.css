@@ -1278,6 +1278,102 @@ textarea.form-control.native-textarea {
   width: 20px !important;
 }
 
+/* =========================================================
+   PRIMENG DATETIME (app-form-field / app-dynamic-field)
+   Overlay appends to body — theme must be global.
+========================================================= */
+.fo-datetime-picker.p-datepicker,
+.p-datepicker.fo-datetime-picker {
+  width: 100%;
+}
+
+.fo-datetime-picker .p-inputtext,
+.fo-datetime-picker input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--input-bg) !important;
+  border: 0.5px solid var(--border-color) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  box-shadow: none !important;
+}
+
+.fo-datetime-picker .p-inputtext:enabled:focus,
+.fo-datetime-picker input:enabled:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 18%, transparent) !important;
+}
+
+.fo-datetime-panel.p-datepicker-panel,
+.p-datepicker-panel.fo-datetime-panel {
+  border: 0.5px solid var(--border-color) !important;
+  border-radius: var(--radius-lg, 10px) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  font-size: 0.8rem !important;
+  padding: 0.35rem !important;
+}
+
+.fo-datetime-panel .p-datepicker-header {
+  padding: 0.35rem 0.4rem !important;
+  min-height: 2rem !important;
+}
+
+.fo-datetime-panel .p-datepicker-title {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+}
+
+.fo-datetime-panel .p-datepicker-weekday,
+.fo-datetime-panel .p-datepicker-day {
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+  font-size: 0.75rem !important;
+  margin: 1px !important;
+}
+
+.fo-datetime-panel .p-datepicker-day-selected,
+.fo-datetime-panel .p-datepicker-day-selected-range {
+  background: var(--primary-color, #639922) !important;
+  border-color: var(--primary-color, #639922) !important;
+  color: #fff !important;
+}
+
+.fo-datetime-panel .p-datepicker-day:not(.p-datepicker-day-selected):not(.p-disabled):hover,
+.fo-datetime-panel .p-datepicker-day-today:not(.p-datepicker-day-selected) {
+  background: color-mix(in srgb, var(--primary-color, #639922) 14%, white) !important;
+  color: var(--g800, #252b37) !important;
+}
+
+.fo-datetime-panel .p-datepicker-day-today {
+  border-color: var(--primary-color, #639922) !important;
+}
+
+.fo-datetime-panel .p-timepicker,
+.fo-datetime-panel .p-datepicker-time-picker {
+  border-top: 0.5px solid var(--border-color) !important;
+  padding-top: 0.4rem !important;
+  gap: 0.35rem !important;
+}
+
+.fo-datetime-panel .p-timepicker span,
+.fo-datetime-panel .p-datepicker-time-picker span,
+.fo-datetime-panel .p-timepicker button,
+.fo-datetime-panel .p-datepicker-time-picker button {
+  font-size: 0.8rem !important;
+}
+
+.fo-datetime-panel .p-timepicker button:hover,
+.fo-datetime-panel .p-datepicker-time-picker button:hover {
+  background: color-mix(in srgb, var(--primary-color, #639922) 14%, white) !important;
+  color: var(--g800, #252b37) !important;
+}
+
 /* Material select/autocomplete options — theme green (not browser/Material blue) */
 .mat-mdc-option {
   --mat-option-selected-state-layer-color: color-mix(in srgb, var(--primary-color) 18%, transparent);

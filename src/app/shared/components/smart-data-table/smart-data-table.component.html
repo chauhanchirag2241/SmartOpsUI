@@ -378,11 +378,13 @@
     </div>
     <div class="page-size">
       Rows per page
-      <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
-        @for (opt of pageSizeOptions; track opt) {
-          <option [ngValue]="opt">{{ opt }}</option>
-        }
-      </select>
+      <app-form-field
+        class="page-size-field"
+        type="select"
+        [options]="pageSizeSelectOptions"
+        [ngModel]="pageSize"
+        (ngModelChange)="onPageSizeChange($event)"
+      />
     </div>
     <div class="pagination">
       <button

@@ -90,6 +90,53 @@ export class PermissionService {
     return this.hasMenuInTree(code);
   }
 
+  canAdd(menuCode: string): boolean {
+    return this.getPermission(menuCode)?.canAdd ?? false;
+  }
+
+  canEdit(menuCode: string): boolean {
+    return this.getPermission(menuCode)?.canEdit ?? false;
+  }
+
+  canDelete(menuCode: string): boolean {
+    return this.getPermission(menuCode)?.canDelete ?? false;
+  }
+
+  canExport(menuCode: string): boolean {
+    return this.getPermission(menuCode)?.canExport ?? false;
+  }
+
+  /**
+   * Common rights check for any menu action.
+   * Use for show/hide and before navigate/redirect to another module.
+   */
+  canAccess(
+    menuCode: string,
+    action: 'view' | 'add' | 'edit' | 'delete' | 'export' = 'view',
+  ): boolean {
+    switch (action) {
+      case 'add':
+        return this.canAdd(menuCode);
+      case 'edit':
+        return this.canEdit(menuCode);
+      case 'delete':
+        return this.canDelete(menuCode);
+      case 'export':
+        return this.canExport(menuCode);
+      case 'view':
+      default:
+        return this.canView(menuCode);
+    }
+  }
+
+  /**
+   * Whether deep-links / cross-module redirects to this menu may be shown or followed.
+   * Prefer this over raw `canView` at UI link call sites.
+   */
+  canOpenMenuLink(menuCode: string): boolean {
+    return this.canAccess(menuCode, 'view');
+  }
+
   private hasMenuInTree(menuCode: string): boolean {
     const code = canonicalMenuCode(menuCode);
     const walk = (items: IMenu[]): boolean =>
@@ -100,14 +147,6 @@ export class PermissionService {
         return walk(item.children ?? []);
       });
     return walk(this.menus);
-  }
-
-  canAdd(menuCode: string): boolean {
-    return this.getPermission(menuCode)?.canAdd ?? false;
-  }
-
-  canEdit(menuCode: string): boolean {
-    return this.getPermission(menuCode)?.canEdit ?? false;
   }
 
   private hasStoredToken(): boolean {
@@ -200,13 +239,5 @@ export class PermissionService {
       displayOrder: Number(raw['displayOrder'] ?? raw['DisplayOrder'] ?? 0),
       children: children.map((c) => this.normalizeMenu(c)),
     };
-  }
-
-  canDelete(menuCode: string): boolean {
-    return this.getPermission(menuCode)?.canDelete ?? false;
-  }
-
-  canExport(menuCode: string): boolean {
-    return this.getPermission(menuCode)?.canExport ?? false;
   }
 }

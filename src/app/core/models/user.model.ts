@@ -8,4 +8,5 @@ export interface User {
   roles?: string[];
   roleId?: string;
   token?: string;
+  mustChangePassword?: boolean;
 }

@@ -35,6 +35,12 @@
             }
           </td>
         </tr>
+        @if (detail.publishedOn) {
+          <tr>
+            <th>Published on</th>
+            <td>{{ formatPublishedOn(detail.publishedOn) }}</td>
+          </tr>
+        }
         @if (detail.responseDeadline) {
           <tr>
             <th>Response deadline</th>

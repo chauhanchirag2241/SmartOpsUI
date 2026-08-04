@@ -11,7 +11,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { finalize } from 'rxjs';
 
-import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { MenuCodes } from '../../../core/constants/menu-codes';
@@ -33,16 +32,16 @@ import {
   isExcelFile,
 } from '../shared/bulk-import-file.util';
 import type {
+  EmployeeImportCommitResult,
+  EmployeeImportValidateResult,
   ImportRowResult,
-  StudentImportCommitResult,
-  StudentImportValidateResult,
 } from '../shared/bulk-import.models';
-import { StudentImportService } from './student-import.service';
+import { EmployeeImportService } from './employee-import.service';
 
 type IssueCount = { label: string; count: number };
 
 @Component({
-  selector: 'app-student-bulk-import',
+  selector: 'app-employee-bulk-import',
   standalone: true,
   imports: [
     CommonModule,
@@ -52,42 +51,36 @@ type IssueCount = { label: string; count: number };
     SmartDataTableComponent,
     ProgressBarComponent,
   ],
-  templateUrl: './student-bulk-import.component.html',
+  templateUrl: './employee-bulk-import.component.html',
   styleUrl: '../shared/bulk-import-page.css',
 })
-export class StudentBulkImportComponent {
+export class EmployeeBulkImportComponent {
   @ViewChild(FileUploadComponent) private fileUpload?: FileUploadComponent;
   @ViewChild('summaryCard') private summaryCard?: ElementRef<HTMLElement>;
 
-  private readonly importApi = inject(StudentImportService);
-  private readonly ayContext = inject(AcademicYearContextService);
+  private readonly importApi = inject(EmployeeImportService);
   private readonly notify = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
   readonly permissionService = inject(PermissionService);
 
-  readonly menuCode = MenuCodes.StudentBulkImport;
+  readonly menuCode = MenuCodes.EmployeeBulkImport;
 
   selectedFile: File | null = null;
   validating = false;
   importing = false;
-  validation: StudentImportValidateResult | null = null;
-  commitResult: StudentImportCommitResult | null = null;
+  validation: EmployeeImportValidateResult | null = null;
+  commitResult: EmployeeImportCommitResult | null = null;
 
-  invalidStudentRows: ImportRowResult[] = [];
-  invalidFeeRows: ImportRowResult[] = [];
-  studentTableData: Record<string, unknown>[] = [];
-  feeTableData: Record<string, unknown>[] = [];
+  invalidRows: ImportRowResult[] = [];
+  employeeTableData: Record<string, unknown>[] = [];
   failureTableData: Record<string, unknown>[] = [];
   importedTableData: Record<string, unknown>[] = [];
   commonIssues: IssueCount[] = [];
-
-  /** Post-import result tabs: failures | imported (active/inactive). */
   importResultTab: 'failures' | 'imported' = 'failures';
 
-  studentTableConfig!: DataTableConfig;
-  feeTableConfig!: DataTableConfig;
+  employeeTableConfig!: DataTableConfig;
   failureTableConfig!: DataTableConfig;
   importedTableConfig!: DataTableConfig;
 
@@ -100,23 +93,9 @@ export class StudentBulkImportComponent {
     String(row['status'] ?? '') === 'Inactive' ? 'row-inactive' : '';
 
   constructor() {
-    this.studentTableConfig = this.buildStudentTableConfig();
-    this.feeTableConfig = this.buildFeeTableConfig();
+    this.employeeTableConfig = this.buildEmployeeTableConfig();
     this.failureTableConfig = this.buildFailureTableConfig();
     this.importedTableConfig = this.buildImportedTableConfig();
-  }
-
-  get academicYearLabel(): string {
-    const id = this.ayContext.effectiveYearId();
-    if (!id) return 'Not selected';
-    const fromDropdown = this.ayContext.dropdownYears().find((y) => y.id === id);
-    if (fromDropdown?.name) return fromDropdown.name;
-    const current = this.ayContext.currentYear();
-    return current?.title || id;
-  }
-
-  get academicYearId(): string | null {
-    return this.ayContext.effectiveYearId();
   }
 
   get canAdd(): boolean {
@@ -144,9 +123,9 @@ export class StudentBulkImportComponent {
 
   get progressSegments(): ProgressSegment[] {
     const v = this.validation;
-    if (!v || v.totalStudents < 1) return [];
-    const validPct = (v.validStudents / v.totalStudents) * 100;
-    const invalidPct = (v.invalidStudents / v.totalStudents) * 100;
+    if (!v || v.totalEmployees < 1) return [];
+    const validPct = (v.validEmployees / v.totalEmployees) * 100;
+    const invalidPct = (v.invalidEmployees / v.totalEmployees) * 100;
     return [
       { percent: validPct, tone: 'success' },
       { percent: invalidPct, tone: 'danger' },
@@ -155,25 +134,24 @@ export class StudentBulkImportComponent {
 
   get progressLeftCaption(): string {
     const v = this.validation;
-    if (!v || v.totalStudents < 1) return '';
-    const pct = ((v.validStudents / v.totalStudents) * 100).toFixed(0);
-    return `${v.validStudents} valid (${pct}%)`;
+    if (!v || v.totalEmployees < 1) return '';
+    const pct = ((v.validEmployees / v.totalEmployees) * 100).toFixed(0);
+    return `${v.validEmployees} valid (${pct}%)`;
   }
 
   get progressRightCaption(): string {
     const v = this.validation;
-    if (!v || v.totalStudents < 1) return '';
-    const pct = ((v.invalidStudents / v.totalStudents) * 100).toFixed(0);
-    return `${v.invalidStudents} invalid (${pct}%)`;
+    if (!v || v.totalEmployees < 1) return '';
+    const pct = ((v.invalidEmployees / v.totalEmployees) * 100).toFixed(0);
+    return `${v.invalidEmployees} invalid (${pct}%)`;
   }
 
   get canImport(): boolean {
     return (
       !!this.validation &&
       !this.validation.fileError &&
-      this.validation.invalidStudents === 0 &&
-      this.validation.invalidFeeAssignments === 0 &&
-      (this.validation.validStudents > 0 || this.validation.validFeeAssignments > 0) &&
+      this.validation.invalidEmployees === 0 &&
+      this.validation.validEmployees > 0 &&
       !this.importing &&
       !this.validating &&
       this.canAdd
@@ -207,7 +185,7 @@ export class StudentBulkImportComponent {
   downloadTemplate(): void {
     this.importApi.downloadTemplate().subscribe({
       next: (blob) => {
-        downloadBlob(blob, 'student-import-template.xlsx');
+        downloadBlob(blob, 'employee-import-template.xlsx');
         this.notify.success('Template downloaded');
       },
       error: () => this.notify.error('Failed to download template.'),
@@ -219,18 +197,13 @@ export class StudentBulkImportComponent {
       this.notify.error('Select an Excel file first.');
       return;
     }
-    const yearId = this.academicYearId;
-    if (!yearId) {
-      this.notify.error('Select an academic year in Settings / header first.');
-      return;
-    }
 
     this.validating = true;
     this.commitResult = null;
     this.refreshView();
 
     this.importApi
-      .validate(this.selectedFile, yearId)
+      .validate(this.selectedFile)
       .pipe(
         finalize(() => {
           this.validating = false;
@@ -245,11 +218,9 @@ export class StudentBulkImportComponent {
             return;
           }
           this.notify.success(
-            `Validated: ${this.validation?.validStudents ?? 0} valid, ${this.validation?.invalidStudents ?? 0} invalid students.`,
+            `Validated: ${this.validation?.validEmployees ?? 0} valid, ${this.validation?.invalidEmployees ?? 0} invalid employees.`,
           );
-          queueMicrotask(() =>
-            this.summaryCard?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-          );
+          setTimeout(() => this.summaryCard?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
         },
         error: (err) => {
           this.clearValidationState();
@@ -265,27 +236,22 @@ export class StudentBulkImportComponent {
       this.notify.error('No error file available.');
       return;
     }
-    downloadBase64File(v.errorFileBase64, v.errorFileName || 'student-import-errors.xlsx');
+    downloadBase64File(v.errorFileBase64, v.errorFileName || 'employee-import-errors.xlsx');
     this.notify.success('Error file downloaded');
   }
 
-  importValid(): void {
+  importAll(): void {
     if (!this.selectedFile || !this.canImport || !this.validation) {
       this.notify.error('Import is only allowed when the entire file is valid.');
       return;
     }
-    const yearId = this.academicYearId;
-    if (!yearId) {
-      this.notify.error('Select an academic year in Settings / header first.');
-      return;
-    }
 
-    const totalStudents = this.validation.totalStudents;
+    const total = this.validation.totalEmployees;
     const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
       data: {
-        title: 'Import students?',
+        title: 'Import employees?',
         description: 'Only valid records will be saved. Do you want to continue?',
-        recordName: `${totalStudents} student record${totalStudents === 1 ? '' : 's'}`,
+        recordName: `${total} employee record${total === 1 ? '' : 's'}`,
         recordMeta: 'Entire file is valid — all rows will be imported',
         initials: 'IM',
         warningMessage: 'Do you want to continue?',
@@ -300,18 +266,18 @@ export class StudentBulkImportComponent {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (!confirmed) return;
-      this.runCommit(yearId);
+      this.runCommit();
     });
   }
 
-  private runCommit(yearId: string): void {
+  private runCommit(): void {
     if (!this.selectedFile) return;
 
     this.importing = true;
     this.refreshView();
 
     this.importApi
-      .commit(this.selectedFile, yearId)
+      .commit(this.selectedFile)
       .pipe(
         finalize(() => {
           this.importing = false;
@@ -330,12 +296,7 @@ export class StudentBulkImportComponent {
             return;
           }
           this.applyCommitResult(this.commitResult);
-          this.notify.success(
-            `Imported ${this.commitResult.createdStudents} students` +
-              (this.commitResult.feeAssignmentsApplied
-                ? `, ${this.commitResult.feeAssignmentsApplied} fee assignments.`
-                : '.'),
-          );
+          this.notify.success(`Imported ${this.commitResult.createdEmployees} employees.`);
           this.refreshView();
         },
         error: (err) => {
@@ -345,11 +306,11 @@ export class StudentBulkImportComponent {
       });
   }
 
-  private applyCommitResult(result: StudentImportCommitResult): void {
+  private applyCommitResult(result: EmployeeImportCommitResult): void {
     this.failureTableData = (result.failures ?? []).map((f, i) => ({
       id: `fail-${f.rowNumber ?? i}`,
       rowNumber: f.rowNumber ?? '—',
-      admissionNo: f.admissionNo || '—',
+      employeeCode: f.employeeCode || '—',
       name: f.displayName || '—',
       status: 'Invalid',
       errors: f.message || '',
@@ -357,52 +318,34 @@ export class StudentBulkImportComponent {
     this.importedTableData = (result.created ?? []).map((c, i) => ({
       id: `ok-${c.rowNumber ?? i}`,
       rowNumber: c.rowNumber ?? '—',
-      admissionNo: c.admissionNo || '—',
+      employeeCode: c.employeeCode || '—',
       name: c.displayName || '—',
       username: c.username || '—',
       status: c.status === 'Inactive' ? 'Inactive' : 'Active',
     }));
-    this.importResultTab =
-      this.failureTableData.length > 0 && this.importedTableData.length === 0
-        ? 'failures'
-        : this.failureTableData.length > 0
-          ? 'failures'
-          : 'imported';
-    // Hide pre-import validation grids after a successful commit.
-    this.studentTableData = [];
-    this.feeTableData = [];
+    this.importResultTab = this.failureTableData.length > 0 ? 'failures' : 'imported';
+    this.employeeTableData = [];
   }
 
-  private applyValidation(result: StudentImportValidateResult): void {
+  private applyValidation(result: EmployeeImportValidateResult): void {
     this.validation = result;
-    this.invalidStudentRows = (result.students ?? []).filter((r) => r.status !== 'Valid');
-    this.invalidFeeRows = (result.feeAssignments ?? []).filter((r) => r.status !== 'Valid');
-    this.studentTableData = (result.students ?? []).map((r) => ({
-      id: `s-${r.rowNumber}`,
+    this.invalidRows = (result.employees ?? []).filter((r) => r.status !== 'Valid');
+    this.employeeTableData = (result.employees ?? []).map((r) => ({
+      id: `e-${r.rowNumber}`,
       rowNumber: r.rowNumber,
-      admissionNo: r.admissionNo || '—',
+      employeeCode: r.employeeCode || '—',
       name: r.displayName || '—',
       status: r.status === 'Valid' ? 'Valid' : 'Invalid',
       errors: r.status === 'Valid' ? '' : (r.errors ?? []).join(', '),
     }));
-    this.feeTableData = (result.feeAssignments ?? []).map((r) => ({
-      id: `f-${r.rowNumber}`,
-      rowNumber: r.rowNumber,
-      admissionNo: r.admissionNo || '—',
-      feeMaster: r.displayName || '—',
-      status: r.status === 'Valid' ? 'Valid' : 'Invalid',
-      errors: r.status === 'Valid' ? '' : (r.errors ?? []).join(', '),
-    }));
-    this.commonIssues = this.buildCommonIssues(this.invalidStudentRows);
+    this.commonIssues = this.buildCommonIssues(this.invalidRows);
     this.refreshView();
   }
 
   private clearValidationState(): void {
     this.validation = null;
-    this.invalidStudentRows = [];
-    this.invalidFeeRows = [];
-    this.studentTableData = [];
-    this.feeTableData = [];
+    this.invalidRows = [];
+    this.employeeTableData = [];
     this.failureTableData = [];
     this.importedTableData = [];
     this.commonIssues = [];
@@ -421,18 +364,18 @@ export class StudentBulkImportComponent {
     return [...counts.entries()]
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+      .slice(0, 8);
   }
 
   private refreshView(): void {
     this.ngZone.run(() => this.cdr.detectChanges());
   }
 
-  private buildStudentTableConfig(): DataTableConfig {
+  private buildEmployeeTableConfig(): DataTableConfig {
     return {
       header: {
         title: 'Validation results',
-        subtitle: 'All rows from the Students sheet — invalid rows are highlighted in red',
+        subtitle: 'All rows from the Employees sheet — invalid rows are highlighted in red',
         showAddButton: false,
         syncPageChrome: false,
       },
@@ -449,7 +392,7 @@ export class StudentBulkImportComponent {
             Invalid: { cssClass: 'b-red', label: 'Invalid' },
           },
         },
-        { key: 'admissionNo', label: 'Admission No', sortable: true },
+        { key: 'employeeCode', label: 'Employee code', sortable: true },
         { key: 'name', label: 'Name', sortable: true },
         { key: 'errors', label: 'Error messages', sortable: false, cellType: 'custom' },
       ],
@@ -471,65 +414,11 @@ export class StudentBulkImportComponent {
       filtersInPanel: false,
       actions: [],
       bulkActions: [],
-      searchPlaceholder: 'Search admission no or name...',
-      searchKeys: ['admissionNo', 'name', 'errors', 'status'],
+      searchPlaceholder: 'Search employee code or name...',
+      searchKeys: ['employeeCode', 'name', 'errors', 'status'],
       itemLabel: 'rows',
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100],
-      selectable: false,
-      showExport: false,
-      showColumnToggle: false,
-    };
-  }
-
-  private buildFeeTableConfig(): DataTableConfig {
-    return {
-      header: {
-        title: 'Fee assignment results',
-        subtitle: 'All rows from the FeeAssignments sheet — invalid rows are highlighted in red',
-        showAddButton: false,
-        syncPageChrome: false,
-      },
-      columns: [
-        { key: 'rowNumber', label: 'Row', sortable: true, width: '80px' },
-        {
-          key: 'status',
-          label: 'Status',
-          sortable: true,
-          width: '110px',
-          cellType: 'badge',
-          badgeMap: {
-            Valid: { cssClass: 'b-green', label: 'Valid' },
-            Invalid: { cssClass: 'b-red', label: 'Invalid' },
-          },
-        },
-        { key: 'admissionNo', label: 'Admission No', sortable: true },
-        { key: 'feeMaster', label: 'Fee master', sortable: true },
-        { key: 'errors', label: 'Error messages', sortable: false, cellType: 'custom' },
-      ],
-      filters: [
-        { label: 'All', icon: 'list', value: 'all' },
-        {
-          label: 'Valid',
-          icon: 'check_circle',
-          value: 'valid',
-          filterFn: (row) => String(row['status'] ?? '') === 'Valid',
-        },
-        {
-          label: 'Invalid',
-          icon: 'error',
-          value: 'invalid',
-          filterFn: (row) => String(row['status'] ?? '') !== 'Valid',
-        },
-      ],
-      filtersInPanel: false,
-      actions: [],
-      bulkActions: [],
-      searchPlaceholder: 'Search admission no or fee...',
-      searchKeys: ['admissionNo', 'feeMaster', 'errors', 'status'],
-      itemLabel: 'rows',
-      defaultPageSize: 10,
-      pageSizeOptions: [10, 25, 50],
       selectable: false,
       showExport: false,
       showColumnToggle: false,
@@ -552,11 +441,9 @@ export class StudentBulkImportComponent {
           sortable: true,
           width: '110px',
           cellType: 'badge',
-          badgeMap: {
-            Invalid: { cssClass: 'b-red', label: 'Invalid' },
-          },
+          badgeMap: { Invalid: { cssClass: 'b-red', label: 'Invalid' } },
         },
-        { key: 'admissionNo', label: 'Admission No', sortable: true },
+        { key: 'employeeCode', label: 'Employee code', sortable: true },
         { key: 'name', label: 'Name', sortable: true },
         { key: 'errors', label: 'Error messages', sortable: false, cellType: 'custom' },
       ],
@@ -564,8 +451,8 @@ export class StudentBulkImportComponent {
       filtersInPanel: false,
       actions: [],
       bulkActions: [],
-      searchPlaceholder: 'Search admission no or name...',
-      searchKeys: ['admissionNo', 'name', 'errors'],
+      searchPlaceholder: 'Search employee code or name...',
+      searchKeys: ['employeeCode', 'name', 'errors'],
       itemLabel: 'failures',
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50],
@@ -578,7 +465,7 @@ export class StudentBulkImportComponent {
   private buildImportedTableConfig(): DataTableConfig {
     return {
       header: {
-        title: 'Imported students',
+        title: 'Imported employees',
         subtitle: 'Successfully imported records (Active / Inactive)',
         showAddButton: false,
         syncPageChrome: false,
@@ -596,7 +483,7 @@ export class StudentBulkImportComponent {
             Inactive: { cssClass: 'b-red', label: 'Inactive' },
           },
         },
-        { key: 'admissionNo', label: 'Admission No', sortable: true },
+        { key: 'employeeCode', label: 'Employee code', sortable: true },
         { key: 'name', label: 'Name', sortable: true },
         { key: 'username', label: 'Username', sortable: true },
       ],
@@ -618,9 +505,9 @@ export class StudentBulkImportComponent {
       filtersInPanel: false,
       actions: [],
       bulkActions: [],
-      searchPlaceholder: 'Search admission no, name or username...',
-      searchKeys: ['admissionNo', 'name', 'username', 'status'],
-      itemLabel: 'students',
+      searchPlaceholder: 'Search code, name or username...',
+      searchKeys: ['employeeCode', 'name', 'username', 'status'],
+      itemLabel: 'employees',
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100],
       selectable: false,
@@ -629,42 +516,32 @@ export class StudentBulkImportComponent {
     };
   }
 
-  private normalizeValidate(raw: any): StudentImportValidateResult {
+  private normalizeValidate(raw: any): EmployeeImportValidateResult {
     return {
       fileError: raw.fileError ?? raw.FileError ?? null,
-      academicYearId: raw.academicYearId ?? raw.AcademicYearId ?? null,
-      academicYearName: raw.academicYearName ?? raw.AcademicYearName ?? null,
-      totalStudents: Number(raw.totalStudents ?? raw.TotalStudents ?? 0),
-      validStudents: Number(raw.validStudents ?? raw.ValidStudents ?? 0),
-      invalidStudents: Number(raw.invalidStudents ?? raw.InvalidStudents ?? 0),
-      totalFeeAssignments: Number(raw.totalFeeAssignments ?? raw.TotalFeeAssignments ?? 0),
-      validFeeAssignments: Number(raw.validFeeAssignments ?? raw.ValidFeeAssignments ?? 0),
-      invalidFeeAssignments: Number(raw.invalidFeeAssignments ?? raw.InvalidFeeAssignments ?? 0),
-      students: this.normalizeRows(raw.students ?? raw.Students),
-      feeAssignments: this.normalizeRows(raw.feeAssignments ?? raw.FeeAssignments),
+      totalEmployees: Number(raw.totalEmployees ?? raw.TotalEmployees ?? 0),
+      validEmployees: Number(raw.validEmployees ?? raw.ValidEmployees ?? 0),
+      invalidEmployees: Number(raw.invalidEmployees ?? raw.InvalidEmployees ?? 0),
+      employees: this.normalizeRows(raw.employees ?? raw.Employees),
       errorFileBase64: raw.errorFileBase64 ?? raw.ErrorFileBase64 ?? null,
-      errorFileName: raw.errorFileName ?? raw.ErrorFileName ?? 'student-import-errors.xlsx',
+      errorFileName: raw.errorFileName ?? raw.ErrorFileName ?? 'employee-import-errors.xlsx',
     };
   }
 
-  private normalizeCommit(raw: any): StudentImportCommitResult {
+  private normalizeCommit(raw: any): EmployeeImportCommitResult {
     return {
       fileError: raw.fileError ?? raw.FileError ?? null,
-      createdStudents: Number(raw.createdStudents ?? raw.CreatedStudents ?? 0),
-      feeAssignmentsApplied: Number(raw.feeAssignmentsApplied ?? raw.FeeAssignmentsApplied ?? 0),
-      skippedInvalidStudents: Number(raw.skippedInvalidStudents ?? raw.SkippedInvalidStudents ?? 0),
-      skippedInvalidFeeAssignments: Number(
-        raw.skippedInvalidFeeAssignments ?? raw.SkippedInvalidFeeAssignments ?? 0,
-      ),
+      createdEmployees: Number(raw.createdEmployees ?? raw.CreatedEmployees ?? 0),
+      skippedInvalidEmployees: Number(raw.skippedInvalidEmployees ?? raw.SkippedInvalidEmployees ?? 0),
       failures: (raw.failures ?? raw.Failures ?? []).map((f: any) => ({
         rowNumber: f.rowNumber ?? f.RowNumber ?? null,
-        admissionNo: f.admissionNo ?? f.AdmissionNo ?? null,
+        employeeCode: f.employeeCode ?? f.EmployeeCode ?? null,
         displayName: f.displayName ?? f.DisplayName ?? null,
         message: f.message ?? f.Message ?? '',
       })),
       created: (raw.created ?? raw.Created ?? []).map((c: any) => ({
         rowNumber: c.rowNumber ?? c.RowNumber ?? null,
-        admissionNo: c.admissionNo ?? c.AdmissionNo ?? null,
+        employeeCode: c.employeeCode ?? c.EmployeeCode ?? null,
         displayName: c.displayName ?? c.DisplayName ?? null,
         username: c.username ?? c.Username ?? null,
         status: c.status ?? c.Status ?? 'Active',
@@ -679,7 +556,7 @@ export class StudentBulkImportComponent {
     if (!Array.isArray(rows)) return [];
     return rows.map((r) => ({
       rowNumber: Number(r.rowNumber ?? r.RowNumber ?? 0),
-      admissionNo: r.admissionNo ?? r.AdmissionNo ?? null,
+      employeeCode: r.employeeCode ?? r.EmployeeCode ?? null,
       displayName: r.displayName ?? r.DisplayName ?? null,
       status: r.status ?? r.Status ?? 'Invalid',
       errors: r.errors ?? r.Errors ?? [],

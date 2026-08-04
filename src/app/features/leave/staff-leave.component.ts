@@ -1,6 +1,8 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { MenuCodes } from '../../core/constants/menu-codes';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
+import { LeaveBalanceDto, LeaveBalanceService } from '../../core/services/leave-balance.service';
 import { LeaveService } from '../../core/services/leave.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -13,15 +15,27 @@ import { ApplyStaffLeaveComponent } from './apply-staff-leave.component';
 import { asLeaveArray, leaveItemsToTableRows } from './leave.shared';
 import { canAddInScope } from './workflow-page.util';
 
+interface LeaveBalanceCard {
+  leaveTypeId: string;
+  leaveTypeName: string;
+  available: number;
+  used: number;
+  accrued: number;
+  icon: string;
+}
+
+const LEAVE_TYPE_ICONS = ['event_available', 'local_hospital', 'beach_access', 'flight_takeoff', 'self_improvement'];
+
 @Component({
   selector: 'app-staff-leave',
   standalone: true,
-  imports: [SmartDataTableComponent, ScopeReadonlyLockComponent, ApplyStaffLeaveComponent],
+  imports: [MatIconModule, SmartDataTableComponent, ScopeReadonlyLockComponent, ApplyStaffLeaveComponent],
   templateUrl: './staff-leave.component.html',
   styleUrl: './staff-leave.component.css',
 })
 export class StaffLeaveComponent implements OnInit {
   private readonly leaveService = inject(LeaveService);
+  private readonly balanceService = inject(LeaveBalanceService);
   private readonly notify = inject(NotificationService);
   private readonly ayContext = inject(AcademicYearContextService);
   private readonly permissionService = inject(PermissionService);
@@ -31,6 +45,7 @@ export class StaffLeaveComponent implements OnInit {
   tableRows: Record<string, unknown>[] = [];
   currentFilter = 'All';
   showApplyForm = false;
+  balances: LeaveBalanceDto[] = [];
 
   private readonly baseTableConfig: DataTableConfig = {
     header: {
@@ -104,9 +119,29 @@ export class StaffLeaveComponent implements OnInit {
     showExport: false,
   };
 
+  get balanceCards(): LeaveBalanceCard[] {
+    return this.balances.map((b, i) => ({
+      leaveTypeId: b.leaveTypeId,
+      leaveTypeName: b.leaveTypeName?.trim() || b.leaveTypeCode?.trim() || 'Leave',
+      available: Number(b.closingBalance ?? 0),
+      used: Number(b.used ?? 0),
+      accrued: Number(b.accrued ?? 0),
+      icon: LEAVE_TYPE_ICONS[i % LEAVE_TYPE_ICONS.length],
+    }));
+  }
+
+  get totalAvailable(): number {
+    return this.balances.reduce((sum, b) => sum + Number(b.closingBalance ?? 0), 0);
+  }
+
+  get totalUsed(): number {
+    return this.balances.reduce((sum, b) => sum + Number(b.used ?? 0), 0);
+  }
+
   ngOnInit(): void {
     this.tableConfig = this.buildTableConfig();
     this.load();
+    this.loadBalances();
   }
 
   load(): void {
@@ -117,6 +152,20 @@ export class StaffLeaveComponent implements OnInit {
       },
       error: (err) => {
         this.notify.error(typeof err?.error === 'string' ? err.error : 'Failed to load leave requests');
+        refreshUi(this.cdr);
+      },
+    });
+  }
+
+  loadBalances(): void {
+    this.balanceService.getMine().subscribe({
+      next: (rows) => {
+        this.balances = Array.isArray(rows) ? rows : [];
+        refreshUi(this.cdr);
+      },
+      error: () => {
+        // Admin / users without an employee profile — hide cards quietly.
+        this.balances = [];
         refreshUi(this.cdr);
       },
     });
@@ -136,10 +185,20 @@ export class StaffLeaveComponent implements OnInit {
   onApplySaved(): void {
     this.showApplyForm = false;
     this.load();
+    this.loadBalances();
   }
 
   onFilterChanged(filter: DataTableFilter | null): void {
     this.currentFilter = filter?.value ?? 'All';
+  }
+
+  formatDays(value: number): string {
+    const n = Number(value) || 0;
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  }
+
+  cardTone(index: number): string {
+    return String(index % 5);
   }
 
   private buildTableConfig(): DataTableConfig {

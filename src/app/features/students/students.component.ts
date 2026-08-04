@@ -75,6 +75,10 @@ export class StudentsComponent implements OnInit {
     return this.selectedClassIds.length > 0;
   }
 
+  get currentPageIndex(): number {
+    return this.listState.pageIndex;
+  }
+
   ngOnInit(): void {
     this.tableConfig = this.buildTableConfig();
     this.loadClassOptions();

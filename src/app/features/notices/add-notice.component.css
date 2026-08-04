@@ -1,3 +1,7 @@
+.form-hint.full {
+  grid-column: 1 / -1;
+}
+
 .q-card {
   background: var(--card);
   border: 0.5px solid var(--border-color);
@@ -8,31 +12,9 @@
 
 .q-row {
   display: grid;
-  grid-template-columns: 1fr 200px;
+  grid-template-columns: 1fr minmax(180px, 220px);
   gap: 12px;
   align-items: start;
-}
-
-.q-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  font-size: 13px;
-  border: 0.5px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--input-bg);
-  color: var(--text-primary);
-}
-
-.type-select {
-  padding: 10px 12px;
-  font-size: 13px;
-  border: 0.5px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  color: var(--text-primary);
-  min-width: 170px;
-  cursor: pointer;
 }
 
 .q-meta {
@@ -44,19 +26,21 @@
   gap: 8px;
 }
 
-.req-label {
+.checkbox-inline {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
 }
 
-.req-label input[type='checkbox'] {
+.checkbox-inline input[type='checkbox'] {
   accent-color: var(--primary-color);
   cursor: pointer;
+  width: 16px;
+  height: 16px;
 }
 
 .remove-btn {
@@ -66,6 +50,7 @@
   background: none;
   border: none;
   padding: 0;
+  font-family: inherit;
 }
 
 .remove-btn:hover {
@@ -78,13 +63,16 @@
   background: var(--input-bg);
   border-radius: var(--radius-md);
   border: 0.5px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .mcq-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .mcq-label {
@@ -97,9 +85,13 @@
 
 .mcq-option-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  margin-bottom: 8px;
+}
+
+.mcq-option-row app-form-field {
+  flex: 1;
+  min-width: 0;
 }
 
 .mcq-dot {
@@ -109,40 +101,15 @@
   border: 1.5px solid var(--border-color);
   flex-shrink: 0;
   background: var(--card);
+  margin-top: 12px;
 }
 
 .mcq-correct {
   width: 16px;
   height: 16px;
   accent-color: var(--primary-color);
-}
-
-.mcq-input {
-  flex: 1;
-  padding: 8px 10px;
-  font-size: 13px;
-  border: 0.5px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--card);
-  color: var(--text-primary);
-}
-
-.add-option-btn {
-  background: none;
-  border: none;
-  font-size: 12px;
-  color: var(--g600);
-  cursor: pointer;
-  padding: 4px 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-}
-
-.add-option-btn:hover {
-  color: var(--g400);
-  text-decoration: underline;
+  flex-shrink: 0;
+  margin-top: 12px;
 }
 
 .remove-opt-btn {
@@ -150,49 +117,19 @@
   border: none;
   cursor: pointer;
   color: var(--text-secondary);
-  padding: 0 6px;
+  padding: 8px 6px 0;
   font-size: 18px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .remove-opt-btn:hover {
   color: var(--danger-color);
 }
 
-.add-question-btn {
-  width: 100%;
-  margin-top: 4px;
-  padding: 11px 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  color: var(--secondary-color);
-  background: var(--card);
-  border: 0.5px solid var(--border-color);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.add-question-btn mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  color: var(--primary-color);
-}
-
-.add-question-btn:hover {
-  background: var(--hover);
-  border-color: var(--primary-color);
-  color: var(--g800);
-}
-
-.add-question-btn:active {
-  background: var(--g50);
+.add-question-wrap {
+  margin-top: 8px;
+  display: flex;
 }
 
 @media (max-width: 900px) {
@@ -200,4 +137,3 @@
     grid-template-columns: 1fr;
   }
 }
-

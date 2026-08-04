@@ -32,6 +32,8 @@ import { AvatarColorService } from '../../services/avatar-color.service';
 import { isInsideFilterDrop, isNativeSelectInteraction } from '../../utils/filter-panel.util';
 import { naturalTextCompare } from '../../utils/natural-sort.util';
 import { DateRangeFilterComponent } from '../date-range-filter/date-range-filter.component';
+import { FormFieldComponent } from '../../form-controls/form-field';
+import type { FormFieldOption } from '../../form-controls/form-field';
 import { AcademicYearContextService } from '../../../core/services/academic-year-context.service';
 import { PageChromeService } from '../../../core/services/page-chrome.service';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -41,7 +43,15 @@ import { formatDateOnlyDisplay } from '../../utils/date-only.util';
 @Component({
   selector: 'app-smart-data-table',
   standalone: true,
-  imports: [NgClass, NgStyle, NgTemplateOutlet, FormsModule, MatIconModule, DatePipe],
+  imports: [
+    NgClass,
+    NgStyle,
+    NgTemplateOutlet,
+    FormsModule,
+    MatIconModule,
+    DatePipe,
+    FormFieldComponent,
+  ],
   templateUrl: './smart-data-table.component.html',
   styleUrl: './smart-data-table.component.css',
 })
@@ -71,6 +81,12 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Enable server-side pagination/filtering */
   @Input() serverSide = false;
+
+  /**
+   * Optional 1-based page index from the parent (server-side).
+   * Keeps the table in sync when it remounts after edit/view forms.
+   */
+  @Input() pageIndex?: number;
 
   /** Optional: callback to determine custom CSS class for a row */
   @Input() rowClassFn?: (row: Record<string, unknown>) => string;
@@ -170,11 +186,23 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   ctxMenuRowIndex = -1;
 
   get ctxMenuRow(): Record<string, unknown> {
-    if (this.ctxMenuRowIndex < 0 || this.ctxMenuRowIndex >= this.pagedData.length) {
-      return {};
+    return this.resolvePageRow(this.ctxMenuRowIndex) ?? {};
+  }
+
+  /** Row for the current page slice (server-side) or global filtered list (client-side). */
+  private resolvePageRow(pageRowIndex: number): Record<string, unknown> | undefined {
+    if (pageRowIndex < 0 || pageRowIndex >= this.pagedData.length) {
+      return undefined;
     }
-    const globalIdx = (this.currentPage - 1) * this.pageSize + this.ctxMenuRowIndex;
-    return this.filteredData[globalIdx] ?? {};
+    if (this.serverSide) {
+      return this.pagedData[pageRowIndex];
+    }
+    const globalIdx = (this.currentPage - 1) * this.pageSize + pageRowIndex;
+    return this.filteredData[globalIdx];
+  }
+
+  private resolveGlobalRowIndex(pageRowIndex: number): number {
+    return (this.currentPage - 1) * this.pageSize + pageRowIndex;
   }
 
   get visibleColumns(): DataTableColumn[] {
@@ -253,6 +281,11 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
     return this.config?.pageSizeOptions ?? [10, 25, 50, 100];
   }
 
+  /** Themed select options for rows-per-page (uses shared app-form-field / mat-select). */
+  get pageSizeSelectOptions(): FormFieldOption[] {
+    return this.pageSizeOptions.map((opt) => ({ label: String(opt), value: opt }));
+  }
+
   trackPagedRow(i: number, row: Record<string, unknown>): string {
     const id =
       row['id'] ??
@@ -295,7 +328,11 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   ngOnInit(): void {
     this.refreshUiConfig();
     this.initDefaults();
-    this.applyFilters();
+    if (this.serverSide) {
+      this.syncServerPageState();
+    } else {
+      this.applyFilters();
+    }
     this.syncPageChrome();
 
     this.permissionService.permissions$
@@ -310,13 +347,10 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['config']) {
       this.refreshUiConfig();
     }
-    if (changes['data'] || changes['config'] || changes['totalRecords']) {
+    if (changes['data'] || changes['config'] || changes['totalRecords'] || changes['pageIndex']) {
       this.initDefaults();
       if (this.serverSide) {
-        this.filteredData = this.data;
-        this.pagedData = this.data;
-        this.totalPages = Math.max(1, Math.ceil(this.totalRecords / this.pageSize));
-        this.updateSelectionState();
+        this.syncServerPageState();
       } else {
         this.applyFilters();
       }
@@ -331,6 +365,18 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.pageChrome.clear(this);
+  }
+
+  /** Apply parent-owned page slice + totalPages (never derive pages from data.length). */
+  private syncServerPageState(): void {
+    this.filteredData = this.data;
+    this.pagedData = this.data;
+    this.totalPages = Math.max(1, Math.ceil(this.totalRecords / this.pageSize));
+    if (this.pageIndex != null && this.pageIndex >= 1) {
+      this.currentPage = this.pageIndex;
+    }
+    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+    this.updateSelectionState();
   }
 
   private refreshUiConfig(): void {
@@ -439,6 +485,12 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   applyFilters(): void {
+    // Server-side: parent owns paging/filtering; never derive totalPages from the page slice.
+    if (this.serverSide) {
+      this.syncServerPageState();
+      return;
+    }
+
     let rows = [...this.data];
 
     // Apply active filter (skip first "All" filter if it has no filterFn)
@@ -552,6 +604,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   getSelectedRows(): Record<string, unknown>[] {
+    if (this.serverSide) {
+      const pageStart = (this.currentPage - 1) * this.pageSize;
+      return Array.from(this.selectedRows)
+        .filter((i) => i >= pageStart && i < pageStart + this.pagedData.length)
+        .map((i) => this.pagedData[i - pageStart])
+        .filter((row): row is Record<string, unknown> => !!row);
+    }
     return Array.from(this.selectedRows)
       .filter((i) => i < this.filteredData.length)
       .map((i) => this.filteredData[i]);
@@ -702,8 +761,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private estimateContextMenuHeight(rowIndex: number): number {
-    const globalIdx = (this.currentPage - 1) * this.pageSize + rowIndex;
-    const row = this.filteredData[globalIdx] ?? {};
+    const row = this.resolvePageRow(rowIndex) ?? {};
     const actions = (this.uiConfig.actions ?? []).filter(
       (action) => !this.uiConfig.actionVisibleFn || this.uiConfig.actionVisibleFn(action, row),
     );
@@ -721,22 +779,20 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
 
   onActionClick(action: DataTableAction): void {
     this.ctxMenuVisible = false;
-    if (this.ctxMenuRowIndex >= 0 && this.ctxMenuRowIndex < this.pagedData.length) {
-      const globalIdx = (this.currentPage - 1) * this.pageSize + this.ctxMenuRowIndex;
-      this.actionClicked.emit({
-        action,
-        row: this.filteredData[globalIdx],
-        rowIndex: globalIdx,
-      });
-    }
-  }
-
-  onInlineActionClick(action: DataTableAction, row: Record<string, unknown>, pageRowIndex: number): void {
-    const globalIdx = (this.currentPage - 1) * this.pageSize + pageRowIndex;
+    const row = this.resolvePageRow(this.ctxMenuRowIndex);
+    if (!row) return;
     this.actionClicked.emit({
       action,
       row,
-      rowIndex: globalIdx,
+      rowIndex: this.resolveGlobalRowIndex(this.ctxMenuRowIndex),
+    });
+  }
+
+  onInlineActionClick(action: DataTableAction, row: Record<string, unknown>, pageRowIndex: number): void {
+    this.actionClicked.emit({
+      action,
+      row,
+      rowIndex: this.resolveGlobalRowIndex(pageRowIndex),
     });
   }
 

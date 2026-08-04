@@ -8,6 +8,7 @@ import {
   inject,
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '../../../core/services/notification.service';
 import { forkJoin, switchMap } from 'rxjs';
@@ -20,7 +21,14 @@ import { PermissionService } from '../../../core/services/permission.service';
 import { TenantService } from '../../../core/services/tenant.service';
 import { RoleDto, RoleService } from '../../../core/services/role.service';
 import { SchoolUserDto, UserService } from '../../../core/services/user.service';
+import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
+import { DeleteConfirmDialogComponent } from '../../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { SmartDataTableComponent } from '../../../shared/components/smart-data-table';
+import type {
+  DataTableAction,
+  DataTableConfig,
+} from '../../../shared/components/smart-data-table';
 import { PageChromeDirective } from '../../../shared/directives/page-chrome.directive';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
@@ -43,19 +51,24 @@ import {
   setSubtreePermission,
 } from '../menu-permission-tree.util';
 import { getUserFacingApiError } from '../../../shared/utils/api-error.util';
-
-interface RoleUserRow {
-  id: string;
-  username: string;
-  email: string;
-  assigned: boolean;
-}
+import {
+  AssignRoleUsersDialogComponent,
+  AssignRoleUsersDialogData,
+} from '../assign-role-users-dialog/assign-role-users-dialog.component';
 
 @Component({
   selector: 'app-add-role',
   standalone: true,
   host: { class: 'add-role-page form-page-shell role-page' },
-  imports: [ReactiveFormsModule, MatIconModule, DynamicFieldComponent, ActionButtonComponent, PageChromeDirective],
+  imports: [
+    ReactiveFormsModule,
+    MatIconModule,
+    MatDialogModule,
+    DynamicFieldComponent,
+    ActionButtonComponent,
+    PageChromeDirective,
+    SmartDataTableComponent,
+  ],
   templateUrl: './add-role.component.html',
   styleUrl: './add-role.component.css',
 })
@@ -71,6 +84,7 @@ export class AddRoleComponent implements OnInit {
   private readonly tenant = inject(TenantService);
   private readonly permissionService = inject(PermissionService);
   private readonly snackBar = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
   private readonly cdr = inject(ChangeDetectorRef);
 
   form!: FormGroup;
@@ -78,8 +92,9 @@ export class AddRoleComponent implements OnInit {
   loading = true;
   saving = false;
   errorMessage = '';
-  roleUserRows: RoleUserRow[] = [];
+  mappedUsers: Record<string, unknown>[] = [];
   loadingUsers = false;
+  roleUsersTableConfig!: DataTableConfig;
   menuPermissions: IRoleMenuPermission[] = [];
   menuPermissionTree: MenuPermissionTreeNode[] = [];
   menuPermissionRows: MenuPermissionDisplayRow[] = [];
@@ -91,6 +106,33 @@ export class AddRoleComponent implements OnInit {
     menusWithView: 0,
   };
   dashboardWidgetPermissions: IRoleDashboardWidgetPermission[] = [];
+
+  private readonly baseRoleUsersTableConfig: DataTableConfig = {
+    header: {
+      title: 'Mapped users',
+      subtitle: 'Users assigned to this role',
+      showAddButton: true,
+      addButtonText: 'Add users',
+      addButtonIcon: 'person_add',
+      syncPageChrome: false,
+    },
+    columns: [
+      { key: 'username', label: 'Username', sortable: true },
+      { key: 'email', label: 'Email', sortable: true },
+      { key: 'userTypeName', label: 'User type', sortable: true },
+    ],
+    actionsLayout: 'inline',
+    actions: [{ label: 'Remove', icon: 'delete', danger: true }],
+    searchPlaceholder: 'Search users…',
+    searchKeys: ['username', 'email', 'userTypeName'],
+    itemLabel: 'users',
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50],
+    selectable: false,
+    showExport: false,
+    showColumnToggle: false,
+    filtersInPanel: false,
+  };
 
   readonly configs: Record<string, FormFieldConfig> = {
     name: {
@@ -139,10 +181,6 @@ export class AddRoleComponent implements OnInit {
     return this.tenant.school?.name ?? '';
   }
 
-  get assignedUserCount(): number {
-    return this.roleUserRows.filter((r) => r.assigned).length;
-  }
-
   get isEditMode(): boolean {
     return this.mode === 'edit' && !!this.roleId;
   }
@@ -169,6 +207,7 @@ export class AddRoleComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.rebuildRoleUsersTableConfig();
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(100)]],
       description: ['', Validators.maxLength(256)],
@@ -316,10 +355,52 @@ export class AddRoleComponent implements OnInit {
     );
   }
 
-  toggleRoleUser(row: RoleUserRow): void {
-    if (!this.canEdit) return;
-    row.assigned = !row.assigned;
-    this.cdr.markForCheck();
+  openAssignUsersDialog(): void {
+    if (!this.canEdit || !this.roleId) return;
+    const data: AssignRoleUsersDialogData = {
+      roleId: this.roleId,
+      roleName: String(this.form.get('name')?.value ?? ''),
+      excludeUserIds: this.mappedUsers.map((u) => String(u['id'])),
+    };
+    this.dialog
+      .open(AssignRoleUsersDialogComponent, {
+        data,
+        panelClass: ['erp-dialog'],
+        disableClose: true,
+      })
+      .afterClosed()
+      .subscribe((addedIds: string[] | null) => {
+        if (!addedIds?.length || !this.roleId) return;
+        const nextIds = [
+          ...new Set([...this.mappedUsers.map((u) => String(u['id'])), ...addedIds]),
+        ];
+        this.persistMappedUsers(nextIds, 'Users assigned');
+      });
+  }
+
+  onMappedUsersAction(event: { action: DataTableAction; row: Record<string, unknown> }): void {
+    if (event.action.label !== 'Remove' || !this.canEdit) return;
+    const userId = String(event.row['id'] ?? '');
+    const name = String(event.row['username'] ?? 'this user');
+    if (!userId) return;
+
+    this.dialog
+      .open(DeleteConfirmDialogComponent, {
+        width: '420px',
+        data: {
+          title: 'Unmap user',
+          description: `Remove "${name}" from this role?`,
+          confirmButtonText: 'Yes, remove',
+        },
+      })
+      .afterClosed()
+      .subscribe((ok) => {
+        if (!ok || !this.roleId) return;
+        const nextIds = this.mappedUsers
+          .map((u) => String(u['id']))
+          .filter((id) => id !== userId);
+        this.persistMappedUsers(nextIds, 'User unmapped');
+      });
   }
 
   onCancel(): void {
@@ -379,25 +460,13 @@ export class AddRoleComponent implements OnInit {
         ),
       )
       .subscribe({
-        next: () => {
-          if (this.activeTab === 'users' && this.schoolReady) {
-            this.saveRoleUsersAndFinish();
-          } else {
-            this.finishSave();
-          }
-        },
+        next: () => this.finishSave(),
         error: (err) => {
           this.saving = false;
           this.errorMessage = getUserFacingApiError(err, 'Failed to update role.');
           this.cdr.markForCheck();
         },
       });
-  }
-
-  saveRoleUsers(): void {
-    if (!this.roleId || !this.schoolReady || !this.canEdit) return;
-    this.saving = true;
-    this.saveRoleUsersAndFinish();
   }
 
   trackMenu(index: number, menu: IRoleMenuPermission): string {
@@ -447,9 +516,18 @@ export class AddRoleComponent implements OnInit {
       roleUsers: this.roleService.getUsersInRole(this.roleId),
     }).subscribe({
       next: ({ allUsers, roleUsers }) => {
-        const assignedIds = new Set(roleUsers.map((u) => u.id));
-        this.roleUserRows = allUsers.map((u) => this.toRoleUserRow(u, assignedIds.has(u.id)));
+        const byId = new Map((allUsers ?? []).map((u) => [u.id, u]));
+        this.mappedUsers = (roleUsers ?? []).map((ru) => {
+          const full: SchoolUserDto | undefined = byId.get(ru.id);
+          return {
+            id: ru.id,
+            username: ru.username || full?.username || '—',
+            email: ru.email || full?.email || '—',
+            userTypeName: full?.userTypeName || full?.userTypeCode || '—',
+          };
+        });
         this.loadingUsers = false;
+        this.rebuildRoleUsersTableConfig();
         this.cdr.markForCheck();
       },
       error: () => {
@@ -460,8 +538,43 @@ export class AddRoleComponent implements OnInit {
     });
   }
 
-  private toRoleUserRow(user: SchoolUserDto, assigned: boolean): RoleUserRow {
-    return { id: user.id, username: user.username, email: user.email, assigned };
+  private persistMappedUsers(userIds: string[], successMessage: string): void {
+    if (!this.roleId) return;
+    this.saving = true;
+    this.roleService.assignUsersToRole(this.roleId, userIds).subscribe({
+      next: () => {
+        this.saving = false;
+        this.snackBar.open(successMessage, 'Close', {
+          duration: 3000,
+          panelClass: 'snack-success',
+        });
+        this.loadRoleUsers();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.errorMessage = getUserFacingApiError(err, 'Failed to update user assignments.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private rebuildRoleUsersTableConfig(): void {
+    const config: DataTableConfig = {
+      ...this.baseRoleUsersTableConfig,
+      header: {
+        ...this.baseRoleUsersTableConfig.header!,
+        showAddButton: this.canEdit,
+        subtitle: `${this.mappedUsers.length} user${this.mappedUsers.length === 1 ? '' : 's'} mapped`,
+      },
+      actions: this.canEdit
+        ? [{ label: 'Remove', icon: 'delete', danger: true }]
+        : [],
+    };
+    this.roleUsersTableConfig = applyModuleTablePermissions(
+      config,
+      this.permissionService,
+      MenuCodes.Roles,
+    );
   }
 
   private applyRolePermissions(role: RoleDto): void {
@@ -502,11 +615,7 @@ export class AddRoleComponent implements OnInit {
 
   private rebuildMenuPermissionTree(): void {
     this.menuPermissionTree = buildMenuPermissionTree(this.menuPermissions);
-    if (this.expandedMenuIds.size === 0) {
-      for (const id of collectExpandableMenuIds(this.menuPermissionTree)) {
-        this.expandedMenuIds.add(id);
-      }
-    }
+    // Default collapsed — user can Expand all when needed.
     this.refreshMenuPermissionUi();
   }
 
@@ -522,22 +631,6 @@ export class AddRoleComponent implements OnInit {
   private refreshMenuPermissionUi(): void {
     this.menuPermissionSummary = computeMenuPermissionSummary(this.menuPermissions);
     this.rebuildMenuPermissionRows();
-  }
-
-  private saveRoleUsersAndFinish(): void {
-    if (!this.roleId) {
-      this.finishSave();
-      return;
-    }
-    const userIds = this.roleUserRows.filter((r) => r.assigned).map((r) => r.id);
-    this.roleService.assignUsersToRole(this.roleId, userIds).subscribe({
-      next: () => this.finishSave(),
-      error: () => {
-        this.saving = false;
-        this.errorMessage = 'Role saved but user assignment failed.';
-        this.cdr.markForCheck();
-      },
-    });
   }
 
   private finishSave(): void {

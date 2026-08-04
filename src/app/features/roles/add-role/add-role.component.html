@@ -240,59 +240,30 @@
       } @else if (loadingUsers) {
         <div class="card"><p class="loading-state">Loading users…</p></div>
       } @else {
-        <section class="permission-panel full-width">
-          <div class="permission-header">
-            <h2>
-              <mat-icon>group</mat-icon>
-              Assign users
-            </h2>
-            <span class="summary-chip">{{ assignedUserCount }} selected</span>
-          </div>
-          <div class="permission-rows">
-            @for (row of roleUserRows; track row.id) {
-              <div class="permission-row">
-                <button
-                  type="button"
-                  class="toggle"
-                  [class.checked]="row.assigned"
-                  [disabled]="!canEdit"
-                  (click)="toggleRoleUser(row)"
-                >
-                  <span></span>
-                </button>
-                <span class="permission-name">{{ row.username }}</span>
-                <code>{{ row.email }}</code>
-              </div>
-            } @empty {
-              <p class="hint-text" style="padding: 12px 14px">No users in this school.</p>
-            }
-          </div>
-        </section>
+        <div class="role-users-table">
+          <app-smart-data-table
+            [config]="roleUsersTableConfig"
+            [data]="mappedUsers"
+            (addButtonClicked)="openAssignUsersDialog()"
+            (actionClicked)="onMappedUsersAction($event)"
+          />
+        </div>
       }
     }
 
-    @if (canEdit) {
+    @if (canEdit && activeTab !== 'users') {
       <div class="footer-actions">
         <app-action-button type="cancel" (action)="onCancel()" />
-        @if (activeTab === 'users') {
-          <app-action-button
-            type="save"
-            [disabled]="saving || !schoolReady"
-            [label]="saving ? 'Saving…' : 'Save user assignments'"
-            (action)="saveRoleUsers()"
-          />
-        } @else {
-          <span class="summary-chip">
-            <mat-icon>verified</mat-icon>
-            {{ enabledPermissionCount }} menu · {{ enabledWidgetCount }} widgets
-          </span>
-          <app-action-button
-            type="save"
-            [disabled]="saving"
-            [label]="saving ? 'Saving…' : mode === 'add' ? 'Create role' : 'Save role'"
-            (action)="onSubmit()"
-          />
-        }
+        <span class="summary-chip">
+          <mat-icon>verified</mat-icon>
+          {{ enabledPermissionCount }} menu · {{ enabledWidgetCount }} widgets
+        </span>
+        <app-action-button
+          type="save"
+          [disabled]="saving"
+          [label]="saving ? 'Saving…' : mode === 'add' ? 'Create role' : 'Save role'"
+          (action)="onSubmit()"
+        />
       </div>
     }
   </form>

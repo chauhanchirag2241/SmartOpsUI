@@ -60,120 +60,72 @@
       </div>
     </div>
 
-    <div class="st-header">
-      <div class="st-title"><mat-icon>groups</mat-icon> Students</div>
-      <div class="st-filters">
-        <button type="button" class="filter-chip" [class.active]="studentFilter === 'all'" (click)="setStudentFilter('all')">All</button>
-        <button type="button" class="filter-chip" [class.active]="studentFilter === 'submitted'" (click)="setStudentFilter('submitted')">Submitted</button>
-        <button type="button" class="filter-chip" [class.active]="studentFilter === 'pending'" (click)="setStudentFilter('pending')">Pending</button>
-        <button type="button" class="filter-chip" [class.active]="studentFilter === 'late'" (click)="setStudentFilter('late')">Late</button>
-      </div>
-    </div>
-
-    <div class="table-panel">
-      <table>
-        <thead>
-          <tr>
-            <th>Roll</th>
-            <th>Student</th>
-            <th>Status</th>
-            <th>Submitted on</th>
-            <th>Marks</th>
-            <th>Remark</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let s of paginatedStudents; trackBy: trackStudent; let i = index">
-            <td class="muted-cell">{{ s.rollNo }}</td>
-            <td class="name-cell">{{ s.studentName }}</td>
-            <td>
-              <div class="status-toggle" role="group" aria-label="Submission status">
-                <button
-                  type="button"
-                  class="status-opt submitted"
-                  [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Submitted)"
-                  [disabled]="!canEditSubmissions"
-                  (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Submitted)"
-                  title="Submitted"
-                >
-                  <mat-icon>check_circle</mat-icon>
-                  <span>Submitted</span>
-                </button>
-                <button
-                  type="button"
-                  class="status-opt pending"
-                  [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
-                  [disabled]="!canEditSubmissions"
-                  (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Pending)"
-                  title="Pending"
-                >
-                  <mat-icon>schedule</mat-icon>
-                  <span>Pending</span>
-                </button>
-                <button
-                  type="button"
-                  class="status-opt late"
-                  [class.active]="isStudentStatus(s, HomeworkSubmissionStatus.Late)"
-                  (click)="setStudentStatus(s.studentId, HomeworkSubmissionStatus.Late)"
-                  title="Late"
-                >
-                  <mat-icon>error_outline</mat-icon>
-                  <span>Late</span>
-                </button>
-              </div>
-            </td>
-            <td>
-              <input
-                type="date"
-                class="cell-input"
-                [(ngModel)]="s.submittedOn"
-                [disabled]="!canEditSubmissions || isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
-              />
-            </td>
-            <td>
-              <input
-                type="number"
-                class="cell-input marks-input"
-                [(ngModel)]="s.marks"
-                min="0"
-                [disabled]="!canEditSubmissions || isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
-              />
-            </td>
-            <td>
-              <input
-                class="cell-input remark-input"
-                [(ngModel)]="s.remark"
-                placeholder="Add remark..."
-                [disabled]="!canEditSubmissions || isStudentStatus(s, HomeworkSubmissionStatus.Pending)"
-              />
-            </td>
-          </tr>
-          <tr *ngIf="!paginatedStudents.length">
-            <td colspan="6" class="empty-row">No students match this filter.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="pagination-bar" *ngIf="filteredStudents.length > 0">
-      <div class="page-info-text">
-        Showing {{ pageStart }}–{{ pageEnd }} of {{ filteredStudents.length }} students
-      </div>
-      <div class="page-controls">
-        <label class="page-size-label">
-          Per page
-          <select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
-            <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt">{{ opt }}</option>
-          </select>
-        </label>
-        <button type="button" class="page-btn" [disabled]="pageIndex <= 1" (click)="setPage(pageIndex - 1)">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <span class="page-num">Page {{ pageIndex }} / {{ totalPages }}</span>
-        <button type="button" class="page-btn" [disabled]="pageIndex >= totalPages" (click)="setPage(pageIndex + 1)">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-      </div>
+    <div class="students-table-wrap">
+      <app-smart-data-table [config]="studentTableConfig" [data]="studentTableData">
+        <ng-template #customCell let-row let-column="column">
+          @if (column.key === 'status') {
+            <div class="status-toggle" role="group" aria-label="Submission status">
+              <button
+                type="button"
+                class="status-opt submitted"
+                [class.active]="isStudentStatus(row, HomeworkSubmissionStatus.Submitted)"
+                [disabled]="!canEditSubmissions"
+                (click)="setStudentStatus($any(row).studentId, HomeworkSubmissionStatus.Submitted)"
+                title="Submitted"
+              >
+                <mat-icon>check_circle</mat-icon>
+                <span>Submitted</span>
+              </button>
+              <button
+                type="button"
+                class="status-opt pending"
+                [class.active]="isStudentStatus(row, HomeworkSubmissionStatus.Pending)"
+                [disabled]="!canEditSubmissions"
+                (click)="setStudentStatus($any(row).studentId, HomeworkSubmissionStatus.Pending)"
+                title="Pending"
+              >
+                <mat-icon>schedule</mat-icon>
+                <span>Pending</span>
+              </button>
+              <button
+                type="button"
+                class="status-opt late"
+                [class.active]="isStudentStatus(row, HomeworkSubmissionStatus.Late)"
+                [disabled]="!canEditSubmissions"
+                (click)="setStudentStatus($any(row).studentId, HomeworkSubmissionStatus.Late)"
+                title="Late"
+              >
+                <mat-icon>error_outline</mat-icon>
+                <span>Late</span>
+              </button>
+            </div>
+          } @else if (column.key === 'submittedOn') {
+            <app-form-field
+              type="date"
+              [(ngModel)]="asStudentRow(row).submittedOn"
+              [disabled]="!canEditSubmissions || isPendingRow(row)"
+            />
+          } @else if (column.key === 'marks') {
+            <app-form-field
+              class="marks-field"
+              type="number"
+              [(ngModel)]="asStudentRow(row).marks"
+              [min]="0"
+              [disabled]="!canEditSubmissions || isPendingRow(row)"
+            />
+          } @else if (column.key === 'remark') {
+            <app-form-field
+              class="remark-field"
+              type="text"
+              [(ngModel)]="asStudentRow(row).remark"
+              placeholder="Add remark..."
+              [disabled]="!canEditSubmissions || isPendingRow(row)"
+            />
+          } @else {
+            {{ row[column.key] }}
+          }
+        </ng-template>
+      </app-smart-data-table>
     </div>
   </div>
 </div>

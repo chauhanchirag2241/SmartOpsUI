@@ -10,6 +10,7 @@ export type FormFieldType =
   | 'textarea'
   | 'date'
   | 'time'
+  | 'datetime'
   | 'custom';
 
 export type FormFieldVariant = 'default' | 'filter';

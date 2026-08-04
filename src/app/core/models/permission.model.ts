@@ -20,6 +20,8 @@ export interface IRoleMenuPermission {
   menuName: string;
   parentMenuId?: string | null;
   displayOrder?: number;
+  /** CONFIG | SCHOOL | COMMON */
+  application?: string;
   canView: boolean;
   canAdd: boolean;
   canEdit: boolean;

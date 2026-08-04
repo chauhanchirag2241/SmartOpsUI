@@ -181,7 +181,7 @@
         <h3>{{ eventPanelMode === 'edit' ? 'Edit calendar entry' : 'Add calendar entry' }}</h3>
         <p>{{ eventForm.value.startDate || 'Choose a date and type' }}</p>
       </div>
-      @if (isExamEvent(editingEvent)) {
+      @if (isExamEvent(editingEvent) && canOpenExamScheduleLink()) {
         <div class="exam-link-banner">
           <div class="exam-link-text">
             <strong>Exam schedule</strong>

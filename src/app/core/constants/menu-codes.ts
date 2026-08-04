@@ -58,6 +58,7 @@ export const MenuCodes = {
   FeeCollection: 'FEE_COLLECTION',
   BulkImport: 'BULK_IMPORT',
   StudentBulkImport: 'STUDENT_BULK_IMPORT',
+  EmployeeBulkImport: 'EMPLOYEE_BULK_IMPORT',
 } as const;
 
 export type MenuCode = (typeof MenuCodes)[keyof typeof MenuCodes];

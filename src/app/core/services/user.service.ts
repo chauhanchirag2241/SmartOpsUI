@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { ApiService } from './api.service';
 
 export interface SchoolUserDto {
@@ -32,12 +32,36 @@ export interface UpdateUserPayload {
   userTypeId?: string;
 }
 
+/** Platform / SmartOps bootstrap accounts — never show in school portal user lists. */
+const HIDDEN_PORTAL_USER_EMAILS = new Set(['admin@smartops.com']);
+const HIDDEN_PORTAL_USERNAMES = new Set(['platform.admin']);
+
+export function isHiddenPortalUser(user: {
+  email?: string | null;
+  username?: string | null;
+  roles?: string[] | null;
+  userTypeCode?: string | null;
+}): boolean {
+  const email = String(user.email ?? '').trim().toLowerCase();
+  const username = String(user.username ?? '').trim().toLowerCase();
+  if (HIDDEN_PORTAL_USER_EMAILS.has(email) || HIDDEN_PORTAL_USERNAMES.has(username)) {
+    return true;
+  }
+  if (String(user.userTypeCode ?? '').trim().toLowerCase() === 'admin') {
+    return true;
+  }
+  const roles = user.roles ?? [];
+  return roles.some((r) => String(r).trim().toLowerCase() === 'smartopsadmin');
+}
+
 @Injectable({ providedIn: 'root' })
 export class UserService {
   private readonly api = inject(ApiService);
 
   getUsers(): Observable<SchoolUserDto[]> {
-    return this.api.get<SchoolUserDto[]>('users');
+    return this.api
+      .get<SchoolUserDto[]>('users')
+      .pipe(map((users) => (users ?? []).filter((u) => !isHiddenPortalUser(u))));
   }
 
   getUser(id: string): Observable<SchoolUserDto> {

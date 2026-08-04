@@ -624,7 +624,9 @@ export class AddEmployeeComponent implements OnInit {
 
     this.roleService.getRoles().subscribe({
       next: (roles) => {
-        this.roles = roles.filter((r) => r.name !== 'PlatformAdmin');
+        this.roles = roles.filter(
+          (r) => r.name !== 'PlatformAdmin' && r.name !== 'SmartOpsAdmin',
+        );
         this.configs['portalRoleId'].options = this.roles.map((r) => ({ label: r.name, value: r.id }));
         this.lookupsReady.roles = true;
         this.tryApplyOrganizationLookups();

@@ -104,16 +104,20 @@ export class ClassService {
     );
   }
 
-  /** Sections under a class group (label = section name). */
+  /** Sections under a class group (label = section name), ascending by section. */
   getSectionsByClassGroup(classGroupId: string): Observable<{ id: string; name: string }[]> {
-    return this.getClasses(1, 200, '', null, null, 'Active', classGroupId).pipe(
+    return this.getClasses(1, 200, '', 'section', 'asc', 'Active', classGroupId).pipe(
       map((res: any) => {
         const rows = res?.items ?? res?.Items ?? [];
-        return rows.map((row: any) => {
-          const id = String(row.id ?? row.Id ?? '');
-          const section = String(row.section ?? row.Section ?? '').trim();
-          return { id, name: section || id };
-        });
+        return rows
+          .map((row: any) => {
+            const id = String(row.id ?? row.Id ?? '');
+            const section = String(row.section ?? row.Section ?? '').trim();
+            return { id, name: section || id };
+          })
+          .sort((a: { id: string; name: string }, b: { id: string; name: string }) =>
+            a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+          );
       }),
     );
   }

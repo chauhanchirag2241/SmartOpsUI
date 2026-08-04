@@ -16,6 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { DatePicker } from 'primeng/datepicker';
 import type { FormFieldOption, FormFieldType, FormFieldVariant } from './form-field.types';
 import { parseDateOnly, toDateOnlyString } from '../../utils/date-only.util';
 
@@ -23,7 +24,8 @@ let nextId = 0;
 
 /**
  * Shared themed form field for template-driven screens (exams, reports, etc.).
- * Matches portal `.field` / `.form-control` look; dates use Material datepicker.
+ * Matches portal `.field` / `.form-control` look; dates use Material datepicker;
+ * datetime uses PrimeNG (same as dynamic-field / visitors).
  */
 @Component({
   selector: 'app-form-field',
@@ -35,6 +37,7 @@ let nextId = 0;
     MatInputModule,
     MatSelectModule,
     MatDatepickerModule,
+    DatePicker,
   ],
   templateUrl: './form-field.component.html',
   styleUrl: './form-field.component.css',
@@ -71,6 +74,7 @@ export class FormFieldComponent implements ControlValueAccessor {
 
   value: unknown = '';
   dateValue: Date | null = null;
+  datetimeValue: Date | null = null;
 
   @HostBinding('class.full')
   get hostFull(): boolean {
@@ -86,6 +90,12 @@ export class FormFieldComponent implements ControlValueAccessor {
   private onTouchedFn: () => void = () => undefined;
 
   writeValue(value: unknown): void {
+    if (this.type === 'datetime') {
+      this.datetimeValue = this.parseDateTime(value);
+      this.value = this.datetimeValue;
+      return;
+    }
+
     this.value = value ?? (this.type === 'number' ? null : '');
     if (this.type === 'date') {
       this.dateValue = this.parseDate(value);
@@ -120,6 +130,11 @@ export class FormFieldComponent implements ControlValueAccessor {
     this.emit(toDateOnlyString(date) ?? '');
   }
 
+  onDatetimePicked(date: Date | null): void {
+    this.datetimeValue = date;
+    this.emit(date);
+  }
+
   get dateMinBound(): Date | null {
     return this.parseDate(this.minDate);
   }
@@ -134,5 +149,16 @@ export class FormFieldComponent implements ControlValueAccessor {
 
   private parseDate(value: unknown): Date | null {
     return parseDateOnly(value);
+  }
+
+  private parseDateTime(value: unknown): Date | null {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return null;
   }
 }

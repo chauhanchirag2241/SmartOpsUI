@@ -13,9 +13,9 @@
 
   <p class="form-hint">
     @if (isEditing) {
-      Update this draft — publish when ready from the list
+      Update this draft — set Published on so recipients see it from that date/time
     } @else {
-      Choose type, audience, and content — publish later from the list
+      Choose type, audience, content, and Published on — recipients see it from that date/time
     }
   </p>
 
@@ -30,41 +30,31 @@
       Type & audience
     </div>
     <div class="grid2">
-      <div class="field">
-        <label for="notice-content-type">Content type</label>
-        <select
-          id="notice-content-type"
-          class="form-control"
-          [(ngModel)]="form.contentType"
-          (ngModelChange)="onContentTypeChange()"
-        >
-          @for (opt of contentTypeOptions; track opt.value) {
-            <option [ngValue]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
+      <app-form-field
+        label="Content type"
+        type="select"
+        [(ngModel)]="form.contentType"
+        [options]="contentTypeFieldOptions"
+        [required]="true"
+        (ngModelChange)="onContentTypeChange()"
+      />
 
       @if (!isFeeType) {
-        <div class="field">
-          <label for="notice-target">Send to</label>
-          <select
-            id="notice-target"
-            class="form-control"
-            [(ngModel)]="form.targetType"
-            (ngModelChange)="onTargetTypeChange()"
-          >
-            @for (opt of targetTypeOptions; track opt.value) {
-              @if (opt.value !== NoticeTargetType.PendingFeeParents) {
-                <option [ngValue]="opt.value">{{ opt.label }}</option>
-              }
-            }
-          </select>
-        </div>
+        <app-form-field
+          label="Send to"
+          type="select"
+          [(ngModel)]="form.targetType"
+          [options]="targetTypeFieldOptions"
+          [required]="true"
+          (ngModelChange)="onTargetTypeChange()"
+        />
       } @else {
-        <div class="field">
-          <label>Send to</label>
-          <div class="form-control" style="background: #f8faf5">Parents with pending fees (auto)</div>
-        </div>
+        <app-form-field
+          label="Send to"
+          type="text"
+          [ngModel]="'Parents with pending fees (auto)'"
+          [disabled]="true"
+        />
       }
 
       @if (needsClassPicker) {
@@ -114,40 +104,46 @@
       Content
     </div>
     <div class="grid2">
-      <div class="field full">
-        <label for="notice-title">Title</label>
-        <input id="notice-title" type="text" class="form-control" [(ngModel)]="form.title" placeholder="Notice title" />
-      </div>
+      <app-form-field
+        label="Title"
+        type="text"
+        [(ngModel)]="form.title"
+        placeholder="Notice title"
+        [required]="true"
+      />
+
+      <app-form-field
+        label="Published on"
+        type="datetime"
+        [(ngModel)]="publishedOnDate"
+        placeholder="Select date and time"
+        [required]="true"
+      />
+      <p class="form-hint full" style="margin-top: -4px">
+        Recipients see this notice in My Actions once this date/time is reached. After save, the notice cannot be edited.
+      </p>
 
       @if (!isFormType) {
-        <div class="field full">
-          <label for="notice-body">
-            @if (isFeeType) {
-              Summary (optional intro)
-            } @else {
-              Body / message
-            }
-          </label>
-          <textarea
-            id="notice-body"
-            class="form-control"
-            [(ngModel)]="form.body"
-            rows="4"
-            [placeholder]="isFeeType ? 'Short intro shown above personalized fee details…' : 'Notice content…'"
-          ></textarea>
-        </div>
+        <app-form-field
+          [label]="isFeeType ? 'Summary (optional intro)' : 'Body / message'"
+          type="textarea"
+          [(ngModel)]="form.body"
+          [rows]="4"
+          [placeholder]="isFeeType ? 'Short intro shown above personalized fee details…' : 'Notice content…'"
+          [fullWidth]="true"
+        />
       }
 
       @if (isFeeType) {
         <div class="field full">
-          <label for="fee-template">Personalized fee message</label>
-          <textarea
-            id="fee-template"
-            class="form-control"
+          <app-form-field
+            label="Personalized fee message"
+            type="textarea"
             [(ngModel)]="form.content!.feeMessageTemplate"
-            rows="4"
+            [rows]="4"
             placeholder="Use parentName, pendingAmount, students placeholders"
-          ></textarea>
+            [fullWidth]="true"
+          />
           <p class="form-hint">
             Use <code>{{ '{' }}{{ '{' }}parentName{{ '}' }}{{ '}' }}</code>,
             <code>{{ '{' }}{{ '{' }}pendingAmount{{ '}' }}{{ '}' }}</code>,
@@ -157,26 +153,20 @@
       }
 
       @if (isDocumentType) {
-        <div class="field">
-          <label for="doc-name">Document name</label>
-          <input
-            id="doc-name"
-            type="text"
-            class="form-control"
-            [(ngModel)]="form.content!.documentName"
-            placeholder="e.g. Annual report PDF"
-          />
-        </div>
-        <div class="field">
-          <label for="doc-url">Document link</label>
-          <input
-            id="doc-url"
-            type="url"
-            class="form-control"
-            [(ngModel)]="form.content!.documentUrl"
-            placeholder="https://…"
-          />
-        </div>
+        <app-form-field
+          label="Document name"
+          type="text"
+          [(ngModel)]="form.content!.documentName"
+          placeholder="e.g. Annual report PDF"
+          [required]="true"
+        />
+        <app-form-field
+          label="Document link"
+          type="text"
+          [(ngModel)]="form.content!.documentUrl"
+          placeholder="https://…"
+          [required]="true"
+        />
       }
 
       @if (isFormType) {
@@ -185,25 +175,24 @@
           @for (q of form.content?.questions ?? []; track q.id; let i = $index) {
             <div class="q-card">
               <div class="q-row">
-                <input
-                  class="q-input"
+                <app-form-field
+                  [label]="'Question ' + (i + 1)"
                   type="text"
                   [(ngModel)]="q.label"
-                  [attr.placeholder]="'Question ' + (i + 1)"
+                  [placeholder]="'Question ' + (i + 1)"
+                  [fullWidth]="true"
                 />
-
-                <select class="type-select" [(ngModel)]="q.type" (ngModelChange)="onQuestionTypeChange(i)">
-                  <option value="text">Text</option>
-                  <option value="yesno">Yes / No</option>
-                  <option value="number">Number</option>
-                  <option value="mcq_single">MCQ (single)</option>
-                  <option value="mcq_multi">MCQ (multi)</option>
-                  <option value="poll">Poll</option>
-                </select>
+                <app-form-field
+                  label="Response type"
+                  type="select"
+                  [(ngModel)]="q.type"
+                  [options]="questionTypeOptions"
+                  (ngModelChange)="onQuestionTypeChange(i)"
+                />
               </div>
 
               <div class="q-meta">
-                <label class="req-label">
+                <label class="checkbox-inline">
                   <input type="checkbox" [(ngModel)]="q.required" />
                   Required
                 </label>
@@ -215,7 +204,7 @@
                   <div class="mcq-header">
                     <div class="mcq-label">Options</div>
                     @if (q.type === 'mcq_single' || q.type === 'mcq_multi') {
-                      <label class="req-label" style="margin-left: auto">
+                      <label class="checkbox-inline" style="margin-left: auto">
                         <input type="checkbox" [(ngModel)]="q.hasAnswerKey" />
                         Answer key
                       </label>
@@ -236,22 +225,36 @@
                         <div class="mcq-dot"></div>
                       }
 
-                      <input class="mcq-input" type="text" [(ngModel)]="opt.label" placeholder="Option" />
+                      <app-form-field
+                        type="text"
+                        [(ngModel)]="opt.label"
+                        placeholder="Option"
+                        [fullWidth]="true"
+                      />
                       <button type="button" class="remove-opt-btn" (click)="removeOption(i, opt.id)" aria-label="Remove option">
                         ×
                       </button>
                     </div>
                   }
 
-                  <button type="button" class="add-option-btn" (click)="addOption(i)">+ Add option</button>
+                  <app-action-button
+                    type="add"
+                    label="Add option"
+                    icon="add"
+                    (action)="addOption(i)"
+                  />
                 </div>
               }
             </div>
           }
-          <button type="button" class="add-question-btn" (click)="addQuestion()">
-            <mat-icon>add</mat-icon>
-            Add question
-          </button>
+          <div class="add-question-wrap">
+            <app-action-button
+              type="add"
+              label="Add question"
+              icon="add"
+              (action)="addQuestion()"
+            />
+          </div>
           <p class="form-hint">Recipients fill this form from My Actions.</p>
         </div>
       }
@@ -267,20 +270,21 @@
           </p>
         </div>
         @if (form.requiresResponse) {
-          <div class="field">
-            <label for="notice-deadline">Response deadline</label>
-            <input id="notice-deadline" type="date" class="form-control" [(ngModel)]="form.responseDeadline" />
-          </div>
+          <app-form-field
+            label="Response deadline"
+            type="date"
+            [(ngModel)]="form.responseDeadline"
+          />
         }
       }
     </div>
   </div>
 
   <div class="footer-actions">
-    <div class="footer-hint">Saved as draft until you publish from the list</div>
+    <div class="footer-hint">After save with Published on, only view and delete are allowed</div>
     <app-action-button
       type="save"
-      [label]="saving ? 'Saving…' : (isEditing ? 'Update draft' : 'Save draft')"
+      [label]="saving ? 'Saving…' : (isEditing ? 'Update notice' : 'Save notice')"
       [icon]="saving ? 'hourglass_empty' : 'save'"
       [disabled]="saving || loadingNotice"
       (action)="saveDraft()"

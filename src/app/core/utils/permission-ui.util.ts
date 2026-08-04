@@ -125,19 +125,7 @@ function hasPermissionKind(
   menuCode: string,
   kind: DataTableActionPermission,
 ): boolean {
-  switch (kind) {
-    case 'add':
-      return permissionService.canAdd(menuCode);
-    case 'edit':
-      return permissionService.canEdit(menuCode);
-    case 'delete':
-      return permissionService.canDelete(menuCode);
-    case 'export':
-      return permissionService.canExport(menuCode);
-    case 'view':
-    default:
-      return permissionService.canView(menuCode);
-  }
+  return permissionService.canAccess(menuCode, kind);
 }
 
 function resolveActionPermission(action: DataTableAction): DataTableActionPermission {

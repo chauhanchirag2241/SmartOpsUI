@@ -19,6 +19,8 @@ import { ActionButtonComponent } from '../../shared/components/action-button/act
 import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { MultiSelectChipsComponent } from '../../shared/components/multi-select-chips/multi-select-chips.component';
 import { ScopeReadonlyLockComponent } from '../../shared/components/scope-readonly-lock/scope-readonly-lock.component';
+import { FormFieldComponent } from '../../shared/form-controls/form-field';
+import type { FormFieldOption } from '../../shared/form-controls/form-field';
 import { MappingOption } from '../../shared/mapping/mapping.types';
 import { refreshUi } from '../../core/utils/ui-refresh.util';
 import { isReadOnlyYear } from '../leave/workflow-page.util';
@@ -32,6 +34,7 @@ import { isReadOnlyYear } from '../leave/workflow-page.util';
     FormsModule,
     MatIconModule,
     ActionButtonComponent,
+    FormFieldComponent,
     MultiSelectChipsComponent,
     ScopeReadonlyLockComponent,
     PageChromeDirective,
@@ -72,24 +75,34 @@ export class AddNoticeComponent implements OnInit {
   loadingNotice = false;
   saving = false;
   form: CreateNoticeRequest = this.emptyForm();
+  /** PrimeNG datetime value for Published on */
+  publishedOnDate: Date | null = null;
 
   readonly NoticeTargetType = NoticeTargetType;
   readonly NoticeContentType = NoticeContentType;
 
-  readonly contentTypeOptions = [
-    { value: NoticeContentType.Announcement, label: 'Notice / announcement', icon: 'campaign' },
-    { value: NoticeContentType.Form, label: 'Form (Q&A)', icon: 'quiz' },
-    { value: NoticeContentType.Document, label: 'Document', icon: 'description' },
-    { value: NoticeContentType.FeeReminder, label: 'Fee reminder', icon: 'payments' },
+  readonly contentTypeFieldOptions: FormFieldOption[] = [
+    { value: NoticeContentType.Announcement, label: 'Notice / announcement' },
+    { value: NoticeContentType.Form, label: 'Form (Q&A)' },
+    { value: NoticeContentType.Document, label: 'Document' },
+    { value: NoticeContentType.FeeReminder, label: 'Fee reminder' },
   ];
 
-  readonly targetTypeOptions = [
+  readonly targetTypeFieldOptions: FormFieldOption[] = [
     { value: NoticeTargetType.AllStaff, label: 'All employees / staff' },
     { value: NoticeTargetType.SingleTeacher, label: 'Particular employee(s)' },
     { value: NoticeTargetType.ClassParents, label: 'Class-wise parents' },
     { value: NoticeTargetType.SingleParent, label: 'Particular parent(s)' },
     { value: NoticeTargetType.SingleUser, label: 'Particular user(s)' },
-    { value: NoticeTargetType.PendingFeeParents, label: 'Parents with pending fees' },
+  ];
+
+  readonly questionTypeOptions: FormFieldOption[] = [
+    { value: 'text', label: 'Text' },
+    { value: 'yesno', label: 'Yes / No' },
+    { value: 'number', label: 'Number' },
+    { value: 'mcq_single', label: 'MCQ (single)' },
+    { value: 'mcq_multi', label: 'MCQ (multi)' },
+    { value: 'poll', label: 'Poll' },
   ];
 
   get recipientChipOptions(): MappingOption[] {
@@ -177,6 +190,7 @@ export class AddNoticeComponent implements OnInit {
     this.noticesService.getById(id).subscribe({
       next: (detail: NoticeDetail) => {
         this.form = this.mapDetailToForm(detail);
+        this.publishedOnDate = this.toDate(detail.publishedOn ?? null);
         this.loadingNotice = false;
         refreshUi(this.cdr);
         this.refreshAudiencePreview();
@@ -205,6 +219,7 @@ export class AddNoticeComponent implements OnInit {
       targetType: detail.targetType,
       targetRefId: recipientIds[0] ?? detail.targetRefId ?? null,
       contentType: detail.contentType,
+      publishedOn: detail.publishedOn ?? null,
       content: {
         questions: detail.content?.questions ?? [],
         documentName: detail.content?.documentName ?? '',
@@ -378,7 +393,7 @@ export class AddNoticeComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        this.notify.success(this.editId ? 'Notice updated' : 'Notice saved as draft');
+        this.notify.success(this.editId ? 'Notice updated' : 'Notice saved');
         this.saving = false;
         refreshUi(this.cdr);
         this.saved.emit();
@@ -393,6 +408,7 @@ export class AddNoticeComponent implements OnInit {
 
   private validate(): string | null {
     if (!this.form.title?.trim()) return 'Title is required';
+    if (!this.publishedOnDate) return 'Published on is required';
 
     if (this.isFormType) {
       const questions = this.form.content?.questions ?? [];
@@ -439,11 +455,23 @@ export class AddNoticeComponent implements OnInit {
       targetType: this.form.targetType,
       targetRefId: recipientIds[0] ?? this.form.targetRefId ?? null,
       contentType: this.form.contentType,
+      publishedOn: this.toApiPublishedOn(this.publishedOnDate),
       content: {
         ...this.form.content,
         targetRecipientIds: recipientIds,
       },
     };
+  }
+
+  private toApiPublishedOn(value: Date | null | undefined): string | null {
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return null;
+    return value.toISOString();
+  }
+
+  private toDate(iso: string | null | undefined): Date | null {
+    if (!iso?.trim()) return null;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 
   private emptyForm(): CreateNoticeRequest {
@@ -455,6 +483,7 @@ export class AddNoticeComponent implements OnInit {
       targetType: NoticeTargetType.AllStaff,
       targetRefId: null,
       contentType: NoticeContentType.Announcement,
+      publishedOn: null,
       content: {
         questions: [],
         documentName: '',

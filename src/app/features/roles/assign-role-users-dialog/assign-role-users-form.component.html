@@ -1,0 +1,82 @@
+<div class="assign-role-users-form">
+  @if (loading) {
+    <p class="hint-text">Loading users…</p>
+  } @else if (loadError) {
+    <p class="error-text">{{ loadError }}</p>
+  } @else {
+    <div class="filter-row">
+      <div class="filter-field">
+        <label class="field-label">User types</label>
+        <app-multi-select-chips
+          [options]="userTypeOptions"
+          [selectedIds]="selectedUserTypeIds"
+          placeholder="Select user types"
+          searchPlaceholder="Search type…"
+          (selectedIdsChange)="onUserTypeIdsChange($event)"
+        />
+      </div>
+      <div class="filter-field users-field">
+        <label class="field-label">Users</label>
+        <div class="users-add-row">
+          <app-multi-select-chips
+            class="users-chips"
+            [options]="userOptions"
+            [selectedIds]="pendingUserIds"
+            [disabled]="!selectedUserTypeIds.length"
+            placeholder="Select users"
+            searchPlaceholder="Search user…"
+            (selectedIdsChange)="onPendingUserIdsChange($event)"
+          />
+          <button
+            type="button"
+            class="btn-add-inline"
+            [disabled]="!pendingUserIds.length"
+            (click)="addPendingUsers()"
+          >
+            <mat-icon>add</mat-icon>
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="staged-block">
+      <div class="section-title">Selected users</div>
+      @if (!staged.length) {
+        <div class="empty-staged">Select user types and users, then click Add.</div>
+      } @else {
+        <div class="staged-table-wrap">
+          <table class="staged-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>User type</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of staged; track s.id) {
+                <tr>
+                  <td class="col-name">{{ s.username }}</td>
+                  <td>{{ s.email || '—' }}</td>
+                  <td>{{ s.userTypeName }}</td>
+                  <td class="col-actions">
+                    <button
+                      type="button"
+                      class="btn-remove"
+                      title="Remove"
+                      (click)="removeStaged(s.id)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>

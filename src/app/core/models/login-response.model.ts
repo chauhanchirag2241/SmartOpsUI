@@ -2,6 +2,7 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  mustChangePassword?: boolean;
 }
 
 export interface UserProfile {
@@ -12,4 +13,5 @@ export interface UserProfile {
   createdOn: string;
   roles: string[];
   roleId?: string;
+  mustChangePassword?: boolean;
 }

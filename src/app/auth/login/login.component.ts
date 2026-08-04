@@ -46,7 +46,9 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.auth.ensureValidSessionOrClear();
 
     if (this.auth.isLoggedIn) {
-      void this.router.navigate(['/dashboard']);
+      void this.router.navigate(
+        this.auth.mustChangePassword ? ['/auth/change-password'] : ['/dashboard'],
+      );
       return;
     }
 
@@ -139,8 +141,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe({
-        next: () => {
-          void this.router.navigate(['/dashboard']);
+        next: ({ mustChangePassword }) => {
+          void this.router.navigate(
+            mustChangePassword ? ['/auth/change-password'] : ['/dashboard'],
+          );
         },
         error: (err) => {
           this.errorMessage.set(this.resolveLoginError(err));

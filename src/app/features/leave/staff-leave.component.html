@@ -1,6 +1,40 @@
 <section class="staff-leave-page">
   @if (!showApplyForm) {
     <app-scope-readonly-lock actionLabel="apply or edit leave" />
+
+    @if (balances.length) {
+      <div class="balance-cards" aria-label="My leave balances">
+        @for (card of balanceCards; track card.leaveTypeId; let i = $index) {
+          <article class="balance-card" [attr.data-tone]="cardTone(i)">
+            <div class="bc-icon">
+              <mat-icon>{{ card.icon }}</mat-icon>
+            </div>
+            <div class="bc-body">
+              <div class="bc-value">{{ formatDays(card.available) }}</div>
+              <div class="bc-label">{{ card.leaveTypeName }}</div>
+              <div class="bc-meta">
+                <span>Used {{ formatDays(card.used) }}</span>
+                <span>Accrued {{ formatDays(card.accrued) }}</span>
+              </div>
+            </div>
+          </article>
+        }
+        <article class="balance-card balance-card--total" data-tone="total">
+          <div class="bc-icon">
+            <mat-icon>summarize</mat-icon>
+          </div>
+          <div class="bc-body">
+            <div class="bc-value">{{ formatDays(totalAvailable) }}</div>
+            <div class="bc-label">Total available</div>
+            <div class="bc-meta">
+              <span>Used {{ formatDays(totalUsed) }}</span>
+              <span>{{ balances.length }} leave type{{ balances.length === 1 ? '' : 's' }}</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    }
+
     <app-smart-data-table
       [config]="tableConfig"
       [data]="tableRows"

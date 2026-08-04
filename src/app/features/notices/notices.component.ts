@@ -54,7 +54,7 @@ export class NoticesComponent implements OnInit {
   private readonly baseTableConfig: DataTableConfig = {
     header: {
       title: 'Notices',
-      subtitle: 'Create notices, forms, documents, and fee reminders for targeted audiences',
+      subtitle: 'Create notices with a Published on date — recipients see them from that time',
       showAddButton: true,
       addButtonText: 'New notice',
       addButtonIcon: 'campaign',
@@ -86,6 +86,7 @@ export class NoticesComponent implements OnInit {
           Closed: { cssClass: 'b-gray', label: 'Closed' },
         },
       },
+      { key: 'publishedOnLabel', label: 'Published on', sortable: true },
       { key: 'responseCount', label: 'Responses', sortable: true },
     ],
     filters: [
@@ -112,14 +113,12 @@ export class NoticesComponent implements OnInit {
     actions: [
       { label: 'View', icon: 'visibility', iconColor: '#639922' },
       { label: 'View responses', icon: 'forum', iconColor: '#639922' },
-      { label: 'Publish', icon: 'publish', iconColor: '#639922' },
       { label: 'Edit', icon: 'edit', iconColor: '#639922' },
       { label: 'Delete', icon: 'delete', iconColor: '#c0392b' },
     ],
     actionVisibleFn: (action, row) => {
       if (action.label === 'View') return true;
       if (row['isActive'] === false) return false;
-      if (action.label === 'Publish') return row['statusLabel'] === 'Draft';
       if (action.label === 'Edit') return row['statusLabel'] === 'Draft';
       if (action.label === 'Delete') {
         return row['statusLabel'] === 'Draft' || row['statusLabel'] === 'Published';
@@ -243,22 +242,6 @@ export class NoticesComponent implements OnInit {
       return;
     }
 
-    if (event.action.label !== 'Publish') return;
-    if (event.row['statusLabel'] !== 'Draft') {
-      this.notify.error('Only draft notices can be published');
-      return;
-    }
-
-    this.noticesService.publish(id).subscribe({
-      next: () => {
-        this.notify.success('Notice published');
-        this.load();
-      },
-      error: (err) => {
-        this.notify.error(typeof err?.error === 'string' ? err.error : 'Publish failed');
-        refreshUi(this.cdr);
-      },
-    });
   }
 
   closeResponses(): void {
@@ -285,8 +268,22 @@ export class NoticesComponent implements OnInit {
       statusLabel: n.statusLabel,
       responseCount: n.responseCount ?? 0,
       publishedOn: n.publishedOn ?? '',
+      publishedOnLabel: this.formatPublishedOn(n.publishedOn),
       isActive: n.isActive ?? true,
     };
+  }
+
+  private formatPublishedOn(value?: string | null): string {
+    if (!value?.trim()) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   private initialsFrom(name: string): string {

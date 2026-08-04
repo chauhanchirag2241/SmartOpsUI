@@ -90,21 +90,34 @@ th.sort-desc .si .sort-arrow:last-child {
 .page-size {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
-.page-size select {
-  background: var(--input-bg);
-  border: 0.5px solid var(--border-color);
-  border-radius: 5px;
-  padding: 3px 6px;
-  font-size: 13px;
-  color: var(--text-primary);
-  outline: none;
-  cursor: pointer;
-  font-family: inherit;
+/* Compact themed select (app-form-field) — matches portal green option theme */
+.page-size .page-size-field {
+  display: block;
+  width: 78px;
+  min-width: 78px;
+  max-width: 90px;
+  flex: 0 0 auto;
+}
+
+.page-size .page-size-field ::ng-deep .field {
+  width: 100%;
+}
+
+.page-size .page-size-field ::ng-deep .compact-field.mat-mdc-form-field {
+  --mat-form-field-container-height: 28px;
+  --mat-form-field-container-vertical-padding: 2px;
+}
+
+.page-size .page-size-field ::ng-deep .compact-field .mat-mdc-form-field-infix {
+  min-height: 28px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
 }
 
 .ctx-sep {

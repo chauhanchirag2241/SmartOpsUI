@@ -15,16 +15,7 @@ export const permissionGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  const allowed =
-    action === 'view'
-      ? permissions.canView(menuCode)
-      : action === 'add'
-        ? permissions.canAdd(menuCode)
-        : action === 'edit'
-          ? permissions.canEdit(menuCode)
-          : action === 'delete'
-            ? permissions.canDelete(menuCode)
-            : permissions.canExport(menuCode);
+  const allowed = permissions.canAccess(menuCode, action);
 
   return allowed ? true : router.createUrlTree(['/dashboard']);
 };

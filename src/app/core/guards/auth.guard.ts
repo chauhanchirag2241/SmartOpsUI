@@ -14,6 +14,10 @@ export const authGuard: CanActivateFn = (route) => {
     });
   }
 
+  if (auth.mustChangePassword) {
+    return router.createUrlTree(['/auth/change-password']);
+  }
+
   const requiredRoles = (route.data['roles'] as string[] | undefined) ?? [];
   if (requiredRoles.length && !requiredRoles.some((r) => auth.hasRole(r))) {
     return router.createUrlTree(['/dashboard']);

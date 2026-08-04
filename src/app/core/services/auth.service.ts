@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, map, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
 import { LoginResponse, UserProfile } from '../models/login-response.model';
 import { isUsableAccessToken } from '../utils/token.util';
@@ -33,6 +33,10 @@ export class AuthService {
     return isUsableAccessToken(this.getToken());
   }
 
+  get mustChangePassword(): boolean {
+    return !!this.currentUser?.mustChangePassword;
+  }
+
   /** Clear cached session when token is missing, expired, or corrupt. */
   ensureValidSessionOrClear(): void {
     const token = this.getToken();
@@ -51,7 +55,7 @@ export class AuthService {
     return this.currentUser?.role ?? '';
   }
 
-  loginWithApi(email: string, password: string): Observable<void> {
+  loginWithApi(email: string, password: string): Observable<{ mustChangePassword: boolean }> {
     return this.api.post<LoginResponse>('auth/login', { email, password }).pipe(
       switchMap((raw) => {
         const accessToken = this.resolveAccessToken(raw);
@@ -59,16 +63,43 @@ export class AuthService {
           return throwError(() => new Error('Login succeeded but no access token was returned.'));
         }
         this.storage.set(this.tokenKey, accessToken);
-        return this.api.get<UserProfile>('auth/me').pipe(map((profile) => ({ accessToken, profile })));
+        return this.api.get<UserProfile>('auth/me').pipe(
+          map((profile) => ({
+            accessToken,
+            profile,
+            mustChangePassword: !!(raw.mustChangePassword ?? profile.mustChangePassword),
+          })),
+        );
       }),
-      tap(({ accessToken, profile }) => {
-        const user = this.mapProfileToUser(profile);
+      tap(({ accessToken, profile, mustChangePassword }) => {
+        const user = this.mapProfileToUser(profile, mustChangePassword);
         this.login(user, accessToken);
       }),
-      switchMap(() => this.permissionService.loadSession()),
-      map(() => undefined),
+      switchMap(({ mustChangePassword }) =>
+        this.permissionService.loadSession().pipe(
+          map(() => ({ mustChangePassword })),
+          catchError(() => of({ mustChangePassword })),
+        ),
+      ),
       catchError((err) => throwError(() => err)),
     );
+  }
+
+  changePassword(oldPassword: string, newPassword: string, confirmNewPassword: string): Observable<void> {
+    return this.api
+      .post<void>('auth/change-password', { oldPassword, newPassword, confirmNewPassword })
+      .pipe(
+        tap(() => {
+          const user = this.currentUser;
+          if (user) {
+            const updated = { ...user, mustChangePassword: false };
+            this.storage.set(this.userKey, updated);
+            this.currentUserSubject.next(updated);
+          }
+        }),
+        switchMap(() => this.permissionService.loadSession()),
+        map(() => undefined),
+      );
   }
 
   login(user: User, token: string): void {
@@ -124,7 +155,7 @@ export class AuthService {
     return roles.includes(role) || this.currentUser?.role === role;
   }
 
-  private mapProfileToUser(profile: UserProfile): User {
+  private mapProfileToUser(profile: UserProfile, mustChangePassword = false): User {
     const roles = profile.roles ?? [];
     const primaryRole = roles[0] ?? 'School Admin';
     return {
@@ -134,6 +165,7 @@ export class AuthService {
       role: this.mapRole(primaryRole),
       roles,
       roleId: profile.roleId,
+      mustChangePassword: mustChangePassword || !!profile.mustChangePassword,
     };
   }
 

@@ -340,7 +340,7 @@ export class ClassGroupDetailComponent implements OnInit {
   }
 
   loadSections(): void {
-    this.classService.getClasses(1, 200, '', null, null, 'All', this.classGroupId).subscribe({
+    this.classService.getClasses(1, 200, '', 'section', 'asc', 'All', this.classGroupId).subscribe({
       next: (res) => {
         this.sections = (res?.items ?? []).map((row: any) => ({
           ...row,

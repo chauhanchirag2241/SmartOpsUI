@@ -56,6 +56,7 @@ export function normalizeNoticeDetail(raw: unknown): NoticeDetail {
     statusLabel: String(r['statusLabel'] ?? r['StatusLabel'] ?? ''),
     requiresResponse: Boolean(r['requiresResponse'] ?? r['RequiresResponse']),
     responseDeadline: (r['responseDeadline'] ?? r['ResponseDeadline']) as string | null | undefined,
+    publishedOn: (r['publishedOn'] ?? r['PublishedOn']) as string | null | undefined,
     targetType: parseEnumValue(
       NoticeTargetType,
       r['targetType'] ?? r['TargetType'],
@@ -131,6 +132,7 @@ export interface CreateNoticeRequest {
   targetRefId?: string | null;
   contentType: NoticeContentType;
   content?: NoticeContentPayload | null;
+  publishedOn?: string | null;
 }
 
 export interface NoticeAudienceOption {
@@ -163,6 +165,7 @@ export interface NoticeDetail {
   statusLabel: string;
   requiresResponse: boolean;
   responseDeadline?: string | null;
+  publishedOn?: string | null;
   targetType: NoticeTargetType;
   targetTypeLabel?: string;
   targetRefId?: string | null;
@@ -189,10 +192,6 @@ export class NoticesService {
 
   update(id: string, body: CreateNoticeRequest): Observable<unknown> {
     return this.api.put(`notices/${id}`, body);
-  }
-
-  publish(id: string): Observable<unknown> {
-    return this.api.post(`notices/${id}/publish`, {});
   }
 
   getResponses(id: string): Observable<NoticeResponseItem[]> {

@@ -130,6 +130,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'bulk-import/employees',
+        canActivate: [permissionGuard],
+        data: { menuCode: MenuCodes.EmployeeBulkImport, permission: 'view' },
+        loadComponent: () =>
+          import('./features/bulk-import/employee-bulk-import/employee-bulk-import.component').then(
+            (m) => m.EmployeeBulkImportComponent,
+          ),
+      },
+      {
         path: 'roll-numbers',
         canActivate: [permissionGuard],
         data: { menuCode: MenuCodes.RollNumbers, permission: 'view' },
@@ -554,6 +563,13 @@ export const routes: Routes = [
         path: 'login',
         canActivate: [guestGuard],
         loadComponent: () => import('./auth/login/login.component').then((m) => m.LoginComponent),
+      },
+      {
+        path: 'change-password',
+        loadComponent: () =>
+          import('./auth/change-password/change-password.component').then(
+            (m) => m.ChangePasswordComponent,
+          ),
       },
     ],
   },

@@ -2,6 +2,7 @@
   class="field"
   [class.field-date]="type === 'date'"
   [class.field-select]="type === 'select'"
+  [class.field-datetime]="type === 'datetime'"
 >
   @if (label) {
     <label [attr.for]="inputId">
@@ -49,6 +50,25 @@
         [ngModel]="value"
         (ngModelChange)="emit($event)"
         (blur)="onTouched()"
+      />
+    }
+    @case ('datetime') {
+      <p-datepicker
+        [inputId]="inputId"
+        [ngModel]="datetimeValue"
+        (ngModelChange)="onDatetimePicked($event)"
+        (onBlur)="onTouched()"
+        [showTime]="true"
+        hourFormat="24"
+        [showIcon]="true"
+        iconDisplay="input"
+        dateFormat="dd/mm/yy"
+        [placeholder]="placeholder || 'Select date and time'"
+        [disabled]="disabled"
+        appendTo="body"
+        styleClass="fo-datetime-picker"
+        panelStyleClass="fo-datetime-panel"
+        fluid
       />
     }
     @case ('textarea') {

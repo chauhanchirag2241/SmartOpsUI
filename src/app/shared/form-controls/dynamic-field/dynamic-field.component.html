@@ -64,7 +64,7 @@
         [inputId]="controlId"
         [formControlName]="config.controlName"
         [showTime]="true"
-        hourFormat="12"
+        hourFormat="24"
         [showIcon]="true"
         iconDisplay="input"
         dateFormat="dd/mm/yy"
@@ -72,6 +72,7 @@
         [disabled]="config.disabled ?? false"
         appendTo="body"
         styleClass="fo-datetime-picker"
+        panelStyleClass="fo-datetime-panel"
         fluid
       />
       @if (group.get(config.controlName)?.invalid && group.get(config.controlName)?.touched) {

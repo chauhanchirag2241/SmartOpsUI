@@ -82,6 +82,19 @@ export class NoticeViewComponent implements OnInit {
     return base;
   }
 
+  formatPublishedOn(value?: string | null): string {
+    if (!value?.trim()) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   questionTypeLabel(type: string): string {
     const map: Record<string, string> = {
       text: 'Text',

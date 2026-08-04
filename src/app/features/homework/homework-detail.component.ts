@@ -7,6 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NotificationService } from '../../core/services/notification.service';
 import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
+import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
+import { DataTableConfig } from '../../shared/interfaces/data-table.interface';
+import { FormFieldComponent } from '../../shared/form-controls/form-field';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { EMPTY, switchMap, catchError, timeout } from 'rxjs';
 import {
@@ -28,7 +31,15 @@ const GUID_REGEX =
 @Component({
   selector: 'app-homework-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatSnackBarModule, PageChromeDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    PageChromeDirective,
+    SmartDataTableComponent,
+    FormFieldComponent,
+  ],
   templateUrl: './homework-detail.component.html',
   styleUrl: './homework-detail.component.css',
 })
@@ -52,15 +63,60 @@ export class HomeworkDetailComponent implements OnInit {
   loadError = '';
   isSubmitting = false;
 
-  studentFilter = 'all';
   studentRows: StudentRow[] = [];
-  filteredStudents: StudentRow[] = [];
-  paginatedStudents: StudentRow[] = [];
   detailProgressPct = 0;
 
-  pageIndex = 1;
-  pageSize = 15;
-  readonly pageSizeOptions = [10, 15, 25, 50];
+  readonly studentTableConfig: DataTableConfig = {
+    header: {
+      title: 'Students',
+      showAddButton: false,
+      syncPageChrome: false,
+    },
+    columns: [
+      { key: 'rollNo', label: 'Roll', sortable: true, width: '80px' },
+      { key: 'studentName', label: 'Student', sortable: true },
+      { key: 'status', label: 'Status', cellType: 'custom', width: '280px', sortable: false },
+      { key: 'submittedOn', label: 'Submitted on', cellType: 'custom', width: '160px', sortable: false },
+      { key: 'marks', label: 'Marks', cellType: 'custom', width: '100px', sortable: false },
+      { key: 'remark', label: 'Remark', cellType: 'custom', sortable: false },
+    ],
+    filters: [
+      { label: 'All', icon: 'list', value: 'all' },
+      {
+        label: 'Submitted',
+        icon: 'check_circle',
+        value: 'submitted',
+        filterFn: (row) => row['status'] === HomeworkSubmissionStatus.Submitted,
+      },
+      {
+        label: 'Pending',
+        icon: 'schedule',
+        value: 'pending',
+        filterFn: (row) => row['status'] === HomeworkSubmissionStatus.Pending,
+      },
+      {
+        label: 'Late',
+        icon: 'error_outline',
+        value: 'late',
+        filterFn: (row) => row['status'] === HomeworkSubmissionStatus.Late,
+      },
+    ],
+    filtersInPanel: false,
+    actions: [],
+    bulkActions: [],
+    searchPlaceholder: 'Search by name or roll...',
+    searchKeys: ['studentName', 'rollNo'],
+    itemLabel: 'students',
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 15, 25, 50],
+    selectable: false,
+    showExport: false,
+    showColumnToggle: false,
+  };
+
+  get studentTableData(): Record<string, unknown>[] {
+    return this.studentRows as unknown as Record<string, unknown>[];
+  }
 
   ngOnInit(): void {
     this.route.paramMap
@@ -73,7 +129,6 @@ export class HomeworkDetailComponent implements OnInit {
             return EMPTY;
           }
           this.homeworkId = id;
-          this.pageIndex = 1;
           this.loadError = '';
           this.detail = null;
           return this.homeworkService.getById(id).pipe(
@@ -120,7 +175,6 @@ export class HomeworkDetailComponent implements OnInit {
         isSubmissionsSubmitted: raw['isSubmissionsSubmitted'] ?? raw['IsSubmissionsSubmitted'],
         students: raw['students'] ?? raw['Students'] ?? [],
       };
-      this.studentFilter = 'all';
       this.syncStudentRows();
     } catch {
       this.loadError = 'Could not display homework data';
@@ -158,43 +212,20 @@ export class HomeworkDetailComponent implements OnInit {
     this.router.navigate(['/homework']);
   }
 
-  setStudentFilter(filter: string): void {
-    this.studentFilter = filter;
-    this.pageIndex = 1;
-    this.applyFiltersAndPagination();
-  }
-
-  setPage(page: number): void {
-    const total = this.totalPages;
-    if (page < 1 || page > total) return;
-    this.pageIndex = page;
-    this.applyPagination();
-  }
-
-  onPageSizeChange(): void {
-    this.pageIndex = 1;
-    this.applyPagination();
-  }
-
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredStudents.length / this.pageSize));
-  }
-
-  get pageStart(): number {
-    if (!this.filteredStudents.length) return 0;
-    return (this.pageIndex - 1) * this.pageSize + 1;
-  }
-
-  get pageEnd(): number {
-    return Math.min(this.pageIndex * this.pageSize, this.filteredStudents.length);
-  }
-
   get isSubmissionsSubmitted(): boolean {
     return !!this.detail?.isSubmissionsSubmitted;
   }
 
-  isStudentStatus(row: StudentRow, status: HomeworkSubmissionStatus): boolean {
-    return row.status === status;
+  isStudentStatus(row: Record<string, unknown> | StudentRow, status: HomeworkSubmissionStatus): boolean {
+    return row['status'] === status;
+  }
+
+  isPendingRow(row: Record<string, unknown> | StudentRow): boolean {
+    return row['status'] === HomeworkSubmissionStatus.Pending;
+  }
+
+  asStudentRow(row: Record<string, unknown>): StudentRow {
+    return row as unknown as StudentRow;
   }
 
   statusBadgeClass(status: string): string {
@@ -215,27 +246,7 @@ export class HomeworkDetailComponent implements OnInit {
       marks: s.marks ?? s.Marks ?? null,
       remark: s.remark || s.Remark || '',
     }));
-    this.applyFiltersAndPagination();
-  }
-
-  private applyFiltersAndPagination(): void {
-    this.filteredStudents = this.studentRows.filter((s) => {
-      if (this.studentFilter === 'all') return true;
-      if (this.studentFilter === 'submitted') return s.status === HomeworkSubmissionStatus.Submitted;
-      if (this.studentFilter === 'pending') return s.status === HomeworkSubmissionStatus.Pending;
-      if (this.studentFilter === 'late') return s.status === HomeworkSubmissionStatus.Late;
-      return true;
-    });
-    if (this.pageIndex > this.totalPages) {
-      this.pageIndex = this.totalPages;
-    }
     this.refreshDetailSummary();
-    this.applyPagination();
-  }
-
-  private applyPagination(): void {
-    const start = (this.pageIndex - 1) * this.pageSize;
-    this.paginatedStudents = this.filteredStudents.slice(start, start + this.pageSize);
   }
 
   private refreshDetailSummary(): void {
@@ -252,17 +263,17 @@ export class HomeworkDetailComponent implements OnInit {
     if (!this.canEditSubmissions) return;
     this.studentRows = this.studentRows.map((row) => {
       if (row.studentId !== studentId) return row;
-      const nextStatus = status;
-      if (nextStatus === HomeworkSubmissionStatus.Submitted || nextStatus === HomeworkSubmissionStatus.Late) {
+      if (status === HomeworkSubmissionStatus.Submitted || status === HomeworkSubmissionStatus.Late) {
         return {
           ...row,
-          status: nextStatus,
+          status,
           submittedOn: row.submittedOn || todayDateOnlyString(),
         };
       }
-      return { ...row, status: nextStatus, submittedOn: '', marks: null, remark: '' };
+      return { ...row, status, submittedOn: '', marks: null, remark: '' };
     });
-    this.applyFiltersAndPagination();
+    this.refreshDetailSummary();
+    this.cdr.markForCheck();
   }
 
   buildSubmissionPayload(): StudentHomeworkSubmissionItem[] {
@@ -307,9 +318,5 @@ export class HomeworkDetailComponent implements OnInit {
         this.cdr.markForCheck();
       },
     });
-  }
-
-  trackStudent(_index: number, student: StudentRow): string {
-    return student.studentId;
   }
 }

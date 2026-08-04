@@ -12,7 +12,7 @@
       (close)="closeResponses()"
     />
   } @else if (!showAddForm) {
-    <app-scope-readonly-lock actionLabel="create or publish notices" />
+    <app-scope-readonly-lock actionLabel="create notices" />
     <app-smart-data-table
       [config]="tableConfig"
       [data]="tableRows"

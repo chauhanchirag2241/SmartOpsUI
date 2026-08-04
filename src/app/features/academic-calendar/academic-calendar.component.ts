@@ -497,6 +497,11 @@ export class AcademicCalendarComponent implements OnInit {
     return !!ev?.sourceExamId || (ev?.eventTypeCode || '').toUpperCase() === 'EXAM';
   }
 
+  /** Cross-module link: only when user can open Exam Schedule. */
+  canOpenExamScheduleLink(): boolean {
+    return this.permissions.canOpenMenuLink(MenuCodes.ExamSchedule);
+  }
+
   eventDisplayTitle(ev: CalendarEventDto): string {
     const classes = (ev.classNames ?? []).filter(Boolean);
     if (classes.length === 0) return ev.title;
@@ -506,7 +511,7 @@ export class AcademicCalendarComponent implements OnInit {
 
   viewExamSchedule(): void {
     const examId = this.editingEvent?.sourceExamId;
-    if (!examId) return;
+    if (!examId || !this.canOpenExamScheduleLink()) return;
     this.closeEventModal();
     void this.router.navigate(['/exams/schedule'], { queryParams: { examId } });
   }

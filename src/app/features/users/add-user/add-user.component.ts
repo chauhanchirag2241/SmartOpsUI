@@ -23,7 +23,7 @@ import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-fie
 import { SELECT_PLACEHOLDER } from '../../../shared/constants/form.constants';
 import { FormFieldConfig } from '../../../shared/interfaces/form-field-config';
 
-const FALLBACK_ROLES = ['School Admin', 'SmartOpsAdmin'];
+const FALLBACK_ROLES = ['School Admin'];
 
 @Component({
   selector: 'app-add-user',
@@ -188,7 +188,9 @@ export class AddUserComponent implements OnInit {
       )
       .subscribe({
         next: (roles) => {
-          this.roles = roles.filter((r) => r.name !== 'PlatformAdmin');
+          this.roles = roles.filter(
+            (r) => r.name !== 'PlatformAdmin' && r.name !== 'SmartOpsAdmin',
+          );
           this.rolesLoadError = '';
         },
         error: () => {
