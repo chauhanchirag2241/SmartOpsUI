@@ -196,9 +196,10 @@ export class StudentsComponent implements OnInit {
     currentFilter: string | null;
   }): void {
     const filterValue =
-      event.currentFilter !== null && event.currentFilter !== undefined
+      event.currentFilter !== null && event.currentFilter !== undefined && event.currentFilter !== ''
         ? (Number(event.currentFilter) as StudentFilter)
         : this.currentFilter;
+    this.currentFilter = filterValue;
     this.loadStudents(
       event.pageIndex,
       event.pageSize,
@@ -215,7 +216,14 @@ export class StudentsComponent implements OnInit {
     } else {
       this.currentFilter = StudentFilter.All;
     }
-    this.loadStudents(1, this.listState.pageSize, this.listState.searchQuery);
+    this.loadStudents(
+      1,
+      this.listState.pageSize,
+      this.listState.searchQuery,
+      this.listState.sortColumn,
+      this.listState.sortDirection,
+      this.currentFilter,
+    );
   }
 
   onAdvancedFiltersCleared(): void {
@@ -303,12 +311,12 @@ export class StudentsComponent implements OnInit {
 
     filtersInPanel: true,
     filters: [
-      { label: 'All', icon: 'list', value: StudentFilter.All.toString() },
       {
         label: 'Active',
         icon: 'check_circle',
         value: StudentFilter.Active.toString(),
       },
+      { label: 'All', icon: 'list', value: StudentFilter.All.toString() },
       {
         label: 'Inactive',
         icon: 'cancel',

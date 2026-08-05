@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClassService } from '../../core/services/class.service';
 import { SubjectService } from '../../core/services/subject.service';
@@ -18,6 +20,8 @@ import { AddHomeworkComponent } from './add-homework/add-homework.component';
 import { PageToolbarComponent } from '../../shared/components/page-toolbar/page-toolbar.component';
 import { PageChromeDirective } from '../../shared/directives/page-chrome.directive';
 import { DeleteConfirmDialogComponent } from '../../shared/components/delete-confirm-dialog/delete-confirm-dialog.component';
+import { MultiSelectChipsComponent } from '../../shared/components/multi-select-chips/multi-select-chips.component';
+import { MappingOption } from '../../shared/mapping/mapping.types';
 import {
   HomeworkListItem,
   asHomeworkArray,
@@ -38,6 +42,7 @@ import {
     PageToolbarComponent,
     AddHomeworkComponent,
     PageChromeDirective,
+    MultiSelectChipsComponent,
   ],
   templateUrl: './homework.component.html',
   styleUrl: './homework.component.css',
@@ -61,13 +66,13 @@ export class HomeworkComponent implements OnInit {
   HomeworkPriority = HomeworkPriority;
 
   items: HomeworkListItem[] = [];
-  classes: any[] = [];
-  subjects: any[] = [];
+  classOptions: MappingOption[] = [];
+  subjectOptions: MappingOption[] = [];
+  selectedClassIds: string[] = [];
+  selectedSubjectIds: string[] = [];
 
   stats = { totalAssigned: 0, dueToday: 0, totalSubmissions: 0, overdue: 0 };
 
-  classFilter = '';
-  subjectFilter = '';
   chipFilter = 'all';
   searchQuery = '';
   viewMode: 'grid' | 'list' = 'grid';
@@ -83,36 +88,69 @@ export class HomeworkComponent implements OnInit {
     this.loadList();
   }
 
-
-
   loadDropdowns(): void {
     this.classService.getClassDropdown().subscribe({
-      next: (c) => (this.classes = c || []),
+      next: (c) => {
+        this.classOptions = (c || [])
+          .map((item: any) => ({
+            id: String(item.id ?? item.Id ?? ''),
+            name: String(item.name ?? item.Name ?? item.className ?? item.ClassName ?? ''),
+          }))
+          .filter((o) => o.id && o.name);
+        this.cdr.detectChanges();
+      },
       error: () => this.snackBar.open('Failed to load classes', 'Close', { duration: 3000 }),
     });
     this.reloadSubjectFilterOptions();
   }
 
-  onClassFilterChanged(): void {
-    this.subjectFilter = '';
+  onClassFilterChange(ids: string[]): void {
+    this.selectedClassIds = ids;
+    this.selectedSubjectIds = [];
     this.reloadSubjectFilterOptions();
     this.loadList();
   }
 
+  onSubjectFilterChange(ids: string[]): void {
+    this.selectedSubjectIds = ids;
+    this.loadList();
+  }
+
   private reloadSubjectFilterOptions(): void {
-    if (this.classFilter) {
-      const yearId = this.ayContext.effectiveYearId() || undefined;
-      this.classService.getTeachingSubjectsForClass(this.classFilter, yearId).subscribe({
-        next: (rows) => {
-          this.subjects = (rows || []).map((s: any) => ({
-            id: s.id ?? s.Id,
-            name: s.name ?? s.Name,
-            subjectName: s.name ?? s.Name,
-          }));
+    const yearId = this.ayContext.effectiveYearId() || undefined;
+
+    if (this.selectedClassIds.length) {
+      forkJoin(
+        this.selectedClassIds.map((classId) =>
+          this.classService.getTeachingSubjectsForClass(classId, yearId).pipe(catchError(() => of([]))),
+        ),
+      ).subscribe({
+        next: (pages) => {
+          const byId = new Map<string, MappingOption>();
+          for (const rows of pages) {
+            for (const s of rows || []) {
+              const id = String((s as any).id ?? (s as any).Id ?? '');
+              const name = String(
+                (s as any).name ??
+                  (s as any).Name ??
+                  (s as any).subjectName ??
+                  (s as any).SubjectName ??
+                  '',
+              );
+              if (id && name && !byId.has(id)) {
+                byId.set(id, { id, name });
+              }
+            }
+          }
+          this.subjectOptions = [...byId.values()].sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+          );
+          const allowed = new Set(this.subjectOptions.map((o) => o.id));
+          this.selectedSubjectIds = this.selectedSubjectIds.filter((id) => allowed.has(id));
           this.cdr.detectChanges();
         },
         error: () => {
-          this.subjects = [];
+          this.subjectOptions = [];
           this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 });
         },
       });
@@ -120,7 +158,15 @@ export class HomeworkComponent implements OnInit {
     }
 
     this.subjectService.getSubjectDropdown().subscribe({
-      next: (s) => (this.subjects = s || []),
+      next: (s) => {
+        this.subjectOptions = (s || [])
+          .map((item: any) => ({
+            id: String(item.id ?? item.Id ?? ''),
+            name: String(item.subjectName ?? item.name ?? item.Name ?? ''),
+          }))
+          .filter((o) => o.id && o.name);
+        this.cdr.detectChanges();
+      },
       error: () => this.snackBar.open('Failed to load subjects', 'Close', { duration: 3000 }),
     });
   }
@@ -142,8 +188,8 @@ export class HomeworkComponent implements OnInit {
   loadList(): void {
     this.homeworkService
       .getList(
-        this.classFilter || undefined,
-        this.subjectFilter || undefined,
+        this.selectedClassIds.length ? this.selectedClassIds : null,
+        this.selectedSubjectIds.length ? this.selectedSubjectIds : null,
         this.chipFilter === 'all' ? undefined : this.chipFilter,
         this.searchQuery || undefined,
       )
@@ -187,12 +233,16 @@ export class HomeworkComponent implements OnInit {
   }
 
   get toolbarFilterActive(): boolean {
-    return !!this.classFilter || !!this.subjectFilter || this.chipFilter !== 'all';
+    return (
+      this.selectedClassIds.length > 0 ||
+      this.selectedSubjectIds.length > 0 ||
+      this.chipFilter !== 'all'
+    );
   }
 
   onToolbarFiltersCleared(): void {
-    this.classFilter = '';
-    this.subjectFilter = '';
+    this.selectedClassIds = [];
+    this.selectedSubjectIds = [];
     this.chipFilter = 'all';
     this.searchQuery = '';
     this.reloadSubjectFilterOptions();
@@ -213,14 +263,6 @@ export class HomeworkComponent implements OnInit {
   setView(mode: 'grid' | 'list'): void {
     this.viewMode = mode;
     this.refreshView();
-  }
-
-  /** Browser local calendar date (YYYY-MM-DD), not UTC from toISOString(). */
-  private localDateString(date = new Date()): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 
   openCreate(): void {

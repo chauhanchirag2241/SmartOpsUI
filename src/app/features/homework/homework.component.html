@@ -50,16 +50,26 @@
     (advancedFiltersCleared)="onToolbarFiltersCleared()"
   >
     <div toolbarFilters class="st-table-filters">
-      <label class="table-filter-section-label" for="hw-class-filter">Class</label>
-      <select id="hw-class-filter" class="sel-filter sel-filter-lg" [(ngModel)]="classFilter" (ngModelChange)="onClassFilterChanged()">
-        <option value="">All classes</option>
-        <option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</option>
-      </select>
-      <label class="table-filter-section-label" for="hw-subject-filter">Subject</label>
-      <select id="hw-subject-filter" class="sel-filter sel-filter-lg" [(ngModel)]="subjectFilter" (ngModelChange)="loadList()">
-        <option value="">All subjects</option>
-        <option *ngFor="let s of subjects" [value]="s.id">{{ s.subjectName || s.name }}</option>
-      </select>
+      <div class="table-filter-section">
+        <span class="table-filter-section-label">Class</span>
+        <app-multi-select-chips
+          [options]="classOptions"
+          [selectedIds]="selectedClassIds"
+          placeholder="Select classes"
+          searchPlaceholder="Search class…"
+          (selectedIdsChange)="onClassFilterChange($event)"
+        />
+      </div>
+      <div class="table-filter-section">
+        <span class="table-filter-section-label">Subject</span>
+        <app-multi-select-chips
+          [options]="subjectOptions"
+          [selectedIds]="selectedSubjectIds"
+          placeholder="Select subjects"
+          searchPlaceholder="Search subject…"
+          (selectedIdsChange)="onSubjectFilterChange($event)"
+        />
+      </div>
       <div class="table-filter-section">
         <span class="table-filter-section-label">Status</span>
         <div class="table-filter-chips">

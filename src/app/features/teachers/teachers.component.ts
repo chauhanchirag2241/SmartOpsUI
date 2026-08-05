@@ -92,8 +92,8 @@ export class TeachersComponent implements OnInit {
     ],
     filtersInPanel: true,
     filters: [
-      { label: 'All', icon: 'list', value: StaffFilter.All.toString() },
       { label: 'Active', icon: 'check_circle', value: StaffFilter.Active.toString() },
+      { label: 'All', icon: 'list', value: StaffFilter.All.toString() },
       { label: 'Inactive', icon: 'cancel', value: StaffFilter.Inactive.toString() },
     ],
     actions: [

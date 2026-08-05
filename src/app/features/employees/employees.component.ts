@@ -106,8 +106,8 @@ export class EmployeesComponent implements OnInit {
     ],
     filtersInPanel: true,
     filters: [
-      { label: 'All', icon: 'list', value: StaffFilter.All.toString() },
       { label: 'Active', icon: 'check_circle', value: StaffFilter.Active.toString() },
+      { label: 'All', icon: 'list', value: StaffFilter.All.toString() },
       { label: 'Inactive', icon: 'cancel', value: StaffFilter.Inactive.toString() },
       { label: 'On Leave', icon: 'event_busy', value: StaffFilter.OnLeave.toString() },
     ],

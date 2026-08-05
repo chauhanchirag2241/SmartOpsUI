@@ -10,6 +10,7 @@ import { PageChromeDirective } from '../../shared/directives/page-chrome.directi
 import { SmartDataTableComponent } from '../../shared/components/smart-data-table';
 import { DataTableConfig } from '../../shared/interfaces/data-table.interface';
 import { FormFieldComponent } from '../../shared/form-controls/form-field';
+import { ActionButtonComponent } from '../../shared/components/action-button/action-button.component';
 import { AcademicYearContextService } from '../../core/services/academic-year-context.service';
 import { EMPTY, switchMap, catchError, timeout } from 'rxjs';
 import {
@@ -39,6 +40,7 @@ const GUID_REGEX =
     PageChromeDirective,
     SmartDataTableComponent,
     FormFieldComponent,
+    ActionButtonComponent,
   ],
   templateUrl: './homework-detail.component.html',
   styleUrl: './homework-detail.component.css',

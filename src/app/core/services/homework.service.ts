@@ -45,10 +45,23 @@ export interface StudentHomeworkSubmissionItem {
 export class HomeworkService {
   private readonly api = inject(ApiService);
 
-  getList(classId?: string, subjectId?: string, status?: string, search?: string): Observable<any[]> {
+  getList(
+    classIds?: string[] | null,
+    subjectIds?: string[] | null,
+    status?: string,
+    search?: string,
+  ): Observable<any[]> {
     let params = new HttpParams();
-    if (classId) params = params.set('classId', classId);
-    if (subjectId) params = params.set('subjectId', subjectId);
+    if (classIds?.length) {
+      for (const id of classIds) {
+        params = params.append('classIds', id);
+      }
+    }
+    if (subjectIds?.length) {
+      for (const id of subjectIds) {
+        params = params.append('subjectIds', id);
+      }
+    }
     if (status) params = params.set('status', status);
     if (search) params = params.set('search', search);
     return this.api.get<any[]>('homework', params);

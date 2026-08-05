@@ -1,23 +1,10 @@
 <div class="hw-detail-page" *ngIf="detail">
-  <div class="topbar">
-    <span
-      [appPageChrome]="detail.title"
-      [pageChromeSubtitle]="'Student submission status'"
-      [pageChromeShowBack]="true"
-      (pageChromeBack)="goBack()"
-    ></span>
-    <button
-      *ngIf="canEditSubmissions"
-      type="button"
-      class="save-btn"
-      [disabled]="isSubmitting"
-      (click)="submitOrUpdateSubmissions()"
-    >
-      <mat-icon *ngIf="!isSubmitting">{{ isSubmissionsSubmitted ? 'save' : 'check_circle' }}</mat-icon>
-      <mat-icon class="spinning" *ngIf="isSubmitting">sync</mat-icon>
-      {{ isSubmitting ? 'Saving...' : isSubmissionsSubmitted ? 'Update submissions' : 'Submit' }}
-    </button>
-  </div>
+  <span
+    [appPageChrome]="detail.title"
+    [pageChromeSubtitle]="'Student submission status'"
+    [pageChromeShowBack]="true"
+    (pageChromeBack)="goBack()"
+  ></span>
 
   <div class="detail-card">
     <div class="detail-info">
@@ -128,11 +115,24 @@
       </app-smart-data-table>
     </div>
   </div>
+
+  @if (canEditSubmissions) {
+    <div class="footer-actions">
+      <div class="footer-hint">Save status, marks, and remarks for all students</div>
+      <app-action-button
+        type="save"
+        [label]="isSubmitting ? 'Saving…' : isSubmissionsSubmitted ? 'Update submissions' : 'Submit'"
+        [icon]="isSubmitting ? 'hourglass_empty' : isSubmissionsSubmitted ? 'save' : 'check_circle'"
+        [disabled]="isSubmitting"
+        (action)="submitOrUpdateSubmissions()"
+      />
+    </div>
+  }
 </div>
 
 <div class="hw-detail-page error-state" *ngIf="loadError && !detail">
   <mat-icon>error_outline</mat-icon>
   <p>{{ loadError }}</p>
   <button type="button" class="back-btn" (click)="goBack()">Back to homework</button>
-  <button type="button" class="save-btn" (click)="retryLoad()">Retry</button>
+  <app-action-button type="save" label="Retry" icon="refresh" (action)="retryLoad()" />
 </div>

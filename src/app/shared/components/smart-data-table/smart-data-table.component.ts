@@ -347,7 +347,13 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['config']) {
       this.refreshUiConfig();
     }
-    if (changes['data'] || changes['config'] || changes['totalRecords'] || changes['pageIndex']) {
+    if (
+      changes['data'] ||
+      changes['config'] ||
+      changes['totalRecords'] ||
+      changes['pageIndex'] ||
+      changes['initialFilterValue']
+    ) {
       this.initDefaults();
       if (this.serverSide) {
         this.syncServerPageState();
@@ -428,13 +434,29 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
       this._pageSizeInitialized = true;
     }
 
-    // Init default active filter
-    if (this.config.filters?.length && !this.activeFilter) {
-      if (this.initialFilterValue) {
-        this.activeFilter = this.config.filters.find(f => f.value === this.initialFilterValue) || this.config.filters[0];
-      } else {
-        this.activeFilter = this.config.filters[0];
+    this.syncActiveFilterFromInputs();
+  }
+
+  /**
+   * Keep chip selection aligned with parent `initialFilterValue`.
+   * First init can run before that input is set — must re-sync later or UI shows All while data is Active.
+   */
+  private syncActiveFilterFromInputs(): void {
+    const filters = this.config?.filters;
+    if (!filters?.length) return;
+
+    if (this.initialFilterValue != null && String(this.initialFilterValue) !== '') {
+      const matched = filters.find(
+        (f) => String(f.value) === String(this.initialFilterValue),
+      );
+      if (matched) {
+        this.activeFilter = matched;
+        return;
       }
+    }
+
+    if (!this.activeFilter) {
+      this.activeFilter = filters[0];
     }
   }
 
@@ -460,7 +482,7 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   setFilter(filter: DataTableFilter): void {
-    if (this.activeFilter?.value === filter.value) return;
+    if (String(this.activeFilter?.value) === String(filter.value)) return;
 
     this.activeFilter = filter;
     this.currentPage = 1;
@@ -480,7 +502,8 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
       searchQuery: this.searchQuery,
       sortColumn: this.sortColumn,
       sortDirection: this.sortDirection,
-      currentFilter: this.activeFilter?.value || null,
+      // Use nullish check — filter value "0" (All) must not become null.
+      currentFilter: this.activeFilter?.value ?? null,
     });
   }
 
@@ -679,8 +702,10 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   /** Apply status + date range drafts, then close. */
   commitFilterPanel(event?: Event): void {
     event?.stopPropagation();
-    if (this.pendingFilter && this.pendingFilter.value !== this.activeFilter?.value) {
-      this.setFilter(this.pendingFilter);
+    if (this.pendingFilter) {
+      if (String(this.pendingFilter.value) !== String(this.activeFilter?.value ?? '')) {
+        this.setFilter(this.pendingFilter);
+      }
     }
     this.dateRangeFilter?.commit();
     this.showFilterMenu = false;
@@ -699,8 +724,14 @@ export class SmartDataTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   clearAdvancedFilters(): void {
-    const first = this.config.filters?.[0] ?? null;
-    this.pendingFilter = first;
+    const filters = this.uiConfig?.filters ?? this.config?.filters;
+    const preferred =
+      (this.initialFilterValue != null && this.initialFilterValue !== ''
+        ? filters?.find((f) => String(f.value) === String(this.initialFilterValue))
+        : null) ??
+      filters?.[0] ??
+      null;
+    this.pendingFilter = preferred;
     this.dateRangeFilter?.resetDraftToDefault();
     this.advancedFiltersCleared.emit();
   }
