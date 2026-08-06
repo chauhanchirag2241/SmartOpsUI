@@ -9,6 +9,7 @@ export interface StaffAttendanceSettingsDto {
   type: string;
   allowsManual: boolean;
   allowsFace: boolean;
+  defaultWorkingHours?: number;
 }
 
 export interface StaffAttendanceRowDto {

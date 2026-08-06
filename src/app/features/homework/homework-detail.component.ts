@@ -58,6 +58,11 @@ export class HomeworkDetailComponent implements OnInit {
     return !this.ayContext.isReadOnlyScope();
   }
 
+  get maxMarks(): number | null {
+    const marks = this.detail?.marks ?? this.detail?.Marks;
+    return marks != null && Number(marks) > 0 ? Number(marks) : null;
+  }
+
   HomeworkSubmissionStatus = HomeworkSubmissionStatus;
 
   homeworkId = '';
@@ -291,8 +296,30 @@ export class HomeworkDetailComponent implements OnInit {
     }));
   }
 
+  private validateMarksAgainstHomeworkMax(): string | null {
+    const max = this.maxMarks;
+    for (const row of this.studentRows) {
+      if (row.marks == null) continue;
+      const marks = Number(row.marks);
+      if (Number.isNaN(marks)) continue;
+      if (marks < 0) return 'Marks cannot be negative.';
+      if (max != null && marks > max) {
+        return `Marks cannot exceed homework maximum (${max}).`;
+      }
+    }
+    return null;
+  }
+
   submitOrUpdateSubmissions(): void {
     if (!this.canEditSubmissions || !this.homeworkId) return;
+    const marksError = this.validateMarksAgainstHomeworkMax();
+    if (marksError) {
+      this.snackBar.open(marksError, 'Close', {
+        duration: 3000,
+        panelClass: ['snack-error'],
+      });
+      return;
+    }
     this.isSubmitting = true;
     const isUpdate = this.isSubmissionsSubmitted;
     const call = isUpdate

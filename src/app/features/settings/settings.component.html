@@ -1,10 +1,8 @@
 <section class="settings-page">
-  <header class="page-header page-header-actions-only">
   <span
     [appPageChrome]="'Settings'"
     [pageChromeSubtitle]="settingsChromeSubtitle"
   ></span>
-</header>
 
   @if (!schoolReady) {
     <div class="alert alert-warn">
@@ -13,128 +11,275 @@
     </div>
   }
 
-  <section class="card">
-    <h2>
-      <mat-icon>calendar_month</mat-icon>
-      Academic year
-    </h2>
-    <p class="hint">
-      Switch the active academic year for this portal. The current year is the one whose date range includes today.
-      Past years are read-only.
-    </p>
-    @if (yearsLoading) {
-      <p class="loading">Loading academic years…</p>
-    } @else if (academicYears.length === 0) {
-      <p class="hint">No academic years found. Ask an admin to add them from school configuration.</p>
-    } @else if (canSwitchYear) {
-      <label class="field">
-        <span>Working academic year</span>
-        <select
-          [value]="selectedYearId ?? ''"
-          (change)="onAcademicYearChange(($any($event.target)).value)"
-        >
-          @for (year of academicYears; track year.id) {
-            <option [value]="year.id">
-              {{ year.name }}{{ year.isCurrent ? ' (current)' : '' }}
-            </option>
-          }
-        </select>
-      </label>
-    } @else {
-      <p class="hint">
-        Active year:
-        <strong>{{ ayContext.effectiveYearLabel() || '—' }}</strong>
-      </p>
-    }
-  </section>
-
   @if (loading) {
     <p class="loading">Loading settings…</p>
   } @else {
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <section class="card">
-        <h2>
-          <mat-icon>work_off</mat-icon>
-          Staff leave approval
-        </h2>
+      <div class="settings-layout">
+        <nav class="settings-side-nav" aria-label="Settings sections">
+          <div class="nav-title">Sections</div>
+          @for (section of sections; track section.id) {
+            <a
+              href="#settings-{{ section.id }}"
+              [class.active]="activeSection === section.id"
+              (click)="scrollToSection(section.id, $event)"
+            >
+              <mat-icon>{{ section.icon }}</mat-icon>
+              {{ section.label }}
+              @if (section.toggleKey) {
+                <span class="nav-status" [class.on]="isSectionOn(section)"></span>
+              }
+            </a>
+          }
+        </nav>
 
-        <label class="field">
-          <span>Approval mode</span>
-          <select formControlName="staffApprovalMode">
-            <option value="AnyOne">Any one approver</option>
-            <option value="AllMust">All must approve</option>
-          </select>
-        </label>
+        <div class="settings-main">
+          <!-- Academic year -->
+          <section class="settings-section-card" id="settings-year">
+            <div class="settings-card-head">
+              <div class="left">
+                <div class="icon-wrap">
+                  <mat-icon>calendar_month</mat-icon>
+                </div>
+                <div>
+                  <h2>Academic year</h2>
+                  <p class="desc">
+                    Switch the year every setting below applies to. Past years stay read-only.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="settings-card-body">
+              @if (yearsLoading) {
+                <p class="hint">Loading academic years…</p>
+              } @else if (academicYears.length === 0) {
+                <p class="hint">
+                  No academic years found. Ask an admin to add them from school configuration.
+                </p>
+              } @else if (canSwitchYear) {
+                <label class="field" style="max-width: 280px">
+                  <span>Active year</span>
+                  <select
+                    [value]="selectedYearId ?? ''"
+                    (change)="onAcademicYearChange(($any($event.target)).value)"
+                  >
+                    @for (year of academicYears; track year.id) {
+                      <option [value]="year.id">
+                        {{ year.name }}{{ year.isCurrent ? ' (current)' : '' }}
+                      </option>
+                    }
+                  </select>
+                  <span class="hint">
+                    The current year is the one whose date range includes today.
+                  </span>
+                </label>
+              } @else {
+                <p class="hint">
+                  Active year:
+                  <strong>{{ ayContext.effectiveYearLabel() || '—' }}</strong>
+                </p>
+              }
+            </div>
+          </section>
 
-        <div class="chips-block">
-          <span class="label">Approver user types</span>
-          <div class="chips">
-            @for (type of userTypes; track type.id) {
-              <button
-                type="button"
-                class="chip"
-                [class.selected]="isStaffTypeSelected(type.name)"
-                [disabled]="!canEdit"
-                (click)="toggleStaffType(type.name)"
-              >
-                {{ type.name }}
-              </button>
-            }
-          </div>
+          <!-- Staff leave -->
+          <section
+            class="settings-section-card"
+            id="settings-staffleave"
+            [class.is-disabled]="!staffLeaveEnabled"
+          >
+            <div class="settings-card-head">
+              <div class="left">
+                <div class="icon-wrap">
+                  <mat-icon>groups</mat-icon>
+                </div>
+                <div>
+                  <h2>Staff leave approval</h2>
+                  <p class="desc">
+                    Decide who signs off on leave requests from teachers and other staff.
+                  </p>
+                </div>
+              </div>
+              <app-toggle-switch
+                formControlName="staffLeaveEnabled"
+                ariaLabel="Enable staff leave approval settings"
+              />
+            </div>
+            <div class="settings-card-body">
+              <app-dynamic-field [config]="fieldConfigs['staffApprovalMode']" [group]="form" />
+              <p class="hint">
+                With “any one approver”, the leave is approved as soon as a single listed approver
+                signs off.
+              </p>
+              <div class="chips-block">
+                <span class="label">Approver user types</span>
+                <p class="hint">
+                  Choose who is allowed to approve staff leave. Principal is selected by default.
+                </p>
+                <div class="chips">
+                  @for (type of userTypes; track type.id) {
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.selected]="isStaffTypeSelected(type.name)"
+                      [disabled]="!canEdit || !staffLeaveEnabled"
+                      (click)="toggleStaffType(type.name)"
+                    >
+                      {{ type.name }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Student leave -->
+          <section
+            class="settings-section-card"
+            id="settings-studentleave"
+            [class.is-disabled]="!studentLeaveEnabled"
+          >
+            <div class="settings-card-head">
+              <div class="left">
+                <div class="icon-wrap">
+                  <mat-icon>school</mat-icon>
+                </div>
+                <div>
+                  <h2>Student leave approval</h2>
+                  <p class="desc">
+                    Set who approves student leave, and when a long leave should skip straight to the
+                    principal.
+                  </p>
+                </div>
+              </div>
+              <app-toggle-switch
+                formControlName="studentLeaveEnabled"
+                ariaLabel="Enable student leave approval settings"
+              />
+            </div>
+            <div class="settings-card-body">
+              <div class="settings-subnote">
+                <mat-icon>info</mat-icon>
+                Short leaves are routed to the class teacher by default. The settings below only
+                affect longer leaves.
+              </div>
+
+              <div class="settings-field-row">
+                <app-dynamic-field [config]="fieldConfigs['studentApprovalMode']" [group]="form" />
+                <div>
+                  <app-dynamic-field
+                    [config]="fieldConfigs['studentLongLeaveMinDays']"
+                    [group]="form"
+                  />
+                  <p class="hint">A leave request of this length or longer counts as “long”.</p>
+                </div>
+              </div>
+
+              <hr class="settings-divider" />
+
+              <div class="settings-inline-toggle">
+                <div class="label-block">
+                  <span class="flabel">Send long leave straight to the principal</span>
+                  <p class="hint">
+                    Skips the class teacher and routes long leave requests directly to the principal.
+                  </p>
+                </div>
+                <app-toggle-switch
+                  formControlName="studentLongLeaveTransferToPrincipal"
+                  ariaLabel="Transfer long leave to principal"
+                />
+              </div>
+
+              @if (longLeaveTransferOn) {
+                <div class="settings-conditional">
+                  <div class="chips-block">
+                    <span class="label">Long leave approver user types</span>
+                    <p class="hint">
+                      Office staff is selected as the fallback approver alongside the principal.
+                    </p>
+                    <div class="chips">
+                      @for (type of userTypes; track type.id) {
+                        <button
+                          type="button"
+                          class="chip"
+                          [class.selected]="isLongLeaveTypeSelected(type.name)"
+                          [disabled]="!canEdit || !studentLeaveEnabled"
+                          (click)="toggleLongLeaveType(type.name)"
+                        >
+                          {{ type.name }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- Staff attendance -->
+          <section
+            class="settings-section-card"
+            id="settings-attendance"
+            [class.is-disabled]="!attendanceEnabled"
+          >
+            <div class="settings-card-head">
+              <div class="left">
+                <div class="icon-wrap">
+                  <mat-icon>schedule</mat-icon>
+                </div>
+                <div>
+                  <h2>Staff attendance</h2>
+                  <p class="desc">
+                    Fallback hours used when an employee has no shift start and end time configured.
+                  </p>
+                </div>
+              </div>
+              <app-toggle-switch
+                formControlName="attendanceEnabled"
+                ariaLabel="Enable staff attendance settings"
+              />
+            </div>
+            <div class="settings-card-body">
+              <div class="settings-subnote">
+                <mat-icon>info</mat-icon>
+                Half day counts as half of these hours. Full day (present) counts once this duration
+                or more is logged after check-out.
+              </div>
+              <div style="max-width: 240px">
+                <app-dynamic-field
+                  [config]="fieldConfigs['defaultWorkingHours']"
+                  [group]="form"
+                />
+                <p class="hint">Hours per day</p>
+              </div>
+            </div>
+          </section>
+
+          @if (canEdit) {
+            <div class="settings-savebar">
+              <span class="status-text">
+                <span class="status-dot" [class.muted]="!dirty && !saving"></span>
+                {{ saveStatusText }}
+              </span>
+              <div class="actions">
+                <app-action-button
+                  type="cancel"
+                  label="Discard"
+                  [disabled]="saving || !dirty"
+                  (action)="discardChanges()"
+                />
+                <app-action-button
+                  type="save"
+                  [label]="saving ? 'Saving…' : 'Save settings'"
+                  [icon]="saving ? 'hourglass_empty' : 'check_circle'"
+                  [disabled]="saving || !schoolReady || !dirty"
+                  (action)="onSubmit()"
+                />
+              </div>
+            </div>
+          }
         </div>
-      </section>
-
-      <section class="card">
-        <h2>
-          <mat-icon>child_care</mat-icon>
-          Student leave approval
-        </h2>
-
-        <p class="hint">Short leaves are routed to the class teacher by default.</p>
-
-        <label class="field">
-          <span>Approval mode</span>
-          <select formControlName="studentApprovalMode">
-            <option value="AnyOne">Any one approver</option>
-            <option value="AllMust">All must approve</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>Long leave threshold (days)</span>
-          <input type="number" formControlName="studentLongLeaveMinDays" min="1" />
-        </label>
-
-        <label class="checkbox-field">
-          <input type="checkbox" formControlName="studentLongLeaveTransferToPrincipal" />
-          <span>Transfer long leave to Principal (skip class teacher)</span>
-        </label>
-
-        <div class="chips-block">
-          <span class="label">Long leave approver user types</span>
-          <div class="chips">
-            @for (type of userTypes; track type.id) {
-              <button
-                type="button"
-                class="chip"
-                [class.selected]="isLongLeaveTypeSelected(type.name)"
-                [disabled]="!canEdit"
-                (click)="toggleLongLeaveType(type.name)"
-              >
-                {{ type.name }}
-              </button>
-            }
-          </div>
-        </div>
-      </section>
-
-      @if (canEdit) {
-        <footer class="actions">
-          <button type="submit" class="btn-primary" [disabled]="saving || !schoolReady">
-            {{ saving ? 'Saving…' : 'Save settings' }}
-          </button>
-        </footer>
-      }
+      </div>
     </form>
   }
 </section>

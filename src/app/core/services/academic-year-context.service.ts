@@ -92,14 +92,11 @@ export class AcademicYearContextService {
   }
 
   canSwitchYear(): boolean {
-    const roles = (this.auth.currentUser?.roles ?? []).map((r) => r.toUpperCase());
-    const primary = (this.auth.currentUser?.role ?? '').toUpperCase();
-    return (
-      roles.includes('ADMIN') ||
-      roles.includes('SCHOOL_ADMIN') ||
-      primary === 'ADMIN' ||
-      primary === 'SCHOOL_ADMIN'
-    );
+    const normalize = (role: string) => role.trim().toUpperCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+    const roles = (this.auth.currentUser?.roles ?? []).map(normalize);
+    const primary = normalize(this.auth.currentUser?.role ?? '');
+    const allowed = new Set(['ADMIN', 'SCHOOL ADMIN', 'SMARTOPSADMIN', 'PRINCIPAL']);
+    return allowed.has(primary) || roles.some((role) => allowed.has(role));
   }
 
   initialize(): Observable<unknown> {

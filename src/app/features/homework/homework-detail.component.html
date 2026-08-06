@@ -98,6 +98,7 @@
               type="number"
               [(ngModel)]="asStudentRow(row).marks"
               [min]="0"
+              [max]="maxMarks"
               [disabled]="!canEditSubmissions || isPendingRow(row)"
             />
           } @else if (column.key === 'remark') {
