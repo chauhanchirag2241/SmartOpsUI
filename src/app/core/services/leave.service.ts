@@ -10,6 +10,13 @@ export enum LeaveType {
   Other = 3,
 }
 
+export type LeaveHalfDaySession = 'FirstHalf' | 'SecondHalf' | 1 | 2;
+
+export interface LeaveHalfDay {
+  date: string;
+  session: LeaveHalfDaySession;
+}
+
 export interface CreateLeaveRequest {
   fromDate: string;
   toDate: string;
@@ -18,10 +25,18 @@ export interface CreateLeaveRequest {
   leaveType?: LeaveType | null;
   reason?: string | null;
   submitImmediately?: boolean;
+  isHalfDay?: boolean;
+  halfDays?: LeaveHalfDay[];
 }
 
 export interface CreateStudentLeaveRequest extends CreateLeaveRequest {
   studentId: string;
+}
+
+export interface LeaveApplicant {
+  employeeId: string;
+  employeeName: string;
+  reportingManager?: { id: string; name: string } | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,6 +45,10 @@ export class LeaveService {
 
   getStaffApprovers(): Observable<unknown[]> {
     return this.api.get('leave/staff/approvers');
+  }
+
+  getStaffApplicant(): Observable<LeaveApplicant> {
+    return this.api.get<LeaveApplicant>('leave/staff/applicant');
   }
 
   getStaffList(status?: string, employeeId?: string, from?: string, to?: string): Observable<unknown[]> {

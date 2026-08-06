@@ -35,7 +35,11 @@
 
         <div class="settings-main">
           <!-- Academic year -->
-          <section class="settings-section-card" id="settings-year">
+          <section
+            class="settings-section-card"
+            id="settings-year"
+            [class.is-disabled]="!academicYearEditable"
+          >
             <div class="settings-card-head">
               <div class="left">
                 <div class="icon-wrap">
@@ -48,6 +52,10 @@
                   </p>
                 </div>
               </div>
+              <app-toggle-switch
+                formControlName="academicYearEditable"
+                ariaLabel="Allow editing active academic year"
+              />
             </div>
             <div class="settings-card-body">
               @if (yearsLoading) {
@@ -57,22 +65,13 @@
                   No academic years found. Ask an admin to add them from school configuration.
                 </p>
               } @else if (canSwitchYear) {
-                <label class="field" style="max-width: 280px">
-                  <span>Active year</span>
-                  <select
-                    [value]="selectedYearId ?? ''"
-                    (change)="onAcademicYearChange(($any($event.target)).value)"
-                  >
-                    @for (year of academicYears; track year.id) {
-                      <option [value]="year.id">
-                        {{ year.name }}{{ year.isCurrent ? ' (current)' : '' }}
-                      </option>
-                    }
-                  </select>
-                  <span class="hint">
-                    The current year is the one whose date range includes today.
-                  </span>
-                </label>
+                <div style="max-width: 320px">
+                  <app-dynamic-field [config]="fieldConfigs['academicYearId']" [group]="form" />
+                  <p class="hint">
+                    Turn on the switch above to change year. The current year is the one whose date
+                    range includes today.
+                  </p>
+                </div>
               } @else {
                 <p class="hint">
                   Active year:

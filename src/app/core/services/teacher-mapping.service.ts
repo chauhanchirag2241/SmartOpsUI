@@ -37,6 +37,23 @@ export class TeacherMappingService {
       .pipe(map((rows) => this.normalizeList(rows)));
   }
 
+  /** Class group id — returns CST rows (subject + teacher) for that group. */
+  getByClassGroup(
+    classGroupId: string,
+    academicYearId?: string,
+  ): Observable<TeacherClassSubjectMapping[]> {
+    let params = new HttpParams();
+    if (academicYearId) {
+      params = params.set('academicYearId', academicYearId);
+    }
+    return this.api
+      .get<TeacherClassSubjectMapping[]>(
+        `mappings/by-class-group/${classGroupId}`,
+        params.keys().length ? params : undefined,
+      )
+      .pipe(map((rows) => this.normalizeList(rows)));
+  }
+
   create(payload: {
     classGroupId: string;
     subjectId?: string;

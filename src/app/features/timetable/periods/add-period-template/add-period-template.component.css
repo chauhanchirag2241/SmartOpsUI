@@ -69,19 +69,15 @@
 .tt-override-add {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
   margin-bottom: 12px;
 }
 
-.tt-override-add select {
-  min-width: 160px;
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-family: inherit;
-  font-size: 13px;
-  background: var(--card, #fff);
+.tt-override-add app-form-field {
+  min-width: 180px;
+  max-width: 240px;
+  flex: 0 1 220px;
 }
 
 .tt-override-block {

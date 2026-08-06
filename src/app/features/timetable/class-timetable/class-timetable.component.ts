@@ -12,8 +12,7 @@ import { AcademicYearContextService } from '../../../core/services/academic-year
 import { MenuCodes } from '../../../core/constants/menu-codes';
 import { applyModuleTablePermissions } from '../../../core/utils/permission-ui.util';
 import { ClassService } from '../../../core/services/class.service';
-import { SubjectService } from '../../../core/services/subject.service';
-import { EmployeeService } from '../../../core/services/employee.service';
+import { TeacherMappingService, TeacherClassSubjectMapping } from '../../../core/services/teacher-mapping.service';
 import { PeriodTemplateService } from '../../../core/services/period-template.service';
 import {
   TimetableService,
@@ -43,6 +42,7 @@ interface LookupOption {
   id: string;
   name: string;
   code?: string;
+  classGroupId?: string;
 }
 
 const DAYS = [
@@ -74,8 +74,7 @@ const DAYS = [
 export class ClassTimetableComponent implements OnInit {
   private readonly timetableService = inject(TimetableService);
   private readonly classService = inject(ClassService);
-  private readonly subjectService = inject(SubjectService);
-  private readonly employeeService = inject(EmployeeService);
+  private readonly teacherMappingService = inject(TeacherMappingService);
   private readonly periodTemplateService = inject(PeriodTemplateService);
   private readonly snackBar = inject(NotificationService);
   private readonly permissions = inject(PermissionService);
@@ -89,8 +88,10 @@ export class ClassTimetableComponent implements OnInit {
   formMode: FormMode = 'add';
 
   classes: LookupOption[] = [];
-  employees: LookupOption[] = [];
-  lookupSubjects: LookupOption[] = [];
+  /** Subjects for the currently selected class (loaded on class change). */
+  assignSubjects: LookupOption[] = [];
+  /** CST mappings for the selected class group (loaded on class change). */
+  classSubjectTeacherMaps: TeacherClassSubjectMapping[] = [];
   periodTemplates: { id: string; name: string }[] = [];
   versions: TimetableVersion[] = [];
   versionRows: Record<string, unknown>[] = [];
@@ -105,6 +106,8 @@ export class ClassTimetableComponent implements OnInit {
   saving = false;
   errorMessage = '';
   tableConfig!: DataTableConfig;
+  assignLookupsLoading = false;
+  private assignLookupsClassId = '';
 
   /** List filter — empty means all classes. */
   selectedClassIds: string[] = [];
@@ -284,6 +287,12 @@ export class ClassTimetableComponent implements OnInit {
     today.setHours(0, 0, 0, 0);
     this.versionForm.patchValue({ effectiveFrom: today });
     this.loadLookups(this.selectedAcademicYearId || undefined);
+
+    this.versionForm.get('classId')?.valueChanges.subscribe((classId: string) => {
+      const id = String(classId ?? '').trim();
+      if (!this.showDetail || this.formMode !== 'add') return;
+      this.loadAssignLookupsForClass(id);
+    });
   }
 
   onSelectedClassesChange(ids: string[]): void {
@@ -317,6 +326,7 @@ export class ClassTimetableComponent implements OnInit {
       effectiveFrom: today,
       copyFromPrevious: true,
     });
+    this.loadAssignLookupsForClass(defaultClassId);
     this.cdr.detectChanges();
   }
 
@@ -328,6 +338,9 @@ export class ClassTimetableComponent implements OnInit {
     this.grid = null;
     this.isDirty = false;
     this.errorMessage = '';
+    this.assignSubjects = [];
+    this.classSubjectTeacherMaps = [];
+    this.assignLookupsClassId = '';
     this.loadVersionList();
   }
 
@@ -379,6 +392,7 @@ export class ClassTimetableComponent implements OnInit {
 
     this.draftLoading = true;
     this.errorMessage = '';
+    this.loadAssignLookupsForClass(classId);
     this.cdr.detectChanges();
 
     this.periodTemplateService
@@ -616,11 +630,18 @@ export class ClassTimetableComponent implements OnInit {
     // Draft add has no versionId until Save — still allow slot popup on local grid.
     if (!this.canEditGrid || period.isBreak) return;
 
+    const classId = this.detailClassId;
+    if (classId && this.assignLookupsClassId !== classId) {
+      this.loadAssignLookupsForClass(classId);
+    }
+
     const existing = this.getCell(day, period.id);
     const subjects = this.uniqueSubjects();
     if (!subjects.length) {
       this.snackBar.open(
-        'No subjects available. Add subjects in Subject Master, then refresh this page.',
+        this.assignLookupsLoading
+          ? 'Loading subjects for this class…'
+          : 'No subjects for this class. Map subjects in Class–Subject–Teacher Mapping first.',
         'Close',
         { duration: 4500, panelClass: 'snack-error' },
       );
@@ -685,6 +706,7 @@ export class ClassTimetableComponent implements OnInit {
     this.isDirty = false;
     this.errorMessage = '';
     this.grid = null;
+    this.loadAssignLookupsForClass(classId);
     this.loadVersionGrid(versionId);
   }
 
@@ -732,22 +754,12 @@ export class ClassTimetableComponent implements OnInit {
       classes: this.classService.getClassDropdown(yearId).pipe(
         catchError(() => of([] as unknown[])),
       ),
-      subjects: this.subjectService.getSubjectDropdown().pipe(
-        catchError(() => of([] as unknown[])),
-      ),
-      employees: this.employeeService.getClassTeacherDropdown().pipe(
-        catchError(() => of([] as { id: string; name: string }[])),
-      ),
       templates: this.periodTemplateService.getDropdown().pipe(
         catchError(() => of([] as { id: string; name: string }[])),
       ),
     }).subscribe({
-      next: ({ classes, subjects, employees, templates }) => {
+      next: ({ classes, templates }) => {
         this.classes = this.normalizeDropdownOptions(classes);
-        this.lookupSubjects = this.normalizeDropdownOptions(subjects);
-        this.employees = (employees || [])
-          .map((e) => ({ id: e.id, name: e.name }))
-          .filter((e) => e.id && e.name);
         this.periodTemplates = this.normalizeDropdownOptions(templates);
 
         this.syncClassFilterOptions();
@@ -779,7 +791,11 @@ export class ClassTimetableComponent implements OnInit {
         if (this.showDetail && this.formMode === 'add') {
           const currentClassId = String(this.versionForm.get('classId')?.value ?? '');
           if (!currentClassId || !this.classes.some((c) => c.id === currentClassId)) {
-            this.versionForm.patchValue({ classId: this.classes[0]?.id || '' });
+            const nextClassId = this.classes[0]?.id || '';
+            this.versionForm.patchValue({ classId: nextClassId });
+            this.loadAssignLookupsForClass(nextClassId);
+          } else {
+            this.loadAssignLookupsForClass(currentClassId);
           }
         }
 
@@ -797,6 +813,52 @@ export class ClassTimetableComponent implements OnInit {
     });
   }
 
+  /** Load class subjects + CST teacher mappings once when class changes. Assign modal filters client-side. */
+  private loadAssignLookupsForClass(classId: string): void {
+    const id = String(classId ?? '').trim();
+    if (!id) {
+      this.assignSubjects = [];
+      this.classSubjectTeacherMaps = [];
+      this.assignLookupsClassId = '';
+      return;
+    }
+    if (this.assignLookupsClassId === id && (this.assignSubjects.length || this.classSubjectTeacherMaps.length)) {
+      return;
+    }
+
+    const yearId = this.selectedAcademicYearId || undefined;
+    const classGroupId = this.classes.find((c) => c.id === id)?.classGroupId || '';
+
+    this.assignLookupsLoading = true;
+    this.assignLookupsClassId = id;
+
+    forkJoin({
+      subjects: this.classService.getTeachingSubjectsForClass(id, yearId).pipe(
+        catchError(() => of([] as unknown[])),
+      ),
+      mappings: classGroupId
+        ? this.teacherMappingService.getByClassGroup(classGroupId, yearId).pipe(
+            catchError(() => of([] as TeacherClassSubjectMapping[])),
+          )
+        : of([] as TeacherClassSubjectMapping[]),
+    }).subscribe({
+      next: ({ subjects, mappings }) => {
+        this.assignSubjects = this.normalizeDropdownOptions(subjects);
+        this.classSubjectTeacherMaps = (mappings ?? []).filter(
+          (m) => m.isActive && m.subjectId && m.employeeId,
+        );
+        this.assignLookupsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.assignSubjects = [];
+        this.classSubjectTeacherMaps = [];
+        this.assignLookupsLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   private normalizeDropdownOptions(items: unknown): LookupOption[] {
     if (!Array.isArray(items)) {
       return [];
@@ -807,10 +869,14 @@ export class ClassTimetableComponent implements OnInit {
         const id = String(row['id'] ?? row['Id'] ?? '');
         const name = String(row['name'] ?? row['Name'] ?? '').trim();
         const code = row['code'] ?? row['Code'] ?? row['subjectCode'] ?? row['SubjectCode'];
+        const classGroupId = row['classGroupId'] ?? row['ClassGroupId'];
         return {
           id,
           name,
           ...(code != null && String(code) ? { code: String(code) } : {}),
+          ...(classGroupId != null && String(classGroupId)
+            ? { classGroupId: String(classGroupId) }
+            : {}),
         };
       })
       .filter((c) => c.id && c.name);
@@ -983,11 +1049,25 @@ export class ClassTimetableComponent implements OnInit {
   }
 
   private uniqueSubjects(): { id: string; name: string; code?: string }[] {
-    return this.lookupSubjects.map((s) => ({ id: s.id, name: s.name, code: s.code }));
+    return this.assignSubjects.map((s) => ({ id: s.id, name: s.name, code: s.code }));
   }
 
-  private employeesForSubject(_subjectId: string): { id: string; name: string }[] {
-    return this.employees.map((e) => ({ id: e.id, name: e.name }));
+  /** Client-side: teachers mapped to the selected subject for this class group. */
+  private employeesForSubject(subjectId: string): { id: string; name: string }[] {
+    const sid = String(subjectId ?? '').trim();
+    if (!sid) return [];
+    const seen = new Set<string>();
+    const result: { id: string; name: string }[] = [];
+    for (const row of this.classSubjectTeacherMaps) {
+      if (row.subjectId !== sid || !row.employeeId) continue;
+      if (seen.has(row.employeeId)) continue;
+      seen.add(row.employeeId);
+      result.push({
+        id: row.employeeId,
+        name: row.employeeName || row.employeeId,
+      });
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private formatDateLabel(value: string): string {

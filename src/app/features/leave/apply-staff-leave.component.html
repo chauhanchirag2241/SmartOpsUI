@@ -1,7 +1,7 @@
 <app-scope-readonly-lock actionLabel="apply leave" />
 
 @if (readOnly) {
-  <span [appPageChrome]="'Apply staff leave'" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
+  <span [appPageChrome]="'Apply Leave'" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
   <div class="card">
     <div class="empty-panel">
       <mat-icon>lock</mat-icon>
@@ -9,29 +9,30 @@
     </div>
   </div>
 } @else {
-  <span [appPageChrome]="'Apply staff leave'" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
-
-  <p class="form-hint">Enter leave details and submit for approval</p>
+  <span [appPageChrome]="'Apply Leave'" [pageChromeShowBack]="true" (pageChromeBack)="cancel.emit()"></span>
 
   <div class="card">
     <div class="card-title">
-      <mat-icon>verified_user</mat-icon>
-      Approver
+      <mat-icon>badge</mat-icon>
+      Employee
     </div>
-    @if (loadingApprovers) {
-      <p class="form-hint" style="margin: 0">Loading approver…</p>
-    } @else if (approvers.length) {
-      <ul class="approver-list">
-        @for (a of approvers; track a.id) {
-          <li>
-            <mat-icon>person</mat-icon>
-            {{ a.name }}
-          </li>
-        }
-      </ul>
-    } @else {
-      <p class="form-hint" style="margin: 0">School admin will review your leave request.</p>
-    }
+    <div class="info-grid">
+      <div class="info-row">
+        <span class="info-label">Employee name</span>
+        <strong class="info-value">
+          @if (loadingApplicant) { Loading… } @else { {{ employeeName }} }
+        </strong>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Reporting manager</span>
+        <strong class="info-value">
+          @if (loadingApplicant || loadingApprovers) { Loading… } @else { {{ reportingManagerName }} }
+        </strong>
+      </div>
+    </div>
+    <p class="form-hint" style="margin: 8px 0 0">
+      Leave is approved by your reporting manager. If none is set, it goes to Principal.
+    </p>
   </div>
 
   <div class="card">
@@ -40,18 +41,6 @@
       Leave details
     </div>
     <div class="grid2">
-      <app-form-field
-        label="From date"
-        type="date"
-        [(ngModel)]="form.fromDate"
-        [required]="true"
-      />
-      <app-form-field
-        label="To date"
-        type="date"
-        [(ngModel)]="form.toDate"
-        [required]="true"
-      />
       <div class="field">
         @if (loadingTypes) {
           <p class="form-hint" style="margin: 0">Loading leave types…</p>
@@ -62,12 +51,74 @@
             [(ngModel)]="form.leaveTypeId"
             [options]="leaveTypeOptions"
             [required]="true"
+            (ngModelChange)="onLeaveTypeChanged()"
           />
           @if (remainingBalanceLabel) {
             <p class="form-hint balance-hint">{{ remainingBalanceLabel }}</p>
           }
         }
       </div>
+
+      <app-form-field
+        label="From"
+        type="date"
+        [(ngModel)]="form.fromDate"
+        [required]="true"
+        (ngModelChange)="onDatesChanged()"
+      />
+      <app-form-field
+        label="To"
+        type="date"
+        [(ngModel)]="form.toDate"
+        [required]="true"
+        (ngModelChange)="onDatesChanged()"
+      />
+
+      <div class="settings-inline-toggle half-day-toggle">
+        <div class="label-block">
+          <span class="flabel">Half day</span>
+          <p class="form-hint" style="margin: 2px 0 0">
+            Off = full day for every date. On = pick which days are half day.
+          </p>
+        </div>
+        <app-toggle-switch
+          [(ngModel)]="isHalfDay"
+          [disabled]="!allowHalfDay"
+          ariaLabel="Half day leave"
+          (ngModelChange)="onHalfDayToggle($event)"
+        />
+      </div>
+
+      @if (isHalfDay) {
+        <div class="half-day-list full-width">
+          <span class="chips-block-label">Half-day dates</span>
+          <p class="form-hint">Select days between From and To, then First half or Second half.</p>
+          @for (row of halfDayRows; track row.date) {
+            <div class="half-day-row">
+              <label class="half-day-check">
+                <input type="checkbox" [(ngModel)]="row.selected" />
+                <span>{{ row.date }}</span>
+              </label>
+              @if (row.selected) {
+                <app-form-field
+                  label=""
+                  type="select"
+                  [(ngModel)]="row.session"
+                  [options]="sessionOptions"
+                />
+              }
+            </div>
+          }
+          @if (!halfDayRows.length) {
+            <p class="form-hint">Set a valid From / To date range first.</p>
+          }
+        </div>
+      }
+
+      <div class="total-days-preview full-width">
+        Total days: <strong>{{ totalDaysPreview }}</strong>
+      </div>
+
       <app-form-field
         label="Reason"
         type="textarea"
@@ -75,15 +126,16 @@
         placeholder="Reason for leave…"
         [rows]="4"
         [fullWidth]="true"
+        [required]="true"
       />
     </div>
   </div>
 
   <div class="footer-actions">
-    <div class="footer-hint">Leave will be submitted directly for approval</div>
+    <div class="footer-hint">Leave will be submitted to your reporting manager for approval</div>
     <app-action-button
       type="submit"
-      [label]="saving ? 'Submitting…' : 'Submit leave'"
+      [label]="saving ? 'Submitting…' : 'Submit for approval'"
       [icon]="saving ? 'hourglass_empty' : 'send'"
       [disabled]="saving"
       (action)="submit()"

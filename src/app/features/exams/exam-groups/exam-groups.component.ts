@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -53,7 +52,6 @@ export class ExamGroupsComponent implements OnInit {
   private dialog = inject(MatDialog);
   private permissions = inject(PermissionService);
   private ayContext = inject(AcademicYearContextService);
-  private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
   ExamEvaluationType = ExamEvaluationType;
@@ -64,7 +62,7 @@ export class ExamGroupsComponent implements OnInit {
   tableConfig!: DataTableConfig;
 
   showForm = false;
-  formMode: 'add' | 'edit' = 'add';
+  formMode: 'add' | 'edit' | 'view' = 'add';
   editingId: string | null = null;
   formError = '';
   saving = false;
@@ -83,6 +81,16 @@ export class ExamGroupsComponent implements OnInit {
 
   get gradeScaleOptions(): FormFieldOption[] {
     return this.gradeScales.map((s) => ({ label: s.name, value: s.id }));
+  }
+
+  get formTitle(): string {
+    if (this.formMode === 'view') return 'View exam group';
+    if (this.formMode === 'edit') return 'Edit exam group';
+    return 'New exam group';
+  }
+
+  get formReadOnly(): boolean {
+    return this.formMode === 'view';
   }
 
   private readonly baseTableConfig: DataTableConfig = {
@@ -123,7 +131,7 @@ export class ExamGroupsComponent implements OnInit {
       { key: 'examCountLabel', label: 'Exams', sortable: true },
     ],
     actions: [
-      { label: 'View exams', icon: 'visibility', iconColor: '#639922' },
+      { label: 'View', icon: 'visibility', iconColor: '#639922', permission: 'view' },
       { label: 'Edit', icon: 'edit', iconColor: '#1E40AF' },
       { label: 'Delete', icon: 'delete', danger: true, separatorBefore: true },
     ],
@@ -213,26 +221,57 @@ export class ExamGroupsComponent implements OnInit {
     rowIndex: number;
   }): void {
     const group = event.row as unknown as ExamGroup;
-    if (event.action.label === 'View exams') {
-      this.router.navigate(['/exams/list'], { queryParams: { groupId: group.id } });
+    if (event.action.label === 'View') {
+      this.openGroupForm(group, 'view');
     } else if (event.action.label === 'Edit') {
-      this.formMode = 'edit';
-      this.editingId = group.id;
-      this.formName = group.name;
-      this.formDescription = group.description ?? '';
-      this.formGradeScaleId = group.gradeScaleId ?? '';
-      this.formEvaluationType = group.evaluationType;
-      this.formClassGroupIds = (group.classGroupIds ?? []).map((id) => String(id));
-      this.formError = '';
-      this.showForm = true;
+      this.openGroupForm(group, 'edit');
     } else if (event.action.label === 'Delete') {
       this.deleteGroup(group);
     }
   }
 
+  private openGroupForm(group: ExamGroup, mode: 'view' | 'edit'): void {
+    this.formMode = mode;
+    this.editingId = group.id;
+    this.formName = group.name;
+    this.formDescription = group.description ?? '';
+    this.formGradeScaleId = group.gradeScaleId ?? '';
+    this.formEvaluationType = this.normalizeEvaluationType(group.evaluationType);
+    this.formClassGroupIds = (group.classGroupIds ?? []).map((id) => String(id));
+    this.formError = '';
+    this.showForm = true;
+  }
+
+  /** API may send enum as number or JsonStringEnumConverter string ("Marks"). */
+  private normalizeEvaluationType(value: unknown): ExamEvaluationType {
+    if (typeof value === 'number' && value >= 0 && value <= 2) {
+      return value as ExamEvaluationType;
+    }
+    if (typeof value === 'string') {
+      const asNum = Number(value);
+      if (!Number.isNaN(asNum) && asNum >= 0 && asNum <= 2) {
+        return asNum as ExamEvaluationType;
+      }
+      const key = value.trim();
+      if (key === 'Grade') return ExamEvaluationType.Grade;
+      if (key === 'Both' || key === 'Marks & Grade') return ExamEvaluationType.Both;
+      if (key === 'Marks') return ExamEvaluationType.Marks;
+    }
+    return ExamEvaluationType.Marks;
+  }
+
   save(): void {
+    if (this.formReadOnly) return;
     if (!this.formName.trim()) {
       this.formError = 'Group name is required.';
+      return;
+    }
+    if (
+      this.formEvaluationType === null ||
+      this.formEvaluationType === undefined ||
+      Number.isNaN(Number(this.formEvaluationType))
+    ) {
+      this.formError = 'Evaluation type is required.';
       return;
     }
 
@@ -240,7 +279,7 @@ export class ExamGroupsComponent implements OnInit {
       name: this.formName.trim(),
       description: this.formDescription.trim() || null,
       gradeScaleId: this.formGradeScaleId || null,
-      evaluationType: Number(this.formEvaluationType) as ExamEvaluationType,
+      evaluationType: this.normalizeEvaluationType(this.formEvaluationType),
       classGroupIds: this.formClassGroupIds,
     };
 

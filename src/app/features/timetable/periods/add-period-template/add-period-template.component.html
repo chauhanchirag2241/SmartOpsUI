@@ -78,11 +78,13 @@
 
     @if (mode !== 'view' && availableOverrideDays.length) {
       <div class="tt-override-add">
-        <select [(ngModel)]="newOverrideDay" [ngModelOptions]="{ standalone: true }">
-          @for (d of availableOverrideDays; track d.day) {
-            <option [ngValue]="d.day">{{ d.label }}</option>
-          }
-        </select>
+        <app-form-field
+          type="select"
+          placeholder="Select day"
+          [(ngModel)]="newOverrideDay"
+          [ngModelOptions]="{ standalone: true }"
+          [options]="availableOverrideDayOptions"
+        />
         <app-action-button type="add" label="Add day override" (action)="addDayOverride()" />
       </div>
     }

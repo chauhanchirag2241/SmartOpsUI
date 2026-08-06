@@ -6,6 +6,8 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { finalize } from 'rxjs';
 
 import { ActionButtonComponent } from '../../../../shared/components/action-button/action-button.component';
+import { FormFieldComponent } from '../../../../shared/form-controls/form-field/form-field.component';
+import type { FormFieldOption } from '../../../../shared/form-controls/form-field/form-field.types';
 import { DynamicFieldComponent } from '../../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { PageChromeDirective } from '../../../../shared/directives/page-chrome.directive';
 import { FormFieldConfig } from '../../../../shared/interfaces/form-field-config';
@@ -30,6 +32,7 @@ const WEEK_DAYS = [
     ReactiveFormsModule,
     MatIconModule,
     ActionButtonComponent,
+    FormFieldComponent,
     DynamicFieldComponent,
     PageChromeDirective,
   ],
@@ -97,6 +100,10 @@ export class AddPeriodTemplateComponent implements OnInit {
   get availableOverrideDays(): { day: number; label: string }[] {
     const used = new Set(this.dayOverrides.controls.map((c) => Number(c.get('dayOfWeek')?.value)));
     return this.weekDays.filter((d) => !used.has(d.day));
+  }
+
+  get availableOverrideDayOptions(): FormFieldOption[] {
+    return this.availableOverrideDays.map((d) => ({ label: d.label, value: d.day }));
   }
 
   ngOnInit(): void {

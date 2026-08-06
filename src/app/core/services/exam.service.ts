@@ -44,7 +44,7 @@ export interface ExamGroup {
   description?: string | null;
   gradeScaleId?: string | null;
   gradeScaleName?: string | null;
-  evaluationType: ExamEvaluationType;
+  evaluationType: ExamEvaluationType | string | number;
   evaluationTypeLabel: string;
   examCount: number;
   classGroupIds?: string[];

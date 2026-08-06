@@ -27,9 +27,9 @@ export class ToggleSwitchComponent implements ControlValueAccessor {
 
   @Input() id = '';
   @Input() ariaLabel = 'Toggle';
+  @Input() disabled = false;
 
   checked = false;
-  disabled = false;
 
   private onChange: (value: boolean) => void = () => undefined;
   private onTouched: () => void = () => undefined;

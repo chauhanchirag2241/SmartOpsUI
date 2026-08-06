@@ -75,7 +75,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   activeSection: SettingsSectionId = 'year';
 
   readonly sections: { id: SettingsSectionId; label: string; icon: string; toggleKey?: string }[] = [
-    { id: 'year', label: 'Academic year', icon: 'calendar_month' },
+    { id: 'year', label: 'Academic year', icon: 'calendar_month', toggleKey: 'academicYearEditable' },
     { id: 'staffleave', label: 'Staff leave approval', icon: 'groups', toggleKey: 'staffLeaveEnabled' },
     { id: 'studentleave', label: 'Student leave approval', icon: 'school', toggleKey: 'studentLeaveEnabled' },
     { id: 'attendance', label: 'Staff attendance', icon: 'schedule', toggleKey: 'attendanceEnabled' },
@@ -119,6 +119,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
     return !!this.form?.get('attendanceEnabled')?.value;
   }
 
+  get academicYearEditable(): boolean {
+    return !!this.form?.get('academicYearEditable')?.value;
+  }
+
   get longLeaveTransferOn(): boolean {
     return !!this.form?.get('studentLongLeaveTransferToPrincipal')?.value;
   }
@@ -131,6 +135,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.form = this.fb.group({
+      academicYearEditable: [false],
+      academicYearId: [{ value: '', disabled: true }],
       staffLeaveEnabled: [true],
       staffApprovalMode: ['AnyOne', Validators.required],
       studentLeaveEnabled: [true],
@@ -142,6 +148,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
 
     this.fieldConfigs = {
+      academicYearId: {
+        type: 'select',
+        label: 'Active year',
+        controlName: 'academicYearId',
+        options: [],
+      },
       staffApprovalMode: {
         type: 'select',
         label: 'Approval mode',
@@ -178,7 +190,19 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.form.disable();
     }
 
-    this.formSub = this.form.valueChanges.subscribe(() => this.refreshDirty());
+    this.formSub = new Subscription();
+    this.formSub.add(this.form.valueChanges.subscribe(() => this.refreshDirty()));
+    this.formSub.add(
+      this.form.get('academicYearEditable')!.valueChanges.subscribe((editable) => {
+        this.syncAcademicYearControlState(!!editable);
+      }),
+    );
+    this.formSub.add(
+      this.form.get('academicYearId')!.valueChanges.subscribe((yearId) => {
+        if (!this.academicYearEditable || !yearId) return;
+        this.onAcademicYearChange(String(yearId));
+      }),
+    );
 
     this.userTypeService.getUserTypes().subscribe({
       next: (types) => {
@@ -237,8 +261,17 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   onAcademicYearChange(yearId: string): void {
-    if (!this.canSwitchYear || !yearId || yearId === this.ayContext.effectiveYearId()) {
-      this.selectedYearId = this.ayContext.effectiveYearId();
+    if (
+      !this.academicYearEditable ||
+      !this.canSwitchYear ||
+      !yearId ||
+      yearId === this.ayContext.effectiveYearId()
+    ) {
+      const current = this.ayContext.effectiveYearId();
+      this.selectedYearId = current;
+      if (current && this.form.get('academicYearId')?.value !== current) {
+        this.form.patchValue({ academicYearId: current }, { emitEvent: false });
+      }
       return;
     }
     this.selectedYearId = yearId;
@@ -338,7 +371,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       .pipe(
         finalize(() => {
           this.yearsLoading = false;
-          this.selectedYearId = this.ayContext.effectiveYearId();
+          this.syncAcademicYearOptions();
           this.cdr.markForCheck();
         }),
       )
@@ -350,6 +383,60 @@ export class SettingsComponent implements OnInit, OnDestroy {
           });
         },
       });
+  }
+
+  private syncAcademicYearOptions(): void {
+    const years = this.academicYears;
+    this.selectedYearId = this.ayContext.effectiveYearId();
+    this.fieldConfigs = {
+      ...this.fieldConfigs,
+      academicYearId: {
+        ...this.fieldConfigs['academicYearId'],
+        options: years.map((year) => ({
+          label: `${year.name}${year.isCurrent ? ' (current)' : ''}`,
+          value: year.id,
+        })),
+        disabled: !this.canSwitchYear || !this.academicYearEditable,
+      },
+    };
+
+    const yearCtrl = this.form.get('academicYearId');
+    const editableCtrl = this.form.get('academicYearEditable');
+    if (!this.canSwitchYear) {
+      editableCtrl?.setValue(false, { emitEvent: false });
+      editableCtrl?.disable({ emitEvent: false });
+      yearCtrl?.disable({ emitEvent: false });
+    } else if (this.canEdit) {
+      editableCtrl?.enable({ emitEvent: false });
+      this.syncAcademicYearControlState(this.academicYearEditable);
+    }
+
+    if (this.selectedYearId) {
+      yearCtrl?.setValue(this.selectedYearId, { emitEvent: false });
+    }
+  }
+
+  private syncAcademicYearControlState(editable: boolean): void {
+    const yearCtrl = this.form.get('academicYearId');
+    if (!yearCtrl) return;
+
+    const canEditYear = this.canEdit && this.canSwitchYear && editable;
+    if (canEditYear) {
+      yearCtrl.enable({ emitEvent: false });
+    } else {
+      yearCtrl.disable({ emitEvent: false });
+    }
+
+    if (this.fieldConfigs['academicYearId']) {
+      this.fieldConfigs = {
+        ...this.fieldConfigs,
+        academicYearId: {
+          ...this.fieldConfigs['academicYearId'],
+          disabled: !canEditYear,
+        },
+      };
+    }
+    this.cdr.markForCheck();
   }
 
   private loadSettings(): void {
@@ -440,8 +527,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private serializeState(): string {
+    const raw = this.form.getRawValue() as Record<string, unknown>;
+    const { academicYearEditable: _e, academicYearId: _y, ...settingsForm } = raw;
     return JSON.stringify({
-      form: this.form.getRawValue(),
+      form: settingsForm,
       staff: [...this.selectedStaffTypes].sort(),
       long: [...this.selectedLongLeaveTypes].sort(),
     });
