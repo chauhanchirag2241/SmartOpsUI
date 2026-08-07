@@ -16,6 +16,7 @@ import { EmployeeService } from '../../../core/services/employee.service';
 import { DepartmentService } from '../../../core/services/department.service';
 import { RoleService, RoleDto } from '../../../core/services/role.service';
 import { UserTypeDto, UserTypeService } from '../../../core/services/user-type.service';
+import { ShiftService } from '../../../core/services/shift.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { DynamicFieldComponent } from '../../../shared/form-controls/dynamic-field/dynamic-field.component';
 import { ActionButtonComponent } from '../../../shared/components/action-button/action-button.component';
@@ -91,6 +92,7 @@ export class AddEmployeeComponent implements OnInit {
   @Output() saved = new EventEmitter<void>();
 
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly shiftService = inject(ShiftService);
 
   employeeForm: FormGroup;
   currentStep = 0;
@@ -101,6 +103,8 @@ export class AddEmployeeComponent implements OnInit {
   departments: { label: string; value: string }[] = [];
   reportingManagers: { label: string; value: string }[] = [];
   reportingManagerChipOptions: MappingOption[] = [];
+  shiftChipOptions: MappingOption[] = [];
+  private shiftTimeById = new Map<string, { startTime: string; endTime: string; name: string }>();
 
   steps = [
     { title: 'Personal', icon: 'person' },
@@ -383,6 +387,11 @@ export class AddEmployeeComponent implements OnInit {
       label: 'Shift end',
       inputType: 'time',
     },
+    scheduleSummary: {
+      type: 'input',
+      controlName: 'scheduleSummary',
+      label: 'Work schedule',
+    },
     username: {
       type: 'input',
       controlName: 'username',
@@ -449,6 +458,7 @@ export class AddEmployeeComponent implements OnInit {
     'username',
   ];
   readonly scheduleFields = ['shiftStartTime', 'shiftEndTime'];
+  readonly scheduleReviewFields = ['scheduleSummary'];
 
   readonly tabs: FormTab[] = [
     {
@@ -490,7 +500,7 @@ export class AddEmployeeComponent implements OnInit {
       stepIndex: 3,
       groupPath: 'schedule',
       hint: 'Set daily shift timings for all employees.',
-      sections: [{ title: 'Work schedule', icon: 'schedule', layout: 'grid3', fields: this.scheduleFields }],
+      sections: [{ title: 'Work schedule', icon: 'schedule', layout: 'schedule', fields: this.scheduleFields }],
     },
     {
       stepIndex: 4,
@@ -510,7 +520,7 @@ export class AddEmployeeComponent implements OnInit {
         { title: 'Professional summary', icon: 'work_outline', layout: 'review', fields: this.employmentFields, groupPath: 'professional' },
         { title: 'Banking', icon: 'account_balance', layout: 'review', fields: this.bankFields, groupPath: 'professional', subGroup: 'bankDetails' },
         { title: 'Organization & access', icon: 'corporate_fare', layout: 'review', fields: this.organizationFields, groupPath: 'organization' },
-        { title: 'Schedule', icon: 'schedule', layout: 'review', fields: this.scheduleFields, groupPath: 'schedule' },
+        { title: 'Schedule', icon: 'schedule', layout: 'review', fields: this.scheduleReviewFields, groupPath: 'schedule' },
       ],
     },
   ];
@@ -567,8 +577,16 @@ export class AddEmployeeComponent implements OnInit {
         username: [{ value: '', disabled: true }],
       }),
       schedule: this.fb.group({
-        shiftStartTime: [null, shiftStartTimeValidator()],
-        shiftEndTime: [null, shiftEndTimeValidator()],
+        scheduleMode: ['master'],
+        shiftIds: [[] as string[]],
+        shiftStartTime: [
+          { value: null, disabled: true },
+          shiftStartTimeValidator(() => this.isCustomScheduleMode()),
+        ],
+        shiftEndTime: [
+          { value: null, disabled: true },
+          shiftEndTimeValidator(() => this.isCustomScheduleMode()),
+        ],
       }),
     });
   }
@@ -587,8 +605,10 @@ export class AddEmployeeComponent implements OnInit {
 
   ngOnInit(): void {
     this.wireShiftTimeValidation();
+    this.wireScheduleMode();
     this.wirePortalAccessValidation();
     this.loadLookups();
+    this.loadShiftOptions();
     if (this.mode === 'add') {
       this.setupUsernameGeneration();
       this.professionalGroup.patchValue({ joiningDate: this.today() });
@@ -674,6 +694,118 @@ export class AddEmployeeComponent implements OnInit {
     end?.valueChanges.subscribe(sync);
   }
 
+  private wireScheduleMode(): void {
+    this.scheduleGroup.get('scheduleMode')?.valueChanges.subscribe((mode) => {
+      this.applyScheduleMode(mode === 'custom' ? 'custom' : 'master', { clearOpposite: true });
+    });
+  }
+
+  private isCustomScheduleMode(): boolean {
+    return this.scheduleGroup?.get('scheduleMode')?.value === 'custom';
+  }
+
+  get shiftSelectedIds(): string[] {
+    const ids = this.scheduleGroup.get('shiftIds')?.value;
+    return Array.isArray(ids) ? ids.map(String) : [];
+  }
+
+  onShiftSelectionChange(ids: string[]): void {
+    this.scheduleGroup.get('shiftIds')?.setValue(ids);
+    this.scheduleGroup.get('shiftIds')?.markAsDirty();
+    this.scheduleGroup.get('shiftIds')?.markAsTouched();
+    this.applyDerivedShiftTimes(ids);
+  }
+
+  setScheduleMode(mode: 'master' | 'custom'): void {
+    if (this.mode === 'view') return;
+    this.scheduleGroup.get('scheduleMode')?.setValue(mode);
+  }
+
+  private applyScheduleMode(
+    mode: 'master' | 'custom',
+    options?: { clearOpposite?: boolean },
+  ): void {
+    const start = this.scheduleGroup.get('shiftStartTime');
+    const end = this.scheduleGroup.get('shiftEndTime');
+    const shiftIds = this.scheduleGroup.get('shiftIds');
+
+    if (mode === 'master') {
+      start?.disable({ emitEvent: false });
+      end?.disable({ emitEvent: false });
+      if (options?.clearOpposite) {
+        // keep times derived from selection
+      }
+      this.applyDerivedShiftTimes(this.shiftSelectedIds);
+    } else {
+      start?.enable({ emitEvent: false });
+      end?.enable({ emitEvent: false });
+      if (options?.clearOpposite) {
+        shiftIds?.setValue([], { emitEvent: false });
+      }
+    }
+    syncShiftTimeValidity(this.scheduleGroup);
+    this.cdr.markForCheck();
+  }
+
+  private applyDerivedShiftTimes(ids: string[]): void {
+    if (!ids.length) {
+      this.scheduleGroup.patchValue(
+        { shiftStartTime: null, shiftEndTime: null },
+        { emitEvent: false },
+      );
+      syncShiftTimeValidity(this.scheduleGroup);
+      return;
+    }
+
+    const windows = ids
+      .map((id) => this.shiftTimeById.get(id))
+      .filter((x): x is { startTime: string; endTime: string; name: string } => !!x);
+
+    if (!windows.length) {
+      return;
+    }
+
+    const starts = windows.map((w) => w.startTime).sort();
+    const ends = windows.map((w) => w.endTime).sort();
+    this.scheduleGroup.patchValue(
+      {
+        shiftStartTime: starts[0] ?? null,
+        shiftEndTime: ends[ends.length - 1] ?? null,
+      },
+      { emitEvent: false },
+    );
+    syncShiftTimeValidity(this.scheduleGroup);
+  }
+
+  private loadShiftOptions(): void {
+    this.shiftService.getShifts(1, 200, '', 'displayOrder', 'asc', 'Active').subscribe({
+      next: (res: any) => {
+        const items = Array.isArray(res?.items) ? res.items : [];
+        this.shiftTimeById.clear();
+        this.shiftChipOptions = items.map((s: any) => {
+          const id = String(s.id ?? s.Id ?? '');
+          const name = String(s.shiftName ?? s.ShiftName ?? '');
+          const startTime = normalizeTimeValue(s.startTime ?? s.StartTime) ?? '';
+          const endTime = normalizeTimeValue(s.endTime ?? s.EndTime) ?? '';
+          if (id) {
+            this.shiftTimeById.set(id, { startTime, endTime, name });
+          }
+          const label =
+            startTime && endTime ? `${name} (${startTime} - ${endTime})` : name;
+          return { id, name: label };
+        });
+        if (this.shiftSelectedIds.length) {
+          this.applyDerivedShiftTimes(this.shiftSelectedIds);
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.shiftChipOptions = [];
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   private setupUsernameGeneration(): void {
     const firstControl = this.employeeForm.get('personal.firstName');
     const lastControl = this.employeeForm.get('personal.lastName');
@@ -738,6 +870,9 @@ export class AddEmployeeComponent implements OnInit {
   }
 
   getReviewValue(section: FormSection, field: string): string {
+    if (field === 'scheduleSummary') {
+      return this.getScheduleReviewSummary();
+    }
     const basePath = section.groupPath;
     let actualPath = basePath ?? '';
     if (section.subGroup) {
@@ -885,10 +1020,30 @@ export class AddEmployeeComponent implements OnInit {
             username: data.username ?? data.Username ?? '',
           },
           schedule: {
+            scheduleMode: 'master',
+            shiftIds: [],
             shiftStartTime: normalizeTimeValue(data.shiftStartTime ?? data.shiftStarttime),
             shiftEndTime: normalizeTimeValue(data.shiftEndTime ?? data.shiftEndtime),
           },
         });
+        const rawShiftIds = data.shiftIds ?? data.ShiftIds ?? [];
+        const shiftIds = Array.isArray(rawShiftIds)
+          ? rawShiftIds.map((id: unknown) => String(id)).filter(Boolean)
+          : [];
+        const mode = shiftIds.length > 0 ? 'master' : 'custom';
+        this.scheduleGroup.patchValue(
+          {
+            scheduleMode: mode,
+            shiftIds,
+            shiftStartTime: normalizeTimeValue(data.shiftStartTime ?? data.shiftStarttime),
+            shiftEndTime: normalizeTimeValue(data.shiftEndTime ?? data.shiftEndtime),
+          },
+          { emitEvent: false },
+        );
+        this.applyScheduleMode(mode);
+        if (mode === 'master') {
+          this.applyDerivedShiftTimes(shiftIds);
+        }
         this.employeeDataReady = true;
         this.tryApplyOrganizationLookups();
         this.setQualificationsFromApi(data.qualifications);
@@ -1008,11 +1163,63 @@ export class AddEmployeeComponent implements OnInit {
         paths = [...paths, 'organization.portalRoleId'];
       }
     }
+    if (step === 3) {
+      return this.validateScheduleStep();
+    }
     return validateFormControls(this.employeeForm, paths);
   }
 
+  private validateScheduleStep(): boolean {
+    const mode = this.scheduleGroup.get('scheduleMode')?.value;
+    if (mode === 'master') {
+      const ids = this.shiftSelectedIds;
+      if (!ids.length) {
+        this.scheduleGroup.get('shiftIds')?.markAsTouched();
+        this.snackBar.open('Select at least one shift from Shift Master', 'Close', { duration: 3000 });
+        return false;
+      }
+      return true;
+    }
+
+    syncShiftTimeValidity(this.scheduleGroup);
+    const ok = validateFormControls(this.employeeForm, [
+      'schedule.shiftStartTime',
+      'schedule.shiftEndTime',
+    ]);
+    if (!ok) {
+      return false;
+    }
+    const start = normalizeTimeValue(this.scheduleGroup.get('shiftStartTime')?.value);
+    const end = normalizeTimeValue(this.scheduleGroup.get('shiftEndTime')?.value);
+    if (!start || !end) {
+      this.scheduleGroup.get('shiftStartTime')?.markAsTouched();
+      this.scheduleGroup.get('shiftEndTime')?.markAsTouched();
+      this.snackBar.open('Enter custom shift start and end times', 'Close', { duration: 3000 });
+      return false;
+    }
+    return true;
+  }
+
+  private getScheduleReviewSummary(): string {
+    const mode = this.scheduleGroup.get('scheduleMode')?.value;
+    const range = formatShiftRangeDisplay(
+      this.scheduleGroup.get('shiftStartTime')?.value,
+      this.scheduleGroup.get('shiftEndTime')?.value,
+    );
+    if (mode === 'master') {
+      const names = this.shiftSelectedIds
+        .map((id) => this.shiftTimeById.get(id)?.name)
+        .filter(Boolean);
+      if (!names.length) {
+        return range;
+      }
+      return `${names.join(', ')} (${range})`;
+    }
+    return range === '—' ? 'Custom —' : `Custom (${range})`;
+  }
+
   saveEmployee(): void {
-    if (this.employeeForm.invalid) {
+    if (!this.validateScheduleStep() || this.employeeForm.invalid) {
       this.employeeForm.markAllAsTouched();
       this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000, panelClass: 'snack-error' });
       return;

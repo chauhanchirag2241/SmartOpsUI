@@ -485,12 +485,17 @@ export function optionalPositiveIntValidator(max: number): ValidatorFn {
   };
 }
 
-export function describeShiftTimeError(start: unknown, end: unknown): string | null {
+export function describeShiftTimeError(
+  start: unknown,
+  end: unknown,
+  options?: { required?: boolean },
+): string | null {
   const startStr = normalizeTimeValue(start);
   const endStr = normalizeTimeValue(end);
+  const required = options?.required === true;
 
   if (!startStr && !endStr) {
-    return null;
+    return required ? 'Select shift start and end time' : null;
   }
   if (startStr && !endStr) {
     return 'Select shift end time';
@@ -505,30 +510,38 @@ export function describeShiftTimeError(start: unknown, end: unknown): string | n
 }
 
 /** Shift start: only errors that belong on the start field (missing start, invalid range). */
-export function shiftStartTimeValidator(): ValidatorFn {
+export function shiftStartTimeValidator(requiredWhen?: () => boolean): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const group = control.parent;
     if (!group) {
       return null;
     }
-    const message = describeShiftTimeError(control.value, group.get('shiftEndTime')?.value);
+    const required = requiredWhen?.() === true;
+    const message = describeShiftTimeError(control.value, group.get('shiftEndTime')?.value, { required });
     if (!message || message === 'Select shift end time') {
       return null;
+    }
+    if (message === 'Select shift start and end time') {
+      return { shiftTime: { message: 'Select shift start time' } satisfies ValidationErrorDetail };
     }
     return { shiftTime: { message } satisfies ValidationErrorDetail };
   };
 }
 
 /** Shift end: missing end and “end after start” errors show on the end field only. */
-export function shiftEndTimeValidator(): ValidatorFn {
+export function shiftEndTimeValidator(requiredWhen?: () => boolean): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const group = control.parent;
     if (!group) {
       return null;
     }
-    const message = describeShiftTimeError(group.get('shiftStartTime')?.value, control.value);
+    const required = requiredWhen?.() === true;
+    const message = describeShiftTimeError(group.get('shiftStartTime')?.value, control.value, { required });
     if (!message || message === 'Select shift start time') {
       return null;
+    }
+    if (message === 'Select shift start and end time') {
+      return { shiftTime: { message: 'Select shift end time' } satisfies ValidationErrorDetail };
     }
     return { shiftTime: { message } satisfies ValidationErrorDetail };
   };

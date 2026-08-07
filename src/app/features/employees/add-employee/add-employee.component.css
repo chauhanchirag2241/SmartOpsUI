@@ -210,6 +210,69 @@
   font-weight: 600;
 }
 
+.schedule-mode-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  width: 260px;
+  max-width: 100%;
+  margin-bottom: 16px;
+  border: 1px solid var(--border, #d8dde6);
+  border-radius: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.mode-btn {
+  border: 0;
+  background: #fff;
+  color: var(--muted, #667085);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: none;
+  outline: none;
+}
+
+.mode-btn + .mode-btn {
+  border-left: 1px solid var(--border, #d8dde6);
+}
+
+.mode-btn.active {
+  background: var(--primary-color, #639922);
+  color: #fff;
+}
+
+.mode-btn:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.schedule-shifts-field {
+  margin-bottom: 16px;
+}
+
+.schedule-shifts-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.schedule-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted, #667085);
+}
+
+.schedule-time-grid {
+  margin-top: 4px;
+}
+
 @media (max-width: 900px) {
   .photo-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));

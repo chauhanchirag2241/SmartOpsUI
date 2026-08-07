@@ -175,8 +175,22 @@ export class EmployeeService {
         reportingManagerId: this.emptyGuidToNull(organization.reportingManagerId),
       },
       schedule: {
-        shiftStartTime: schedule.shiftStartTime || null,
-        shiftEndTime: schedule.shiftEndTime || null,
+        shiftIds:
+          schedule.scheduleMode === 'custom'
+            ? []
+            : Array.isArray(schedule.shiftIds)
+              ? schedule.shiftIds.filter(Boolean)
+              : [],
+        shiftStartTime:
+          schedule.scheduleMode === 'master' ||
+          (Array.isArray(schedule.shiftIds) && schedule.shiftIds.length > 0)
+            ? null
+            : schedule.shiftStartTime || null,
+        shiftEndTime:
+          schedule.scheduleMode === 'master' ||
+          (Array.isArray(schedule.shiftIds) && schedule.shiftIds.length > 0)
+            ? null
+            : schedule.shiftEndTime || null,
       },
     };
   }
@@ -201,6 +215,8 @@ export class EmployeeService {
     const role = lookups?.roles?.find((r) => r.id === organization.portalRoleId);
     const portalEnabled = organization.portalAccess === 'Enabled' || organization.portalAccess === true;
     const existingRoleName = String(existing['portalRoleName'] ?? existing['PortalRoleName'] ?? 'Teacher');
+    const shiftIds = Array.isArray(schedule.shiftIds) ? schedule.shiftIds.filter(Boolean) : [];
+    const useMaster = schedule.scheduleMode === 'master' || shiftIds.length > 0;
 
     return {
       id,
@@ -229,8 +245,9 @@ export class EmployeeService {
       portalRoleName: portalEnabled ? (role?.name ?? existingRoleName) : existingRoleName,
       departmentId: this.emptyGuidToNull(organization.departmentId),
       reportingManagerId: this.emptyGuidToNull(organization.reportingManagerId),
-      shiftStartTime: schedule.shiftStartTime || null,
-      shiftEndTime: schedule.shiftEndTime || null,
+      shiftIds: useMaster ? shiftIds : [],
+      shiftStartTime: useMaster ? null : schedule.shiftStartTime || null,
+      shiftEndTime: useMaster ? null : schedule.shiftEndTime || null,
       portalAccess: portalEnabled,
       username: portalEnabled ? (organization.username || null) : (existing['username'] ?? existing['Username'] ?? null),
       isActive: existing['isActive'] ?? existing['IsActive'] ?? true,

@@ -68,6 +68,54 @@
               </button>
             }
           </div>
+        } @else if (section.layout === 'schedule') {
+          <div class="card" [formGroup]="getGroupForSection(tab, section)">
+            <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>
+
+            <div class="schedule-mode-toggle" role="group" aria-label="Schedule mode">
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="scheduleGroup.get('scheduleMode')?.value === 'master'"
+                [disabled]="mode === 'view'"
+                (click)="setScheduleMode('master')">
+                Shift master
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="scheduleGroup.get('scheduleMode')?.value === 'custom'"
+                [disabled]="mode === 'view'"
+                (click)="setScheduleMode('custom')">
+                Custom
+              </button>
+            </div>
+
+            @if (scheduleGroup.get('scheduleMode')?.value === 'master') {
+              <div class="custom-field schedule-shifts-field">
+                <label>Shifts</label>
+                <app-multi-select-chips
+                  [options]="shiftChipOptions"
+                  [selectedIds]="shiftSelectedIds"
+                  (selectedIdsChange)="onShiftSelectionChange($event)"
+                  [disabled]="mode === 'view'"
+                  [compact]="true"
+                  placeholder="Select one or more shifts…"
+                  searchPlaceholder="Search shifts"
+                />
+                <p class="schedule-help">Employee window uses the earliest start and latest end of selected shifts.</p>
+              </div>
+            }
+
+            <div class="grid3 schedule-time-grid">
+              @for (field of section.fields; track field) {
+                <app-dynamic-field
+                  [config]="configs[field]"
+                  [group]="$any(getGroupForSection(tab, section))"
+                />
+              }
+            </div>
+          </div>
         } @else if (section.layout === 'review') {
           <div class="card">
               <div class="card-title"><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</div>

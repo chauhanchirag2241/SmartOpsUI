@@ -1,7 +1,7 @@
 export interface FormSection {
   title: string;
   icon: string;
-  layout: 'photo-grid' | 'grid2' | 'grid3' | 'form-array' | 'review' | 'document-grid' | 'custom-fields';
+  layout: 'photo-grid' | 'grid2' | 'grid3' | 'form-array' | 'review' | 'document-grid' | 'custom-fields' | 'schedule';
   fields: string[];
   subGroup?: string;
   groupPath?: string;
